@@ -1,0 +1,132 @@
+{
+  "contribution_test.py::test_GibbsIdealGas": {
+    "S": [
+      "(S_im-((n_0+n_1)*(8.31446*log((p/p_ref)))))"
+    ],
+    "V": [
+      "(((8.31446*(n_0+n_1))*T)/p)"
+    ],
+    "mu": [
+      "(mu_im+(T*(8.31446*log((p/p_ref)))))"
+    ]
+  },
+  "contribution_test.py::test_H0S0ReferenceState": {
+    "S": "((s_0.A*n_0)+(s_0.B*n_1))",
+    "mu": "[(dh_form.A-(T*s_0.A)), (dh_form.B-(T*s_0.B))]"
+  },
+  "contribution_test.py::test_IdealMix": {
+    "S": [
+      "@1=8.31446",
+      "@2=(n_0+n_1)",
+      "(S_std-((n_0*(@1*log((n_0/@2))))+(n_1*(@1*log((n_1/@2))))))"
+    ],
+    "mu": [
+      "@1=8.31446",
+      "@2=(n_0+n_1)",
+      "[(mu_std+(T*(@1*log((n_0/@2)))))",
+      "(mu_std+(T*(@1*log((n_1/@2)))))]"
+    ]
+  },
+  "contribution_test.py::test_LinearHeatCapacity": {
+    "S": [
+      "@1=log((T/T_ref))",
+      "@2=(T-T_ref)",
+      "(S_ref+(((((cp_a.A-(cp_b.A*T_ref))*@1)+(cp_b.A*@2))*n_0)+((((cp_a.B-(cp_b.B*T_ref))*@1)+(cp_b.B*@2))*n_1)))"
+    ],
+    "mu": [
+      "@1=(T-T_ref)",
+      "@2=(0.5*@1)",
+      "@3=log((T/T_ref))",
+      "[(mu_ref+(((cp_a.A+(@2*cp_b.A))*@1)-(T*(((cp_a.A-(cp_b.A*T_ref))*@3)+(cp_b.A*@1)))))",
+      "(mu_ref+(((cp_a.B+(@2*cp_b.B))*@1)-(T*(((cp_a.B-(cp_b.B*T_ref))*@3)+(cp_b.B*@1)))))]"
+    ]
+  },
+  "contribution_test.py::test_ideal_mix": {
+    "S": [
+      "@1=8.31446",
+      "@2=(n_0+n_1)",
+      "(S_std-((n_0*(@1*log((n_0/@2))))+(n_1*(@1*log((n_1/@2))))))"
+    ],
+    "mu": [
+      "@1=8.31446",
+      "@2=(n_0+n_1)",
+      "[(mu_std+(T*(@1*log((n_0/@2)))))",
+      "(mu_std+(T*(@1*log((n_1/@2)))))]"
+    ]
+  },
+  "frame_test.py::test_parameter_names": [
+    "H0S0 reference state.dh_form.N2",
+    "H0S0 reference state.dh_form.O2",
+    "H0S0 reference state.dh_form.Ar",
+    "H0S0 reference state.dh_form.CO2",
+    "H0S0 reference state.dh_form.H2O",
+    "H0S0 reference state.s_0.N2",
+    "H0S0 reference state.s_0.O2",
+    "H0S0 reference state.s_0.Ar",
+    "H0S0 reference state.s_0.CO2",
+    "H0S0 reference state.s_0.H2O",
+    "H0S0 reference state.T_ref",
+    "H0S0 reference state.p_ref",
+    "Linear heat capacity.cp_a.N2",
+    "Linear heat capacity.cp_a.O2",
+    "Linear heat capacity.cp_a.Ar",
+    "Linear heat capacity.cp_a.CO2",
+    "Linear heat capacity.cp_a.H2O",
+    "Linear heat capacity.cp_b.N2",
+    "Linear heat capacity.cp_b.O2",
+    "Linear heat capacity.cp_b.Ar",
+    "Linear heat capacity.cp_b.CO2",
+    "Linear heat capacity.cp_b.H2O"
+  ],
+  "frame_test.py::test_parameter_structure": {
+    "H0S0 reference state": {
+      "T_ref": null,
+      "dh_form": {
+        "Ar": null,
+        "CO2": null,
+        "H2O": null,
+        "N2": null,
+        "O2": null
+      },
+      "p_ref": null,
+      "s_0": {
+        "Ar": null,
+        "CO2": null,
+        "H2O": null,
+        "N2": null,
+        "O2": null
+      }
+    },
+    "Helmholtz state": {},
+    "Linear heat capacity": {
+      "cp_a": {
+        "Ar": null,
+        "CO2": null,
+        "H2O": null,
+        "N2": null,
+        "O2": null
+      },
+      "cp_b": {
+        "Ar": null,
+        "CO2": null,
+        "H2O": null,
+        "N2": null,
+        "O2": null
+      }
+    },
+    "Standard state": {}
+  },
+  "frame_test.py::test_property_names": [
+    "state",
+    "T",
+    "V",
+    "n",
+    "S",
+    "mu",
+    "T_ref",
+    "p_ref",
+    "S_std",
+    "p_std",
+    "mu_std"
+  ]
+}
