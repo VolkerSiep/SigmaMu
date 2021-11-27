@@ -33,10 +33,10 @@ setuptools.setup(
     python_requires='>=3.9',
     install_requires=[
         "casadi",
-        "pyyaml"
+        "pyyaml",
         ],
     extras_require={"doc": ["Sphinx>=2.2",
-                            "sphinxcontrib-bibtex<2.0"],
+                            "sphinxcontrib-bibtex>=2.4"],
                     # above: bug in V2, causing error (TODO: test now and then to relax this again)
                     "test": ["pytest>=5.3"]}
 )
