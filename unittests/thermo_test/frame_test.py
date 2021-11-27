@@ -40,7 +40,7 @@ def test_create_frame():
 
 def test_parameter_structure():
     frame = test_create_frame()
-    assert_reproduction(frame.parameter_structure)
+    assert_reproduction(frame.parameters)
 
 def test_parameter_names():
     frame = test_create_frame()

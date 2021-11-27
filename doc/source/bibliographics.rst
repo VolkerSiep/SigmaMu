@@ -1,5 +1,5 @@
 Literature
 ==========
 
-.. bibliographics::
+.. bibliography::
 

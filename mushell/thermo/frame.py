@@ -2,32 +2,17 @@
 
 # stdlib modules
 from copy import deepcopy
+from typing import Type
 
 # external modules
 from casadi import Function, SX
 
 # internal modules
 from ..utilities import flatten_dictionary, unflatten_dictionary
+from .contribution import ThermoContribution
 
 # TODO:
 #  Overwrite __call__ and take parameter struct as input for parameters.
-
-
-class ThermoFactory:
-    def __init__(self):
-        self.__contributions = {}
-
-    def register_contribution(self, name, contribution_cls):
-        self.__contributions[name] = contribution_cls
-
-    def create_frame(self, configuration):
-        species = configuration["species"]
-        options = configuration.get("options", {})
-        contributions = {name: [self.__contributions[name],
-                                options.get(name, {})]
-                         for name in configuration["contributions"]}
-        property_names = configuration.get("properties", None)
-        return ThermoFrame(species, contributions, property_names)
 
 
 class ThermoFrame:
@@ -84,10 +69,6 @@ class ThermoFrame:
     def property_names(self):
         return self.__function.name_out()
 
-    @parameters.setter
-    def parameters(self, value):
-        self.__parameter_structure = value
-
     @property
     def parameters(self):
         """This property is to aid the process of parametrising a model.
@@ -97,6 +78,10 @@ class ThermoFrame:
         called, or the methods ``relax`` and ``initialise`` be invoked.
         """
         return self.__parameter_structure
+
+    @parameters.setter
+    def parameters(self, value):
+        self.__parameter_structure = value
 
     @property
     def parameter_names(self):
@@ -131,3 +116,63 @@ class ThermoFrame:
             if result:
                 return result
         return [T, p] + list(n)
+
+
+class ThermoFactory:
+    """The ``ThermoFactory`` class hosts the definitions for the *model
+    contributions*, enabling it to create instances of thermodynamic models of
+    class :class:`ThermoFrame`.
+    
+    The class is largely meant to be a singelton, but to keep doors open,
+    multiple instances can be created."""
+    def __init__(self):
+        """Parameter-less constructor, initialising the data structure
+        to host contribution definitions"""
+        self.__contributions = {}
+
+    def register_contribution(self, name: str,
+                              contribution_cls: Type[ThermoContribution]):
+        """Registers a contribution under a given name. The contribution must
+        be a concrete subclass of :class:`ThermoContribution`.
+        
+        :param string name: The name identifier of the contribution. A
+          ``ValueError`` is thrown if the identifier was already defined
+          before.
+        :param Type[ThermoContribution] contribution_cls: The contribution
+          class to register
+        """
+        if name in self.__contributions:
+            raise ValueError(f"Contribution of name '{name}' already defined.")
+        self.__contributions[name] = contribution_cls
+
+    def create_frame(self, configuration: dict) -> ThermoFrame:
+        """This factory method creates a :class:`ThermoFrame` object from the
+        given ``configuration``.
+        
+        :param dict configuration: A nested dictionary with the
+          following root entries:
+            
+            - ``species``: A list of strings, representing the names of the
+              chemical species. These names are used as identifiers in later
+              use of the model, and they define the names of thermodynamic
+              parameters required by the model.
+            - ``contributions``: A list of strings, representing the names
+              of the contributions to stack. These identifiers must have been
+              defined upfront by calls to :meth:`register_contribution`.
+            - ``options``: This entry can be omitted if not applicable, but
+              some contributions might support options. For addressing these,
+              the sub-dictionary contains a key for such contribution, and the
+              value is whatever data structure the contribution accepts.
+        
+        :return: The thermodynamic model object
+        :rtype: ThermoFrame
+        """
+        species = configuration["species"]
+        options = configuration.get("options", {})
+        contributions = {name: [self.__contributions[name],
+                                options.get(name, {})]
+                         for name in configuration["contributions"]}
+        property_names = configuration.get("properties", None)
+        return ThermoFrame(species, contributions, property_names)
+
+

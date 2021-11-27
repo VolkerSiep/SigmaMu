@@ -7,8 +7,9 @@ MuShell Documentation
    :caption: Contents:
 
    introduction
+   api/api
    bibliographics
-
+ 
 
 Indices and tables
 ==================
