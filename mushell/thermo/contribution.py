@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""This module defines the class :cls:`ThermoContribution`, which defines
+the building blocks of a :cls:`ThermoFrame` function object."""
+
 from abc import ABC, abstractmethod
 
 # external modules
@@ -7,6 +10,17 @@ from casadi import vertcat
 
 
 class ThermoContribution(ABC):
+    """This abstract class defines the interface of a contribution to a
+    thermodynamic state function, as collected in :cls:`ThermoFrame` objects.
+
+    The definition is based on the ``casadi`` library, and its definition
+    is required to build a ``casadi`` evaluation structure as the
+    implementation of the belonging equations.
+
+    The usage of this class is mainly indirect by instantiation via the
+    :cls`ThermoFactory` objects and parametrisation via the provided parameter
+    structures.
+    """
     def __init__(self, species, options):
         self.species = species
         self.options = options
