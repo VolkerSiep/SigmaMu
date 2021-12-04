@@ -285,7 +285,14 @@ class HelmholtzIdealGas(ThermoContribution):
     limited to positive volumes.
     """
     def define(self, res, par):
-        pass  # TODO: derive and implemenet
+        T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]
+        N = sum1(n)
+        p = N * R_GAS * T / V
+        gtn = R_GAS * log(p / p_ref)
+
+        res["S"] -= N * gtn
+        res["p"] = p
+        res["mu"] += T * gtn
 
     def relax(self, state, delta_state, parameters):
         V, d_V = state[1], delta_state[1]
