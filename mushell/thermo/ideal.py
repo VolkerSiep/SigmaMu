@@ -9,20 +9,75 @@ from ..constants import R_GAS
 
 
 class HelmholtzState(ThermoContribution):
-    """x"""
+    """This contribution interprets the state as being temperature, volume,
+    and mole numbers. Accordingly, it defines:
+
+    ======== ============================
+    Property Description
+    ======== ============================
+    ``T``    Temperature
+    ``V``    Volume
+    ``n``    Mole vector
+    ======== ============================
+
+    The contribution does not support any options or parameters.
+    """
     def define(self, res, par):
         res["T"], res["V"], *res["n"] = vertsplit(res["state"], 1)
         res["n"] = vertcat(*res["n"])
 
 class GibbsState(ThermoContribution):
-    """x"""
+    """This contribution interprets the state as being temperature, pressure,
+    and mole numbers. Accordingly, it defines:
+
+    ======== ============================
+    Property Description
+    ======== ============================
+    ``T``    Temperature
+    ``p``    Pressure
+    ``n``    Mole vector
+    ======== ============================
+
+    The contribution does not support any options or parameters.
+    """
     def define(self, res, par):
         res["T"], res["p"], *res["n"] = vertsplit(res["state"], 1)
         res["n"] = vertcat(*res["n"])
 
 
 class H0S0ReferenceState(ThermoContribution):
-    """x"""
+    r"""This contribution defines the reference state based on enthalpy of
+    formation and standard entropy. It requires the following parameters:
+
+    =========== ================================== ======================
+    Parameter   Description                        Symbol
+    =========== ================================== ======================
+    ``dh_form`` Molar enthalpy of formation vector :math:`\Delta_f h`
+    ``s_0``     Vector of standard entropies       :math:`s_0`
+    ``T_ref``   Reference temperature              :math:`T_\mathrm{ref}`
+    ``p_ref``   Reference pressure                 :math:`p_\mathrm{ref}`
+    =========== ================================== ======================
+
+    Based on this, the reference state is defined in therms of entropy
+    and chemical potentials:
+
+    ========= ========================================= ======================
+    Property  Description                               Symbol
+    ========= ========================================= ======================
+    ``S``     Reference state entropy of the system     :math:`S`
+    ``mu``    Reference state chemical potential vector :math:`\mu`
+    ``T_ref`` Reference temperature (same as parameter) :math:`T_\mathrm{ref}`
+    ``p_ref`` Reference pressure (same as parameter)    :math:`p_\mathrm{ref}`
+    ========= ========================================= ======================
+
+    The contribution does not support any options.
+
+    .. math::
+
+        S &= \sum_i s_{0,i}\, n_i\\
+        \mu_i &= \Delta_f h_i - T\,s_{0,i}
+
+    """
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure
@@ -42,7 +97,51 @@ class H0S0ReferenceState(ThermoContribution):
 
 
 class LinearHeatCapacity(ThermoContribution):
-    """x"""
+    r"""This contribution implements a simple heat capacity, being linear
+    in temperature. It normally builds on a reference state and yields the
+    standard state model. It requires the following parameters:
+
+    ========= ====================================== ===============
+    Parameter Description                            Symbol
+    ========= ====================================== ===============
+    ``cp_a``  Molar heat capacity coefficient vector :math:`c_{p,a}`
+    ``cp_b``  Molar heat capacity coefficient vector :math:`c_{p,a}`
+    ========= ====================================== ===============
+
+    Heat capacity is here defined as
+
+    .. math::
+
+        \Delta T := T-T_\mathrm{ref}\\
+        c_{p,i} = c_{p,a,i} + \Delta T\,c_{p,b,i}
+
+    The contribution does not define new properties, but builds on entropy
+    ``S`` (:math:`S`) and chemical potential ``mu`` (:math:`\mu`). With the
+    following definitions:
+
+    .. math::
+
+        \Delta h_i &= \left (c_{p,a,i} + \frac12\Delta T\,c_{p,b,i}\right )\,
+                      \Delta T\\
+        \Delta s_i &= (c_{p,a,i} - c_{p,b,i}\,T_\mathrm{ref})\,
+                      \ln \frac{T}{T_\mathrm{ref}} +
+                      c_{p,b,i}\,\Delta_T\\
+
+    The properties are updated as
+
+    .. math::
+
+        S &\leftarrow S + \sum_i \Delta s_i\,n_i\\
+        \mu_i &\leftarrow \mu_i + \Delta h_i - T\,\Delta s_i
+
+    .. todo:
+        - use independent T_0 for cp = A  + B * (T - T_0), so it is
+          invariant to T_ref. Then
+          H = A * (T - T_ref) + B / 2 * (T^2 - T_ref^2 - T_0 * T + T_0 * T_ref)
+
+    The contribution model domain is defined for positive temperatures only,
+    due to a logarithmic contribution to entropy.
+    """
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure
@@ -66,7 +165,19 @@ class LinearHeatCapacity(ThermoContribution):
 
 
 class StandardState(ThermoContribution):
-    """x"""
+    """This contribution assumes the current state to be the standard state
+    and tags the following properties:
+
+    ========== =========
+    Property   Origin
+    ========== =========
+    ``S_std``  ``S``
+    ``p_std``  ``p_ref``
+    ``mu_std`` ``mu``
+    ========== =========
+
+    The contribution does not support any options or parameters.
+    """
     def define(self, res, par):
         # tag current chemical potential and entropy as standard state
         res["S_std"] = res["S"]
@@ -75,7 +186,26 @@ class StandardState(ThermoContribution):
 
 
 class IdealMix(ThermoContribution):
-    """x"""
+    r"""This contribution supplies the ideal mix entropy contribution,
+    applicable for both liquid and gas phases. It does not require any
+    parameters nor supports options.
+
+
+    The contribution does not define new properties, but builds on entropy
+    ``S`` (:math:`S`) and chemical potential ``mu`` (:math:`\mu`). With
+    :math:`\Delta s_i := -R\,\ln n_i/N`, we update
+
+    .. math::
+
+        S &\leftarrow S + \sum_i \Delta s_i\,n_i\\
+        \mu_i &\leftarrow \mu_i - T\,\Delta s_i
+
+    The contribution model domain is limited to positive quantities in order to
+    prevent negative arguments to the logarithmic functions. One could enable
+    also the third quadrant (**all** mole numbers negative), but doing so and
+    therreby allowing the solver to jump between these two nearly disconnected
+    domains has proven to be challenging in terms of solver robustness.
+    """
     def define(self, res, par):
         T, n = res["T"], res["n"]
         N = sum1(n)
@@ -91,7 +221,29 @@ class IdealMix(ThermoContribution):
 
 
 class GibbsIdealGas(ThermoContribution):
-    """x"""
+    r"""This contribution supplements the ideal gas entropy contribution and
+    defines the volume property in Gibbs coordinates, i.e. with volume as a
+    function of pressure. The main use of this class is to actually represent
+    an ideal gas model, while most non-ideal gas phase models are equations
+    of state and formulated in Helmholtz coordinates.
+
+    Based on the previously provided reference pressure ``p_ref`` and
+    :math:`\Delta s := -R\,\ln p/p_\mathrm{ref}`, the update is
+
+    .. math::
+
+        S &\leftarrow S + \Delta s\,N\\
+        \mu_i &\leftarrow \mu_i - T\,\Delta s
+
+    Volume is defined as
+
+    .. math::
+
+        V = \frac{N\,R\,T}{p}
+
+    Due to the logarithmic term in entropy, the contribution model domain is
+    limited to positive pressures.
+    """
     def define(self, res, par):
         T, p, n, p_ref = res["T"], res["p"], res["n"], res["p_ref"]
         N = sum1(n)
@@ -107,6 +259,31 @@ class GibbsIdealGas(ThermoContribution):
 
 
 class HelmholtzIdealGas(ThermoContribution):
+    r"""This contribution supplements the ideal gas entropy contribution and
+    defines the pressure property in Helmholtz coordinates, i.e. with pressure
+    as function of volme. This is the common base contribution for most
+    equations of state. Based on the previously provided reference pressure
+    ``p_ref`` and
+
+    .. math::
+        \Delta s := -R\,\ln \frac{N\,R\,T}{V\,p_\mathrm{ref}}
+
+    the update is
+
+    .. math::
+
+        S &\leftarrow S + \Delta s\,N\\
+        \mu_i &\leftarrow \mu_i - T\,\Delta s
+
+    Pressure is defined as
+
+    .. math::
+
+        p = \frac{N\,R\,T}{V}
+
+    Due to the logarithmic term in entropy, the contribution model domain is
+    limited to positive volumes.
+    """
     def define(self, res, par):
         pass  # TODO: derive and implemenet
 
