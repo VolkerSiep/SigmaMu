@@ -62,21 +62,18 @@ class ThermoContribution(ABC):
         return {}
 
     def relax(self,  # pylint: disable=R0201
-              state: Collection[float],
-              delta_state: Collection[float],
-              parameters: dict) -> float:
+              current_result: dict,
+              delta_state: Collection[float]) -> float:
         """Virtual function to report the maximal allowable step size in
         the state variables.
 
-        :state: The current state
+        :current_result: The results based on the current state
         :delta_state: The given direction
-        :parameters: As in :meth:`define`, the parameters, but with float
-          variables as leaf values.
 
         :seealso: :meth:`ThermoFrame.relax`
         """
         # default implementation
-        del state, delta_state, parameters  # unused
+        del current_result, delta_state  # unused
         return 100  # a number greater than 1 / gamma for practical gamma
 
     def initial_state(self,  # pylint: disable=R0201

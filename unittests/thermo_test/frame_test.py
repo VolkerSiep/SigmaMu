@@ -14,19 +14,10 @@ def test_create_thermo_factory():
     return ThermoFactory()
 
 def test_register_contributions():
-    from mushell.thermo import (HelmholtzState, H0S0ReferenceState,
-                                LinearHeatCapacity, StandardState)
-    fac = test_create_thermo_factory()
-    cont = {"Helmholtz state": HelmholtzState,
-            "H0S0 reference state": H0S0ReferenceState,
-            "Linear heat capacity": LinearHeatCapacity,
-            "Standard state": StandardState}
-    for name, con in cont.items():
-        fac.register_contribution(name, con)
-    return fac
+    create_frame_factory()
 
 def test_create_frame():
-    fac = test_register_contributions()
+    fac = create_frame_factory()
     config = {
         "species": ["N2", "O2", "Ar", "CO2", "H2O"],
         "contributions": [
@@ -39,23 +30,74 @@ def test_create_frame():
     return fac.create_frame(config)
 
 def test_parameter_structure():
-    frame = test_create_frame()
+    frame = create_simple_frame()
     assert_reproduction(frame.parameters)
 
 def test_parameter_names():
-    frame = test_create_frame()
+    frame = create_simple_frame()
     assert_reproduction(frame.parameter_names)
 
 def test_property_names():
-    frame = test_create_frame()
+    frame = create_simple_frame()
     assert_reproduction(frame.property_names)
 
+def test_call_frame():
+    call_frame()
 
-# TODO: test to actually call the function
+def test_relax():
+    frame, state, result = call_frame()
+    delta_state = [-500, 10, -2, 1]
+    assert frame.relax(result, delta_state) == state[0] / 500
+
+
+# helper functions
+def call_frame():
+    """Call a frame object with a state and return all with the result"""
+    frame = create_simple_frame()
+    params = {'H0S0 reference state': {
+                'dh_form': {'N2': 0.0, 'O2': 0.0},
+                's_0': {'N2': 0.0, 'O2': 0.0},
+                'T_ref': 298.15,
+                'p_ref': 101325.0
+                },
+              'Linear heat capacity': {
+                'cp_a': {'N2': 29.12379083, 'O2': 20.786},
+                'cp_b': {'N2': 5.28694e-4, 'O2': 0.0}
+                }
+             }
+    frame.parameters = params
+    state = [398.15, 101325.0, 1, 1]
+    result = frame(state)
+    return frame, state, result
+
+def create_frame_factory():
+    """Create a ThermoFactory and register standard state contributions"""
+    from mushell.thermo import (HelmholtzState, H0S0ReferenceState,
+                                LinearHeatCapacity, StandardState)
+    fac = test_create_thermo_factory()
+    cont = {"Helmholtz state": HelmholtzState,
+            "H0S0 reference state": H0S0ReferenceState,
+            "Linear heat capacity": LinearHeatCapacity,
+            "Standard state": StandardState}
+    for name, con in cont.items():
+        fac.register_contribution(name, con)
+    return fac
+
+def create_simple_frame():
+    """Create a ThermoFrame based on just standard state contributions"""
+    fac = create_frame_factory()
+    config = {
+        "species": ["N2", "O2"],
+        "contributions": [
+            "Helmholtz state",
+            "H0S0 reference state",
+            "Linear heat capacity",
+            "Standard state",
+            ],
+        }
+    return fac.create_frame(config)
 
 if __name__ == "__main__":
     from pytest import main
-    from sys import argv
     # only this file, very verbose and print stdout when started from here.
-    argv.extend([__file__, "-v", "-v", "-rP"])
-    main()
+    main([__file__, "-v", "-v", "-rP"])

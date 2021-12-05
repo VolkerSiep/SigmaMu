@@ -59,11 +59,7 @@ def test_GibbsIdealGas():
     assert_reproduction(result)
 
 
-
-
 if __name__ == "__main__":
     from pytest import main
-    from sys import argv
     # only this file, very verbose and print stdout when started from here.
-    argv.extend([__file__, "-v", "-v", "-rP"])
-    main()
+    main([__file__, "-v", "-v", "-rP"])

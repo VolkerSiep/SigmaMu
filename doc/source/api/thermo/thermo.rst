@@ -9,4 +9,5 @@ The following are classes to generally describe the thermodynamic framework.
    generic
    propertynames
    ideal
+   cubic
  

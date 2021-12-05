@@ -26,8 +26,7 @@ class ThermoFrame:
     """
     def __init__(self,
                  species: List[str],
-                 contributions: dict,
-                 property_names: List[str] = None):
+                 contributions: dict):
         """This constructor establishes a thermo frame function object
         (casadi) with given species and contributions.
 
@@ -66,9 +65,8 @@ class ThermoFrame:
             contribution.define(result, param_symbols.get(name, {}))
 
         # extract properties of interest
-        if property_names is None:
-            property_names = list(result.keys())
-        properties = [result[name] for name in property_names]
+        property_names = list(result.keys())
+        properties = list(result.values())
 
         self.__function = Function("thermo_frame",
                                    [state, parameters], properties,
@@ -107,8 +105,8 @@ class ThermoFrame:
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.
         """
-        return self.function(state, flatten_dictionary(self.parameters))
-
+        parameters = flatten_dictionary(self.parameters).values()
+        return self.function(state, parameters)
 
     @property
     def species(self) -> List[str]:
@@ -128,7 +126,7 @@ class ThermoFrame:
         It returns the structure of all required model parameters as a nested
         dictionary. Initially, all parameters are set to ``None``.
         This property must be set with actual values before the object can be
-        called, or the methods :meth:`relax` and :meth:`initialise` be invoked.
+        called or :meth:`initialise` invoked.
         """
         return self.__parameter_structure
 
@@ -147,8 +145,7 @@ class ThermoFrame:
         """
         return list(self.__parameter_names)
 
-    def relax(self,
-              state: Collection[float],
+    def relax(self, current_result: List[Collection[float]],
               delta_state: Collection[float]) -> float:
         """As a thermodynamic function, this object's contributions hold
         information on the domain limits of the state variables. This is mostly
@@ -160,14 +157,15 @@ class ThermoFrame:
         This method, after querying the contributions, returns a floating
         point number representing the maximal accepted step size.
 
-        :param state: The current state (starting point)
+        :param current_result: The result objects from the calculation with
+          the current state
         :param delta_state: The direction vector (typically suggested by a
           solver)
         :return: The maximal allowed step size as a pre-factor to
           ``delta_state``. Hence a value of one describes full step length.
         """
-        parameters = self.__parameter_structure
-        return min([cont.relax(state, delta_state, parameters.get(name, {}))
+        result = dict(zip(self.property_names, current_result))
+        return min([cont.relax(result, delta_state)
                     for name, cont in self.__contributions.items()])
 
     def initial_state(self,
@@ -235,8 +233,6 @@ class ThermoFactory:
               some contributions might support options. For addressing these,
               the sub-dictionary contains a key for such contribution, and the
               value is whatever data structure the contribution accepts.
-            - ``properties``: An optional entry being a list of strings that
-              define the names of the properties to be calculated.
 
         :return: The thermodynamic model object
         """
@@ -245,5 +241,4 @@ class ThermoFactory:
         contributions = {name: [self.__contributions[name],
                                 options.get(name, {})]
                          for name in configuration["contributions"]}
-        property_names = configuration.get("properties", None)
-        return ThermoFrame(species, contributions, property_names)
+        return ThermoFrame(species, contributions)

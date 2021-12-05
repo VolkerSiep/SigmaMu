@@ -57,42 +57,24 @@
   "frame_test.py::test_parameter_names": [
     "H0S0 reference state.dh_form.N2",
     "H0S0 reference state.dh_form.O2",
-    "H0S0 reference state.dh_form.Ar",
-    "H0S0 reference state.dh_form.CO2",
-    "H0S0 reference state.dh_form.H2O",
     "H0S0 reference state.s_0.N2",
     "H0S0 reference state.s_0.O2",
-    "H0S0 reference state.s_0.Ar",
-    "H0S0 reference state.s_0.CO2",
-    "H0S0 reference state.s_0.H2O",
     "H0S0 reference state.T_ref",
     "H0S0 reference state.p_ref",
     "Linear heat capacity.cp_a.N2",
     "Linear heat capacity.cp_a.O2",
-    "Linear heat capacity.cp_a.Ar",
-    "Linear heat capacity.cp_a.CO2",
-    "Linear heat capacity.cp_a.H2O",
     "Linear heat capacity.cp_b.N2",
-    "Linear heat capacity.cp_b.O2",
-    "Linear heat capacity.cp_b.Ar",
-    "Linear heat capacity.cp_b.CO2",
-    "Linear heat capacity.cp_b.H2O"
+    "Linear heat capacity.cp_b.O2"
   ],
   "frame_test.py::test_parameter_structure": {
     "H0S0 reference state": {
       "T_ref": null,
       "dh_form": {
-        "Ar": null,
-        "CO2": null,
-        "H2O": null,
         "N2": null,
         "O2": null
       },
       "p_ref": null,
       "s_0": {
-        "Ar": null,
-        "CO2": null,
-        "H2O": null,
         "N2": null,
         "O2": null
       }
@@ -100,16 +82,10 @@
     "Helmholtz state": {},
     "Linear heat capacity": {
       "cp_a": {
-        "Ar": null,
-        "CO2": null,
-        "H2O": null,
         "N2": null,
         "O2": null
       },
       "cp_b": {
-        "Ar": null,
-        "CO2": null,
-        "H2O": null,
         "N2": null,
         "O2": null
       }

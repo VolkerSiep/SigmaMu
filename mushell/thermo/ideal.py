@@ -125,7 +125,7 @@ class LinearHeatCapacity(ThermoContribution):
                       \Delta T\\
         \Delta s_i &= (c_{p,a,i} - c_{p,b,i}\,T_\mathrm{ref})\,
                       \ln \frac{T}{T_\mathrm{ref}} +
-                      c_{p,b,i}\,\Delta_T\\
+                      c_{p,b,i}\,\Delta T\\
 
     The properties are updated as
 
@@ -159,8 +159,8 @@ class LinearHeatCapacity(ThermoContribution):
         res["S"] += dot(d_s, n)
         res["mu"] += d_h - T * d_s
 
-    def relax(self, state, delta_state, parameters):
-        T, d_T = state[0], delta_state[0]
+    def relax(self, current_result, delta_state):
+        T, d_T = current_result["T"], delta_state[0]
         return -T / d_T if d_T < 0 else 100
 
 
@@ -214,8 +214,8 @@ class IdealMix(ThermoContribution):
         res["S"] -= dot(n, gtn)
         res["mu"] += T * gtn
 
-    def relax(self, state, delta_state, parameters):
-        n, d_n = state[2:], delta_state[2:]
+    def relax(self, current_result, delta_state):
+        n, d_n = current_result["n"], delta_state[2:]
         cand = [-n_i / dn_i for n_i, dn_i in zip(n, d_n) if dn_i < 0]
         return min(cand) if cand else 100
 
@@ -253,8 +253,8 @@ class GibbsIdealGas(ThermoContribution):
         res["V"] = N * R_GAS * T / p
         res["mu"] += T * gtn
 
-    def relax(self, state, delta_state, parameters):
-        p, d_p = state[1], delta_state[1]
+    def relax(self, current_result, delta_state):
+        p, d_p = current_result["p"], delta_state[1]
         return -p / d_p if d_p < 0 else 100
 
 
@@ -294,8 +294,8 @@ class HelmholtzIdealGas(ThermoContribution):
         res["p"] = p
         res["mu"] += T * gtn
 
-    def relax(self, state, delta_state, parameters):
-        V, d_V = state[1], delta_state[1]
+    def relax(self, current_result, delta_state):
+        V, d_V = current_result["V"], delta_state[1]
         return -V / d_V if d_V < 0 else 100
 
     def initial_state(self, T, p, n, parameters):
