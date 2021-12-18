@@ -7,13 +7,19 @@ levels, while relying to maximal degree on standard python structures.
 
 SEPARATOR = "."
 
-# intended sequence:
-#
-# 1. filter to matching species set
-# 2. flatten
-# 3. replace numbers with casadi nodes, store keys for API
-# 4. unflatten
-# 5. provide to contributions
+
+def iter_binary_parameters(species, parameters, name):
+    """For a sparse binary parameter structure in nested dictionaries, this is
+    a generator to yield tuples of indices and values."""
+    try:
+        current = parameters[name].items()
+    except KeyError:
+        return
+    for first, rest in current:
+        idx_1 = species.index(first)
+        for second, value in rest.items():
+            idx_2 = species.index(second)
+            yield (idx_1, idx_2, value)
 
 
 def flatten_dictionary(structure, prefix=''):

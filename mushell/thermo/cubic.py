@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # external modules
-from casadi import dot, log, vertsplit, vertcat, sum1, SX
+from casadi import dot, jacobian, sqrt, sum1
 
 # internal modules
-from .contribution import ThermoContribution
+from ..utilities import iter_binary_parameters
 from ..constants import R_GAS
+from .contribution import ThermoContribution
 
 
 class RedlichKwongEOS(ThermoContribution):
@@ -19,19 +20,13 @@ class RedlichKwongEOS(ThermoContribution):
 
     The following properties need to be provided by upstream contributions:
 
-    ======== ===================================================
-    Property Symbol
-    ======== ===================================================
-    RK_A     :math:`A`
-    RK_A_T   :math:`A_T:=\partial A/\partial T|_{V,n}`
-    RK_A_N   :math:`A_n:=\partial A/\partial n|_{T, V}` (vector)
-    RK_B     :math:`B`
-    RK_B_T   :math:`B_T:=\partial B/\partial T|_{V,n}`
-    RK_B_N   :math:`B_n:=\partial B/\partial n|_{T, V}` (vector)
-    CEOS_C   :math:`C`
-    CEOS_C_T :math:`C_T:=\partial C/\partial T|_{V,n}`
-    CEOS_C_N :math:`C_n:=\partial C/\partial n|_{T, V}` (vector)
-    ======== ===================================================
+    ======== ========= ======
+    Property Symbol    UOM
+    ======== ========= ======
+    RK_A     :math:`A` J * m3
+    RK_B     :math:`B` m3
+    CEOS_C   :math:`C` m3
+    ======== ========= ======
 
     Care is to be taken when utilising a temperature-dependent :math:`C`
     contribution, as doing so can have significant effects on the calorimetric
@@ -46,7 +41,7 @@ class RedlichKwongEOS(ThermoContribution):
          = N\,R\,T\,\ln \frac{V}{V + C - B} +
            \frac{A}{B}\,\ln \frac{V + C}{V + C + B}
 
-    The implemented temperature derivative is
+    The explicitly implemented temperature derivative is
 
     .. math::
 
@@ -96,13 +91,19 @@ class RedlichKwongEOS(ThermoContribution):
         instead."""
         raise NotImplementedError("Don't do this!")
 
-    @property
-    def parameter_structure(self):
-        t_s = ThermoContribution._tensor_structure
-        # TODO: implement
-
     def define(self, res, par):
-        # TODO: implement
+        abc_names = ["RK_A", "RK_B", "CEOS_C"]
+        T, n, A, B, C = [res[i] for i in ["T", "n"] + abc_names]
+        for i in abc_names:
+            res[f"{i}_T"] = jacobian(res[i], T)
+            res[f"{i}_n"] = jacobian(res[i], n)
+        A_t, B_t, C_t = [res[f"{i}_T"] for i in abc_names]
+        A_n, B_n, C_n = [res[f"{i}_n"] for i in abc_names]
+
+        # TODO:
+        #  - TEST THIS AND ALL OTHER CUBIC CONTRIBUTIONS SO FAR!!!!
+        #  - update S, p and mu
+
         pass
 
 
@@ -111,6 +112,10 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
     on describing liquid (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""
+    def __init__(self, species, options):
+        # reenable constructor
+        ThermoContribution.__init__(self, species, options)
+
     def relax(self, current_result, delta_state):
         """A proper relaxation strategy for the cubic equation of state is
         possible, but not trivial. A series of constraints apply. Firstly,
@@ -155,10 +160,9 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
 
 
 class LinearPenelouxVolumeShift(ThermoContribution):
-    r"""The Peneloux volume shift provides the ``CEOS_C`` parameter and its
-    temperature and compositional derivatives ``CEOS_C_T`` and ``CEOS_C_N``.
-    As such, this contribution determines the `C` parameter in cubic equations
-    of state, representing the volume translation.
+    r"""The Peneloux volume shift provides the ``CEOS_C`` parameter. As such,
+    this contribution determines the `C` parameter in cubic equations of state,
+    representing the volume translation.
 
     This class implements only a volume shift linear in molar quantities and
     not dependent on temperature - hereby not triggering impact on the
@@ -174,26 +178,13 @@ class LinearPenelouxVolumeShift(ThermoContribution):
         return {"c_i": t_s(self.species)}
 
     def define(self, res, par):
-        c_i = self._vector(par["c_i"])
-        res["CEOS_C"] = dot(c_i, res["n"])
-        res["CEOS_C_T"] = SX.zeros(1,1)
-        res["CEOS_C_N"] = c_i
+        res["CEOS_C"] = dot(self._vector(par["c_i"]), res["n"])
 
 
 class NonSymmmetricMixingRule(ThermoContribution):
-    r"""The mixing rule combines the pure species a-contributions (:math:`a_i`)
-    into the ``RK_A`` parameter of the :class:`RedlichKwongEOS` class,
-    including the derivatives ``RK_A_T`` and ``RK_A_N``.
-
-    The following properties need to be provided by upstream contributions:
-
-    ======== ===================================================
-    Property Symbol
-    ======== ===================================================
-    RK_a     :math:`a` (vector)
-    RK_a_T   :math:`a_T:=\partial a/\partial T|_{V,n}` (vector)
-    RK_a_N   :math:`a_n:=\partial a/\partial n|_{T, V}` (matrix)
-    ======== ===================================================
+    r"""The mixing rule combines the pure species a-contributions ``RK_A_I``
+    (:math:`a_i`) into the ``RK_A`` parameter of the :class:`RedlichKwongEOS`
+    class.
 
     Implemented with sparse binary interaction coefficient structure, the
     contribution includes a symmetric interaction (:math:`k`) and an
@@ -201,27 +192,13 @@ class NonSymmmetricMixingRule(ThermoContribution):
 
     .. math::
 
-        A &= \sum_{ij} \sqrt{a_i(T)\,a_j(T)} \left [
-               x_i\,x_j - 2\,x_i\,x_j\,k_{ij}(T) -
-               2\,(x_i^2\,x_j - x_i\,x_j^2)\,l_{ij}(T)
-               \right ]\\
-          &= \frac1{N}\sum_{ij} \sqrt{a_i(T)\,a_j(T)} \left [
-               n_i\,n_j - 2\,n_i\,n_j\,k_{ij}(T) -
-               \frac2N\,(n_i^2\,n_j - n_i\,n_j^2)\,l_{ij}(T)
-               \right ]\\
+        A = \sum_{ij} \sqrt{a_i(T)\,a_j(T)} \left [
+              n_i\,n_j - 2\,n_i\,n_j\,k_{ij}(T) -
+              \frac2N\,(n_i^2\,n_j - n_i\,n_j^2)\,l_{ij}(T)
+            \right ]
 
-    The following properties will then be generated:
-
-    ======== ===================================================
-    Property Symbol
-    ======== ===================================================
-    RK_A     :math:`A`
-    RK_A_T   :math:`A_T:=\partial A/\partial T|_{V,n}`
-    RK_A_N   :math:`A_n:=\partial A/\partial n|_{T, V}` (vector)
-    ======== ===================================================
-
-    The binary interaction coefficients can be a function of temperature
-    according to
+    These dimensionless interaction coefficients can be a function of
+    temperature according to
 
     .. math::
 
@@ -236,28 +213,14 @@ class NonSymmmetricMixingRule(ThermoContribution):
     yield the same parameter values as if :math:`k` was a symmetric matrix and
     :math:`l` was anti-symmetric.
 
-    Their temperature derivatives are
+    Despite what above equation suggests based on the double sum, the
+    complexity of this contribution in terms of both memory and runtime is
+    linear in the number of species and linear in the number of non-zero
+    interaction parameters. This is achieved using the relationship
 
     .. math::
-
-        k_{T,ij}(T) &:= \frac{1}{T_\mathrm{ref}} \left ( k_{1,ij} +
-                        k_{2,ij}\,\frac{T_\mathrm{ref}^2}{T^2} \right )\\
-        l_{T,ij}(T) &:= \frac{1}{T_\mathrm{ref}} \left ( l_{1,ij} +
-                        l_{2,ij}\,\frac{T_\mathrm{ref}^2}{T^2} \right )
-
-    For :math:`A_T`, we firstly define
-
-    .. math::
-        \mathcal A_{ij}   &:= \sqrt{a_i(T)\,a_j(T)}\\
-        \mathcal A_{T,ij} &:= \hat a + \hat a^\mathrm{T}\ \text{with}
-          \ \hat a = \sqrt{\frac{a_i}{2\,a_j}}\,a_{T,j}\\
-        \mathcal B_{ij} &:= -2\,\left [ n_i\,n_j\,k_{T,ij} +
-                           \frac1N\,(n_i^2\,n_j - n_i\,n_j^2)\,l_{T,ij}(T)
-                           \right ]
-
-
-
-
+        \sum_{ij} \sqrt{a_i(T)\,a_j(T)} n_i\,n_j
+          = \left (\sum_i \sqrt{a_i(T)}\,n_i \right )^2
     """
     @property
     def parameter_structure(self):
@@ -265,10 +228,10 @@ class NonSymmmetricMixingRule(ThermoContribution):
 
         def assert_binary(name, binaries, pair):
             """Check that no binary is defined twice"""
-            new_pair = sorted(pair)
+            new_pair = tuple(sorted(pair))
             msg = f"duplicate definition of {name}: {new_pair}"
             assert new_pair not in binaries, msg
-            binaries.add(sorted([s_i, s_j]))
+            binaries.add(new_pair)
 
         for name in "k_1 k_2 k_3 l_1 l_2 l_3".split():
             try:
@@ -279,11 +242,74 @@ class NonSymmmetricMixingRule(ThermoContribution):
                 res_i = {}
                 binaries = set()
                 for s_i, s_j in options:
-                    assert_binary(name, binaries, [s_i, s_j])
+                    assert_binary(name, binaries, (s_i, s_j))
                     res_i[s_i] = res_i.get(s_i, {})
                     res_i[s_i][s_j] = None
                 result[name] = res_i
         return result
 
+
     def define(self, res, par):
-        pass
+        T, n, a_i = res["T"], res["n"], res["RK_A_I"]
+        tau = T / par["T_ref"]
+        tau_1, tau_2 = 1 - tau, 1 - 1 / tau
+
+        # calculate first term
+        an = sqrt(a_i) * n
+        result = sum1(an)
+        result *= result  # = sum_ij an_i * an_j
+
+        # calculate second term (symmetric interaction)
+        # pre-factors can be reused to minimise graph size
+        cache = {}
+        for name, factor in [("k_1", 1), ("k_2", tau_1), ("k_3", tau_2)]:
+            coefficients = iter_binary_parameters(self.species, par, name)
+            for i, j, symbol in coefficients:
+                if (i, j) not in cache:
+                    cache[(i, j)] = 2* an[i] * an[j]
+                result -= cache[(i, j)] * symbol * factor
+        # calculate second term (symmetric interaction)
+        two_by_n = 2.0 / sum1(n)
+        cache = {}
+        for name, factor in [("l_1", 1), ("l_2", tau_1), ("l_3", tau_2)]:
+            coefficients = iter_binary_parameters(self.species, par, name)
+            for i, j, symbol in coefficients:
+                if (i, j) not in cache:
+                    cache[(i, j)] = two_by_n * an[i] * an[j] * (n[i] - n[j])
+                result -= cache[(i, j)] * symbol * factor
+        res["RK_A"] = result
+
+
+# TODO:
+#   - implement a_i contribution
+#   - implement alpha function
+#   - implement m-factor
+#   - implement b_i contribution
+
+
+class CriticalParameters(ThermoContribution):
+    r"""This class does not perform any calculations, but provides the basic
+    critical parameters as a basis for the typical equation of state
+    contributions.
+
+    The following parameters need to be provided (all as species vector):
+
+    ======== ============== =========================
+    Property Symbol         Description
+    ======== ============== =========================
+    T_C      :math:`T_c`    Critical temperatures [K]
+    P_C      :math:`p_c`    Critical pressure[Pa]
+    OMEGA    :math:`\omega` Acentric factor [-]
+    ======== ============== =========================
+
+    The same symbols will just be published as intermediate results for the
+    actual model contributions to be consumed.
+    """
+    @property
+    def parameter_structure(self):
+        t_s = ThermoContribution._tensor_structure
+        return t_s(["T_C", "P_C", "OMEGA"], self.species)
+
+    def define(self, res, par):
+        for name in ["T_C", "P_C", "OMEGA"]:
+            res[name] = self._vector(par[name])
