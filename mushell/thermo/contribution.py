@@ -29,7 +29,18 @@ class ThermoContribution(ABC):
 
     The static attributes ``name``, ``category``, and ``requires`` are
     introduced to prevent invalid configurations, such as incompatible
-    contributions in one model.
+    contributions in one model:
+
+      - The ``name`` of the contribution (str), used to define direct
+        dependencies. The name only needs to be unique within all contributions
+        within the same category. If the category is unique in itself, the name
+        can remain empty.
+      - The ``category`` of the contribution (str), used to define general
+        dependencies
+      - The ``requires`` list consists of (name, category) pairs and single
+        category entries. If elements of ``requires`` are of type ``str``, any
+        contribution of that category is accepted. If an element is a list, it
+        defines a direct dependency of ``[category, name]``.
 
     .. todo::
         - refer to general section about categories
@@ -37,20 +48,8 @@ class ThermoContribution(ABC):
     """
 
     name = ""
-    """The name of the contribution (str), used to define direct
-    dependencies. The name only needs to be unique within all contributions
-    within the same category. If the category is unique in itself, the name
-    can remain empty."""
-
     category = ""
-    """The category of the contribution (str), used to define general
-    dependencies"""
-
     requires = []
-    """The dependencies as (name, category) pairs or single category
-    entries. If elements of ``requires`` are of type ``str``, any contribution
-    of that category is accepted. If an element is a list, it defines a
-    direct dependency of ``[category, name]``."""
 
     def __init__(self, species, options):
         self.species = species

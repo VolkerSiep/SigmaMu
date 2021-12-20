@@ -21,6 +21,10 @@ class LinearPenelouxVolumeShift(ThermoContribution):
 
         C = \sum_i c_i\,n_i
     """
+
+    category = "cubic_eos_c"
+    name = "linear"
+
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure
@@ -71,6 +75,11 @@ class NonSymmmetricMixingRule(ThermoContribution):
         \sum_{ij} \sqrt{a_i(T)\,a_j(T)} n_i\,n_j
           = \left (\sum_i \sqrt{a_i(T)}\,n_i \right )^2
     """
+
+    name = "non_symmetric"
+    category = "cubic_eos_a"
+    requires = ["cubic_eos_a_function"]
+
     @property
     def parameter_structure(self):
         result = {"T_ref": None}
@@ -130,8 +139,8 @@ class NonSymmmetricMixingRule(ThermoContribution):
 
 # TODO:
 #   - can I allow to mix alpha functions (e.g. a different one for He and H2)?
-#   - implement alpha function
-#   - implement m-factor
+#   - implement alpha function (generic for c-eos)
+#   - implement m-factor (specific rk)
 
 class CriticalParameters(ThermoContribution):
     r"""This class does not perform any calculations, but provides the basic
@@ -151,6 +160,9 @@ class CriticalParameters(ThermoContribution):
     The same symbols will just be published as intermediate results for the
     actual model contributions to be consumed.
     """
+
+    category = "critical_parameters"
+
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure

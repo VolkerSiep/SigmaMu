@@ -38,6 +38,7 @@ def test_linear_peneloux_volume_shift():
     result = str(res["CEOS_C"])
     assert_reproduction(result)
 
+
 def test_RedlichKwongEOS():
     from mushell.thermo.cubic.rk import RedlichKwongEOSLiquid
     res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
@@ -68,6 +69,25 @@ def test_NonSymmmetricMixingRule():
                    'C': {'B': SX.sym("k_1_AB")}}}
     cont.define(res, par)
     result = str(res["RK_A"])
+    assert_reproduction(result)
+
+
+def test_redlich_kwong_a_function():
+    from mushell.thermo.cubic.rk import RedlichKwongAFunction
+    res = {"ALPHA_I": SX.sym('alpha', 2),
+           "T_C": SX.sym('T_c', 2), "P_C": SX.sym('p_c', 2)}
+    cont = RedlichKwongAFunction(["A", "B"], {})
+    cont.define(res, {})
+    result = str(res["RK_A_I"])
+    assert_reproduction(result)
+
+
+def test_redlich_kwong_b_function():
+    from mushell.thermo.cubic.rk import RedlichKwongBFunction
+    res = {"T_C": SX.sym('T_c', 2), "P_C": SX.sym('p_c', 2)}
+    cont = RedlichKwongBFunction(["A", "B"], {})
+    cont.define(res, {})
+    result = str(res["RK_B_I"])
     assert_reproduction(result)
 
 

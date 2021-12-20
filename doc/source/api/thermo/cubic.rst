@@ -6,29 +6,43 @@ Redlich Kwong EOS
 The base-class is specialised into two sub-classes to adress in particular liquid and gas phases.
 As such, the base-class is disabled from direct instantiation.
 
-.. autoclass:: mushell.thermo.cubic.RedlichKwongEOS
+Base class
+..........
+.. autoclass:: mushell.thermo.cubic.rk.RedlichKwongEOS
+  :members: name, category, requires
+  :undoc-members: 
 
-.. autoclass:: mushell.thermo.cubic.RedlichKwongEOSLiquid
-  :members: relax
+Liquid root
+...........
+.. autoclass:: mushell.thermo.cubic.rk.RedlichKwongEOSLiquid
+  :members: relax 
 
-.. autoclass:: mushell.thermo.cubic.RedlichKwongEOSGas
+Gas root
+........
+.. autoclass:: mushell.thermo.cubic.rk.RedlichKwongEOSGas
   :members: relax
 
 Linear Peneloux volume shift
 ----------------------------
  .. autoclass:: mushell.thermo.cubic.LinearPenelouxVolumeShift
-
+  :members: name, category, requires
+  :undoc-members: 
 
 Non-symmetric mixing rule
 -------------------------
  .. autoclass:: mushell.thermo.cubic.NonSymmmetricMixingRule
- 
+  :members: name, category, requires
+  :undoc-members:  
 
-Redich Kwong A-contribution
----------------------------
- .. autoclass:: mushell.thermo.cubic.SoaveAContribution
+Redich Kwong A-function
+-----------------------
+ .. autoclass:: mushell.thermo.cubic.rk.RedlichKwongAFunction
+  :members: name, category, requires
+  :undoc-members: 
 
-Redich Kwong B-contribution
----------------------------
- .. autoclass:: mushell.thermo.cubic.SoaveBContribution
+Redich Kwong B-function
+-----------------------
+ .. autoclass:: mushell.thermo.cubic.rk.RedlichKwongBFunction
+  :members: name, category, requires
+  :undoc-members: 
 

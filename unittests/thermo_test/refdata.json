@@ -66,6 +66,8 @@
     "T_C": "[T_C.A, T_C.B]"
   },
   "cubic_test.py::test_linear_peneloux_volume_shift": "((c_i.A*n_0)+(c_i.B*n_1))",
+  "cubic_test.py::test_redlich_kwong_a_function": "@1=29.5518, [(((@1*alpha_0)*sq(T_c_0))/p_c_0), (((@1*alpha_1)*sq(T_c_1))/p_c_1)]",
+  "cubic_test.py::test_redlich_kwong_b_function": "@1=0.720368, [((@1*T_c_0)/p_c_0), ((@1*T_c_1)/p_c_1)]",
   "frame_test.py::test_parameter_names": [
     "reference_state#H0S0.dh_form.N2",
     "reference_state#H0S0.dh_form.O2",
