@@ -21,10 +21,10 @@ def test_create_frame():
     config = {
         "species": ["N2", "O2", "Ar", "CO2", "H2O"],
         "contributions": [
-            "Helmholtz state",
-            "H0S0 reference state",
-            "Linear heat capacity",
-            "Standard state",
+            "state#Helmholtz",
+            "reference_state#H0S0",
+            "heat_capacity#linear",
+            "standard_state"
             ],
         }
     return fac.create_frame(config)
@@ -75,12 +75,11 @@ def create_frame_factory():
     from mushell.thermo import (HelmholtzState, H0S0ReferenceState,
                                 LinearHeatCapacity, StandardState)
     fac = test_create_thermo_factory()
-    cont = {"Helmholtz state": HelmholtzState,
-            "H0S0 reference state": H0S0ReferenceState,
-            "Linear heat capacity": LinearHeatCapacity,
-            "Standard state": StandardState}
-    for name, con in cont.items():
-        fac.register_contribution(name, con)
+    cont = [HelmholtzState, H0S0ReferenceState, LinearHeatCapacity,
+            StandardState]
+    for con in cont:
+        fac.register_contribution(con)
+    print(fac.contribution_names)
     return fac
 
 def create_simple_frame():
@@ -89,10 +88,10 @@ def create_simple_frame():
     config = {
         "species": ["N2", "O2"],
         "contributions": [
-            "Helmholtz state",
-            "H0S0 reference state",
-            "Linear heat capacity",
-            "Standard state",
+            "state#Helmholtz",
+            "reference_state#H0S0",
+            "heat_capacity#linear",
+            "standard_state"
             ],
         }
     return fac.create_frame(config)

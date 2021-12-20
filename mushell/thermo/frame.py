@@ -37,6 +37,7 @@ class ThermoFrame:
             house-keeping of contribution classes. For this reason, it is not
             further documented here.
         """
+        ThermoFrame.__check_dependencies(contributions.values())
 
         # need to instantiate the contributions
         contributions = {name: cls_(species, options)
@@ -189,6 +190,16 @@ class ThermoFrame:
                 return result
         return [temperature, pressure] + list(quantities)
 
+    @staticmethod
+    def __check_dependencies(contributions):
+        """check compatibility and dependency of contributions"""
+        cat_names, full_names = [], []
+        for cls_, _ in contributions:
+            for item in cls_.requires:
+                assert item in cat_names if type(item) is str else full_names
+            cat_names.append(cls_.category)
+            full_names.append([cls_.category, cls_.name])
+
 
 class ThermoFactory:
     """The ``ThermoFactory`` class hosts the definitions for the *model
@@ -197,23 +208,39 @@ class ThermoFactory:
 
     The class is largely meant to be a singelton, but to keep doors open,
     multiple instances can be created."""
+
+    CATEGORY_SEPERATOR = "#"
+    """The separator character to join category and name. It can be changed
+    before any contributions are registered - otherwise yields inconisistent
+    behaviour. The separator cannot be a dot ``.``, as this would conflict
+    with the structuring of thermodynamic parameters."""
+
     def __init__(self):
         """Parameter-less constructor, initialising the data structure
         to host contribution definitions"""
         self.__contributions = {}
 
-    def register_contribution(self, name: str,
+    def register_contribution(self,
                               contribution_cls: Type[ThermoContribution]):
-        """Registers a contribution under a given name. The contribution must
-        be a concrete subclass of :class:`ThermoContribution`.
-
-        :param name: The name identifier of the contribution. A ``ValueError``
-          is thrown if the identifier was already defined before.
+        """Registers a contribution under the name that concatenates
+        ``contribution_cls.category`` and ``contribution_cls.name``
+        attribute. The contribution must be a concrete subclass of
+        :class:`ThermoContribution`.
         :param contribution_cls: The contribution class to register
         """
+        name = contribution_cls.category
+        if contribution_cls.name:
+            name += ThermoFactory.CATEGORY_SEPERATOR + contribution_cls.name
         if name in self.__contributions:
             raise ValueError(f"Contribution of name '{name}' already defined.")
         self.__contributions[name] = contribution_cls
+
+    @property
+    def contribution_names(self) -> List[str]:
+        """This property contains the full names of all so long registered
+        properties"""
+        return sorted(self.__contributions.keys())
+
 
     def create_frame(self, configuration: dict) -> ThermoFrame:
         """This factory method creates a :class:`ThermoFrame` object from the

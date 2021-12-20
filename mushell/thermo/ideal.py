@@ -22,6 +22,10 @@ class HelmholtzState(ThermoContribution):
 
     The contribution does not support any options or parameters.
     """
+
+    name = "Helmholtz"
+    category = "state"
+
     def define(self, res, par):
         res["T"], res["V"], *res["n"] = vertsplit(res["state"], 1)
         res["n"] = vertcat(*res["n"])
@@ -40,6 +44,10 @@ class GibbsState(ThermoContribution):
 
     The contribution does not support any options or parameters.
     """
+
+    name = "Gibbs"
+    category = "state"
+
     def define(self, res, par):
         res["T"], res["p"], *res["n"] = vertsplit(res["state"], 1)
         res["n"] = vertcat(*res["n"])
@@ -78,6 +86,11 @@ class H0S0ReferenceState(ThermoContribution):
         \mu_i &= \Delta_f h_i - T\,s_{0,i}
 
     """
+
+    name = "H0S0"
+    category = "reference_state"
+    requires = ["state"]
+
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure
@@ -142,6 +155,11 @@ class LinearHeatCapacity(ThermoContribution):
     The contribution model domain is defined for positive temperatures only,
     due to a logarithmic contribution to entropy.
     """
+
+    name = "linear"
+    category = "heat_capacity"
+    requires = ["reference_state"]
+
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure
@@ -178,6 +196,10 @@ class StandardState(ThermoContribution):
 
     The contribution does not support any options or parameters.
     """
+
+    category = "standard_state"
+    requires = ["heat_capacity"]
+
     def define(self, res, par):
         # tag current chemical potential and entropy as standard state
         res["S_std"] = res["S"]
@@ -206,6 +228,10 @@ class IdealMix(ThermoContribution):
     therreby allowing the solver to jump between these two nearly disconnected
     domains has proven to be challenging in terms of solver robustness.
     """
+
+    category = "ideal_mix"
+    requires = ["standard_state"]
+
     def define(self, res, par):
         T, n = res["T"], res["n"]
         N = sum1(n)
@@ -244,6 +270,12 @@ class GibbsIdealGas(ThermoContribution):
     Due to the logarithmic term in entropy, the contribution model domain is
     limited to positive pressures.
     """
+
+    category = "ideal_gas"
+    name = "Gibbs"
+    requires = ["standard_state", ["state", "Gibbs"]]
+
+
     def define(self, res, par):
         T, p, n, p_ref = res["T"], res["p"], res["n"], res["p_ref"]
         N = sum1(n)
@@ -284,6 +316,11 @@ class HelmholtzIdealGas(ThermoContribution):
     Due to the logarithmic term in entropy, the contribution model domain is
     limited to positive volumes.
     """
+
+    category = "ideal_gas"
+    name = "Helmholtz"
+    requires = ["standard_state", ["state", "Helmholtz"]]
+
     def define(self, res, par):
         T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]
         N = sum1(n)

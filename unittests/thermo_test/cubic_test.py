@@ -39,14 +39,15 @@ def test_linear_peneloux_volume_shift():
     assert_reproduction(result)
 
 def test_RedlichKwongEOS():
-    from mushell.thermo.cubic import RedlichKwongEOSLiquid
-    res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
+    from mushell.thermo.cubic.rk import RedlichKwongEOSLiquid
+    res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
+           "S": SX.sym('S'), "p": SX.sym('p'), "mu": SX.sym('mu', 2)}
     res["RK_A"] = SX.sym('A0') + res["T"] * SX.sym('dAdT')
     res["RK_B"] = SX.sym('B0') + res["T"] * SX.sym('dBdT')
     res["CEOS_C"] = SX.sym('C0')
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     cont.define(res, {})
-    result = {key: str(value) for key, value in res.items()}
+    result = {i: str(res[i]) for i in "S p mu".split()}
     assert_reproduction(result)
 
 

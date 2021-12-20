@@ -1,8 +1,8 @@
 Cubic equations of state
 ========================
 
-RedlichKwongEOS
----------------
+Redlich Kwong EOS
+-----------------
 The base-class is specialised into two sub-classes to adress in particular liquid and gas phases.
 As such, the base-class is disabled from direct instantiation.
 
@@ -22,3 +22,13 @@ Linear Peneloux volume shift
 Non-symmetric mixing rule
 -------------------------
  .. autoclass:: mushell.thermo.cubic.NonSymmmetricMixingRule
+ 
+
+Redich Kwong A-contribution
+---------------------------
+ .. autoclass:: mushell.thermo.cubic.SoaveAContribution
+
+Redich Kwong B-contribution
+---------------------------
+ .. autoclass:: mushell.thermo.cubic.SoaveBContribution
+
