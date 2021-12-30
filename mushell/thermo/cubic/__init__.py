@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # external modules
-from casadi import dot, sqrt, sum1
+from casadi import conditional, dot, exp, sqrt, sum1, vertcat
 
 # internal modules
 from ...utilities import iter_binary_parameters
@@ -171,3 +171,79 @@ class CriticalParameters(ThermoContribution):
     def define(self, res, par):
         for name in ["T_C", "P_C", "OMEGA"]:
             res[name] = self._vector(par[name])
+
+
+class BostonMathiasAlphaFunction(ThermoContribution):
+    r"""This contribution represents the Mathias alpha function with the
+    Boston-Mathias extrapolation for supercritical temperatures.
+
+    The following properties need to be provided upstream:
+
+    ======== ============== ===========================================
+    Property Symbol         Description
+    ======== ============== ===========================================
+    T        :math:`T`      Actual temperatures [K]
+    T_C      :math:`T_c`    Critical temperatures [K]
+    MFAC     :math:`m_i`    m-factor as function of acentric factor [-]
+    ======== ============== ===========================================
+
+    Additionally, the contribution requires a polar parameter :math:`\eta_i`,
+    named ``ETA``. We define the root of the reduced temperature as
+    :math:`\tau_i := \sqrt{T/T_{c,i}}`. Then, we define for
+    :math:`\tau_i \le 1`:
+
+    .. math::
+
+        \alpha_i^{\frac12} =
+          1 + m_i\,(1 - \tau_i) - \eta_i\,(1 - \tau_i)(0.7 - \tau_i^2)
+
+    As described in Appendix (:ref:`alpha_extensions`), the extrapolation into
+    the super-critical region is implemented as
+
+    .. math::
+
+        \alpha_i^{\frac12} =
+          \left [\frac{c}{d}(1-\tau^{d})\right ]
+       \quad\text{with}\quad
+    	 c = m + 0.3\eta
+           \quad\text{and}\quad
+         d = 1 + \frac{4\,\eta}{c} + c
+
+    .. warning::
+        This alpha-function is implemented to reproduce results of
+        thermodynamic models that have been parameterised in
+        `Aspen Plus by AspenTech <http://aspentech.com>`_. The models differ
+        however in the continuity of the second derivative (see
+        :ref:`alpha_extensions`) and therefore slightly in the calculated
+        properties for temperatures higher than critical temperatures of the
+        involved species.
+    """
+
+    name = "Boston_Mathias"
+    category = "alpha_function"
+    requires = ["critical_parameters", "m_factor"]
+
+    @property
+    def parameter_structure(self):
+        t_s = ThermoContribution._tensor_structure
+        return t_s(["ETA"], self.species)
+
+    def define(self, res, par):
+        eta = self._vector(par["ETA"])
+        T, T_c, m = res["T"], res["T_C"], res["m"]
+        tau = T / T_c
+        stau = sqrt(tau)
+
+        # define sub and super-critical expression
+        alpha_sub = 1 + m * (1 - stau) - eta * (1 - stau) * (0.7 - tau)
+
+        c = m + 0.3 * eta
+        d = 1 + c + 4 * eta / c
+        alpha_sup = exp(c / d * (1 - stau ** d))
+
+        # implement switch with scalar conditional function
+        alpha = [conditional(tau[i] > 1, [alpha_sub[i]], alpha_sup[i], 0)
+                 for i in range(len(self.species))]
+        alpha = vertcat(*alpha)
+        # result is square of above
+        res["ALPHA"] = alpha * alpha

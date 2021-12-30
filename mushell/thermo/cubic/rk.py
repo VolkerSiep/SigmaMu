@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# stdlib modules
+from abc import abstractmethod
+
 # external modules
 from casadi import log, jacobian, sum1
 
@@ -89,14 +92,6 @@ class RedlichKwongEOS(ThermoContribution):
                 ["a_function", "Redlich_Kwong"],
                 ["b_function", "Redlich_Kwong"]]
 
-    def __init__(self, *args, **kwargs):
-        """The constructor of this class is disabled, as an instance would
-        not have a decent initialiation nor relaxation functionality and
-        would therefore be without value. Instantiate objects of
-        :class:`RedlichKwongEOSLiquid` or :class:`RedlichKwongEOSLiquid`
-        instead."""
-        raise NotImplementedError("Don't do this!")
-
     def define(self, res, par):
         abc_names = ["RK_A", "RK_B", "CEOS_C"]
         T, V, n, A, B = [res[i] for i in ["T", "V", "n"] + abc_names[:-1]]
@@ -129,25 +124,33 @@ class RedlichKwongEOS(ThermoContribution):
         dmu += AB * (C_n / VC - (B_n + C_n) / VpBC)
         res["mu"] += dmu
 
+    def relax(self, current_result, delta_state):
+        # TODO: implement already the following:
+        #  - V > b-c
+        #  - dp/dV < 0
+        beta = 100.0  # fake value
+        beta_more = self.relax_more(current_result, delta_state)
+        beta = beta if beta_more is None else min(beta, beta_more)
+        return beta
+
+    @abstractmethod
+    def relax_more(self, current_result, delta_state):
+        """For the Redlich Kwong equation of state, both phases are required
+        to keep the EOS denominators positive and the volume derivative of
+        pressure negative. More specific constraints are to be implemented
+        by the sub-classes to represent in particular the liquid phase"""
+
 
 class RedlichKwongEOSLiquid(RedlichKwongEOS):
     """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
     on describing liquid (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""
-    def __init__(self, species, options):
-        # reenable constructor
-        ThermoContribution.__init__(self, species, options)
 
-    def relax(self, current_result, delta_state):
-        """A proper relaxation strategy for the cubic equation of state is
-        possible, but not trivial. A series of constraints apply. Firstly,
-        the volume cannot become less than :math:`B - C`. Further, the
-        calculated pressure shall not become negative, and thirdly, the
-        derivative of pressure with respect to volume shall not become
-        positive.
-        """
-        # TODO: implement (V limits)
+    def relax_more(self, current_result, delta_state):
+        """Additionally to the main relaxation method, this implementation
+        also assures positive pressures"""
+        # TODO: implement (V limit on p staying positive)
         pass
 
     def initial_state(self, T, p, n, parameters):
@@ -168,14 +171,9 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
     on describing gas (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""
-    def relax(self, current_result, delta_state):
-        """A proper relaxation strategy for the cubic equation of state is
-        possible, but not trivial. A series of constraints apply. Firstly,
-        the volume cannot become less than :math:`B - C`. Further, the
-        derivative of pressure with respect to volume shall not become
-        positive.
-        """
-        # TODO: implement (V limits)
+    def relax_more(self, current_result, delta_state):
+        """For the gas phase, no more constraints apply then the ones that
+        apply for both phases."""
         pass
 
     def initial_state(self, T, p, n, parameters):

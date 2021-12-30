@@ -6,6 +6,7 @@ from pathlib import Path
 
 # external modules
 from casadi import SX
+from pytest import raises
 
 # reproductiontest
 path.append(str(Path(__file__).absolute().parents[1]))
@@ -50,6 +51,12 @@ def test_RedlichKwongEOS():
     cont.define(res, {})
     result = {i: str(res[i]) for i in "S p mu".split()}
     assert_reproduction(result)
+
+def test_RedlicKwongAbstract():
+    from mushell.thermo.cubic.rk import RedlichKwongEOS
+    with raises(TypeError) as excinfo:
+        RedlichKwongEOS(["A", "B"], {})
+    assert "abstract" in str(excinfo.value)
 
 
 def test_NonSymmmetricMixingRule():
