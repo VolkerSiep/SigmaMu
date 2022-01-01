@@ -51,10 +51,17 @@ Mathias Boston-Mathias alpha-function
  .. autoclass:: mushell.thermo.cubic.BostonMathiasAlphaFunction
   :members: name, category, requires
 
+Redlich Kwong m-factor
+----------------------
+ .. autoclass:: mushell.thermo.cubic.rk.RedlichKwongMFactor
+  :members: name, category, requires
+
+
+
 Appendix
 --------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    
    cubic/alpha_extensions

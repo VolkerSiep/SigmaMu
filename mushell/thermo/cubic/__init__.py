@@ -106,7 +106,6 @@ class NonSymmmetricMixingRule(ThermoContribution):
                 result[name] = res_i
         return result
 
-
     def define(self, res, par):
         T, n, a_i = res["T"], res["n"], res["RK_A_I"]
         tau = T / par["T_ref"]
@@ -137,10 +136,6 @@ class NonSymmmetricMixingRule(ThermoContribution):
                 result -= cache[(i, j)] * symbol * factor
         res["RK_A"] = result
 
-# TODO:
-#   - can I allow to mix alpha functions (e.g. a different one for He and H2)?
-#   - implement alpha function (generic for c-eos)
-#   - implement m-factor (specific rk)
 
 class CriticalParameters(ThermoContribution):
     r"""This class does not perform any calculations, but provides the basic
@@ -209,6 +204,8 @@ class BostonMathiasAlphaFunction(ThermoContribution):
            \quad\text{and}\quad
          d = 1 + \frac{4\,\eta}{c} + c
 
+    The calculated vector is provided as a property called ``ALPHA``
+
     .. warning::
         This alpha-function is implemented to reproduce results of
         thermodynamic models that have been parameterised in
@@ -230,7 +227,7 @@ class BostonMathiasAlphaFunction(ThermoContribution):
 
     def define(self, res, par):
         eta = self._vector(par["ETA"])
-        T, T_c, m = res["T"], res["T_C"], res["m"]
+        T, T_c, m = res["T"], res["T_C"], res["MFAC"]
         tau = T / T_c
         stau = sqrt(tau)
 
@@ -242,7 +239,7 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         alpha_sup = exp(c / d * (1 - stau ** d))
 
         # implement switch with scalar conditional function
-        alpha = [conditional(tau[i] > 1, [alpha_sub[i]], alpha_sup[i], 0)
+        alpha = [conditional(tau[i] > 1, [alpha_sub[i]], alpha_sup[i])
                  for i in range(len(self.species))]
         alpha = vertcat(*alpha)
         # result is square of above

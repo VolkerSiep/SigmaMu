@@ -10,6 +10,7 @@ from casadi import log, jacobian, sum1
 from ..contribution import ThermoContribution
 from ...constants import R_GAS
 
+
 class RedlichKwongEOS(ThermoContribution):
     r"""This contribution implements a general Redlich-Kwong equation of state
     with Peneloux volume translation:
@@ -222,3 +223,21 @@ class RedlichKwongBFunction(ThermoContribution):
         omega_r = R_GAS * (2 ** (1 / 3) - 1) / 3
         T_c, p_c = [res[i] for i in "T_C P_C".split()]
         res["RK_B_I"] = omega_r * T_c / p_c
+
+class RedlichKwongMFactor(ThermoContribution):
+    r"""This contribution calculates the Redlich Kwong m-factor that is used
+    in various alpha-functions. Based on provided acentric factors ``OMEGA``
+    (:math:`\omega_i`), it calculates ``MFAC`` (:math:`m_i`) as
+
+    .. math::
+
+        m_i = 0.48508 + (1.55171 - 0.15613\,\omega_i)\,\omega_i
+    """
+
+    category = "m_factor"
+    name = "Redlich_Kwong"
+    requires = ["critical_parameters"]
+
+    def define(self, res, par):
+        omega = res["OMEGA"]
+        res["MFAC"] = 0.48508 + (1.55171 - 0.15613 * omega) * omega

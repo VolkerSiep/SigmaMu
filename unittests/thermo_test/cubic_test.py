@@ -5,7 +5,7 @@ from sys import path
 from pathlib import Path
 
 # external modules
-from casadi import SX
+from casadi import SX, Function, jacobian, vertcat
 from pytest import raises
 
 # reproductiontest
@@ -97,6 +97,53 @@ def test_redlich_kwong_b_function():
     result = str(res["RK_B_I"])
     assert_reproduction(result)
 
+
+def test_rk_m_factor():
+    from mushell.thermo.cubic.rk import RedlichKwongMFactor
+    res = {"OMEGA": SX.sym('w', 2)}
+    cont = RedlichKwongMFactor(["A", "B"], {})
+    cont.define(res, {})
+    result = str(res["MFAC"])
+    assert_reproduction(result)
+
+
+def test_BostonMathiasAlphaFunction():
+    from mushell.thermo.cubic import BostonMathiasAlphaFunction
+    res = {"MFAC": SX.sym('m', 2), "T_C": SX.sym('T_c', 2),
+           "T": SX.sym('T')}
+    par = {"ETA": {"A": SX.sym('ETA.A'),
+                   "B": SX.sym('ETA.B')}}
+    cont = BostonMathiasAlphaFunction(["A", "B"], {})
+    cont.define(res, par)
+    result = str(res["ALPHA"][0])
+    assert_reproduction(result)
+    return res, par
+
+def test_BostonMathiasAlphaFunction_smoothness():
+    """Check smoothness of alpha function at critical temperature, where
+    the expressions switches to the super-critical extrapolation"""
+    res, par = test_BostonMathiasAlphaFunction()
+    T, T_c, m, alpha = res["T"], res["T_C"], res["MFAC"], res["ALPHA"]
+    eta = vertcat(par["ETA"]["A"], par["ETA"]["B"])
+
+    dadt = jacobian(alpha, T)
+    d2adt2 = jacobian(dadt, T)
+
+    f = Function("alpha", [T, T_c, m, eta], [alpha, dadt, d2adt2])
+
+    def props(eps):
+        T, Tc, m, eta = 300, [300, 400], [0.6, 0.6], [0.12, 0.06]
+        res = f(T, Tc, m, eta)
+        return [float(r[0]) for r in res]
+
+    eps = 1e-10
+    a_sub, dadt_sub, d2adt2_sub = props(-eps)  # sub-critical
+    a_sup, dadt_sup, d2adt2_sup = props(eps)  # super-critical
+
+    assert abs(a_sub - 1) < 1e-7, "sub-critical alpha unequal unity"
+    assert abs(a_sup - 1) < 1e-7, "super-critical alpha unequal unity"
+    assert abs(dadt_sub - dadt_sup) < 1e-7, "first derivative not smooth"
+    assert abs(d2adt2_sub - d2adt2_sup) < 1e-7, "second derivative not smooth"
 
 if __name__ == "__main__":
     from pytest import main
