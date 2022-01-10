@@ -4,12 +4,12 @@
 from casadi import dot, log, vertsplit, vertcat, sum1
 
 # internal modules
-from .contribution import ThermoContribution
+from .contribution import ThermoContribution, StateDefinition
 from ..constants import R_GAS
 
 
-class HelmholtzState(ThermoContribution):
-    """This contribution interprets the state as being temperature, volume,
+class HelmholtzState(StateDefinition):
+    """This definition interprets the state as being temperature, volume,
     and mole numbers. Accordingly, it defines:
 
     ======== ============================
@@ -19,19 +19,20 @@ class HelmholtzState(ThermoContribution):
     ``V``    Volume
     ``n``    Mole vector
     ======== ============================
-
-    The contribution does not support any options or parameters.
     """
 
     name = "Helmholtz"
-    category = "state"
 
-    def define(self, res, par):
-        res["T"], res["V"], *res["n"] = vertsplit(res["state"], 1)
-        res["n"] = vertcat(*res["n"])
+    def prepare(self, result):
+        result["T"], result["V"], *result["n"] = vertsplit(result["state"], 1)
+        result["n"] = vertcat(*result["n"])
 
-class GibbsState(ThermoContribution):
-    """This contribution interprets the state as being temperature, pressure,
+    def reverse(self, temperature, pressure, quantities):
+        return [temperature, None] + quantities
+
+
+class GibbsState(StateDefinition):
+    """This definition interprets the state as being temperature, pressure,
     and mole numbers. Accordingly, it defines:
 
     ======== ============================
@@ -41,16 +42,16 @@ class GibbsState(ThermoContribution):
     ``p``    Pressure
     ``n``    Mole vector
     ======== ============================
-
-    The contribution does not support any options or parameters.
     """
 
     name = "Gibbs"
-    category = "state"
 
-    def define(self, res, par):
-        res["T"], res["p"], *res["n"] = vertsplit(res["state"], 1)
-        res["n"] = vertcat(*res["n"])
+    def prepare(self, result):
+        result["T"], result["p"], *result["n"] = vertsplit(result["state"], 1)
+        result["n"] = vertcat(*result["n"])
+
+    def reverse(self, temperature, pressure, quantities):
+        return [temperature, pressure] + quantities
 
 
 class H0S0ReferenceState(ThermoContribution):
@@ -89,7 +90,6 @@ class H0S0ReferenceState(ThermoContribution):
 
     name = "H0S0"
     category = "reference_state"
-    requires = ["state"]
 
     @property
     def parameter_structure(self):
@@ -273,7 +273,7 @@ class GibbsIdealGas(ThermoContribution):
 
     category = "ideal_gas"
     name = "Gibbs"
-    requires = ["standard_state", ["state", "Gibbs"]]
+    requires = ["standard_state"]
 
 
     def define(self, res, par):
@@ -319,7 +319,7 @@ class HelmholtzIdealGas(ThermoContribution):
 
     category = "ideal_gas"
     name = "Helmholtz"
-    requires = ["standard_state", ["state", "Helmholtz"]]
+    requires = ["standard_state"]
 
     def define(self, res, par):
         T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]

@@ -189,3 +189,34 @@ class ThermoContribution(ABC):
         if keys is None:
             keys = self.species
         return vertcat(*[dictionary[key] for key in keys])
+
+class StateDefinition(ABC):
+    """This class defines the interpretation of the state vector in terms of
+    physical properties. This interpretation is then consumed by the
+    contributions as input for their calculations towards the complete
+    thermodynamic model."""
+
+    name = None
+
+    def __init__(self, species):
+        assert self.name is not None
+        self.__species = species
+
+    @abstractmethod
+    def prepare(self, result: dict):
+        """This method can assume to find the state vector ``x`` in the
+        ``result`` dictionary, and is expected to add the physical
+        interpretation of its elements to the same dictionary. It is entirely
+        up to the contributions that rely on this state.
+
+        For the Gibbs state, the new elements would be ``T``, ``p``, and ``n``,
+        denoting temperature, pressure and quantities respectively.
+        """
+
+    @abstractmethod
+    def reverse(self, temperature: float, pressure: float,
+                quantities: Collection[float]) -> List[float]:
+        """Return the state vector as complete as possible with given
+        temperature, pressure and quantities. The task of the contributions'
+        :meth:`ThermoContribution.initial_state` method is it then to
+        complete it. Missing elements shall be filled with None"""

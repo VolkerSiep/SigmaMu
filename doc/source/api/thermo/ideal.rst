@@ -1,18 +1,6 @@
 Reference state, standard state, and ideal contributions
 ========================================================
 
-HelmholtzState
---------------
-.. autoclass:: mushell.thermo.HelmholtzState
-  :members: name, category, requires
-  :undoc-members: 
-   
-GibbsState
-----------
-.. autoclass:: mushell.thermo.GibbsState
-  :members: name, category, requires
-  :undoc-members: 
-
 H0S0ReferenceState
 ------------------
 .. autoclass:: mushell.thermo.H0S0ReferenceState

@@ -16,7 +16,7 @@ from casadi import Function, SX
 
 # internal modules
 from ..utilities import flatten_dictionary, unflatten_dictionary
-from .contribution import ThermoContribution
+from .contribution import ThermoContribution, StateDefinition
 
 
 class ThermoFrame:
@@ -26,6 +26,7 @@ class ThermoFrame:
     """
     def __init__(self,
                  species: List[str],
+                 state_definition: StateDefinition,
                  contributions: dict):
         """This constructor establishes a thermo frame function object
         (casadi) with given species and contributions.
@@ -62,6 +63,7 @@ class ThermoFrame:
 
         # call the contributions
         result = {"state": state}
+        state_definition.prepare(result)
         for name, contribution in contributions.items():
             contribution.define(result, param_symbols.get(name, {}))
 
@@ -74,6 +76,7 @@ class ThermoFrame:
                                    ["state", "parameters"], property_names)
 
         self.__contributions = contributions
+        self.__state_definition = state_definition
 
     @property
     def function(self) -> Function:
@@ -182,13 +185,26 @@ class ThermoFrame:
         and (T, p, n) is the initial state.
 
         """
-        parameters = self.__parameter_structure
+        # call own function (assert that it is defined yet)
+        #   defining the state as [T, NaN] + n.
+
+        # then start from top and call contributions to try to initialise,
+        #  based on results that might contain NaNs (if they depend on volume).
+        state = self.__state_definition.reverse(temperature, pressure,
+                                                quantities)
+        if None not in state:
+            return state
+
+        state = [float("NaN") if x is None else x for x in state]
+        properties = zip(self.property_names, self(state))
+        properties = {name: value for name, value in properties}
+
         for name, cont in reversed(self.__contributions.items()):
-            result = cont.initial_state(temperature, pressure, quantities,
-                                        parameters.get(name, {}))
+            result = cont.initial_state(pressure, properties)
             if result:
                 return result
-        return [temperature, pressure] + list(quantities)
+        msg = "No initialisation found despite of non-Gibbs surface"
+        raise NotImplementedError(msg)
 
     @staticmethod
     def __check_dependencies(contributions):
@@ -196,7 +212,10 @@ class ThermoFrame:
         cat_names, full_names = [], []
         for cls_, _ in contributions:
             for item in cls_.requires:
-                assert item in cat_names if type(item) is str else full_names
+                msg = f"Dependency '{item}' not fulfilled in " \
+                      f"contribution '{cls_.name}'"
+                assert item in cat_names \
+                    if type(item) is str else full_names, msg
             cat_names.append(cls_.category)
             full_names.append([cls_.category, cls_.name])
 
@@ -219,6 +238,13 @@ class ThermoFactory:
         """Parameter-less constructor, initialising the data structure
         to host contribution definitions"""
         self.__contributions = {}
+        self.__state_definitions = {}
+
+    def register_state_definition(self, definition_cls: Type[StateDefinition]):
+        name = definition_cls.name
+        if name in self.__state_definitions:
+            raise ValueError(f"State definition '{name}' already defined.")
+        self.__state_definitions[name] = definition_cls
 
     def register_contribution(self,
                               contribution_cls: Type[ThermoContribution]):
@@ -232,7 +258,7 @@ class ThermoFactory:
         if contribution_cls.name:
             name += ThermoFactory.CATEGORY_SEPERATOR + contribution_cls.name
         if name in self.__contributions:
-            raise ValueError(f"Contribution of name '{name}' already defined.")
+            raise ValueError(f"Contribution '{name}' already defined.")
         self.__contributions[name] = contribution_cls
 
     @property
@@ -253,6 +279,8 @@ class ThermoFactory:
               chemical species. These names are used as identifiers in later
               use of the model, and they define the names of thermodynamic
               parameters required by the model.
+            - ``state``: An identifier that represents the type of state as
+              defined by :meth:`register_state_definition`.
             - ``contributions``: A list of strings, representing the names
               of the contributions to stack. These identifiers must have been
               defined upfront by calls to :meth:`register_contribution`.
@@ -265,7 +293,9 @@ class ThermoFactory:
         """
         species = configuration["species"]
         options = configuration.get("options", {})
+        state_def_cls = self.__state_definitions[configuration["state"]]
+        state_definition = state_def_cls(species)
         contributions = {name: [self.__contributions[name],
                                 options.get(name, {})]
                          for name in configuration["contributions"]}
-        return ThermoFrame(species, contributions)
+        return ThermoFrame(species, state_definition, contributions)

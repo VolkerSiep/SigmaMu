@@ -18,3 +18,8 @@ ThermoContribution
    :members:
    :private-members: _tensor_structure, _vector
 
+StateDefinition
+---------------
+.. autoclass:: mushell.thermo.StateDefinition
+   :members:
+

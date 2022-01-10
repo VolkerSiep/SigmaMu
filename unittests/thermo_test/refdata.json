@@ -105,8 +105,7 @@
         "O2": null
       }
     },
-    "standard_state": {},
-    "state#Helmholtz": {}
+    "standard_state": {}
   },
   "frame_test.py::test_property_names": [
     "state",
