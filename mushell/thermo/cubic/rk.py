@@ -4,6 +4,7 @@
 from abc import abstractmethod
 
 # external modules
+from numpy import roots
 from casadi import log, jacobian, sum1
 
 # internal modules
@@ -141,6 +142,16 @@ class RedlichKwongEOS(ThermoContribution):
         pressure negative. More specific constraints are to be implemented
         by the sub-classes to represent in particular the liquid phase"""
 
+    @staticmethod
+    def find_zeros(T, p, n, properties):
+        A, B, C = [properties[i] for i in "RK_A RK_B CEOS_C".split()]
+        NRT = sum(n) * R_GAS * T
+        alpha = A * p / (NRT * NRT)
+        beta = B * p / NRT
+        zeros = roots([1, -1, alpha - beta * (1 + beta), -alpha * beta])
+        zeros = zeros[abs(zeros.imag) < 1e-7 * abs(zeros)]
+        return zeros[zeros > beta].real * NRT / p - C
+
 
 class RedlichKwongEOSLiquid(RedlichKwongEOS):
     """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
@@ -154,18 +165,11 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
         # TODO: implement (V limit on p staying positive)
         pass
 
-    def initial_state(self, T, p, n, parameters):
-        # same problem as with relax.
-        # Maybe I need to calculate for T, V, n where V = NRT/p.
-        # Then I have the EOS equation and can find the roots.
 
-        # giving T, p, and n as initial results, try to evaluate all
-        # contributions. Some will failes, as they might need V or x, but
-        # the ones that succeed will fill some of the results.
-        #
-        # Then, start to ask the contributions top down to initialise.
-        # The first one not returning None determines the result.
-        pass
+    def initial_state(self, temperature, pressure, quantities, properties):
+        V = min(self.find_zeros(temperature, pressure, quantities,
+                                properties))
+        return [temperature, V] + quantities
 
 class RedlichKwongEOSGas(RedlichKwongEOS):
     """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
@@ -177,8 +181,11 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
         apply for both phases."""
         pass
 
-    def initial_state(self, T, p, n, parameters):
-        pass
+    def initial_state(self, temperature, pressure, quantities, properties):
+        V = max(self.find_zeros(temperature, pressure, quantities,
+                                properties))
+        return [temperature, V] + quantities
+
 
 
 class RedlichKwongAFunction(ThermoContribution):

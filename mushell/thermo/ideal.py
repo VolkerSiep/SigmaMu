@@ -85,7 +85,6 @@ class H0S0ReferenceState(ThermoContribution):
 
         S &= \sum_i s_{0,i}\, n_i\\
         \mu_i &= \Delta_f h_i - T\,s_{0,i}
-
     """
 
     name = "H0S0"

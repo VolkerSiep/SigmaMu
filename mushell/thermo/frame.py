@@ -190,17 +190,19 @@ class ThermoFrame:
 
         # then start from top and call contributions to try to initialise,
         #  based on results that might contain NaNs (if they depend on volume).
-        state = self.__state_definition.reverse(temperature, pressure,
-                                                quantities)
+        st_def = self.__state_definition
+        state, non_state = st_def.reverse(temperature, pressure, quantities)
         if None not in state:
             return state
 
         state = [float("NaN") if x is None else x for x in state]
+        # calculate all propeties ... accept NaNs
         properties = zip(self.property_names, self(state))
         properties = {name: value for name, value in properties}
 
         for name, cont in reversed(self.__contributions.items()):
-            result = cont.initial_state(pressure, properties)
+            result = cont.initial_state(temperature, pressure, quantities,
+                                        properties)
             if result:
                 return result
         msg = "No initialisation found despite of non-Gibbs surface"

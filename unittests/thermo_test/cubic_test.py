@@ -52,6 +52,7 @@ def test_RedlichKwongEOS():
     result = {i: str(res[i]) for i in "S p mu".split()}
     assert_reproduction(result)
 
+
 def test_RedlicKwongAbstract():
     from mushell.thermo.cubic.rk import RedlichKwongEOS
     with raises(TypeError) as excinfo:
@@ -119,6 +120,7 @@ def test_BostonMathiasAlphaFunction():
     assert_reproduction(result)
     return res, par
 
+
 def test_BostonMathiasAlphaFunction_smoothness():
     """Check smoothness of alpha function at critical temperature, where
     the expressions switches to the super-critical extrapolation"""
@@ -144,6 +146,21 @@ def test_BostonMathiasAlphaFunction_smoothness():
     assert abs(a_sup - 1) < 1e-7, "super-critical alpha unequal unity"
     assert abs(dadt_sub - dadt_sup) < 1e-7, "first derivative not smooth"
     assert abs(d2adt2_sub - d2adt2_sup) < 1e-7, "second derivative not smooth"
+
+
+def test_initialise_rk():
+    from mushell.thermo.cubic.rk import (
+        RedlichKwongEOSLiquid, RedlichKwongEOSGas)
+    T, p, n = 370.0, 1e5, [0.5, 0.5]
+    # try to imitate water
+    res = {"RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5}
+    liq = RedlichKwongEOSLiquid(["A", "B"], {})
+    gas = RedlichKwongEOSGas(["A", "B"], {})
+    s_liq = liq.initial_state(T, p, n, res)[1]
+    s_gas = gas.initial_state(T, p, n, res)[1]
+    assert s_liq < 2e-5
+    assert 0.02 < s_gas < 0.03
+
 
 if __name__ == "__main__":
     from pytest import main

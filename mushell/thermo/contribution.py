@@ -91,8 +91,8 @@ class ThermoContribution(ABC):
         """Virtual function to report the maximal allowable step size in
         the state variables.
 
-        :current_result: The results based on the current state
-        :delta_state: The given direction
+        :param current_result: The results based on the current state
+        :param delta_state: The given direction
 
         :seealso: :meth:`ThermoFrame.relax`
         """
@@ -101,32 +101,30 @@ class ThermoContribution(ABC):
         return 100  # a number greater than 1 / gamma for practical gamma
 
     def initial_state(self,  # pylint: disable=R0201
-                      T: float,
-                      p: float,
-                      n: Collection[float],
-                      parameters: dict) -> List[float]:
+                      temperature: float,
+                      pressure: float,
+                      quantities: float,
+                      properties: dict) -> List[float]:
         """When the :class:`ThermoFrame object is queried for an initial state
-        representation, The upper-most contribution that implements this
-        method and does not return ``None`` takes the responsibility of
-        calculating that state. If no contribution implements this method, the
-        state is assumed to be in Gibbs coordinates, trivially ``T``, ``p``,
-        and ``n``.
+        representation and deviates from Gibbs coordinates, The upper-most
+        contribution that implements this method and does not return ``None``
+        takes the responsibility of calculating that state.
 
         Hence, normally only Helmholtz models need to implement this method.
         The true model coordinates can however be entirely unconventionally,
         such that it is solely up to the contributions on how to obtain the
         initial state.
 
-        :param T: Temperature [K]
-        :param p: Pressure [Pa]
-        :param n: Molar quantity [mol]
-        :param parameters: The parameter structure, equivalent as provided to
-          :meth:`relax`.
-        :return: The initial state
+        :param temperature: Temperature [K]
+        :param pressure: Pressure [Pa]
+        :param quantities: Quantities [mol]
+        :param properties: The property structure, mapping strings to floats
+          or list of floats.
+        :return: The initial state or ``None``
 
         .. seealso:: :meth:`ThermoFrame.initial_state`
         """
-        del T, p, n, parameters  # unused
+        del temperature, pressure, quantities, properties  # unused
 
     @staticmethod
     def _tensor_structure(*keys) -> dict:
@@ -219,4 +217,5 @@ class StateDefinition(ABC):
         """Return the state vector as complete as possible with given
         temperature, pressure and quantities. The task of the contributions'
         :meth:`ThermoContribution.initial_state` method is it then to
-        complete it. Missing elements shall be filled with None"""
+        complete it. Missing elements shall be filled with None.
+        """
