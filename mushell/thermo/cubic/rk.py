@@ -5,7 +5,7 @@ from abc import abstractmethod
 
 # external modules
 from numpy import roots
-from casadi import log, jacobian, sum1
+from casadi import log, jacobian, sum1, SX
 
 # internal modules
 from ..contribution import ThermoContribution
@@ -97,7 +97,7 @@ class RedlichKwongEOS(ThermoContribution):
     def define(self, res, par):
         abc_names = ["RK_A", "RK_B", "CEOS_C"]
         T, V, n, A, B = [res[i] for i in ["T", "V", "n"] + abc_names[:-1]]
-        C = res.get("CEOS_C", 0)  # optional
+        C = res.get("CEOS_C", SX(1,1))  # C is optional
         for i in abc_names:
             res[f"{i}_T"] = jacobian(res[i], T)
             res[f"{i}_n"] = jacobian(res[i], n).T  # jacobian transposes
@@ -126,11 +126,19 @@ class RedlichKwongEOS(ThermoContribution):
         dmu += AB * (C_n / VC - (B_n + C_n) / VpBC)
         res["mu"] += dmu
 
+        # quantities specific for relaxation
+        state = res["state"]
+        res["VBC"] = VmBC
+        res["VBC_x"] = jacobian(VmBC, state)
+
     def relax(self, current_result, delta_state):
+        y = current_result["VBC"]
+        d_y = current_result["VBC_x"].T @ delta_state
+        beta = -y / d_y if d_y < 0 else 100
+
         # TODO: implement already the following:
         #  - V > b-c
         #  - dp/dV < 0
-        beta = 100.0  # fake value
         beta_more = self.relax_more(current_result, delta_state)
         beta = beta if beta_more is None else min(beta, beta_more)
         return beta
@@ -163,6 +171,7 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
         """Additionally to the main relaxation method, this implementation
         also assures positive pressures"""
         # TODO: implement (V limit on p staying positive)
+        #  Implementing this for the gas phase could be unnecessarily limiting
         pass
 
 
