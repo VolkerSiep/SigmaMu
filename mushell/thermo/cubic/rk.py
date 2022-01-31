@@ -130,15 +130,27 @@ class RedlichKwongEOS(ThermoContribution):
         state = res["state"]
         res["VBC"] = VmBC
         res["VBC_x"] = jacobian(VmBC, state)
+        res["p_x"] = jacobian(res["p"], state)
+        res["p_V"] = jacobian(res["p"], V)
+        res["p_V_x"] = jacobian(res["p_V"], state)
+
 
     def relax(self, current_result, delta_state):
+        # V - B + C > 0 ?
         y = current_result["VBC"]
         d_y = current_result["VBC_x"].T @ delta_state
         beta = -y / d_y if d_y < 0 else 100
 
-        # TODO: implement already the following:
-        #  - V > b-c
-        #  - dp/dV < 0
+        # V > 0 ?
+        if delta_state[1] < 0:
+            beta = min(beta, -current_result["V"] / delta_state[1])
+
+        #  dp/dV < 0 ?
+        y = current_result["p_V"]
+        d_y = current_result["p_V_x"].T @ delta_state
+        if d_y > 0:
+            beta = min(beta, y / d_y)
+
         beta_more = self.relax_more(current_result, delta_state)
         beta = beta if beta_more is None else min(beta, beta_more)
         return beta
@@ -170,10 +182,9 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
     def relax_more(self, current_result, delta_state):
         """Additionally to the main relaxation method, this implementation
         also assures positive pressures"""
-        # TODO: implement (V limit on p staying positive)
-        #  Implementing this for the gas phase could be unnecessarily limiting
-        pass
-
+        y = current_result["p"]
+        d_y = current_result["p_x"].T @ delta_state
+        return -y / d_y if d_y < 0 else None
 
     def initial_state(self, temperature, pressure, quantities, properties):
         V = min(self.find_zeros(temperature, pressure, quantities,

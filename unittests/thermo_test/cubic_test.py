@@ -10,10 +10,12 @@ from pytest import raises, mark
 
 # internal modules
 from mushell.thermo.cubic.rk import RedlichKwongEOSLiquid, RedlichKwongEOSGas
+from mushell.constants import R_GAS
 
 # reproductiontest
 path.append(str(Path(__file__).absolute().parents[1]))
 from reproductiontest import assert_reproduction
+
 
 def test_critical_parameters():
     from mushell.thermo.cubic import CriticalParameters
@@ -160,7 +162,7 @@ def test_initialise_rk():
     gas = RedlichKwongEOSGas(["A", "B"], {})
     v_liq = liq.initial_state(T, p, n, res)[1]
     v_gas = gas.initial_state(T, p, n, res)[1]
-    assert v_liq < 2e-5
+    assert abs(v_liq - 1.526e-5) < 1e-8  # value 1.5... is validated
     assert 0.02 < v_gas < 0.03
 
 
@@ -191,17 +193,61 @@ def test_initialise_rk2(Class):
 
 def test_relax_rk():
     T, V, n = 370.0, 1.5260379390336834e-05, [0.5, 0.5]
-    res= {"T": T, "V": V, "n": n,
+    res= {"T": T, "V": V, "n": n, "p": 1e5,
           "RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5,
           "VBC": V + 1e-5 - 2.5e-5,
-          "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5])}
+          "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
+          "p_V": 1e10, "p_V_x": DM([0, 1e15, 0, 0]),
+          "p_x": DM([0, 0, 0, 0])}
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
-    beta = cont.relax(res, DM([0.1, -V, 0.1, 0.1]))  # check V - B + C > 0
+    beta = cont.relax(res, DM([0.1, -V, 0.1, 0.1]))
     assert beta < 1
-    print(beta)
+
+def test_relax_rk_advanced():
+    T, V, n = 370.0, 1.5260379390336834e-05, [0.5, 0.5]
+    res= {"T": T, "V": V, "n": n, "p": 1e5,
+          "RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5,
+          "VBC": V + 1e-5 - 2.5e-5,
+          "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
+          "p_V": 1e10, "p_V_x": DM([0, 1e15, 0, 0]),
+          "p_x": DM([0, 0, 0, 0])}
+
+    def p(V):
+        A, B, C = [res[i] for i in "RK_A RK_B CEOS_C".split()]
+        A /= 33.7
+        VC = V + C
+        return R_GAS * T / (VC - B)  - A / VC / (VC + B)
+
+    if user_agree("Plot"):
+        # only plot if running this file explicitly
+        from numpy import linspace
+        import pylab
+        volumes = linspace(4e-5,7e-5,num=100)
+        pressures = p(volumes)
+        pylab.plot(volumes, pressures)
+        pylab.ylim([0,2e6])
+        pylab.grid()
+        pylab.show()
+
     # TODO:
-    #  - plot p(V) and check plauslibility
-    #  - Also implement that V > 0
+    # - provoke parameters to have dp/dV limiting
+    # - relax only in V-direction
+    # - provide p_V and p_V_x[1] correctly!!
+    # - relax from V = 4.5e-5
+    #
+    # rename package and repository to simu (Σµ) [si:mu]
+    #   pip/conda package name si-mu, import name simu
+
+
+def user_agree(message):
+    try:
+        ans = input(f"{message} y/[n]? ")
+        return ans.lower() == "y"
+    except OSError:  # run automatically with std streams caught
+        return False
+
+
+    # TODO:
     #  - then dp/dV < 0
     #  - check all that with the graph (plot log(p) over log(V))
 
