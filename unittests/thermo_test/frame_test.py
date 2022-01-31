@@ -10,7 +10,7 @@ from reproductiontest import assert_reproduction
 
 
 def test_create_thermo_factory():
-    from mushell.thermo import ThermoFactory
+    from simu.thermo import ThermoFactory
     return ThermoFactory()
 
 def test_register_contributions():
@@ -72,7 +72,7 @@ def call_frame():
 
 def create_frame_factory():
     """Create a ThermoFactory and register standard state contributions"""
-    from mushell.thermo import (HelmholtzState, H0S0ReferenceState,
+    from simu.thermo import (HelmholtzState, H0S0ReferenceState,
                                 LinearHeatCapacity, StandardState)
     fac = test_create_thermo_factory()
     for con in [H0S0ReferenceState, LinearHeatCapacity, StandardState]:

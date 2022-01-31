@@ -14,19 +14,19 @@ import setuptools
 version = "0.1a1"
 long_description = "TODO: write this"
 
-packages = setuptools.find_packages(include=["mushell.*", "mushell"])
+packages = setuptools.find_packages(include=["simu.*", "simu"])
 
 setuptools.setup(
-    name="mushell",
+    name="simu",
     version=version,
     author="Volker Siepmann",
     author_email="volker.siepmann@gmail.com",
     description="Equation oriented process modelling library",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    # url="https://yara-alm.visualstudio.com/Production.YTC/_git/Pyasim",  # TODO: github repo
+    url="https://github.com/VolkerSiep/SiMu",
     packages=packages,
-    # package_data={'mushell': ['units.xml']},
+    # package_data={'simu': ['units.xml']},
     classifiers=[
         "Programming Language :: Python :: 3",
     ],

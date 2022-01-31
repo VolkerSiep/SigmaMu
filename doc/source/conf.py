@@ -17,8 +17,8 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'MuShell'
-copyright = '2021, Volker Siepmann'
+project = 'Simu'
+copyright = '2021-2022, Volker Siepmann'
 author = 'Volker Siepmann'
 
 # The full version, including alpha/beta/rc tags

@@ -12,7 +12,7 @@ path.append(str(Path(__file__).absolute().parents[1]))
 from reproductiontest import assert_reproduction
 
 def test_H0S0ReferenceState():
-    from mushell.thermo import H0S0ReferenceState
+    from simu.thermo import H0S0ReferenceState
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
     par = {"dh_form": {"A": SX.sym('dh_form.A'),
                        "B": SX.sym('dh_form.B')},
@@ -26,7 +26,7 @@ def test_H0S0ReferenceState():
     assert_reproduction(result)
 
 def test_LinearHeatCapacity():
-    from mushell.thermo import LinearHeatCapacity
+    from simu.thermo import LinearHeatCapacity
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2),
            "S": SX.sym('S_ref'), "mu": SX.sym('mu_ref'),
            "T_ref": SX.sym('T_ref')}
@@ -40,7 +40,7 @@ def test_LinearHeatCapacity():
     assert_reproduction(result)
 
 def test_IdealMix():
-    from mushell.thermo import IdealMix
+    from simu.thermo import IdealMix
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2),
            "S": SX.sym('S_std'), "mu": SX.sym('mu_std')}
     cont = IdealMix(["A", "B"], {})
@@ -49,7 +49,7 @@ def test_IdealMix():
     assert_reproduction(result)
 
 def test_GibbsIdealGas():
-    from mushell.thermo import GibbsIdealGas
+    from simu.thermo import GibbsIdealGas
     res = {"T": SX.sym('T'), "p": SX.sym('p'), "n": SX.sym('n', 2),
            "p_ref": SX.sym('p_ref'),
            "S": SX.sym('S_im'), "mu": SX.sym('mu_im')}

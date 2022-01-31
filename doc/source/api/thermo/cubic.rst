@@ -8,52 +8,52 @@ As such, the base-class is disabled from direct instantiation.
 
 Base class
 ..........
-.. autoclass:: mushell.thermo.cubic.rk.RedlichKwongEOS
+.. autoclass:: simu.thermo.cubic.rk.RedlichKwongEOS
   :members: name, category, requires
   :undoc-members: 
 
 Liquid root
 ...........
-.. autoclass:: mushell.thermo.cubic.rk.RedlichKwongEOSLiquid
+.. autoclass:: simu.thermo.cubic.rk.RedlichKwongEOSLiquid
   :members: relax 
 
 Gas root
 ........
-.. autoclass:: mushell.thermo.cubic.rk.RedlichKwongEOSGas
+.. autoclass:: simu.thermo.cubic.rk.RedlichKwongEOSGas
   :members: relax
 
 Linear Peneloux volume shift
 ----------------------------
- .. autoclass:: mushell.thermo.cubic.LinearPenelouxVolumeShift
+ .. autoclass:: simu.thermo.cubic.LinearPenelouxVolumeShift
   :members: name, category, requires
   :undoc-members: 
 
 Non-symmetric mixing rule
 -------------------------
- .. autoclass:: mushell.thermo.cubic.NonSymmmetricMixingRule
+ .. autoclass:: simu.thermo.cubic.NonSymmmetricMixingRule
   :members: name, category, requires
   :undoc-members:  
 
 Redich Kwong A-function
 -----------------------
- .. autoclass:: mushell.thermo.cubic.rk.RedlichKwongAFunction
+ .. autoclass:: simu.thermo.cubic.rk.RedlichKwongAFunction
   :members: name, category, requires
   :undoc-members: 
 
 Redich Kwong B-function
 -----------------------
- .. autoclass:: mushell.thermo.cubic.rk.RedlichKwongBFunction
+ .. autoclass:: simu.thermo.cubic.rk.RedlichKwongBFunction
   :members: name, category, requires
   :undoc-members: 
 
 Mathias Boston-Mathias alpha-function
 -------------------------------------
- .. autoclass:: mushell.thermo.cubic.BostonMathiasAlphaFunction
+ .. autoclass:: simu.thermo.cubic.BostonMathiasAlphaFunction
   :members: name, category, requires
 
 Redlich Kwong m-factor
 ----------------------
- .. autoclass:: mushell.thermo.cubic.rk.RedlichKwongMFactor
+ .. autoclass:: simu.thermo.cubic.rk.RedlichKwongMFactor
   :members: name, category, requires
 
 

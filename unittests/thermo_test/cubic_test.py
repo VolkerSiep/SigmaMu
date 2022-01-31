@@ -9,8 +9,8 @@ from casadi import DM, SX, Function, jacobian, vertcat
 from pytest import raises, mark
 
 # internal modules
-from mushell.thermo.cubic.rk import RedlichKwongEOSLiquid, RedlichKwongEOSGas
-from mushell.constants import R_GAS
+from simu.thermo.cubic.rk import RedlichKwongEOSLiquid, RedlichKwongEOSGas
+from simu.constants import R_GAS
 
 # reproductiontest
 path.append(str(Path(__file__).absolute().parents[1]))
@@ -18,7 +18,7 @@ from reproductiontest import assert_reproduction
 
 
 def test_critical_parameters():
-    from mushell.thermo.cubic import CriticalParameters
+    from simu.thermo.cubic import CriticalParameters
 
     res = {}
     par = {"T_C": {"A": SX.sym('T_C.A'),
@@ -34,7 +34,7 @@ def test_critical_parameters():
 
 
 def test_linear_peneloux_volume_shift():
-    from mushell.thermo.cubic import LinearPenelouxVolumeShift
+    from simu.thermo.cubic import LinearPenelouxVolumeShift
 
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
     par = {"c_i": {"A": SX.sym('c_i.A'),
@@ -46,7 +46,7 @@ def test_linear_peneloux_volume_shift():
 
 
 def test_RedlichKwongEOS():
-    from mushell.thermo.cubic.rk import RedlichKwongEOSLiquid
+    from simu.thermo.cubic.rk import RedlichKwongEOSLiquid
     res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
            "S": SX.sym('S'), "p": SX.sym('p'), "mu": SX.sym('mu', 2)}
     res["RK_A"] = SX.sym('A0') + res["T"] * SX.sym('dAdT')
@@ -60,14 +60,14 @@ def test_RedlichKwongEOS():
 
 
 def test_RedlicKwongAbstract():
-    from mushell.thermo.cubic.rk import RedlichKwongEOS
+    from simu.thermo.cubic.rk import RedlichKwongEOS
     with raises(TypeError) as excinfo:
         RedlichKwongEOS(["A", "B"], {})
     assert "abstract" in str(excinfo.value)
 
 
 def test_NonSymmmetricMixingRule():
-    from mushell.thermo.cubic import NonSymmmetricMixingRule
+    from simu.thermo.cubic import NonSymmmetricMixingRule
     res = {"T": SX.sym('T'), "n": SX.sym('n', 3),
            "RK_A_I": SX.sym('a_i', 3)}
     options = {
@@ -87,7 +87,7 @@ def test_NonSymmmetricMixingRule():
 
 
 def test_redlich_kwong_a_function():
-    from mushell.thermo.cubic.rk import RedlichKwongAFunction
+    from simu.thermo.cubic.rk import RedlichKwongAFunction
     res = {"ALPHA_I": SX.sym('alpha', 2),
            "T_C": SX.sym('T_c', 2), "P_C": SX.sym('p_c', 2)}
     cont = RedlichKwongAFunction(["A", "B"], {})
@@ -97,7 +97,7 @@ def test_redlich_kwong_a_function():
 
 
 def test_redlich_kwong_b_function():
-    from mushell.thermo.cubic.rk import RedlichKwongBFunction
+    from simu.thermo.cubic.rk import RedlichKwongBFunction
     res = {"T_C": SX.sym('T_c', 2), "P_C": SX.sym('p_c', 2)}
     cont = RedlichKwongBFunction(["A", "B"], {})
     cont.define(res, {})
@@ -106,7 +106,7 @@ def test_redlich_kwong_b_function():
 
 
 def test_rk_m_factor():
-    from mushell.thermo.cubic.rk import RedlichKwongMFactor
+    from simu.thermo.cubic.rk import RedlichKwongMFactor
     res = {"OMEGA": SX.sym('w', 2)}
     cont = RedlichKwongMFactor(["A", "B"], {})
     cont.define(res, {})
@@ -115,7 +115,7 @@ def test_rk_m_factor():
 
 
 def test_BostonMathiasAlphaFunction():
-    from mushell.thermo.cubic import BostonMathiasAlphaFunction
+    from simu.thermo.cubic import BostonMathiasAlphaFunction
     res = {"MFAC": SX.sym('m', 2), "T_C": SX.sym('T_c', 2),
            "T": SX.sym('T')}
     par = {"ETA": {"A": SX.sym('ETA.A'),
@@ -168,7 +168,7 @@ def test_initialise_rk():
 
 @mark.parametrize("Class", [RedlichKwongEOSGas, RedlichKwongEOSLiquid])
 def test_initialise_rk2(Class):
-    from mushell.constants import R_GAS
+    from simu.constants import R_GAS
     # define upstream expected results
     res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
            "RK_A": SX.sym('A'), "RK_B": SX.sym('B'), "CEOS_C": SX.sym('C'),

@@ -3,7 +3,7 @@ Standard property names of thermodynamic model results
 
 Introduction
 ------------
-:class:`~mushell.thermo.ThermoContribution` objects generate calculated properties that are eventually via the :class:`~mushell.thermo.ThermoFrame` objects exported to the client code. The following section puts some standard on the names of these properties, in particular for generic properties that can be expected to be evaluated by any thermodynamic model.
+:class:`~simu.thermo.ThermoContribution` objects generate calculated properties that are eventually via the :class:`~simu.thermo.ThermoFrame` objects exported to the client code. The following section puts some standard on the names of these properties, in particular for generic properties that can be expected to be evaluated by any thermodynamic model.
 
 Obligatory properties
 ---------------------
