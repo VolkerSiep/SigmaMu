@@ -1,6 +1,6 @@
 
-MuShell Documentation
-=====================
+SiMu Documentation
+==================
 
 .. toctree::
    :maxdepth: 2

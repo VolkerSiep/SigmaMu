@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Simu'
+project = 'SiMu'
 copyright = '2021-2022, Volker Siepmann'
 author = 'Volker Siepmann'
 
