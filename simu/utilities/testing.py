@@ -7,6 +7,13 @@ from types import TracebackType
 from pathlib import Path
 from difflib import Differ
 
+def user_agree(message):
+    try:
+        ans = input(f"{message} y/[n]? ")
+        return ans.lower() == "y"
+    except OSError:  # run automatically with std streams caught
+        return False
+
 def assert_reproduction(data, suffix=None):
     """Assert the json-dump of the data to be the same as before.
     This method will (if run interactively) ask the user to accept the
@@ -66,7 +73,7 @@ def assert_reproduction(data, suffix=None):
             val = dumps(data, indent=2, sort_keys=True)
             try:
                 assert ref == val
-            except AssertionError as error:
+            except AssertionError:
                 differ = Differ()
                 diff = differ.compare(ref.splitlines(), val.splitlines())
                 msg = (f"Deviation from reference data detected ({meth_name}):" +

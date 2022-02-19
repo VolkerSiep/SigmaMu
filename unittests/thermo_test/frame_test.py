@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# stdlib modules
-from sys import path
-from pathlib import Path
-
-# reproductiontest
-path.append(str(Path(__file__).absolute().parents[1]))
-from reproductiontest import assert_reproduction
-
+# internal modules
+from simu.utilities import assert_reproduction
 
 def test_create_thermo_factory():
     from simu.thermo import ThermoFactory

@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# stdlib modules
-from sys import path
-from pathlib import Path
-
 # external modules
 from casadi import SX
 
-# reproductiontest
-path.append(str(Path(__file__).absolute().parents[1]))
-from reproductiontest import assert_reproduction
+from simu.utilities import assert_reproduction
 
 def test_H0S0ReferenceState():
     from simu.thermo import H0S0ReferenceState

@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# stdlib modules
-from sys import path
-from pathlib import Path
-
 # external modules
 from casadi import DM, SX, Function, jacobian, vertcat
 from pytest import raises, mark
@@ -11,10 +7,7 @@ from pytest import raises, mark
 # internal modules
 from simu.thermo.cubic.rk import RedlichKwongEOSLiquid, RedlichKwongEOSGas
 from simu.constants import R_GAS
-
-# reproductiontest
-path.append(str(Path(__file__).absolute().parents[1]))
-from reproductiontest import assert_reproduction
+from simu.utilities import assert_reproduction, user_agree
 
 
 def test_critical_parameters():
@@ -239,12 +232,7 @@ def test_relax_rk_advanced():
     #   pip/conda package name si-mu, import name simu
 
 
-def user_agree(message):
-    try:
-        ans = input(f"{message} y/[n]? ")
-        return ans.lower() == "y"
-    except OSError:  # run automatically with std streams caught
-        return False
+
 
 
     # TODO:
