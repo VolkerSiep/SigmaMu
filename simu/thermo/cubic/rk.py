@@ -149,7 +149,7 @@ class RedlichKwongEOS(ThermoContribution):
         y = current_result["p_V"]
         d_y = current_result["p_V_x"].T @ delta_state
         if d_y > 0:
-            beta = min(beta, y / d_y)
+            beta = min(beta, -y / d_y)
 
         beta_more = self.relax_more(current_result, delta_state)
         beta = beta if beta_more is None else min(beta, beta_more)

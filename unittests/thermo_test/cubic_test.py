@@ -190,54 +190,62 @@ def test_relax_rk():
           "RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5,
           "VBC": V + 1e-5 - 2.5e-5,
           "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
-          "p_V": 1e10, "p_V_x": DM([0, 1e15, 0, 0]),
+          "p_V": -1e10, "p_V_x": DM([0, 1e15, 0, 0]),
           "p_x": DM([0, 0, 0, 0])}
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     beta = cont.relax(res, DM([0.1, -V, 0.1, 0.1]))
     assert beta < 1
 
 def test_relax_rk_advanced():
-    T, V, n = 370.0, 1.5260379390336834e-05, [0.5, 0.5]
-    res= {"T": T, "V": V, "n": n, "p": 1e5,
+    # - provoke parameters to have dp/dV limiting
+    # - relax only in V-direction
+    # - provide p_V and p_V_x[1] approximately correctly
+    # - relax from V = 4.6e-5 by dV = +0.4e-5
+
+    T, V, n = 370.0, 4.6e-5, [0.5, 0.5]
+    res= {"T": T, "V": V, "n": n, "p": 1.1e6,
           "RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5,
           "VBC": V + 1e-5 - 2.5e-5,
           "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
-          "p_V": 1e10, "p_V_x": DM([0, 1e15, 0, 0]),
+          "p_V": -2.5e11, "p_V_x": DM([0, 8.5e16, 0, 0]),
           "p_x": DM([0, 0, 0, 0])}
 
+    if user_agree("Plot"):
+        plot_pv(res)
+
+    cont = RedlichKwongEOSLiquid(["A", "B"], {})
+    beta = cont.relax(res, DM([0.0, 4e-6, 0.0, 0.0]))
+    assert 0.7 < beta < 0.8  # from plot, this is where dp/dV turns positive
+
+
+# *** auxiliary routines
+
+def plot_pv(res):
+    T, V  = res["T"], res["V"]
     def p(V):
         A, B, C = [res[i] for i in "RK_A RK_B CEOS_C".split()]
         A /= 33.7
         VC = V + C
         return R_GAS * T / (VC - B)  - A / VC / (VC + B)
 
-    if user_agree("Plot"):
-        # only plot if running this file explicitly
-        from numpy import linspace
-        import pylab
-        volumes = linspace(4e-5,7e-5,num=100)
-        pressures = p(volumes)
-        pylab.plot(volumes, pressures)
-        pylab.ylim([0,2e6])
-        pylab.grid()
-        pylab.show()
+    res["p"] = p(V)
 
-    # TODO:
-    # - provoke parameters to have dp/dV limiting
-    # - relax only in V-direction
-    # - provide p_V and p_V_x[1] correctly!!
-    # - relax from V = 4.5e-5
-    #
-    # rename package and repository to simu (Σµ) [si:mu]
-    #   pip/conda package name si-mu, import name simu
+    # only plot if running this file interactively
+    from numpy import linspace
+    import pylab
+    volumes = linspace(4.5e-5, 5.2e-5, num=100)
+    pressures = p(volumes)
+    lin_p = p(V) + (volumes - V) * res["p_V"]
+    quad_p = lin_p + 0.5 * (volumes - V) ** 2 * res["p_V_x"][1]
+    pylab.plot(volumes, pressures)
+    pylab.plot(volumes, lin_p, ":")
+    pylab.plot(volumes, quad_p, "--")
+    pylab.ylim([0, 1.5e6])
+    pylab.xlabel("V [m3]")
+    pylab.ylabel("p [Pa]")
+    pylab.grid()
+    pylab.show()
 
-
-
-
-
-    # TODO:
-    #  - then dp/dV < 0
-    #  - check all that with the graph (plot log(p) over log(V))
 
 if __name__ == "__main__":
     from pytest import main
