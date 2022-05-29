@@ -1,0 +1,64 @@
+Boston-Mathias-Redlich-Kwong-Gas:
+  species:
+    - C3
+    - nC4
+  state: HelmholtzState
+  contributions:
+    - H0S0ReferenceState
+    - LinearHeatCapacity
+    - StandardState
+    - IdealMix
+    - HelmholtzIdealGas
+    - CriticalParameters
+    - RedlichKwongMFactor
+    - BostonMathiasAlphaFunction
+    - RedlichKwongAFunction
+    - RedlichKwongBFunction
+    - cls: NonSymmetricMixingRule
+      name: MixingRule_A
+      options:
+        target: ceos_a
+    - cls: LinearMixingRule
+      name: MixingRule_B
+      options:
+        target: ceos_b
+    - cls: LinearMixingRule
+      name: MixingRule_C
+      options:
+        source: c_i
+        src_mode: parameter
+        target: ceos_c
+    - RedlichKwongEOSGas
+
+Boston-Mathias-Redlich-Kwong-Liquid:
+  species:
+    - C3
+    - nC4
+  state: HelmholtzState
+  contributions:
+    - H0S0ReferenceState
+    - LinearHeatCapacity
+    - StandardState
+    - IdealMix
+    - HelmholtzIdealGas
+    - CriticalParameters
+    - RedlichKwongMFactor
+    - BostonMathiasAlphaFunction
+    - RedlichKwongAFunction
+    - RedlichKwongBFunction
+    - cls: NonSymmetricMixingRule
+      name: MixingRule_A
+      options:
+        target: ceos_a
+    - cls: LinearMixingRule
+      name: MixingRule_B
+      options:
+        target: ceos_b
+    - cls: LinearMixingRule
+      name: MixingRule_C
+      options:
+        source: c_i
+        src_mode: parameter
+        target: ceos_c
+    - RedlichKwongEOSLiquid
+

@@ -35,8 +35,8 @@ def create_frame(factory, name):
 
 def main():
     fac = create_factory()
-    gas = create_frame(fac, "BostonMathiasRedlichKwongGas")
-    liq = create_frame(fac, "BostonMathiasRedlichKwongLiquid")
+    gas = create_frame(fac, "Boston-Mathias-Redlich-Kwong-Gas")
+    liq = create_frame(fac, "Boston-Mathias-Redlich-Kwong-Liquid")
 
     with open("parameters.yml") as file:
         parameters = load(file, SafeLoader)
@@ -51,7 +51,6 @@ def main():
 
 
 # TODO:
-#  - Update documentation
 #  - to avoid need for custom derivatives for standard use, shall I
 #    define a contribution that defines derivatives of properties
 #    with respect to the state or parts of the state.
@@ -64,9 +63,9 @@ def main():
 #     y_x
 #     y\x
 #     y@x
-#     y|x
+#     y|x y|x|T
 #     y!x
-#     dy_dx  ddy_dx_dT  ddy_dx_dx  <- that's it!
+#     dy_dx  ddy_dx_dT  ddy_dx_dx  <- that's it: d{}_dx
 
 
 
