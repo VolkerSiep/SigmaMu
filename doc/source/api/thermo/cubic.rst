@@ -12,41 +12,41 @@ Base class
 
 Liquid root
 ...........
-.. autoclass:: simu.thermo.cubic.rk.RedlichKwongEOSLiquid
+.. autoclass:: simu.thermo.RedlichKwongEOSLiquid
   :members: relax
 
 Gas root
 ........
-.. autoclass:: simu.thermo.cubic.rk.RedlichKwongEOSGas
+.. autoclass:: simu.thermo.RedlichKwongEOSGas
   :members: relax
 
 Critical parameters
-...................
-.. autoclass:: simu.thermo.cubic.CriticalParameters
+-------------------
+.. autoclass:: simu.thermo.CriticalParameters
 
 Non-symmetric mixing rule
 -------------------------
- .. autoclass:: simu.thermo.cubic.NonSymmetricMixingRule
+ .. autoclass:: simu.thermo.NonSymmetricMixingRule
 
 Linear mixing rule
 -------------------------
- .. autoclass:: simu.thermo.cubic.LinearMixingRule
+ .. autoclass:: simu.thermo.LinearMixingRule
 
 Redich Kwong A-function
 -----------------------
- .. autoclass:: simu.thermo.cubic.rk.RedlichKwongAFunction
+ .. autoclass:: simu.thermo.RedlichKwongAFunction
 
 Redich Kwong B-function
 -----------------------
- .. autoclass:: simu.thermo.cubic.rk.RedlichKwongBFunction
+ .. autoclass:: simu.thermo.RedlichKwongBFunction
 
 Mathias Boston-Mathias alpha-function
 -------------------------------------
- .. autoclass:: simu.thermo.cubic.BostonMathiasAlphaFunction
+ .. autoclass:: simu.thermo.BostonMathiasAlphaFunction
 
 Redlich Kwong m-factor
 ----------------------
- .. autoclass:: simu.thermo.cubic.rk.RedlichKwongMFactor
+ .. autoclass:: simu.thermo.RedlichKwongMFactor
 
 
 Appendix

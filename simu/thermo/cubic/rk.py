@@ -88,8 +88,9 @@ class RedlichKwongEOS(ThermoContribution):
 
     .. todo::
 
-        The original publication on the volume correction of CEOS (Peneloux?)
-        suggests to shift both V and B, not only V.
+        The original publication on the volume correction of CEOS
+        :cite:p:`Peneloux82` suggests to shift both V and B, not only V.
+        It is yet unclear which approach is correct.
     """
 
     provides = ["VCB", "VCB_x", "p_x", "p_V", "p_V_x"]

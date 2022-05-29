@@ -5,7 +5,7 @@ from casadi import DM, SX, Function, jacobian, vertcat
 from pytest import raises, mark
 
 # internal modules
-from simu.thermo.cubic.rk import RedlichKwongEOSLiquid, RedlichKwongEOSGas
+from simu.thermo import RedlichKwongEOSLiquid, RedlichKwongEOSGas
 from simu.constants import R_GAS
 from simu.utilities import assert_reproduction, user_agree
 

@@ -7,24 +7,13 @@ and use it for something interesting, e.g. draw a simple phase diagram
 
 from yaml import load, SafeLoader
 
-from simu.thermo import (
-    ThermoFactory, HelmholtzState, H0S0ReferenceState, LinearHeatCapacity,
-    StandardState, IdealMix, HelmholtzIdealGas)
-from simu.thermo.cubic import (
-    NonSymmetricMixingRule, LinearMixingRule,
-    BostonMathiasAlphaFunction, CriticalParameters,
-    RedlichKwongEOSLiquid, RedlichKwongEOSGas, RedlichKwongAFunction,
-    RedlichKwongBFunction, RedlichKwongMFactor)
+from simu.thermo import ThermoFactory, HelmholtzState, all_contributions
+
 
 
 def create_factory():
     fac = ThermoFactory()
-    fac.register(
-        H0S0ReferenceState, LinearHeatCapacity, StandardState, IdealMix,
-        HelmholtzIdealGas, NonSymmetricMixingRule, LinearMixingRule,
-        BostonMathiasAlphaFunction, RedlichKwongEOSLiquid, RedlichKwongEOSGas,
-        RedlichKwongAFunction, RedlichKwongBFunction, RedlichKwongMFactor,
-        CriticalParameters)
+    fac.register(*all_contributions)
     fac.register_state_definition(HelmholtzState)
     return fac
 
@@ -35,6 +24,7 @@ def create_frame(factory, name):
 
 def main():
     fac = create_factory()
+
     gas = create_frame(fac, "Boston-Mathias-Redlich-Kwong-Gas")
     liq = create_frame(fac, "Boston-Mathias-Redlich-Kwong-Liquid")
 
@@ -60,12 +50,8 @@ def main():
 #    How to handle that some derivatives are already there? -
 #      Naming convention or just overwrite?
 
-#     y_x
-#     y\x
-#     y@x
-#     y|x y|x|T
-#     y!x
-#     dy_dx  ddy_dx_dT  ddy_dx_dx  <- that's it: d{}_dx
+#    Notation:
+#      dy_dx  ddy_dx_dT  ddy_dx_dx
 
 
 

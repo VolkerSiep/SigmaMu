@@ -119,5 +119,6 @@
     "S_std",
     "p_std",
     "mu_std"
-  ]
+  ],
+  "special_test.py::test_derivative": "((T*C_2)+(C_1+(C_2*T)))"
 }
