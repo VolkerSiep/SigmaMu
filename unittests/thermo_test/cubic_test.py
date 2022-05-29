@@ -190,10 +190,11 @@ def test_initialise_rk2(Class):
 def test_relax_rk():
     T, V, n = 370.0, 1.5260379390336834e-05, [0.5, 0.5]
     res= {"T": T, "V": V, "n": n, "p": 1e5,
+          "ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5,
           "VBC": V + 1e-5 - 2.5e-5,
-          "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
-          "p_V": -1e10, "p_V_x": DM([0, 1e15, 0, 0]),
-          "p_x": DM([0, 0, 0, 0])}
+          "dVBC_dx": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
+          "dp_dV": -1e10, "ddp_dV_dx": DM([0, 1e15, 0, 0]),
+          "dp_dx": DM([0, 0, 0, 0])}
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     beta = cont.relax(res, DM([0.1, -V, 0.1, 0.1]))
     assert beta < 1
@@ -206,11 +207,12 @@ def test_relax_rk_advanced():
     # - relax from V = 4.6e-5 by dV = +0.4e-5
 
     T, V, n = 370.0, 4.6e-5, [0.5, 0.5]
-    res= {"T": T, "V": V, "n": n, "p": 1.1e6,
-          "VBC": V + 1e-5 - 2.5e-5,
-          "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
-          "p_V": -2.5e11, "p_V_x": DM([0, 8.5e16, 0, 0]),
-          "p_x": DM([0, 0, 0, 0])}
+    res= {"T": DM(T), "V": DM(V), "n": DM(n), "p": DM(1.1e6),
+          "ceos_a": DM(15), "ceos_b": DM(2.5e-5), "ceos_c": DM(1e-5),
+          "VBC": DM(V + 1e-5 - 2.5e-5),
+          "dVBC_dx": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
+          "dp_dV": DM(-2.5e11), "ddp_dV_dx": DM([0, 8.5e16, 0, 0]),
+          "dp_dx": DM([0, 0, 0, 0])}
     # in above data, p, p_V and p_V_x are set approximately to reproduce
     # taylor approximation in graph. For plotting, p is evaluated exactly.
     if user_agree("Plot pV-plot for relaxation dp/dV < 0"):
@@ -226,7 +228,7 @@ def test_relax_rk_advanced():
 def plot_pv(res):
     T, V  = res["T"], res["V"]
     def p(V):
-        A, B, C = [res[i] for i in "RK_A RK_B CEOS_C".split()]
+        A, B, C = [res[i] for i in "ceos_a ceos_b ceos_c".split()]
         A /= 33.7
         VC = V + C
         return R_GAS * T / (VC - B)  - A / VC / (VC + B)
@@ -234,13 +236,15 @@ def plot_pv(res):
     # only plot if running this file interactively
     from numpy import linspace
     import pylab
+
     volumes = linspace(4.5e-5, 5.2e-5, num=100)
     pressures = p(volumes)
-    lin_p = p(V) + (volumes - V) * res["p_V"]
-    quad_p = lin_p + 0.5 * (volumes - V) ** 2 * res["p_V_x"][1]
-    pylab.plot(volumes, pressures)
-    pylab.plot(volumes, lin_p, ":")
-    pylab.plot(volumes, quad_p, "--")
+    lin_p = p(V) + (volumes - V) * res["dp_dV"]
+    quad_p = lin_p + 0.5 * (volumes - V) ** 2 * res["ddp_dV_dx"][1]
+    pylab.plot(volumes, pressures.full(), 1)
+    pylab.plot(volumes, lin_p.full(), ":")
+    pylab.plot(volumes, quad_p.full(), "--")
+    pylab.xlim([volumes[0], volumes[-1]])
     pylab.ylim([0, 1.5e6])
     pylab.xlabel("V [m3]")
     pylab.ylabel("p [Pa]")
@@ -252,4 +256,4 @@ if __name__ == "__main__":
     from pytest import main
     from sys import argv
     # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-rP"] + argv)
+    main([__file__, "-v", "-v", "-rP"] + argv[1:])
