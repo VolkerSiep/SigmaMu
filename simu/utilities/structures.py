@@ -36,7 +36,9 @@ def flatten_dictionary(structure, prefix=''):
         return {prefix: structure}  # this is just a value
 
     result = {}
-    for key, value in items:
+    # must sort to get the same sequence every time
+    # (dictionary might have content permutated)
+    for key, value in sorted(items):
         if SEPARATOR in str(key):
             raise ValueError(f"Separator '{SEPARATOR}' in key '{key}'")
         key = f"{prefix}{SEPARATOR}{key}" if prefix else str(key)

@@ -7,6 +7,10 @@ from casadi import conditional, dot, exp, sqrt, sum1, vertcat
 from ...utilities import iter_binary_parameters
 from ..contribution import ThermoContribution
 
+from .rk import (RedlichKwongEOSLiquid, RedlichKwongEOSGas,
+                 RedlichKwongAFunction, RedlichKwongBFunction,
+                 RedlichKwongMFactor)
+
 
 class LinearMixingRule(ThermoContribution):
     r"""This linear mixing rule represents any contribution that computes a
@@ -28,8 +32,8 @@ class LinearMixingRule(ThermoContribution):
          parameter to the contribution.
     """
 
-    CHILD = 1
-    PARAMETER = 2
+    CHILD = "CHILD"  # canot be enum as I wish to serialise readable with json
+    PARAMETER = "PARAMETER"
 
     @property
     def parameter_structure(self):
@@ -43,7 +47,10 @@ class LinearMixingRule(ThermoContribution):
     def define(self, res, par):
         target = self.options["target"]
         source = self.options.get("source", target + "_i")
-        if self.options.get("src_mode", self.CHILD) == self.CHILD:
+        src_mode = self.options.get("src_mode", self.CHILD).upper()
+        assert src_mode in (self.CHILD, self.PARAMETER), \
+            f"Invalid src_mode: '{src_mode}'"
+        if src_mode == self.CHILD:
             res[target] = dot(res[source], res["n"])
         else:
             res[target] = dot(self._vector(par[source]), res["n"])

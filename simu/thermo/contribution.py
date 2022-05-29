@@ -185,10 +185,7 @@ class StateDefinition(ABC):
     contributions as input for their calculations towards the complete
     thermodynamic model."""
 
-    name = None
-
     def __init__(self, species):
-        assert self.name is not None
         self.__species = species
 
     @abstractmethod

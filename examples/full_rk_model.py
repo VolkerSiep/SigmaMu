@@ -5,13 +5,14 @@
 and use it for something interesting, e.g. draw a simple phase diagram
 """
 
+from yaml import load, SafeLoader
+
 from simu.thermo import (
     ThermoFactory, HelmholtzState, H0S0ReferenceState, LinearHeatCapacity,
     StandardState, IdealMix, HelmholtzIdealGas)
 from simu.thermo.cubic import (
     NonSymmetricMixingRule, LinearMixingRule,
-    BostonMathiasAlphaFunction, CriticalParameters)
-from simu.thermo.cubic.rk import (
+    BostonMathiasAlphaFunction, CriticalParameters,
     RedlichKwongEOSLiquid, RedlichKwongEOSGas, RedlichKwongAFunction,
     RedlichKwongBFunction, RedlichKwongMFactor)
 
@@ -27,64 +28,19 @@ def create_factory():
     fac.register_state_definition(HelmholtzState)
     return fac
 
-def create_frame(factory, phase):
-    mixing_rule_a = {"name": "MixingRule_A",
-                     "cls": "NonSymmetricMixingRule",
-                     "options": {"target": "ceos_a"}}
-    mixing_rule_b = {"name": "MixingRule_B",
-                     "cls": "LinearMixingRule",
-                     "options": {"target": "ceos_b"}}
-    mixing_rule_c = {"name": "MixingRule_C",
-                     "cls": "LinearMixingRule",
-                     "options": {"target": "ceos_c",
-                                 "source": "c_i",
-                                 "src_mode": "parameter"}}
-
-    config = {
-        "species": ["C3", "nC4"],
-        "state": "Helmholtz",
-        "contributions": [
-            'H0S0ReferenceState',
-            'LinearHeatCapacity',
-            'StandardState',
-            'IdealMix',
-            'HelmholtzIdealGas',
-            'CriticalParameters',
-            'RedlichKwongMFactor',
-            'BostonMathiasAlphaFunction',
-            'RedlichKwongAFunction',
-            'RedlichKwongBFunction',
-            mixing_rule_a, mixing_rule_b, mixing_rule_c,
-            f'RedlichKwongEOS{phase.capitalize()}']
-        }
-    return factory.create_frame(config)
-
-MISS = 0.0
-
-parameters = {
-    'H0S0ReferenceState': {
-        'dh_form': {'C3': -104.7e3, 'nC4': -125.6e3},
-        's_0': {'C3': MISS, 'nC4': MISS},
-        'T_ref': 298.15,
-        'p_ref': 1e5},
-    'LinearHeatCapacity': {
-        'cp_a': {'C3': MISS, 'nC4': MISS},
-        'cp_b': {'C3': MISS, 'nC4': MISS}},
-    'CriticalParameters': {
-        'T_c': {'C3': 369.8, 'nC4': 425.2},
-        'p_c': {'C3': 42.5e5, 'nC4': 38.0e5},
-        'omega': {'C3': 0.153, 'nC4': 0.199}},
-    'BostonMathiasAlphaFunction': {
-        'eta': {'C3': 0, 'nC4': 0}},
-    'MixingRule_A': {'T_ref': 298.15},
-    'MixingRule_C': {
-        'c_i': {'C3': 0.0, 'nC4': 0.0}},
-    }
-
+def create_frame(factory, name):
+    with open("frame_definitions.yml") as file:
+        config = load(file, SafeLoader)
+    return factory.create_frame(config[name])
 
 def main():
     fac = create_factory()
-    gas, liq = create_frame(fac, "gas"), create_frame(fac, "liquid")
+    gas = create_frame(fac, "BostonMathiasRedlichKwongGas")
+    liq = create_frame(fac, "BostonMathiasRedlichKwongLiquid")
+
+    with open("parameters.yml") as file:
+        parameters = load(file, SafeLoader)
+
     gas.parameters = liq.parameters = parameters
 
     x_liq = liq.initial_state(298.15, 10e5, [0.5, 0.5])

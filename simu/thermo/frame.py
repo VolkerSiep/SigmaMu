@@ -196,12 +196,13 @@ class ThermoFrame:
 
         state = [float("NaN") if x is None else x for x in state]
         # calculate all propeties ... accept NaNs
-        properties = zip(self.property_names, self(state))
-        properties = {name: value for name, value in properties}
+        values = self(state)
+        properties = {n: v for n, v in zip(self.property_names, values)}
+
 
         for name, cont in reversed(self.__contributions.items()):
-            result = cont.initial_state(temperature, pressure, quantities,
-                                        properties)
+            result = cont.initial_state(temperature, pressure,
+                                        quantities, properties)
             if result:
                 return result
         msg = "No initialisation found despite of non-Gibbs surface"
@@ -229,7 +230,7 @@ class ThermoFactory:
         self.__state_definitions = {}
 
     def register_state_definition(self, definition_cls: Type[StateDefinition]):
-        name = definition_cls.name
+        name = definition_cls.__name__
         if name in self.__state_definitions:
             raise ValueError(f"State definition '{name}' already defined.")
         self.__state_definitions[name] = definition_cls

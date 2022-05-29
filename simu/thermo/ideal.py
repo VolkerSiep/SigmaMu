@@ -21,8 +21,6 @@ class HelmholtzState(StateDefinition):
     ======== ============================
     """
 
-    name = "Helmholtz"
-
     def prepare(self, result):
         result["T"], result["V"], *result["n"] = vertsplit(result["state"], 1)
         result["n"] = vertcat(*result["n"])
@@ -43,8 +41,6 @@ class GibbsState(StateDefinition):
     ``n``    Mole vector
     ======== ============================
     """
-
-    name = "Gibbs"
 
     def prepare(self, result):
         result["T"], result["p"], *result["n"] = vertsplit(result["state"], 1)
