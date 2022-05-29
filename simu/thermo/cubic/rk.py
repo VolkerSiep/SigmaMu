@@ -22,17 +22,17 @@ class RedlichKwongEOS(ThermoContribution):
 
     The following properties need to be provided by upstream contributions:
 
-    ======== ========= ====== ==========
+    ======== ========= ======== ==========
     Property Symbol    UOM
-    ======== ========= ====== ==========
-    RK_A     :math:`A` J * m3
-    RK_B     :math:`B` m3
-    CEOS_C   :math:`C` m3     (optional)
-    ======== ========= ====== ==========
+    ======== ========= ======== ==========
+    ceos_a   :math:`A` J * |m3|
+    ceos_b   :math:`B` |m3|
+    ceos_c   :math:`C` |m3|     (optional)
+    ======== ========= ======== ==========
 
     Care is to be taken when utilising a temperature-dependent :math:`C`
     contribution, as doing so can have significant effects on the calorimetric
-    properties. If ``CEOS_C`` is not provided, the contribution is assumed
+    properties. If ``ceos_c`` is not provided, the contribution is assumed
     zero.
 
     As such, there are no further model parameters to be provided at this
@@ -85,19 +85,19 @@ class RedlichKwongEOS(ThermoContribution):
         S &\leftarrow S + S^\mathrm{res}\\
         p &\leftarrow p + p^\mathrm{res}\\
         \mu_i &\leftarrow \mu_i + \mu_i^\mathrm{res}\\
+
+    .. todo::
+
+        The original publication on the volume correction of CEOS (Peneloux?)
+        suggests to shift both V and B, not only V.
     """
 
-    category = "cubic_eos"
-    name = "Redlich_Kwong"
-    requires = ["cubic_eos_a", "cubic_eos_b",
-                ["ideal_gas", "Helmholtz"],
-                ["a_function", "Redlich_Kwong"],
-                ["b_function", "Redlich_Kwong"]]
+    provides = ["VCB", "VCB_x", "p_x", "p_V", "p_V_x"]
 
     def define(self, res, par):
-        abc_names = ["RK_A", "RK_B", "CEOS_C"]
+        abc_names = ["ceos_a", "ceos_b", "ceos_c"]
         T, V, n, A, B = [res[i] for i in ["T", "V", "n"] + abc_names[:-1]]
-        C = res.get("CEOS_C", SX(1,1))  # C is optional
+        C = res.get("ceos_c", SX(1, 1))  # C is optional
         for i in abc_names:
             res[f"{i}_T"] = jacobian(res[i], T)
             res[f"{i}_n"] = jacobian(res[i], n).T  # jacobian transposes
@@ -151,6 +151,7 @@ class RedlichKwongEOS(ThermoContribution):
         if d_y > 0:
             beta = min(beta, -y / d_y)
 
+        # p > 0 for liquid phase? (cannot happen in gas phase)
         beta_more = self.relax_more(current_result, delta_state)
         beta = beta if beta_more is None else min(beta, beta_more)
         return beta
@@ -164,7 +165,7 @@ class RedlichKwongEOS(ThermoContribution):
 
     @staticmethod
     def find_zeros(T, p, n, properties):
-        A, B, C = [properties[i] for i in "RK_A RK_B CEOS_C".split()]
+        A, B, C = [float(properties[f"ceos_{i}"]) for i in "abc"]
         NRT = sum(n) * R_GAS * T
         alpha = A * p / (NRT * NRT)
         beta = B * p / NRT
@@ -196,6 +197,7 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
     on describing gas (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""
+
     def relax_more(self, current_result, delta_state):
         """For the gas phase, no more constraints apply then the ones that
         apply for both phases."""
@@ -207,12 +209,12 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
         return [temperature, V] + quantities
 
 
-
 class RedlichKwongAFunction(ThermoContribution):
-    r"""Given critical temperature :math:`T_{c,i}` and pressure
-    :math:`T_{c,i}`, this contribution scales the :math:`\alpha`-function
-    (``ALPHA_I``) to define the :math:`a`-contribution (``RK_A_I``) for the
-    individual species. It is
+    r"""Given critical temperature ``T_c`` (:math:`T_{c,i}`) and pressure
+    ``p_c`` (:math:`p_{c,i}`), this contribution scales the
+    :math:`\alpha`-function ``alpha`` (:math:`\alpha_i`) to define the
+    :math:`a`-contribution ``rk_a_i`` (:math:`a_i`) for the individual species.
+    It is
 
     .. math::
 
@@ -221,19 +223,18 @@ class RedlichKwongAFunction(ThermoContribution):
         \Omega_a = \frac19\,(2^{1/3} - 1)^{-1}
     """
 
-    category = "a_function"
-    name = "Redlich_Kwong"
-    requires = ["critical_parameters", "alpha_function"]
+    provides = ["ceos_a_i"]
 
     def define(self, res, par):
         omega_r2 = R_GAS * R_GAS / (9 * (2 ** (1 / 3) - 1))
-        alpha, T_c, p_c = [res[i] for i in "ALPHA_I T_C P_C".split()]
-        res["RK_A_I"] = omega_r2 * alpha * (T_c * T_c) / p_c
+        alpha, T_c, p_c = [res[i] for i in "alpha T_c p_c".split()]
+        res["ceos_a_i"] = omega_r2 * alpha * (T_c * T_c) / p_c
+
 
 class RedlichKwongBFunction(ThermoContribution):
-    r"""Given critical temperature :math:`T_{c,i}` and pressure
-    :math:`T_{c,i}`, this contribution calculates the
-    :math:`b`-contribution (``RK_B_I``) for the individual species. It is
+    r"""Given critical temperature ``T_c`` (:math:`T_{c,i}`) and pressure
+    ``p_c`` (:math:`p_{c,i}`), this contribution calculates the
+    :math:`b`-contribution ``ceos_b_i`` for the individual species. It is
 
     .. math::
 
@@ -242,29 +243,26 @@ class RedlichKwongBFunction(ThermoContribution):
         \Omega_b = \frac13\,(2^{1/3} - 1)
     """
 
-    category = "b_function"
-    name = "Redlich_Kwong"
-    requires = ["critical_parameters"]
+    provides = ["ceos_b_i"]
 
     def define(self, res, par):
         omega_r = R_GAS * (2 ** (1 / 3) - 1) / 3
-        T_c, p_c = [res[i] for i in "T_C P_C".split()]
-        res["RK_B_I"] = omega_r * T_c / p_c
+        T_c, p_c = [res[i] for i in "T_c p_c".split()]
+        res["ceos_b_i"] = omega_r * T_c / p_c
+
 
 class RedlichKwongMFactor(ThermoContribution):
     r"""This contribution calculates the Redlich Kwong m-factor that is used
-    in various alpha-functions. Based on provided acentric factors ``OMEGA``
-    (:math:`\omega_i`), it calculates ``MFAC`` (:math:`m_i`) as
+    in various alpha-functions. Based on provided acentric factors ``omega``
+    (:math:`\omega_i`), it calculates ``m_factor`` (:math:`m_i`) as
 
     .. math::
 
         m_i = 0.48508 + (1.55171 - 0.15613\,\omega_i)\,\omega_i
     """
 
-    category = "m_factor"
-    name = "Redlich_Kwong"
-    requires = ["critical_parameters"]
+    provides = ["m_factor"]
 
     def define(self, res, par):
-        omega = res["OMEGA"]
-        res["MFAC"] = 0.48508 + (1.55171 - 0.15613 * omega) * omega
+        omega = res["omega"]
+        res["m_factor"] = 0.48508 + (1.55171 - 0.15613 * omega) * omega

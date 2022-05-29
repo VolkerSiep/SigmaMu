@@ -74,3 +74,7 @@ mathjax3_config = {
             }
         }
     }
+    
+rst_prolog = """
+.. |m3| replace:: m\ :sup:`3`
+"""

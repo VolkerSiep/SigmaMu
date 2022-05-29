@@ -19,15 +19,22 @@ This is much easier that dealing with equilibrium constants, Henry, fugacity and
 
 Logo and history
 ----------------
-``Simu`` is also the name of the goose, riding the python snake in the logo:
+The logo pictures a goose riding a python for obvious reasons, that is to get from A to B efficiently. The real question is: Why a goose, and why is it not afraid of the snake?
 
 .. image:: figures/simu_logo.jpeg 
 
-The goose was first alone, and I met it in Canada on a business trip. It had put a nest on a site that was scheduled for excavation. Due to protection laws, the project got delayed by 2 weeks and everybody was angry with the goose. At that time, I was writing in-house code for a custom process simulation in another project. My wife drew the first logo, which I included in the report - to tease the engineers on site.
+The name of the goose became *Muriel* at a later point in time. Muriel was first alone, and I met it in Canada on a business trip. It nested on a site that was scheduled for excavation. Due to protection laws, the project got delayed by 2 weeks and everybody was angry with her. At that time, I was writing in-house code for a custom process simulation in another project. My wife drew the first logo, which I included in the report - a bit to tease the engineers on site.
 
 .. image:: figures/goose.png
+ :align: center
 
-This in-house model was built on my phd work [Siepmann2006] and written with help of python, but the model was defined in text files with their own format. After the project, I decided to convert the software into a pure python library and thus make python itself the modelling language. This is when ``SiMu`` started to ride the python, and my wife created the logo above.
+At first, Muriel was afraid of the snake and didn't trust python for being its modelling language. That in-house model was built on my phd work [Siepmann2006] and written with help of python, but defined in text files with their own format. After the project, Muriel started to trust the snake more and I decided to convert the software into a pure python library and thus make python itself the modelling language. This is when Muriel started to ride the python, and my wife created above logo.
+
+When you now look back at the letter combination :math:`\Sigma\mu`, with wrong glasses and some imagination you can picture :math:`\Sigma` being the python and :math:`\mu` being Muriel.
+Her name in a way starts with this letter, and *Muriel* is a name with origins in the Irish and Gaelic language, describing the shining sea. In Norway, the expression *morild* (sea fire) stands for the effect of sea being illuminated by plankton that is excitated by movements in the water - a nice experience when taking a late-summer night swim in the fjords. 
+
+In other words: **Muriel brings light into the dark when you are in deep water.**
+
 
 So what is SiMu?
 ----------------

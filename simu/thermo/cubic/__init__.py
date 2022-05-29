@@ -8,36 +8,57 @@ from ...utilities import iter_binary_parameters
 from ..contribution import ThermoContribution
 
 
-class LinearPenelouxVolumeShift(ThermoContribution):
-    r"""The Peneloux volume shift provides the ``CEOS_C`` parameter. As such,
-    this contribution determines the `C` parameter in cubic equations of state,
-    representing the volume translation.
-
-    This class implements only a volume shift linear in molar quantities and
-    not dependent on temperature - hereby not triggering impact on the
-    caliometric properties of the EOS:
+class LinearMixingRule(ThermoContribution):
+    r"""This linear mixing rule represents any contribution that computes a
+    lumped quantity as weighted sum over the molar quantities:
 
     .. math::
 
-        C = \sum_i c_i\,n_i
+        x = \sum_i x_i\,n_i
+
+    The contribution requires an ``option`` dictionary with the following
+    entries:
+
+      - ``target``: The name of the property :math:`x`.
+      - ``source``: The name of the property :math:`x_i`. If omitted, it
+        will be generated as the target name with ``_i`` appended.
+      - ``src_mode``: If set to ``child`` (default), the contribution aquires
+         the quantities :math:`x_i` as a result of previous calculations.
+         If set to ``parameter``, the quantity is required as a vector
+         parameter to the contribution.
     """
 
-    category = "cubic_eos_c"
-    name = "linear"
+    CHILD = 1
+    PARAMETER = 2
 
     @property
     def parameter_structure(self):
-        t_s = ThermoContribution._tensor_structure
-        return {"c_i": t_s(self.species)}
+        if self.options.get("src_mode", "child") == "child":
+            return {}
+        else:
+            t_s = ThermoContribution._tensor_structure
+            name = self.options.get("source", self.options["target"] + "_i")
+            return {name: t_s(self.species)}
 
     def define(self, res, par):
-        res["CEOS_C"] = dot(self._vector(par["c_i"]), res["n"])
+        target = self.options["target"]
+        source = self.options.get("source", target + "_i")
+        if self.options.get("src_mode", self.CHILD) == self.CHILD:
+            res[target] = dot(res[source], res["n"])
+        else:
+            res[target] = dot(self._vector(par[source]), res["n"])
 
 
-class NonSymmmetricMixingRule(ThermoContribution):
-    r"""The mixing rule combines the pure species a-contributions ``RK_A_I``
-    (:math:`a_i`) into the ``RK_A`` parameter of the :class:`RedlichKwongEOS`
-    class.
+class NonSymmetricMixingRule(ThermoContribution):
+    r"""The mixing rule combines the pure species a-contributions ``a_i``
+    (:math:`a_i`) into a lumped ``a`` property.
+
+    The contribution requires an ``option`` dictionary with the following
+    entries:
+
+      - ``target``: The name of the property :math:`a`.
+      - ``source``: The name of the property :math:`a_i`. If omitted, it
+        will be generated as the target name with ``_i`` appended.
 
     Implemented with sparse binary interaction coefficient structure, the
     contribution includes a symmetric interaction (:math:`k`) and an
@@ -45,7 +66,7 @@ class NonSymmmetricMixingRule(ThermoContribution):
 
     .. math::
 
-        A = \sum_{ij} \sqrt{a_i(T)\,a_j(T)} \left [
+        a = \sum_{ij} \sqrt{a_i(T)\,a_j(T)} \left [
               n_i\,n_j - 2\,n_i\,n_j\,k_{ij}(T) -
               \frac2N\,(n_i^2\,n_j - n_i\,n_j^2)\,l_{ij}(T)
             \right ]
@@ -76,10 +97,6 @@ class NonSymmmetricMixingRule(ThermoContribution):
           = \left (\sum_i \sqrt{a_i(T)}\,n_i \right )^2
     """
 
-    name = "non_symmetric"
-    category = "cubic_eos_a"
-    requires = ["cubic_eos_a_function"]
-
     @property
     def parameter_structure(self):
         result = {"T_ref": None}
@@ -95,7 +112,7 @@ class NonSymmmetricMixingRule(ThermoContribution):
             try:
                 options = self.options[name]
             except KeyError:
-                pass
+                pass  # all interaction matrices are optional
             else:
                 res_i = {}
                 binaries = set()
@@ -107,7 +124,10 @@ class NonSymmmetricMixingRule(ThermoContribution):
         return result
 
     def define(self, res, par):
-        T, n, a_i = res["T"], res["n"], res["RK_A_I"]
+        target = self.options["target"]
+        source = self.options.get("source", target + "_i")
+
+        T, n, a_i = res["T"], res["n"], res[source]
         tau = T / par["T_ref"]
         tau_1, tau_2 = 1 - tau, 1 - 1 / tau
 
@@ -123,7 +143,7 @@ class NonSymmmetricMixingRule(ThermoContribution):
             coefficients = iter_binary_parameters(self.species, par, name)
             for i, j, symbol in coefficients:
                 if (i, j) not in cache:
-                    cache[(i, j)] = 2* an[i] * an[j]
+                    cache[(i, j)] = 2 * an[i] * an[j]
                 result -= cache[(i, j)] * symbol * factor
         # calculate second term (symmetric interaction)
         two_by_n = 2.0 / sum1(n)
@@ -134,7 +154,7 @@ class NonSymmmetricMixingRule(ThermoContribution):
                 if (i, j) not in cache:
                     cache[(i, j)] = two_by_n * an[i] * an[j] * (n[i] - n[j])
                 result -= cache[(i, j)] * symbol * factor
-        res["RK_A"] = result
+        res[target] = result
 
 
 class CriticalParameters(ThermoContribution):
@@ -147,24 +167,24 @@ class CriticalParameters(ThermoContribution):
     ======== ============== =========================
     Property Symbol         Description
     ======== ============== =========================
-    T_C      :math:`T_c`    Critical temperatures [K]
-    P_C      :math:`p_c`    Critical pressure[Pa]
-    OMEGA    :math:`\omega` Acentric factor [-]
+    T_c      :math:`T_c`    Critical temperatures [K]
+    p_c      :math:`p_c`    Critical pressure[Pa]
+    omega    :math:`\omega` Acentric factor [-]
     ======== ============== =========================
 
     The same symbols will just be published as intermediate results for the
     actual model contributions to be consumed.
     """
 
-    category = "critical_parameters"
+    provides = ["T_c", "p_c", "omega"]
 
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure
-        return t_s(["T_C", "P_C", "OMEGA"], self.species)
+        return t_s(["T_c", "p_c", "omega"], self.species)
 
     def define(self, res, par):
-        for name in ["T_C", "P_C", "OMEGA"]:
+        for name in ["T_c", "p_c", "omega"]:
             res[name] = self._vector(par[name])
 
 
@@ -178,12 +198,12 @@ class BostonMathiasAlphaFunction(ThermoContribution):
     Property Symbol         Description
     ======== ============== ===========================================
     T        :math:`T`      Actual temperatures [K]
-    T_C      :math:`T_c`    Critical temperatures [K]
-    MFAC     :math:`m_i`    m-factor as function of acentric factor [-]
+    T_c      :math:`T_c`    Critical temperatures [K]
+    m_factor :math:`m_i`    m-factor as function of acentric factor [-]
     ======== ============== ===========================================
 
     Additionally, the contribution requires a polar parameter :math:`\eta_i`,
-    named ``ETA``. We define the root of the reduced temperature as
+    named ``eta``. We define the root of the reduced temperature as
     :math:`\tau_i := \sqrt{T/T_{c,i}}`. Then, we define for
     :math:`\tau_i \le 1`:
 
@@ -197,14 +217,11 @@ class BostonMathiasAlphaFunction(ThermoContribution):
 
     .. math::
 
-        \alpha_i^{\frac12} =
-          \left [\frac{c}{d}(1-\tau^{d})\right ]
-       \quad\text{with}\quad
-    	 c = m + 0.3\eta
-           \quad\text{and}\quad
-         d = 1 + \frac{4\,\eta}{c} + c
+        \alpha_i^{\frac12} = \left [\frac{c}{d}(1-\tau^{d})\right ]
+        \quad\text{with}\quad c = m + 0.3\eta
+        \quad\text{and}\quad d = 1 + \frac{4\,\eta}{c} + c
 
-    The calculated vector is provided as a property called ``ALPHA``
+    The calculated vector is provided as a property called ``alpha``
 
     .. warning::
         This alpha-function is implemented to reproduce results of
@@ -216,18 +233,16 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         involved species.
     """
 
-    name = "Boston_Mathias"
-    category = "alpha_function"
-    requires = ["critical_parameters", "m_factor"]
+    provides = ["alpha"]
 
     @property
     def parameter_structure(self):
         t_s = ThermoContribution._tensor_structure
-        return t_s(["ETA"], self.species)
+        return t_s(["eta"], self.species)
 
     def define(self, res, par):
-        eta = self._vector(par["ETA"])
-        T, T_c, m = res["T"], res["T_C"], res["MFAC"]
+        eta = self._vector(par["eta"])
+        T, T_c, m = res["T"], res["T_c"], res["m_factor"]
         tau = T / T_c
         stau = sqrt(tau)
 
@@ -243,4 +258,4 @@ class BostonMathiasAlphaFunction(ThermoContribution):
                  for i in range(len(self.species))]
         alpha = vertcat(*alpha)
         # result is square of above
-        res["ALPHA"] = alpha * alpha
+        res["alpha"] = alpha * alpha

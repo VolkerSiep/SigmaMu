@@ -14,27 +14,28 @@ def test_critical_parameters():
     from simu.thermo.cubic import CriticalParameters
 
     res = {}
-    par = {"T_C": {"A": SX.sym('T_C.A'),
-                   "B": SX.sym('T_C.B')},
-           "P_C": {"A": SX.sym('P_C.A'),
-                   "B": SX.sym('P_C.B')},
-           "OMEGA": {"A": SX.sym('OMEGA.A'),
-                      "B": SX.sym('OMEGA.B')}}
+    par = {"T_c": {"A": SX.sym('T_c.A'),
+                   "B": SX.sym('T_c.B')},
+           "p_c": {"A": SX.sym('p_c.A'),
+                   "B": SX.sym('p_c.B')},
+           "omega": {"A": SX.sym('omega.A'),
+                      "B": SX.sym('omega.B')}}
     cont = CriticalParameters(["A", "B"], {})
     cont.define(res, par)
     result = {key: str(value) for key, value in res.items()}
     assert_reproduction(result)
 
 
-def test_linear_peneloux_volume_shift():
-    from simu.thermo.cubic import LinearPenelouxVolumeShift
+def test_linear_mixing_rule():
+    from simu.thermo.cubic import LinearMixingRule
 
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
     par = {"c_i": {"A": SX.sym('c_i.A'),
                    "B": SX.sym('c_i.B')}}
-    cont = LinearPenelouxVolumeShift(["A", "B"], {})
+    opt = {"target": "c", "src_mode": LinearMixingRule.PARAMETER}
+    cont = LinearMixingRule(["A", "B"], opt)
     cont.define(res, par)
-    result = str(res["CEOS_C"])
+    result = str(res["c"])
     assert_reproduction(result)
 
 
@@ -42,9 +43,9 @@ def test_RedlichKwongEOS():
     from simu.thermo.cubic.rk import RedlichKwongEOSLiquid
     res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
            "S": SX.sym('S'), "p": SX.sym('p'), "mu": SX.sym('mu', 2)}
-    res["RK_A"] = SX.sym('A0') + res["T"] * SX.sym('dAdT')
-    res["RK_B"] = SX.sym('B0') + res["T"] * SX.sym('dBdT')
-    res["CEOS_C"] = SX.sym('C0')
+    res["ceos_a"] = SX.sym('A0') + res["T"] * SX.sym('dAdT')
+    res["ceos_b"] = SX.sym('B0') + res["T"] * SX.sym('dBdT')
+    res["ceos_c"] = SX.sym('C0')
     res["state"] = SX.sym('x', 4)
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     cont.define(res, {})
@@ -60,14 +61,15 @@ def test_RedlicKwongAbstract():
 
 
 def test_NonSymmmetricMixingRule():
-    from simu.thermo.cubic import NonSymmmetricMixingRule
+    from simu.thermo.cubic import NonSymmetricMixingRule
     res = {"T": SX.sym('T'), "n": SX.sym('n', 3),
-           "RK_A_I": SX.sym('a_i', 3)}
+           "a_i": SX.sym('a_i', 3)}
     options = {
       "k_1": [["A", "B"], ["A", "C"]],
       "k_2": [["A", "B"]],
-      "l_1": [["B", "A"], ["C", "B"]]}
-    cont = NonSymmmetricMixingRule(["A", "B", "C"], options)
+      "l_1": [["B", "A"], ["C", "B"]],
+      "target": "a"}
+    cont = NonSymmetricMixingRule(["A", "B", "C"], options)
     par = {'T_ref': SX.sym("T_ref"),
            'k_1': {'A': {'B': SX.sym("k_1_AB"),
                          'C': SX.sym("k_1_AC")}},
@@ -75,47 +77,47 @@ def test_NonSymmmetricMixingRule():
            'l_1': {'B': {'A': SX.sym("k_1_AB")},
                    'C': {'B': SX.sym("k_1_AB")}}}
     cont.define(res, par)
-    result = str(res["RK_A"])
+    result = str(res["a"])
     assert_reproduction(result)
 
 
 def test_redlich_kwong_a_function():
     from simu.thermo.cubic.rk import RedlichKwongAFunction
-    res = {"ALPHA_I": SX.sym('alpha', 2),
-           "T_C": SX.sym('T_c', 2), "P_C": SX.sym('p_c', 2)}
+    res = {"alpha": SX.sym('alpha', 2),
+           "T_c": SX.sym('T_c', 2), "p_c": SX.sym('p_c', 2)}
     cont = RedlichKwongAFunction(["A", "B"], {})
     cont.define(res, {})
-    result = str(res["RK_A_I"])
+    result = str(res["ceos_a_i"])
     assert_reproduction(result)
 
 
 def test_redlich_kwong_b_function():
     from simu.thermo.cubic.rk import RedlichKwongBFunction
-    res = {"T_C": SX.sym('T_c', 2), "P_C": SX.sym('p_c', 2)}
+    res = {"T_c": SX.sym('T_c', 2), "p_c": SX.sym('p_c', 2)}
     cont = RedlichKwongBFunction(["A", "B"], {})
     cont.define(res, {})
-    result = str(res["RK_B_I"])
+    result = str(res["ceos_b_i"])
     assert_reproduction(result)
 
 
 def test_rk_m_factor():
     from simu.thermo.cubic.rk import RedlichKwongMFactor
-    res = {"OMEGA": SX.sym('w', 2)}
+    res = {"omega": SX.sym('w', 2)}
     cont = RedlichKwongMFactor(["A", "B"], {})
     cont.define(res, {})
-    result = str(res["MFAC"])
+    result = str(res["m_factor"])
     assert_reproduction(result)
 
 
 def test_BostonMathiasAlphaFunction():
     from simu.thermo.cubic import BostonMathiasAlphaFunction
-    res = {"MFAC": SX.sym('m', 2), "T_C": SX.sym('T_c', 2),
+    res = {"m_factor": SX.sym('m', 2), "T_c": SX.sym('T_c', 2),
            "T": SX.sym('T')}
-    par = {"ETA": {"A": SX.sym('ETA.A'),
-                   "B": SX.sym('ETA.B')}}
+    par = {"eta": {"A": SX.sym('eta.A'),
+                   "B": SX.sym('eta.B')}}
     cont = BostonMathiasAlphaFunction(["A", "B"], {})
     cont.define(res, par)
-    result = str(res["ALPHA"][0])
+    result = str(res["alpha"][0])
     assert_reproduction(result)
     return res, par
 
@@ -124,8 +126,8 @@ def test_BostonMathiasAlphaFunction_smoothness():
     """Check smoothness of alpha function at critical temperature, where
     the expressions switches to the super-critical extrapolation"""
     res, par = test_BostonMathiasAlphaFunction()
-    T, T_c, m, alpha = res["T"], res["T_C"], res["MFAC"], res["ALPHA"]
-    eta = vertcat(par["ETA"]["A"], par["ETA"]["B"])
+    T, T_c, m, alpha = res["T"], res["T_c"], res["m_factor"], res["alpha"]
+    eta = vertcat(par["eta"]["A"], par["eta"]["B"])
 
     dadt = jacobian(alpha, T)
     d2adt2 = jacobian(dadt, T)
@@ -150,7 +152,7 @@ def test_BostonMathiasAlphaFunction_smoothness():
 def test_initialise_rk():
     T, p, n = 370.0, 1e5, [0.5, 0.5]
     # try to imitate water
-    res = {"RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5}
+    res = {"ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5}
     liq = RedlichKwongEOSLiquid(["A", "B"], {})
     gas = RedlichKwongEOSGas(["A", "B"], {})
     v_liq = liq.initial_state(T, p, n, res)[1]
@@ -164,13 +166,14 @@ def test_initialise_rk2(Class):
     from simu.constants import R_GAS
     # define upstream expected results
     res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
-           "RK_A": SX.sym('A'), "RK_B": SX.sym('B'), "CEOS_C": SX.sym('C'),
+           "ceos_a": SX.sym('A'), "ceos_b": SX.sym('B'), "ceos_c": SX.sym('C'),
            "S": 0, "mu": 0, "p": 0, "state": SX.sym('x', 4)}
     cont = Class(["A", "B"], {})
     cont.define(res, {})
 
     T, p, n = 370.0, 1e5, [0.5, 0.5]
-    res_float = {"T": T, "n": n, "RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5}
+    res_float = {"T": T, "n": n,
+                 "ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5}
     state = cont.initial_state(T, p, n, res_float)
 
     # is the rest of the state (except volume) reproduced?
@@ -187,7 +190,6 @@ def test_initialise_rk2(Class):
 def test_relax_rk():
     T, V, n = 370.0, 1.5260379390336834e-05, [0.5, 0.5]
     res= {"T": T, "V": V, "n": n, "p": 1e5,
-          "RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5,
           "VBC": V + 1e-5 - 2.5e-5,
           "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
           "p_V": -1e10, "p_V_x": DM([0, 1e15, 0, 0]),
@@ -195,6 +197,7 @@ def test_relax_rk():
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     beta = cont.relax(res, DM([0.1, -V, 0.1, 0.1]))
     assert beta < 1
+
 
 def test_relax_rk_advanced():
     # - provoke parameters to have dp/dV limiting
@@ -204,13 +207,13 @@ def test_relax_rk_advanced():
 
     T, V, n = 370.0, 4.6e-5, [0.5, 0.5]
     res= {"T": T, "V": V, "n": n, "p": 1.1e6,
-          "RK_A": 15, "RK_B": 2.5e-5, "CEOS_C": 1e-5,
           "VBC": V + 1e-5 - 2.5e-5,
           "VBC_x": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
           "p_V": -2.5e11, "p_V_x": DM([0, 8.5e16, 0, 0]),
           "p_x": DM([0, 0, 0, 0])}
-
-    if user_agree("Plot"):
+    # in above data, p, p_V and p_V_x are set approximately to reproduce
+    # taylor approximation in graph. For plotting, p is evaluated exactly.
+    if user_agree("Plot pV-plot for relaxation dp/dV < 0"):
         plot_pv(res)
 
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
@@ -227,8 +230,6 @@ def plot_pv(res):
         A /= 33.7
         VC = V + C
         return R_GAS * T / (VC - B)  - A / VC / (VC + B)
-
-    res["p"] = p(V)
 
     # only plot if running this file interactively
     from numpy import linspace
@@ -249,5 +250,6 @@ def plot_pv(res):
 
 if __name__ == "__main__":
     from pytest import main
+    from sys import argv
     # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-rP"])
+    main([__file__, "-v", "-v", "-rP"] + argv)

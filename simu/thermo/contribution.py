@@ -27,29 +27,12 @@ class ThermoContribution(ABC):
     :cls`ThermoFactory` objects and parametrisation via the provided parameter
     structures.
 
-    The static attributes ``name``, ``category``, and ``requires`` are
-    introduced to prevent invalid configurations, such as incompatible
-    contributions in one model:
-
-      - The ``name`` of the contribution (str), used to define direct
-        dependencies. The name only needs to be unique within all contributions
-        within the same category. If the category is unique in itself, the name
-        can remain empty.
-      - The ``category`` of the contribution (str), used to define general
-        dependencies
-      - The ``requires`` list consists of (name, category) pairs and single
-        category entries. If elements of ``requires`` are of type ``str``, any
-        contribution of that category is accepted. If an element is a list, it
-        defines a direct dependency of ``[category, name]``.
-
-    .. todo::
-        - refer to general section about categories
-        - write that section
+    A contribution can overwrite the class attribute ``provides``, helping
+    the user to identify feasible contributions if a downstream contribution
+    does not find a symbol.
     """
 
-    name = ""
-    category = ""
-    requires = []
+    provides = []
 
     def __init__(self, species, options):
         self.species = species
@@ -153,6 +136,9 @@ class ThermoContribution(ABC):
           a potential bug, if the client code just replaces the ``None`` values
           with actual data.
 
+        .. todo::
+            make this a utility function
+
         """
         if not keys:
             return None
@@ -183,6 +169,11 @@ class ThermoContribution(ABC):
           symbols from. If left as ``None``, the species names of the
           contribution are assumed.
         :return: The ``casadi.SX`` object containing the collected symbols
+
+        .. todo::
+            consider to make this a utility function ... or a generator
+            utility function function f = vector(species)
+
         """
         if keys is None:
             keys = self.species

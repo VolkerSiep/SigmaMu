@@ -38,14 +38,13 @@ class ThermoFrame:
             house-keeping of contribution classes. For this reason, it is not
             further documented here.
         """
-        ThermoFrame.__check_dependencies(contributions.values())
-
         # need to instantiate the contributions
         contributions = {name: cls_(species, options)
                          for name, (cls_, options) in contributions.items()}
 
         self.__parameter_structure = {name: con.parameter_structure
-                                      for name, con in contributions.items()}
+                                      for name, con in contributions.items()
+                                      if con.parameter_structure}
         flat_params = flatten_dictionary(self.__parameter_structure)
         self.__parameter_names = flat_params.keys()
 
@@ -191,7 +190,7 @@ class ThermoFrame:
         # then start from top and call contributions to try to initialise,
         #  based on results that might contain NaNs (if they depend on volume).
         st_def = self.__state_definition
-        state, non_state = st_def.reverse(temperature, pressure, quantities)
+        state = st_def.reverse(temperature, pressure, quantities)
         if None not in state:
             return state
 
@@ -207,19 +206,6 @@ class ThermoFrame:
                 return result
         msg = "No initialisation found despite of non-Gibbs surface"
         raise NotImplementedError(msg)
-
-    @staticmethod
-    def __check_dependencies(contributions):
-        """check compatibility and dependency of contributions"""
-        cat_names, full_names = [], []
-        for cls_, _ in contributions:
-            for item in cls_.requires:
-                msg = f"Dependency '{item}' not fulfilled in " \
-                      f"contribution '{cls_.name}'"
-                assert item in cat_names \
-                    if type(item) is str else full_names, msg
-            cat_names.append(cls_.category)
-            full_names.append([cls_.category, cls_.name])
 
 
 class ThermoFactory:
@@ -248,20 +234,20 @@ class ThermoFactory:
             raise ValueError(f"State definition '{name}' already defined.")
         self.__state_definitions[name] = definition_cls
 
-    def register_contribution(self,
-                              contribution_cls: Type[ThermoContribution]):
-        """Registers a contribution under the name that concatenates
+    def register(self, *contributions: Type[ThermoContribution]):
+        """Registers contributions under the name that concatenates
         ``contribution_cls.category`` and ``contribution_cls.name``
-        attribute. The contribution must be a concrete subclass of
+        attribute. The contributions must be a concrete subclass of
         :class:`ThermoContribution`.
-        :param contribution_cls: The contribution class to register
+
+        :param contributions: The contributions to register, being classes
+          (not instances)
         """
-        name = contribution_cls.category
-        if contribution_cls.name:
-            name += ThermoFactory.CATEGORY_SEPERATOR + contribution_cls.name
-        if name in self.__contributions:
-            raise ValueError(f"Contribution '{name}' already defined.")
-        self.__contributions[name] = contribution_cls
+        for class_ in contributions:
+            name = class_.__name__
+            if name in self.__contributions:
+                raise ValueError(f"Contribution '{name}' already defined.")
+            self.__contributions[name] = class_
 
     @property
     def contribution_names(self) -> List[str]:
@@ -286,18 +272,38 @@ class ThermoFactory:
             - ``contributions``: A list of strings, representing the names
               of the contributions to stack. These identifiers must have been
               defined upfront by calls to :meth:`register_contribution`.
-            - ``options``: This entry can be omitted if not applicable, but
-              some contributions might support options. For addressing these,
-              the sub-dictionary contains a key for such contribution, and the
-              value is whatever data structure the contribution accepts.
+              A contribution entry can also be a dictionary with the following
+              keys:
+
+                - ``cls``: The contribution class (required). If this is the
+                  only key defined, its effect is as if the sole string of the
+                  class name was provided.
+                - ``name``: The name of the contribution in the created
+                  :class:`ThermoFrame`` object. This name must be unique within
+                  the frame definition. It will also be used to define the
+                  contribution parameter structure.
+                  If skipped, the name will be the same as ``cls``. To be
+                  unique, this doesn't work if one contribution class is used
+                  multiple times.
+                - ``options``: Any data structure that is accepted (and
+                  hopefully documented) for the particular contribution.
+                  If skipped, an empty dictionary is used.
 
         :return: The thermodynamic model object
         """
         species = configuration["species"]
-        options = configuration.get("options", {})
         state_def_cls = self.__state_definitions[configuration["state"]]
         state_definition = state_def_cls(species)
-        contributions = {name: [self.__contributions[name],
-                                options.get(name, {})]
-                         for name in configuration["contributions"]}
+        contributions = {}
+        for item in configuration["contributions"]:
+            if type(item) is dict:
+                class_ = item["cls"]
+                name = item.get("name", class_)
+                options = item.get("options", {})
+            else:
+                name, class_, options = item, item, {}
+            class_ = self.__contributions[class_]
+            if name in contributions:
+                raise ValueError(f"Duplicate contribution name '{name}'")
+            contributions[name] = class_, options
         return ThermoFrame(species, state_definition, contributions)

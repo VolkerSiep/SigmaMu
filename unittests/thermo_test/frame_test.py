@@ -16,9 +16,9 @@ def test_create_frame():
         "species": ["N2", "O2", "Ar", "CO2", "H2O"],
         "state": "Helmholtz",
         "contributions": [
-            "reference_state#H0S0",
-            "heat_capacity#linear",
-            "standard_state"
+            "H0S0ReferenceState",
+            "LinearHeatCapacity",
+            "StandardState"
             ],
         }
     return fac.create_frame(config)
@@ -69,8 +69,7 @@ def create_frame_factory():
     from simu.thermo import (HelmholtzState, H0S0ReferenceState,
                                 LinearHeatCapacity, StandardState)
     fac = test_create_thermo_factory()
-    for con in [H0S0ReferenceState, LinearHeatCapacity, StandardState]:
-        fac.register_contribution(con)
+    fac.register(H0S0ReferenceState, LinearHeatCapacity, StandardState)
     fac.register_state_definition(HelmholtzState)
     return fac
 
@@ -81,9 +80,9 @@ def create_simple_frame():
         "species": ["N2", "O2"],
         "state": "Helmholtz",
         "contributions": [
-            "reference_state#H0S0",
-            "heat_capacity#linear",
-            "standard_state"
+            "H0S0ReferenceState",
+            "LinearHeatCapacity",
+            "StandardState"
             ],
         }
     return fac.create_frame(config)
