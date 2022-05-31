@@ -4,7 +4,7 @@
 from abc import abstractmethod
 
 # external modules
-from numpy import roots
+from numpy import dot, ravel, roots
 from casadi import log, jacobian, sum1, SX
 
 # internal modules
@@ -135,11 +135,10 @@ class RedlichKwongEOS(ThermoContribution):
         res["dp_dV"] = jacobian(res["p"], V)
         res["ddp_dV_dx"] = jacobian(res["dp_dV"], state)
 
-
     def relax(self, current_result, delta_state):
         # V - B + C > 0 ?
         y = current_result["VBC"]
-        d_y = current_result["dVBC_dx"].T @ delta_state
+        d_y = dot(ravel(current_result["dVBC_dx"]), delta_state)
         beta = -y / d_y if d_y < 0 else 100
 
         # V > 0 ?
@@ -148,7 +147,7 @@ class RedlichKwongEOS(ThermoContribution):
 
         #  dp/dV < 0 ?
         y = current_result["dp_dV"]
-        d_y = current_result["ddp_dV_dx"].T @ delta_state
+        d_y = dot(ravel(current_result["ddp_dV_dx"]), delta_state)
         if d_y > 0:
             beta = min(beta, -y / d_y)
 
@@ -185,7 +184,7 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
         """Additionally to the main relaxation method, this implementation
         also assures positive pressures"""
         y = current_result["p"]
-        d_y = current_result["dp_dx"].T @ delta_state
+        d_y = dot(ravel(current_result["dp_dx"]), delta_state)
         return -y / d_y if d_y < 0 else None
 
     def initial_state(self, temperature, pressure, quantities, properties):

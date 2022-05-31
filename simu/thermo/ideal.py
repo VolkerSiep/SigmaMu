@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # external modules
+from numpy import ravel
 from casadi import dot, log, vertsplit, vertcat, sum1
 
 # internal modules
@@ -228,6 +229,7 @@ class IdealMix(ThermoContribution):
 
     def relax(self, current_result, delta_state):
         n, d_n = current_result["n"], delta_state[2:]
+        n, d_n = map(ravel, [n, d_n])
         cand = [-n_i / dn_i for n_i, dn_i in zip(n, d_n) if dn_i < 0]
         return min(cand) if cand else 100
 

@@ -3,12 +3,15 @@
 # internal modules
 from simu.utilities import assert_reproduction
 
+
 def test_create_thermo_factory():
     from simu.thermo import ThermoFactory
     return ThermoFactory()
 
+
 def test_register_contributions():
     create_frame_factory()
+
 
 def test_create_frame():
     fac = create_frame_factory()
@@ -23,20 +26,25 @@ def test_create_frame():
         }
     return fac.create_frame(config)
 
+
 def test_parameter_structure():
     frame = create_simple_frame()
     assert_reproduction(frame.parameters)
+
 
 def test_parameter_names():
     frame = create_simple_frame()
     assert_reproduction(frame.parameter_names)
 
+
 def test_property_names():
     frame = create_simple_frame()
     assert_reproduction(frame.property_names)
 
+
 def test_call_frame():
     call_frame()
+
 
 def test_relax():
     frame, state, result = call_frame()
@@ -58,20 +66,22 @@ def call_frame():
                 'cp_a': {'N2': 29.12379083, 'O2': 20.786},
                 'cp_b': {'N2': 5.28694e-4, 'O2': 0.0}
                 }
-             }
+              }
     frame.parameters = params
     state = [398.15, 101325.0, 1, 1]
     result = frame(state)
     return frame, state, result
 
+
 def create_frame_factory():
     """Create a ThermoFactory and register standard state contributions"""
     from simu.thermo import (HelmholtzState, H0S0ReferenceState,
-                                LinearHeatCapacity, StandardState)
+                             LinearHeatCapacity, StandardState)
     fac = test_create_thermo_factory()
     fac.register(H0S0ReferenceState, LinearHeatCapacity, StandardState)
     fac.register_state_definition(HelmholtzState)
     return fac
+
 
 def create_simple_frame():
     """Create a ThermoFrame based on just standard state contributions"""
@@ -86,6 +96,7 @@ def create_simple_frame():
             ],
         }
     return fac.create_frame(config)
+
 
 if __name__ == "__main__":
     from pytest import main

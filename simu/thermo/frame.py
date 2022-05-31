@@ -24,6 +24,7 @@ class ThermoFrame:
     Function object :attr:`function` of the state vector and the parameter
     vector, and calculates a set of thermodynamic properties.
     """
+
     def __init__(self,
                  species: List[str],
                  state_definition: StateDefinition,
@@ -67,8 +68,8 @@ class ThermoFrame:
             contribution.define(result, param_symbols.get(name, {}))
 
         # extract properties of interest
-        property_names = list(result.keys())
-        properties = list(result.values())
+        property_names = sorted(result.keys())
+        properties = [result[n] for n in property_names]
 
         self.__function = Function("thermo_frame",
                                    [state, parameters], properties,

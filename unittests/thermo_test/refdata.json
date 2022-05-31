@@ -108,17 +108,17 @@
     }
   },
   "frame_test.py::test_property_names": [
-    "state",
-    "T",
-    "V",
-    "n",
     "S",
-    "mu",
-    "T_ref",
-    "p_ref",
     "S_std",
+    "T",
+    "T_ref",
+    "V",
+    "mu",
+    "mu_std",
+    "n",
+    "p_ref",
     "p_std",
-    "mu_std"
+    "state"
   ],
   "special_test.py::test_derivative": "((T*C_2)+(C_1+(C_2*T)))"
 }
