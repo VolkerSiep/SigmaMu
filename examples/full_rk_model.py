@@ -7,28 +7,23 @@ and use it for something interesting, e.g. draw a simple phase diagram
 
 from yaml import load, SafeLoader
 
-from numpy import array, ravel, log10
+from numpy import array, dot, ravel, log10
 from numpy.linalg import solve
 from casadi import SX, sum1, Function, jacobian, vertcat
 
-from simu.thermo import ThermoFactory
+from simu.thermo import ThermoFactory, ThermoFrame
 from simu.utilities import flatten_dictionary, unflatten_dictionary
 
 
 class ThermoNode(dict):
-    def __init__(self, frame):
+    """Class sharing a frame with other nodes of same type, and keeping
+    the symbolic results by being a dictionary"""
+
+    def __init__(self, frame: ThermoFrame):
         self.frame = frame
         state = SX.sym('x', 2 + len(self.frame.species))
         items = zip(self.frame.property_names, self.frame(state))
         self.update({name: value for name, value in items})
-
-    def initialise(self, T: float, p: float, n: list[float]) -> list[float]:
-        return self.frame.initial_state(T, p, n)
-
-    def relax_state(self, props, delta):
-        # TODO: stupid that I need to flatten the dict again!
-        props = flatten_dictionary(props)
-        return self.frame.relax(props.values(), delta)
 
 
 class MyThermoFactory(ThermoFactory):
@@ -56,59 +51,74 @@ class MyThermoFactory(ThermoFactory):
 def main():
     # create thermodynamic nodes
     factory = MyThermoFactory()
-    gas = factory.create_node("Boston-Mathias-Redlich-Kwong-Gas")
-    liq = factory.create_node("Boston-Mathias-Redlich-Kwong-Liquid")
+    nodes = {"liq": factory.create_node("Boston-Mathias-Redlich-Kwong-Liquid"),
+             "gas": factory.create_node("Boston-Mathias-Redlich-Kwong-Gas")}
 
     T, p, x, y = 298.15+2.0, 10e5, 0.99, 0.98
 
-    symbols = {"thermo-nodes": {
-                   "gas": gas,
-                   "liq": liq
-                   },
-               "residuals": {
-                    "T-gas": gas["T"] - T,
-                    "T-liq": liq["T"] - T,
-                    "p-gas": gas["p"] - p,
-                    "p-liq": liq["p"] - p,
-                    "equil": gas["mu"] - liq["mu"],  # 2 equations
-                    "N-liq": sum1(liq["n"]) - 1,
-                    "N-gas": sum1(gas["n"]) - 1,
-                    }
+    gas, liq = nodes["gas"], nodes["liq"]  # to define residuals easier
+    symbols = {"thermo-nodes": nodes,
+               "residuals": vertcat(
+                    (gas["T"] - T) / 1e-7,
+                    (liq["T"] - T) / 1e-7,
+                    (gas["p"] - p) / 1,
+                    (liq["p"] - p) / 1,
+                    (gas["mu"] - liq["mu"]) / 1e-7,  # 2 equations
+                    (sum1(liq["n"]) - 1) / 1e-7,
+                    (sum1(gas["n"]) - 1) / 1e-7)
                }
     # add jacobian to list of required symbols
-    state = vertcat(liq["state"], gas["state"])
-    residuals = vertcat(*symbols["residuals"].values())
-    symbols["residuals"] = residuals  # overwrite residuals
-    symbols["dr_dx"] = jacobian(residuals, state)
+    state = vertcat(*[n["state"] for n in nodes.values()])
+    symbols["dr_dx"] = jacobian(symbols["residuals"], state)
 
     # create a function with all the stuff
     symbols_flat = flatten_dictionary(symbols)
     func = Function("model", [state], symbols_flat.values())
 
     # now do the numerics
-    state = array(liq.initialise(T, p, [x, 1 - x]) +
-                  gas.initialise(T, p, [y, 1 - y]))
-    gamma = 0.9
+    state = array(liq.frame.initial_state(T, p, [x, 1 - x]) +
+                  gas.frame.initial_state(T, p, [y, 1 - y]))
+
+    gamma = 0.9  # relaxation distance
 
     for iter in range(30):
+        # evaluate casadi function and unflatten dictionary
         items = zip(symbols_flat, func(state))
         res = unflatten_dictionary({name: value for name, value in items})
 
+        # did it converge?
         residuals = ravel(res["residuals"])
-        delta_x = -solve(res["dr_dx"], residuals)
-        alphas = [gas.relax_state(res["thermo-nodes"]["gas"], delta_x[4:]),
-                  liq.relax_state(res["thermo-nodes"]["liq"], delta_x[:4]),
-                  1 / gamma]
-        alpha = gamma * min(alphas)
-        state += alpha * delta_x
-        print(f"{iter}\t{alpha:.2g}\t{log10(max(residuals)+1e-10):.1f}")
+        err = dot(residuals, residuals)
+        if err < 1:
+            print(f"{iter:2d}  end {log10(err):>5.1f}")
+            break
 
+        # do Newton step
+        delta_x = -solve(res["dr_dx"], residuals)
+
+        # find relaxation factor
+        alpha = 1 / gamma
+        idx = 0
+        for name, node in nodes.items():
+            length = node["state"].rows()
+            new_alpha = node.frame.relax(res["thermo-nodes"][name].values(),
+                                         delta_x[idx:idx + length])
+            alpha = min(alpha, new_alpha)
+            idx += length
+        alpha = float(gamma * alpha)
+
+        # apply scaled step
+        state += alpha * delta_x
+        print(f"{iter:2d} {alpha:4.2g} {log10(err):>5.1f}")
+    else:
+        raise ValueError("Not converged, sorry!")
 
 # TODO:
-#    - also validate correctness of this binary phase diagram at 10 bar
+#    - validate correctness of this binary phase diagram at 10 bar
 #      maybe trace the range between the pure boiling points
 #       propane: T_boil = 300.09 K ( propane = x)
 #       n-butane: T_boil = 352.62 (butane = 1-x)
+
 
 if __name__ == "__main__":
     main()

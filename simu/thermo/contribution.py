@@ -32,7 +32,7 @@ class ThermoContribution(ABC):
     does not find a symbol.
     """
 
-    provides = []
+    provides: List[str] = []
 
     def __init__(self, species, options):
         self.species = species
@@ -86,8 +86,8 @@ class ThermoContribution(ABC):
     def initial_state(self,  # pylint: disable=R0201
                       temperature: float,
                       pressure: float,
-                      quantities: float,
-                      properties: dict) -> List[float]:
+                      quantities: Collection[float],
+                      properties: dict) -> List[float]|None:
         """When the :class:`ThermoFrame object is queried for an initial state
         representation and deviates from Gibbs coordinates, The upper-most
         contribution that implements this method and does not return ``None``
@@ -108,9 +108,10 @@ class ThermoContribution(ABC):
         .. seealso:: :meth:`ThermoFrame.initial_state`
         """
         del temperature, pressure, quantities, properties  # unused
+        return None
 
     @staticmethod
-    def _tensor_structure(*keys) -> dict:
+    def _tensor_structure(*keys) -> dict|None:
         """A helper method to create a nested rectabgular structure as often
         required for implementing :meth:`parameter_structure`.
 
