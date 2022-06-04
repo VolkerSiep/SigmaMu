@@ -201,12 +201,11 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
     def relax_more(self, current_result, delta_state):
         """For the gas phase, no more constraints apply then the ones that
         apply for both phases."""
-        pass
 
     def initial_state(self, temperature, pressure, quantities, properties):
-        V = max(self.find_zeros(temperature, pressure, quantities,
+        volume = max(self.find_zeros(temperature, pressure, quantities,
                                 properties))
-        return [temperature, V] + quantities
+        return [temperature, volume] + quantities
 
 
 class RedlichKwongAFunction(ThermoContribution):

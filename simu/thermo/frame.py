@@ -201,7 +201,7 @@ class ThermoFrame:
         properties = {n: v for n, v in zip(self.property_names, values)}
 
 
-        for name, cont in reversed(self.__contributions.items()):
+        for cont in reversed(self.__contributions.values()):
             result = cont.initial_state(temperature, pressure,
                                         quantities, properties)
             if result:
@@ -231,16 +231,18 @@ class ThermoFactory:
         self.__state_definitions = {}
 
     def register_state_definition(self, definition_cls: Type[StateDefinition]):
+        """Register a new state definition with the name of its class.
+
+        :param definition_cls: The state definition to register
+        """
         name = definition_cls.__name__
         if name in self.__state_definitions:
             raise ValueError(f"State definition '{name}' already defined.")
         self.__state_definitions[name] = definition_cls
 
     def register(self, *contributions: Type[ThermoContribution]):
-        """Registers contributions under the name that concatenates
-        ``contribution_cls.category`` and ``contribution_cls.name``
-        attribute. The contributions must be a concrete subclass of
-        :class:`ThermoContribution`.
+        """Registers contributions under the name of the class.
+        The contributions must be a concrete subclass of :class:`ThermoContribution`.
 
         :param contributions: The contributions to register, being classes
           (not instances)
@@ -293,12 +295,9 @@ class ThermoFactory:
 
         :return: The thermodynamic model object
         """
-        species = configuration["species"]
-        state_def_cls = self.__state_definitions[configuration["state"]]
-        state_definition = state_def_cls(species)
         contributions = {}
         for item in configuration["contributions"]:
-            if type(item) is dict:
+            if isinstance(item, dict):
                 class_ = item["cls"]
                 name = item.get("name", class_)
                 options = item.get("options", {})
@@ -308,4 +307,7 @@ class ThermoFactory:
             if name in contributions:
                 raise ValueError(f"Duplicate contribution name '{name}'")
             contributions[name] = class_, options
-        return ThermoFrame(species, state_definition, contributions)
+
+        species = configuration["species"]
+        state_def_cls = self.__state_definitions[configuration["state"]]
+        return ThermoFrame(species, state_def_cls(), contributions)

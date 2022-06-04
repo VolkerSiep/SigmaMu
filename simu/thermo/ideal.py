@@ -88,14 +88,14 @@ class H0S0ReferenceState(ThermoContribution):
 
     @property
     def parameter_structure(self):
-        t_s = ThermoContribution._tensor_structure
-        return {"dh_form": t_s(self.species),
-                "s_0": t_s(self.species),
+        cts = ThermoContribution.create_tensor_structure
+        return {"dh_form": cts(self.species),
+                "s_0": cts(self.species),
                 "T_ref": None,
                 "p_ref": None}
 
     def define(self, res, par):
-        vector = self._vector
+        vector = self.create_vector
         s_0 = vector(par["s_0"])
         dh_form = vector(par["dh_form"])
         res["S"] = dot(s_0, res["n"])
@@ -153,11 +153,11 @@ class LinearHeatCapacity(ThermoContribution):
 
     @property
     def parameter_structure(self):
-        t_s = ThermoContribution._tensor_structure
-        return t_s(["cp_a", "cp_b"], self.species)
+        cts = ThermoContribution.create_tensor_structure
+        return cts(["cp_a", "cp_b"], self.species)
 
     def define(self, res, par):
-        vector = self._vector
+        vector = self.create_vector
         T, n = res["T"], res["n"]
         T_ref = res["T_ref"]
         d_T, f_T = T - T_ref, T / T_ref
@@ -316,6 +316,6 @@ class HelmholtzIdealGas(ThermoContribution):
         V, d_V = current_result["V"], delta_state[1]
         return -V / d_V if d_V < 0 else 100
 
-    def initial_state(self, T, p, n, parameters):
-        V = sum(n) * R_GAS * T / p
-        return [T, V] + list(n)
+    def initial_state(self, temperature, pressure, quantities, properties):
+        volume = sum(quantities) * R_GAS * temperature / pressure
+        return [temperature, volume] + list(quantities)

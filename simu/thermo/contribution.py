@@ -68,7 +68,7 @@ class ThermoContribution(ABC):
         """
         return {}
 
-    def relax(self,  # pylint: disable=R0201
+    def relax(self,
               current_result: dict,
               delta_state: Collection[float]) -> float:
         """Virtual function to report the maximal allowable step size in
@@ -83,7 +83,7 @@ class ThermoContribution(ABC):
         del current_result, delta_state  # unused
         return 100  # a number greater than 1 / gamma for practical gamma
 
-    def initial_state(self,  # pylint: disable=R0201
+    def initial_state(self,
                       temperature: float,
                       pressure: float,
                       quantities: Collection[float],
@@ -111,7 +111,7 @@ class ThermoContribution(ABC):
         return None
 
     @staticmethod
-    def _tensor_structure(*keys) -> dict|None:
+    def create_tensor_structure(*keys) -> dict|None:
         """A helper method to create a nested rectabgular structure as often
         required for implementing :meth:`parameter_structure`.
 
@@ -144,10 +144,10 @@ class ThermoContribution(ABC):
         if not keys:
             return None
         current, *rest = keys
-        func = ThermoContribution._tensor_structure
+        func = ThermoContribution.create_tensor_structure
         return {k: func(*rest) for k in current}
 
-    def _vector(self, dictionary: dict, keys: Collection[str] = None) -> SX:
+    def create_vector(self, dictionary: dict, keys: Collection[str] = None) -> SX:
         """During :meth:`define`, sub-directories often require to be converted
         into a single ``casadi.SX`` vector. This method provides such
         functionality.
@@ -185,9 +185,6 @@ class StateDefinition(ABC):
     physical properties. This interpretation is then consumed by the
     contributions as input for their calculations towards the complete
     thermodynamic model."""
-
-    def __init__(self, species):
-        self.__species = species
 
     @abstractmethod
     def prepare(self, result: dict):

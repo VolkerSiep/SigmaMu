@@ -40,9 +40,9 @@ class LinearMixingRule(ThermoContribution):
         if self.options.get("src_mode", "child") == "child":
             return {}
         else:
-            t_s = ThermoContribution._tensor_structure
+            cts = ThermoContribution.create_tensor_structure
             name = self.options.get("source", self.options["target"] + "_i")
-            return {name: t_s(self.species)}
+            return {name: cts(self.species)}
 
     def define(self, res, par):
         target = self.options["target"]
@@ -53,7 +53,7 @@ class LinearMixingRule(ThermoContribution):
         if src_mode == self.CHILD:
             res[target] = dot(res[source], res["n"])
         else:
-            res[target] = dot(self._vector(par[source]), res["n"])
+            res[target] = dot(self.create_vector(par[source]), res["n"])
 
 
 class NonSymmetricMixingRule(ThermoContribution):
@@ -139,8 +139,8 @@ class NonSymmetricMixingRule(ThermoContribution):
         tau_1, tau_2 = 1 - tau, 1 - 1 / tau
 
         # calculate first term
-        an = sqrt(a_i) * n
-        result = sum1(an)
+        a_n = sqrt(a_i) * n
+        result = sum1(a_n)
         result *= result  # = sum_ij an_i * an_j
 
         # calculate second term (symmetric interaction)
@@ -150,7 +150,7 @@ class NonSymmetricMixingRule(ThermoContribution):
             coefficients = iter_binary_parameters(self.species, par, name)
             for i, j, symbol in coefficients:
                 if (i, j) not in cache:
-                    cache[(i, j)] = 2 * an[i] * an[j]
+                    cache[(i, j)] = 2 * a_n[i] * a_n[j]
                 result -= cache[(i, j)] * symbol * factor
         # calculate second term (symmetric interaction)
         two_by_n = 2.0 / sum1(n)
@@ -159,7 +159,7 @@ class NonSymmetricMixingRule(ThermoContribution):
             coefficients = iter_binary_parameters(self.species, par, name)
             for i, j, symbol in coefficients:
                 if (i, j) not in cache:
-                    cache[(i, j)] = two_by_n * an[i] * an[j] * (n[i] - n[j])
+                    cache[(i, j)] = two_by_n * a_n[i] * a_n[j] * (n[i] - n[j])
                 result -= cache[(i, j)] * symbol * factor
         res[target] = result
 
@@ -187,12 +187,12 @@ class CriticalParameters(ThermoContribution):
 
     @property
     def parameter_structure(self):
-        t_s = ThermoContribution._tensor_structure
-        return t_s(["T_c", "p_c", "omega"], self.species)
+        cts = ThermoContribution.create_tensor_structure
+        return cts(["T_c", "p_c", "omega"], self.species)
 
     def define(self, res, par):
         for name in ["T_c", "p_c", "omega"]:
-            res[name] = self._vector(par[name])
+            res[name] = self.create_vector(par[name])
 
 
 class BostonMathiasAlphaFunction(ThermoContribution):
@@ -244,11 +244,11 @@ class BostonMathiasAlphaFunction(ThermoContribution):
 
     @property
     def parameter_structure(self):
-        t_s = ThermoContribution._tensor_structure
-        return t_s(["eta"], self.species)
+        cts = ThermoContribution.create_tensor_structure
+        return cts(["eta"], self.species)
 
     def define(self, res, par):
-        eta = self._vector(par["eta"])
+        eta = self.create_vector(par["eta"])
         T, T_c, m = res["T"], res["T_c"], res["m_factor"]
         tau = T / T_c
         stau = sqrt(tau)
