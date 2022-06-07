@@ -90,7 +90,6 @@ def test_redlich_kwong_a_function():
     result = str(res["ceos_a_i"])
     assert_reproduction(result)
 
-
 def test_redlich_kwong_b_function():
     from simu.thermo.cubic.rk import RedlichKwongBFunction
     res = {"T_c": SX.sym('T_c', 2), "p_c": SX.sym('p_c', 2)}
@@ -250,10 +249,7 @@ def plot_pv(res):
     pylab.ylabel("p [Pa]")
     pylab.grid()
     pylab.show()
-
-
-if __name__ == "__main__":
     from pytest import main
     from sys import argv
     # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-rP"] + argv[1:])
+    main([__file__, "-v", "-v", "-s", "-rP"] + argv[1:])

@@ -85,25 +85,25 @@
   ],
   "frame_test.py::test_parameter_structure": {
     "H0S0ReferenceState": {
-      "T_ref": null,
+      "T_ref": 0.0,
       "dh_form": {
-        "N2": null,
-        "O2": null
+        "N2": 0.0,
+        "O2": 0.0
       },
-      "p_ref": null,
+      "p_ref": 0.0,
       "s_0": {
-        "N2": null,
-        "O2": null
+        "N2": 0.0,
+        "O2": 0.0
       }
     },
     "LinearHeatCapacity": {
       "cp_a": {
-        "N2": null,
-        "O2": null
+        "N2": 0.0,
+        "O2": 0.0
       },
       "cp_b": {
-        "N2": null,
-        "O2": null
+        "N2": 0.0,
+        "O2": 0.0
       }
     }
   },

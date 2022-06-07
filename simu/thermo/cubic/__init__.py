@@ -134,12 +134,12 @@ class NonSymmetricMixingRule(ThermoContribution):
         target = self.options["target"]
         source = self.options.get("source", target + "_i")
 
-        T, n, a_i = res["T"], res["n"], res[source]
-        tau = T / par["T_ref"]
+        temp, quant, a_i = res["T"], res["n"], res[source]
+        tau = temp / par["T_ref"]
         tau_1, tau_2 = 1 - tau, 1 - 1 / tau
 
         # calculate first term
-        a_n = sqrt(a_i) * n
+        a_n = sqrt(a_i) * quant
         result = sum1(a_n)
         result *= result  # = sum_ij an_i * an_j
 
@@ -153,13 +153,13 @@ class NonSymmetricMixingRule(ThermoContribution):
                     cache[(i, j)] = 2 * a_n[i] * a_n[j]
                 result -= cache[(i, j)] * symbol * factor
         # calculate second term (symmetric interaction)
-        two_by_n = 2.0 / sum1(n)
+        two_by_n = 2.0 / sum1(quant)
         cache = {}
         for name, factor in [("l_1", 1), ("l_2", tau_1), ("l_3", tau_2)]:
             coefficients = iter_binary_parameters(self.species, par, name)
             for i, j, symbol in coefficients:
                 if (i, j) not in cache:
-                    cache[(i, j)] = two_by_n * a_n[i] * a_n[j] * (n[i] - n[j])
+                    cache[(i, j)] = two_by_n * a_n[i] * a_n[j] * (quant[i] - quant[j])
                 result -= cache[(i, j)] * symbol * factor
         res[target] = result
 
@@ -249,16 +249,16 @@ class BostonMathiasAlphaFunction(ThermoContribution):
 
     def define(self, res, par):
         eta = self.create_vector(par["eta"])
-        T, T_c, m = res["T"], res["T_c"], res["m_factor"]
-        tau = T / T_c
+        temp, critical_temp, m_fac = res["T"], res["T_c"], res["m_factor"]
+        tau = temp / critical_temp
         stau = sqrt(tau)
 
         # define sub and super-critical expression
-        alpha_sub = 1 + m * (1 - stau) - eta * (1 - stau) * (0.7 - tau)
+        alpha_sub = 1 + m_fac * (1 - stau) - eta * (1 - stau) * (0.7 - tau)
 
-        c = m + 0.3 * eta
-        d = 1 + c + 4 * eta / c
-        alpha_sup = exp(c / d * (1 - stau ** d))
+        bm_c = m_fac + 0.3 * eta
+        bm_d = 1 + bm_c + 4 * eta / bm_c
+        alpha_sup = exp(bm_c / bm_d * (1 - stau ** bm_d))
 
         # implement switch with scalar conditional function
         alpha = [conditional(tau[i] > 1, [alpha_sub[i]], alpha_sup[i])

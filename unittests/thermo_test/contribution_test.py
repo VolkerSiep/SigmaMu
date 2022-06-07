@@ -56,4 +56,4 @@ def test_GibbsIdealGas():
 if __name__ == "__main__":
     from pytest import main
     # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-rP"])
+    main([__file__, "-v", "-v", "-s", "-rP"])

@@ -12,11 +12,73 @@ from copy import deepcopy
 from typing import Type, List, Collection
 
 # external modules
-from casadi import Function, SX
+from casadi import Function, SX, DM
 
 # internal modules
 from ..utilities import flatten_dictionary, unflatten_dictionary
 from .contribution import ThermoContribution, StateDefinition
+
+# TODO: Document and test this class!!!
+
+class ThermoParameterObject:
+    def __init__(self, param_structure: dict):
+        flat = flatten_dictionary(param_structure)
+        self.__names = list(flat.keys())
+        self.__values = DM(1, len(self.__names))
+        self.__symbols = SX.sym("param", len(self.__names))
+
+    @property
+    def names(self):
+        return self.__names
+
+    @property
+    def values(self) -> DM:
+        return self.__values
+
+    @values.setter
+    def values(self, values: Collection[float]):
+        if len(values) != len(self.__names):
+            raise ValueError("Unequal length of parameter structures")
+        self.__values = DM(values)
+
+    @property
+    def symbols(self) -> SX:
+        return self.__symbols
+
+    @symbols.setter
+    def symbols(self, symbols: SX):
+        if symbols.rows() != len(self.__names):
+            raise ValueError("Unequal length of parameter structures")
+        if symbols.colums() != 1:
+            raise ValueError("Only one-column symbol vectors allowed")
+        self.__symbols = symbols
+
+    @property
+    def flat_symbols(self) -> dict:
+        return dict(zip(self.names, self.symbols.nz))
+
+    @property
+    def flat_values(self) -> dict:
+        return dict(zip(self.names, self.values.elements()))
+
+    @property
+    def struct_symbols(self) -> dict:
+        return unflatten_dictionary(self.flat_symbols)
+
+    @property
+    def struct_values(self) -> dict:
+        return unflatten_dictionary(self.flat_values)
+
+    @struct_values.setter
+    def struct_values(self, values: dict):
+        flat = flatten_dictionary(values)
+        names = flat.keys()
+        if len(names) != len(self.__names):
+            raise ValueError("Unequal length of parameter structures")
+        for n_1, n_2 in zip(names, self.__names):
+            if n_1 != n_2:
+                raise ValueError(f"Unequal parameter name: '{n_1}' vs '{n_2}'")
+        self.__values = DM(flat.values())
 
 
 class ThermoFrame:
@@ -43,19 +105,11 @@ class ThermoFrame:
         contributions = {name: cls_(species, options)
                          for name, (cls_, options) in contributions.items()}
 
-        self.__parameter_structure = {name: con.parameter_structure
-                                      for name, con in contributions.items()
-                                      if con.parameter_structure}
-        flat_params = flatten_dictionary(self.__parameter_structure)
-        self.__parameter_names = flat_params.keys()
+        params = {name: con.parameter_structure
+                  for name, con in contributions.items()
+                  if con.parameter_structure}
 
-        # flat parameter vector for casadi function
-        parameters = SX.sym('parameters', len(flat_params))
-
-        # recreate dictionary for the contributions to read
-        param_symbols = {name: parameters[k]
-                         for k, name in enumerate(self.__parameter_names)}
-        param_symbols = unflatten_dictionary(param_symbols)
+        parameters = ThermoParameterObject(params)
 
         # define thermodynamic state (th, mc, [ch])
         state = SX.sym("x", len(species) + 2)
@@ -65,18 +119,20 @@ class ThermoFrame:
         result = {"state": state}
         state_definition.prepare(result)
         for name, contribution in contributions.items():
-            contribution.define(result, param_symbols.get(name, {}))
+            contribution.define(result, parameters.struct_symbols.get(name, {}))
 
         # extract properties of interest
         property_names = sorted(result.keys())
         properties = [result[n] for n in property_names]
 
         self.__function = Function("thermo_frame",
-                                   [state, parameters], properties,
+                                   [state, parameters.symbols], properties,
                                    ["state", "parameters"], property_names)
 
         self.__contributions = contributions
         self.__state_definition = state_definition
+        self.__default = None
+        self.__parameters = parameters
 
     @property
     def function(self) -> Function:
@@ -98,19 +154,28 @@ class ThermoFrame:
         """
         return self.__function
 
-    def __call__(self, state: Collection[float]) -> List[Collection[float]]:
+    def __call__(self, state: Collection,
+                 param_sym: bool = False) -> List[Collection]:
         """Call to the function object :attr:`function`, in particular with
         current parameter set :attr:`parameters` and using evaluation with
         float typed variables.
 
-        :param state: A collection of floats representing the state of the
-          model, initially obtained by :meth:`initial_state`.
+        :param state: A collection of floats or symbols representing the state
+            of the model, in case of float initially obtained by
+            :meth:`initial_state`.
+
+        :param param_sym: A flag indicating (if ``True``) whether to evaluate
+            the model with symbol or (else) float thermodynamic parameters.
+            To establish a calculation with constant parameters, it makes sense
+            to not bother representing the parameter symbolically, even if the
+            state is of symbolic type.
 
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.
         """
-        parameters = flatten_dictionary(self.parameters).values()
-        return self.function(state, parameters)
+        param = (self.__parameters.symbols
+                 if param_sym else self.__parameters.values)
+        return self.function(state, param)
 
     @property
     def species(self) -> List[str]:
@@ -125,29 +190,14 @@ class ThermoFrame:
         return self.__function.name_out()
 
     @property
-    def parameters(self) -> dict:
+    def parameters(self) -> ThermoParameterObject:
         """This property is to aid the process of parametrising a model.
-        It returns the structure of all required model parameters as a nested
-        dictionary. Initially, all parameters are set to ``None``.
-        This property must be set with actual values before the object can be
-        called or :meth:`initialise` invoked.
+        It returns the structure of all required model parameters. Initially,
+        The returned object must be set with actual values or symbols before the
+        function can be called or :meth:`initialise` invoked. For the latter,
+        float values have to be provided to the parameter object.
         """
-        return self.__parameter_structure
-
-    @parameters.setter
-    def parameters(self, value: dict):
-        self.__parameter_structure = value
-
-    @property
-    def parameter_names(self) -> List[float]:
-        """Returns the names of parameters to be set. The parameters are
-        dot-separated paths, containing contribution name, parameter name(s),
-        and species name(s), e.g. ``Showmate heat capacity.Cp.A.H2O``.
-        On the last level, all parameters are scalar and floating point.
-        Discrete parameters (e.g. integers and strings) must be defined as
-        configuration parameters.
-        """
-        return list(self.__parameter_names)
+        return self.__parameters
 
     def relax(self, current_result: List[Collection[float]],
               delta_state: Collection[float]) -> float:
@@ -209,6 +259,25 @@ class ThermoFrame:
         msg = "No initialisation found despite of non-Gibbs surface"
         raise NotImplementedError(msg)
 
+    @property
+    def default(self):
+        """The definition of the object can optionally contain a default state.
+        If this is applied, the given default state is stored in this
+        property. Its interpretation is alwyas in ``T, p, n`` coordinates."""
+        return self.__default
+
+    @default.setter
+    def default(self, state):
+        if state is not None:
+            num_species = len(self.species)
+            if len(state) != 3:
+                raise ValueError("Default state must contain three elements, " +
+                                 f"found {len(state)} instead.")
+            if len(state[2]) != num_species:
+                raise ValueError(f"Default state must cover {num_species} " +
+                                 f"species, found {len(state[2])} instead.")
+        self.__default = state
+
 
 class ThermoFactory:
     """The ``ThermoFactory`` class hosts the definitions for the *model
@@ -242,7 +311,8 @@ class ThermoFactory:
 
     def register(self, *contributions: Type[ThermoContribution]):
         """Registers contributions under the name of the class.
-        The contributions must be a concrete subclass of :class:`ThermoContribution`.
+        The contributions must be a concrete subclass of
+        :class:`ThermoContribution`.
 
         :param contributions: The contributions to register, being classes
           (not instances)
@@ -310,4 +380,13 @@ class ThermoFactory:
 
         species = configuration["species"]
         state_def_cls = self.__state_definitions[configuration["state"]]
-        return ThermoFrame(species, state_def_cls(), contributions)
+        result = ThermoFrame(species, state_def_cls(), contributions)
+
+        # set default state
+        default = configuration.get("default_state", None)
+        if default is not None:
+            # make sure the values are float
+            default = [float(default[0]), float(default[1]),
+                    list(map(float, default[2]))]
+        result.default = default
+        return result

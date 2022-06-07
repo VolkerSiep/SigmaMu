@@ -1,56 +1,16 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """Create an instance of a full RK-EOS with standard state for an actual system
 and use it for something interesting, e.g. draw a simple phase diagram
 """
 
-from yaml import load, SafeLoader
-
-from numpy import array, dot, ravel, log10
+# external modules
+from numpy import dot, ravel, log10, hstack
 from numpy.linalg import solve
-from casadi import SX, sum1, Function, jacobian, vertcat
+from casadi import sum1, Function, jacobian, vertcat
 
-from simu.thermo import ThermoFactory, ThermoFrame
+# internal modules
 from simu.utilities import flatten_dictionary, unflatten_dictionary
-from simu.thermo import HelmholtzState, all_contributions
 
-
-class ThermoNode(dict):
-    """Class sharing a frame with other nodes of same type, and keeping
-    the symbolic results by being a dictionary"""
-
-    def __init__(self, frame: ThermoFrame):
-        self.frame = frame
-        state = SX.sym('x', 2 + len(self.frame.species))
-        dict.__init__(self, zip(self.frame.property_names, self.frame(state)))
-
-
-class MyThermoFactory(ThermoFactory):
-    """This factory holds a ``ThermoFrame`` object for each defined model,
-    ready to be deployed in a node."""
-
-    def __init__(self):
-        """Default and only constructor"""
-        ThermoFactory.__init__(self)
-        self.register(*all_contributions)
-        self.register_state_definition(HelmholtzState)
-
-        with open("frame_definitions.yml", encoding='UTF-8') as file:
-            config = load(file, SafeLoader)
-        with open("parameters.yml", encoding='UTF-8') as file:
-            parameters = load(file, SafeLoader)
-
-        # register frames for all defined configurations
-        self.frames = {name: self.create_frame(cfg)
-                       for name, cfg in config.items()}
-        for frame in self.frames.values():
-            frame.parameters = parameters
-
-    def create_node(self, config_name: str) -> ThermoNode:
-        """Based on the name of the thermodynamic model (ThermoFrame),
-        create a wrapper object that hosts the properties for the instance."""
-        return ThermoNode(self.frames[config_name])
+from examples.rk_eos.rkt import ThermoNode, MyThermoFactory
 
 
 def relax(nodes: dict, result: dict, delta_x: list) -> float:
@@ -85,25 +45,24 @@ def define_symbols(nodes: dict[str, ThermoNode], params: dict) -> dict:
 def main():
     """Main entry of the script"""
     # create thermodynamic nodes
+
     factory = MyThermoFactory()
-    nodes = {"liq": factory.create_node("Boston-Mathias-Redlich-Kwong-Liquid"),
-             "gas": factory.create_node("Boston-Mathias-Redlich-Kwong-Gas")}
-    params = {"T": 298.15 + 2, "p": 10e5, "x": 0.99, "y": 0.98, "N": 1}
+    nodes = {"liq": factory.create_node("LPG-RK-Liquid"),
+             "gas": factory.create_node("LPG-RK-Gas")}
+    params = {"T": 298.15 + 2, "p": 10e5, "N": 1}
     symbols = define_symbols(nodes, params)
 
     # add jacobian to list of required symbols
     state = vertcat(*[n["state"] for n in nodes.values()])
     symbols["dr_dx"] = jacobian(symbols["residuals"], state)
 
-    # create a function with all the stuff
+    # create a casadi function with all the stuff
     symbols_flat = flatten_dictionary(symbols)
     func = Function("model", [state], symbols_flat.values())
 
     # now do the numerics
-    state = array(nodes["liq"].frame.initial_state(params["T"], params["p"],
-                  [params["x"], 1 - params["x"]]) +
-                  nodes["gas"].frame.initial_state(params["T"], params["p"],
-                  [params["y"], 1 - params["y"]]))
+    state = hstack([node.frame.initial_state(*node.frame.default)
+                   for node in nodes.values()])
 
     for itr in range(30):
         # evaluate casadi function and unflatten dictionary

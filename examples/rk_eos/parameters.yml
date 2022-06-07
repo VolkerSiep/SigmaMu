@@ -1,0 +1,66 @@
+LNG-RK:
+  H0S0ReferenceState:
+    T_ref: 298.15
+    dh_form:
+      C3: -104700.0
+      nC4: -125600.0
+    p_ref: 100000.0
+    s_0:
+      C3: 0.0  # missing
+      nC4: 0.0  # missing
+  LinearHeatCapacity:
+    cp_a:
+      C3: 0.0  # missing
+      nC4: 0.0  # missing
+    cp_b:
+      C3: 0.0  # missing
+      nC4: 0.0  # missing
+  CriticalParameters:
+    T_c:
+      C3: 369.8
+      nC4: 425.2
+    omega:
+      C3: 0.153
+      nC4: 0.199
+    p_c:
+      C3: 4250000.0
+      nC4: 3800000.0
+  BostonMathiasAlphaFunction:
+    eta:
+      C3: 0
+      nC4: 0
+  MixingRule_A:
+    T_ref: 298.15
+  MixingRule_C:
+    c_i:
+      C3: 0.0  # missing
+      nC4: 0.0  # missing
+
+Water-RK:
+  H0S0ReferenceState:
+    T_ref: 298.15
+    dh_form:
+      H2O: -241826.0
+    p_ref: 100000.0
+    s_0:
+      H2O: 0.0  # missing
+  LinearHeatCapacity:
+    cp_a:
+      H2O: 0.0  # missing
+    cp_b:
+      H2O: 0.0  # missing
+  CriticalParameters:
+    T_c:
+      H2O: 647
+    omega:
+      H2O: 0.344
+    p_c:
+      H2O: 22064000.0
+  BostonMathiasAlphaFunction:
+    eta:
+      H2O: 0
+  MixingRule_A:
+    T_ref: 298.15
+  MixingRule_C:
+    c_i:
+      H2O: 0.0  # missing

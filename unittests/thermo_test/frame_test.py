@@ -29,12 +29,12 @@ def test_create_frame():
 
 def test_parameter_structure():
     frame = create_simple_frame()
-    assert_reproduction(frame.parameters)
+    assert_reproduction(frame.parameters.struct_values)
 
 
 def test_parameter_names():
     frame = create_simple_frame()
-    assert_reproduction(frame.parameter_names)
+    assert_reproduction(frame.parameters.names)
 
 
 def test_property_names():
@@ -56,18 +56,18 @@ def test_relax():
 def call_frame():
     """Call a frame object with a state and return all with the result"""
     frame = create_simple_frame()
-    params = {'H0S0 reference state': {
+    params = {'H0S0ReferenceState': {
                 'dh_form': {'N2': 0.0, 'O2': 0.0},
                 's_0': {'N2': 0.0, 'O2': 0.0},
                 'T_ref': 298.15,
                 'p_ref': 101325.0
                 },
-              'Linear heat capacity': {
+              'LinearHeatCapacity': {
                 'cp_a': {'N2': 29.12379083, 'O2': 20.786},
                 'cp_b': {'N2': 5.28694e-4, 'O2': 0.0}
                 }
               }
-    frame.parameters = params
+    frame.parameters.struct_values = params
     state = [398.15, 101325.0, 1, 1]
     result = frame(state)
     return frame, state, result
@@ -101,4 +101,4 @@ def create_simple_frame():
 if __name__ == "__main__":
     from pytest import main
     # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-rP"])
+    main([__file__, "-v", "-v", "-s", "-rP"])
