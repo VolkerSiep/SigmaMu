@@ -1,18 +1,27 @@
 # -*- coding: utf-8 -*-
 
+"""Test module for cubic EOS contributions"""
+
+# stdlib modules
+from sys import argv
+
 # external modules
 from casadi import DM, SX, Function, jacobian, vertcat
-from pytest import raises, mark
+from numpy import linspace
+from pytest import main, mark, raises
+import pylab
 
 # internal modules
-from simu.thermo import RedlichKwongEOSLiquid, RedlichKwongEOSGas
 from simu.constants import R_GAS
+from simu.thermo.cubic.rk import RedlichKwongEOS
 from simu.utilities import assert_reproduction, user_agree
-
+from simu.thermo import (
+    CriticalParameters, LinearMixingRule, RedlichKwongEOSLiquid,
+    RedlichKwongEOSGas, NonSymmetricMixingRule, RedlichKwongAFunction,
+    RedlichKwongBFunction, RedlichKwongMFactor, BostonMathiasAlphaFunction)
 
 def test_critical_parameters():
-    from simu.thermo.cubic import CriticalParameters
-
+    """Test definition of CriticalParameters contribution"""
     res = {}
     par = {"T_c": {"A": SX.sym('T_c.A'),
                    "B": SX.sym('T_c.B')},
@@ -27,8 +36,7 @@ def test_critical_parameters():
 
 
 def test_linear_mixing_rule():
-    from simu.thermo.cubic import LinearMixingRule
-
+    """Test definition of LinearMixingRule contribution"""
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
     par = {"c_i": {"A": SX.sym('c_i.A'),
                    "B": SX.sym('c_i.B')}}
@@ -39,8 +47,8 @@ def test_linear_mixing_rule():
     assert_reproduction(result)
 
 
-def test_RedlichKwongEOS():
-    from simu.thermo.cubic.rk import RedlichKwongEOSLiquid
+def test_redlich_kwong_eos():
+    """Test definition of RedlichKwongEOS contribution"""
     res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
            "S": SX.sym('S'), "p": SX.sym('p'), "mu": SX.sym('mu', 2)}
     res["ceos_a"] = SX.sym('A0') + res["T"] * SX.sym('dAdT')
@@ -49,19 +57,14 @@ def test_RedlichKwongEOS():
     res["state"] = SX.sym('x', 4)
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     cont.define(res, {})
-    result = {i: str(res[i]) for i in "S p mu".split()}
-    assert_reproduction(result)
-
-
-def test_RedlicKwongAbstract():
-    from simu.thermo.cubic.rk import RedlichKwongEOS
     with raises(TypeError) as excinfo:
+        # pylint: disable=abstract-class-instantiated
         RedlichKwongEOS(["A", "B"], {})
     assert "abstract" in str(excinfo.value)
 
 
-def test_NonSymmmetricMixingRule():
-    from simu.thermo.cubic import NonSymmetricMixingRule
+def test_non_symmmetric_mixing_rule():
+    """Test definition of NonSymmetricMixingRule contribution"""
     res = {"T": SX.sym('T'), "n": SX.sym('n', 3),
            "a_i": SX.sym('a_i', 3)}
     options = {
@@ -82,7 +85,7 @@ def test_NonSymmmetricMixingRule():
 
 
 def test_redlich_kwong_a_function():
-    from simu.thermo.cubic.rk import RedlichKwongAFunction
+    """Test definition of RedlichKwongAFunction contribution"""
     res = {"alpha": SX.sym('alpha', 2),
            "T_c": SX.sym('T_c', 2), "p_c": SX.sym('p_c', 2)}
     cont = RedlichKwongAFunction(["A", "B"], {})
@@ -91,7 +94,7 @@ def test_redlich_kwong_a_function():
     assert_reproduction(result)
 
 def test_redlich_kwong_b_function():
-    from simu.thermo.cubic.rk import RedlichKwongBFunction
+    """Test definition of RedlichKwongBFunction contribution"""
     res = {"T_c": SX.sym('T_c', 2), "p_c": SX.sym('p_c', 2)}
     cont = RedlichKwongBFunction(["A", "B"], {})
     cont.define(res, {})
@@ -100,7 +103,7 @@ def test_redlich_kwong_b_function():
 
 
 def test_rk_m_factor():
-    from simu.thermo.cubic.rk import RedlichKwongMFactor
+    """Test definition of RedlichKwongMFactor contribution"""
     res = {"omega": SX.sym('w', 2)}
     cont = RedlichKwongMFactor(["A", "B"], {})
     cont.define(res, {})
@@ -108,8 +111,8 @@ def test_rk_m_factor():
     assert_reproduction(result)
 
 
-def test_BostonMathiasAlphaFunction():
-    from simu.thermo.cubic import BostonMathiasAlphaFunction
+def test_boston_mathias_alpha_function():
+    """Test definition of BostonMathiasAlphaFunction contribution"""
     res = {"m_factor": SX.sym('m', 2), "T_c": SX.sym('T_c', 2),
            "T": SX.sym('T')}
     par = {"eta": {"A": SX.sym('eta.A'),
@@ -121,10 +124,10 @@ def test_BostonMathiasAlphaFunction():
     return res, par
 
 
-def test_BostonMathiasAlphaFunction_smoothness():
+def test_boston_mathias_alpha_function_smoothness():
     """Check smoothness of alpha function at critical temperature, where
     the expressions switches to the super-critical extrapolation"""
-    res, par = test_BostonMathiasAlphaFunction()
+    res, par = test_boston_mathias_alpha_function()
     T, T_c, m, alpha = res["T"], res["T_c"], res["m_factor"], res["alpha"]
     eta = vertcat(par["eta"]["A"], par["eta"]["B"])
 
@@ -134,7 +137,7 @@ def test_BostonMathiasAlphaFunction_smoothness():
     f = Function("alpha", [T, T_c, m, eta], [alpha, dadt, d2adt2])
 
     def props(eps):
-        T, Tc, m, eta = 300, [300, 400], [0.6, 0.6], [0.12, 0.06]
+        T, Tc, m, eta = 300 + eps, [300, 400], [0.6, 0.6], [0.12, 0.06]
         res = f(T, Tc, m, eta)
         return [float(r[0]) for r in res]
 
@@ -149,6 +152,7 @@ def test_BostonMathiasAlphaFunction_smoothness():
 
 
 def test_initialise_rk():
+    """Test volume initialisation of RK-model"""
     T, p, n = 370.0, 1e5, [0.5, 0.5]
     # try to imitate water
     res = {"ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5}
@@ -162,7 +166,7 @@ def test_initialise_rk():
 
 @mark.parametrize("Class", [RedlichKwongEOSGas, RedlichKwongEOSLiquid])
 def test_initialise_rk2(Class):
-    from simu.constants import R_GAS
+    """test initialisation of rk gas and liquid"""
     # define upstream expected results
     res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
            "ceos_a": SX.sym('A'), "ceos_b": SX.sym('B'), "ceos_c": SX.sym('C'),
@@ -187,6 +191,7 @@ def test_initialise_rk2(Class):
 
 
 def test_relax_rk():
+    """test relaxation method for RK model"""
     T, V, n = 370.0, 1.5260379390336834e-05, [0.5, 0.5]
     res= {"T": T, "V": V, "n": n, "p": 1e5,
           "ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5,
@@ -200,10 +205,12 @@ def test_relax_rk():
 
 
 def test_relax_rk_advanced():
-    # - provoke parameters to have dp/dV limiting
-    # - relax only in V-direction
-    # - provide p_V and p_V_x[1] approximately correctly
-    # - relax from V = 4.6e-5 by dV = +0.4e-5
+    """test relaxation method for RK models, limited by dp/DV:
+
+    - provoke parameters to have dp/dV limiting
+    - relax only in V-direction
+    - provide p_V and p_V_x[1] approximately correctly
+    - relax from V = 4.6e-5 by dV = +0.4e-5"""
 
     T, V, n = 370.0, 4.6e-5, [0.5, 0.5]
     res= {"T": DM(T), "V": DM(V), "n": DM(n), "p": DM(1.1e6),
@@ -225,6 +232,7 @@ def test_relax_rk_advanced():
 # *** auxiliary routines
 
 def plot_pv(res):
+    """auxiliary method to plot pv-graph and linear/quadratic approximation"""
     T, V  = res["T"], res["V"]
     def p(V):
         A, B, C = [res[i] for i in "ceos_a ceos_b ceos_c".split()]
@@ -233,9 +241,6 @@ def plot_pv(res):
         return R_GAS * T / (VC - B)  - A / VC / (VC + B)
 
     # only plot if running this file interactively
-    from numpy import linspace
-    import pylab
-
     volumes = linspace(4.5e-5, 5.2e-5, num=100)
     pressures = p(volumes)
     lin_p = p(V) + (volumes - V) * res["dp_dV"]
@@ -249,7 +254,7 @@ def plot_pv(res):
     pylab.ylabel("p [Pa]")
     pylab.grid()
     pylab.show()
-    from pytest import main
-    from sys import argv
+
+if __name__ == "__main__":
     # only this file, very verbose and print stdout when started from here.
     main([__file__, "-v", "-v", "-s", "-rP"] + argv[1:])

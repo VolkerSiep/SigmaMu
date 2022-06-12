@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 
+"""Test module for ideal contributions"""
+
+# stdlib modules
+from sys import argv
+
 # external modules
+from pytest import main
 from casadi import SX
 
+# internal modules
+from simu.thermo import (GibbsIdealGas, H0S0ReferenceState, IdealMix,
+                         LinearHeatCapacity)
 from simu.utilities import assert_reproduction
 
-def test_H0S0ReferenceState():
-    from simu.thermo import H0S0ReferenceState
+
+def test_h0s0_reference_state():
+    """Test definition of H0S0ReferenceState contribution"""
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
     par = {"dh_form": {"A": SX.sym('dh_form.A'),
                        "B": SX.sym('dh_form.B')},
@@ -19,8 +29,8 @@ def test_H0S0ReferenceState():
     result = {i: str(res[i]) for i in "S mu".split()}
     assert_reproduction(result)
 
-def test_LinearHeatCapacity():
-    from simu.thermo import LinearHeatCapacity
+def test_linear_heat_capacity():
+    """Test definition of LinearHeatCapacity contribution"""
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2),
            "S": SX.sym('S_ref'), "mu": SX.sym('mu_ref'),
            "T_ref": SX.sym('T_ref')}
@@ -33,8 +43,8 @@ def test_LinearHeatCapacity():
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
-def test_IdealMix():
-    from simu.thermo import IdealMix
+def test_ideal_mix():
+    """Test definition of IdealMix contribution"""
     res = {"T": SX.sym('T'), "n": SX.sym('n', 2),
            "S": SX.sym('S_std'), "mu": SX.sym('mu_std')}
     cont = IdealMix(["A", "B"], {})
@@ -42,8 +52,8 @@ def test_IdealMix():
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
-def test_GibbsIdealGas():
-    from simu.thermo import GibbsIdealGas
+def test_gibbs_ideal_gas():
+    """Test definition of GibbsIdealGas contribution"""
     res = {"T": SX.sym('T'), "p": SX.sym('p'), "n": SX.sym('n', 2),
            "p_ref": SX.sym('p_ref'),
            "S": SX.sym('S_im'), "mu": SX.sym('mu_im')}
@@ -52,8 +62,6 @@ def test_GibbsIdealGas():
     result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
     assert_reproduction(result)
 
-
 if __name__ == "__main__":
-    from pytest import main
     # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-s", "-rP"])
+    main([__file__, "-v", "-v", "-s", "-rP"] + argv[1:])

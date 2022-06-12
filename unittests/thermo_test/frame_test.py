@@ -1,19 +1,31 @@
 # -*- coding: utf-8 -*-
 
+"""Test module for governing thermo objects"""
+
+# stdlib modules
+from sys import argv
+
+# external modules
+from pytest import main
+
 # internal modules
+from simu.thermo import (H0S0ReferenceState, HelmholtzState,
+                         LinearHeatCapacity, StandardState, ThermoFactory)
 from simu.utilities import assert_reproduction
 
 
 def test_create_thermo_factory():
-    from simu.thermo import ThermoFactory
+    """just create a ThermoFactory"""
     return ThermoFactory()
 
 
 def test_register_contributions():
+    """Create a ThermoFactory and register some contribtions"""
     create_frame_factory()
 
 
 def test_create_frame():
+    """create a ThermoFrame object"""
     fac = create_frame_factory()
     config = {
         "species": ["N2", "O2", "Ar", "CO2", "H2O"],
@@ -28,25 +40,30 @@ def test_create_frame():
 
 
 def test_parameter_structure():
+    """Retrieve an (empty) parameter structure from created frame"""
     frame = create_simple_frame()
     assert_reproduction(frame.parameters.struct_values)
 
 
 def test_parameter_names():
+    """Retrieve parameter names from created frame"""
     frame = create_simple_frame()
     assert_reproduction(frame.parameters.names)
 
 
 def test_property_names():
+    """Retrieve the names of defined properties from created frame"""
     frame = create_simple_frame()
     assert_reproduction(frame.property_names)
 
 
 def test_call_frame():
+    """Call a created frame with numerical values"""
     call_frame()
 
 
 def test_relax():
+    """Simple test of relaxation method"""
     frame, state, result = call_frame()
     delta_state = [-500, 10, -2, 1]
     assert frame.relax(result, delta_state) == state[0] / 500
@@ -75,8 +92,6 @@ def call_frame():
 
 def create_frame_factory():
     """Create a ThermoFactory and register standard state contributions"""
-    from simu.thermo import (HelmholtzState, H0S0ReferenceState,
-                             LinearHeatCapacity, StandardState)
     fac = test_create_thermo_factory()
     fac.register(H0S0ReferenceState, LinearHeatCapacity, StandardState)
     fac.register_state_definition(HelmholtzState)
@@ -99,6 +114,6 @@ def create_simple_frame():
 
 
 if __name__ == "__main__":
-    from pytest import main
     # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-s", "-rP"])
+    main([__file__, "-v", "-v", "-s", "-rP"] + argv[1:])
+

@@ -12,73 +12,11 @@ from copy import deepcopy
 from typing import Type, List, Collection
 
 # external modules
-from casadi import Function, SX, DM
+from casadi import Function, SX
 
 # internal modules
-from ..utilities import flatten_dictionary, unflatten_dictionary
+from ..utilities import FlexiDictionary
 from .contribution import ThermoContribution, StateDefinition
-
-# TODO: Document and test this class!!!
-
-class ThermoParameterObject:
-    def __init__(self, param_structure: dict):
-        flat = flatten_dictionary(param_structure)
-        self.__names = list(flat.keys())
-        self.__values = DM(1, len(self.__names))
-        self.__symbols = SX.sym("param", len(self.__names))
-
-    @property
-    def names(self):
-        return self.__names
-
-    @property
-    def values(self) -> DM:
-        return self.__values
-
-    @values.setter
-    def values(self, values: Collection[float]):
-        if len(values) != len(self.__names):
-            raise ValueError("Unequal length of parameter structures")
-        self.__values = DM(values)
-
-    @property
-    def symbols(self) -> SX:
-        return self.__symbols
-
-    @symbols.setter
-    def symbols(self, symbols: SX):
-        if symbols.rows() != len(self.__names):
-            raise ValueError("Unequal length of parameter structures")
-        if symbols.colums() != 1:
-            raise ValueError("Only one-column symbol vectors allowed")
-        self.__symbols = symbols
-
-    @property
-    def flat_symbols(self) -> dict:
-        return dict(zip(self.names, self.symbols.nz))
-
-    @property
-    def flat_values(self) -> dict:
-        return dict(zip(self.names, self.values.elements()))
-
-    @property
-    def struct_symbols(self) -> dict:
-        return unflatten_dictionary(self.flat_symbols)
-
-    @property
-    def struct_values(self) -> dict:
-        return unflatten_dictionary(self.flat_values)
-
-    @struct_values.setter
-    def struct_values(self, values: dict):
-        flat = flatten_dictionary(values)
-        names = flat.keys()
-        if len(names) != len(self.__names):
-            raise ValueError("Unequal length of parameter structures")
-        for n_1, n_2 in zip(names, self.__names):
-            if n_1 != n_2:
-                raise ValueError(f"Unequal parameter name: '{n_1}' vs '{n_2}'")
-        self.__values = DM(flat.values())
 
 
 class ThermoFrame:
@@ -109,7 +47,7 @@ class ThermoFrame:
                   for name, con in contributions.items()
                   if con.parameter_structure}
 
-        parameters = ThermoParameterObject(params)
+        parameters = FlexiDictionary(params)
 
         # define thermodynamic state (th, mc, [ch])
         state = SX.sym("x", len(species) + 2)
@@ -190,7 +128,7 @@ class ThermoFrame:
         return self.__function.name_out()
 
     @property
-    def parameters(self) -> ThermoParameterObject:
+    def parameters(self) -> FlexiDictionary:
         """This property is to aid the process of parametrising a model.
         It returns the structure of all required model parameters. Initially,
         The returned object must be set with actual values or symbols before the

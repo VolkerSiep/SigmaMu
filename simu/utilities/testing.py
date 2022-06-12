@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""auxiliary routines for unit testing"""
 
 # stdlib modules
 from json import dumps, load, loads
@@ -8,6 +9,7 @@ from pathlib import Path
 from difflib import Differ
 
 def user_agree(message):
+    """Ask for confirmation, but assume "no", if not run interactively"""
     try:
         ans = input(f"{message} y/[n]? ")
         return ans.lower() == "y"
@@ -23,28 +25,21 @@ def assert_reproduction(data, suffix=None):
     (nested) dictionaries to be compared correctly.
     """
 
-    def user_agree(message):
-        try:
-            ans = input(f"{message} y/[n]? ")
-            return ans.lower() == "y"
-        except OSError:  # run automatically with std streams caught
-            return False
-
     def load_file():
         # try to open file
         # if not exists, dump and return empty dictionary
         try:
-            with open(filename, "r") as file:
+            with open(filename, "r", encoding="utf-8") as file:
                 data = load(file)
         except FileNotFoundError:
             data = {}
-            with open(filename, "w") as file:
+            with open(filename, "w", encoding="utf-8") as file:
                 file.write(dumps(data))
         return data
 
     def save_data(data):
         ref_data_all[meth_name] = data
-        with open(filename, "w") as file:
+        with open(filename, "w", encoding="utf-8") as file:
             file.write(dumps(ref_data_all, sort_keys=True, indent=2))
 
     caller_file = Path(_getframe(1).f_code.co_filename)

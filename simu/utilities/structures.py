@@ -5,6 +5,12 @@ This module contains general helper functions that are useful on several
 levels, while relying to maximal degree on standard python structures.
 """
 
+# stdlib modules
+from typing import Collection
+
+# external modules
+from casadi import DM, SX
+
 SEPARATOR = "."
 
 
@@ -65,6 +71,83 @@ def unflatten_dictionary(flat_structure):
     return result
 
 
+class FlexiDictionary:
+    """"Class to host structured data and convert it into
+    various formats.
+
+    For casadi, the parameters are required to be a flat structure, while for
+    house-keeping in general, a nested dictionary is preferable.
+    This class stores the keys with a set of both values and symbols, and
+    allows to query and alter the data structure using different formats.
+    """
+
+    def __init__(self, param_structure: dict):
+        flat = flatten_dictionary(param_structure)
+        self.__names = list(flat.keys())
+        self.__values = DM(1, len(self.__names))
+        self.__symbols = SX.sym("param", len(self.__names))
+
+    @property
+    def names(self):
+        """The names of the flat keys"""
+        return self.__names
+
+    @property
+    def values(self) -> DM:
+        """The flat list of numeric values """
+        return self.__values
+
+    @values.setter
+    def values(self, values: Collection[float]):
+        if len(values) != len(self.__names):
+            raise ValueError("Unequal length of parameter structures")
+        self.__values = DM(values)
+
+    @property
+    def symbols(self) -> SX:
+        """The flat list of symbols"""
+        return self.__symbols
+
+    @symbols.setter
+    def symbols(self, symbols: SX):
+        if symbols.rows() != len(self.__names):
+            raise ValueError("Unequal length of parameter structures")
+        if symbols.columns() != 1:
+            raise ValueError("Only one-column symbol vectors allowed")
+        self.__symbols = symbols
+
+    @property
+    def flat_symbols(self) -> dict:
+        """The flat dictionary, mapping to symbols"""
+        return dict(zip(self.names, self.symbols.nz))
+
+    @property
+    def flat_values(self) -> dict:
+        """The flat dictionary, mapping to numeric values"""
+        return dict(zip(self.names, self.values.elements()))
+
+    @property
+    def struct_symbols(self) -> dict:
+        """The nested dictionary, mapping to symbols"""
+        return unflatten_dictionary(self.flat_symbols)
+
+    @property
+    def struct_values(self) -> dict:
+        """The nested dictionary, mapping to numeric values"""
+        return unflatten_dictionary(self.flat_values)
+
+    @struct_values.setter
+    def struct_values(self, values: dict):
+        flat = flatten_dictionary(values)
+        names = flat.keys()
+        if len(names) != len(self.__names):
+            raise ValueError("Unequal length of parameter structures")
+        for n_1, n_2 in zip(names, self.__names):
+            if n_1 != n_2:
+                raise ValueError(f"Unequal parameter name: '{n_1}' vs '{n_2}'")
+        self.__values = DM(flat.values())
+
+
 class SpeciesDict(dict):
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
@@ -92,7 +175,7 @@ class SpeciesDict(dict):
 
 
 
-# TODO: make below part of unit tests
+# TODO: make below part of unit tests and test all of above!!
 
 
 def main():
@@ -107,7 +190,7 @@ def main():
          }
 
     flat = flatten_dictionary(t)
-    print(unflatten_dictionrary(flat))
+    print(unflatten_dictionary(flat))
 
 
 if __name__ == "__main__":
