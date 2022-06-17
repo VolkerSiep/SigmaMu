@@ -10,21 +10,7 @@ from casadi import sum1, Function, jacobian, vertcat
 # internal modules
 from simu.utilities import flatten_dictionary, unflatten_dictionary
 
-from examples.rk_eos.rkt import ThermoNode, MyThermoFactory
-
-
-def relax(nodes: dict, result: dict, delta_x: list) -> float:
-    """find relaxation factor"""
-    gamma = 0.9  # relaxation distance
-    alpha = 1 / gamma
-    idx = 0
-    for name, node in nodes.items():
-        length = node["state"].rows()
-        new_alpha = node.frame.relax(result[name].values(),
-                                    delta_x[idx:idx + length])
-        alpha = min(alpha, new_alpha)
-        idx += length
-    return float(gamma * alpha)
+from examples.rk_eos.rkt import ThermoNode, MyThermoFactory, relax
 
 
 def define_symbols(nodes: dict[str, ThermoNode], params: dict) -> dict:

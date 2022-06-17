@@ -57,7 +57,8 @@ class ThermoFrame:
         result = {"state": state}
         state_definition.prepare(result)
         for name, contribution in contributions.items():
-            contribution.define(result, parameters.struct_symbols.get(name, {}))
+            param = parameters.view(flat=False, symbol=True).get(name, {})
+            contribution.define(result, param)
 
         # extract properties of interest
         property_names = sorted(result.keys())
@@ -96,12 +97,7 @@ class ThermoFrame:
                  param_sym: bool = False) -> List[Collection]:
         """Call to the function object :attr:`function`, in particular with
         current parameter set :attr:`parameters` and using evaluation with
-        float typed variables.
-
-        :param state: A collection of floats or symbols representing the state
-            of the model, in case of float initially obtained by
-            :meth:`initial_state`.
-
+        float typed variables.>
         :param param_sym: A flag indicating (if ``True``) whether to evaluate
             the model with symbol or (else) float thermodynamic parameters.
             To establish a calculation with constant parameters, it makes sense
@@ -112,7 +108,7 @@ class ThermoFrame:
           properties, in the sequence as defined by :attr:`property_names`.
         """
         param = (self.__parameters.symbols
-                 if param_sym else self.__parameters.values)
+                 if param_sym else self.__parameters.flat_values)
         return self.function(state, param)
 
     @property

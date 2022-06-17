@@ -41,7 +41,7 @@ class MyThermoFactory(ThermoFactory):
             param = cfg.pop("parameters")
             cfg.update(structures[structure])
             frame = self.create_frame(cfg)
-            frame.parameters.struct_values = parameters[param]
+            frame.parameters.set_struct_values(parameters[param])
             return frame
 
         # register frames for all defined configurations
@@ -53,3 +53,16 @@ class MyThermoFactory(ThermoFactory):
         create a wrapper object that hosts the properties for the instance."""
         return ThermoNode(self.frames[config_name])
 
+
+def relax(nodes: dict, result: dict, delta_x: list) -> float:
+    """find relaxation factor"""
+    gamma = 0.9  # relaxation distance
+    alpha = 1 / gamma
+    idx = 0
+    for name, node in nodes.items():
+        length = node["state"].rows()
+        new_alpha = node.frame.relax(result[name].values(),
+                                    delta_x[idx:idx + length])
+        alpha = min(alpha, new_alpha)
+        idx += length
+    return float(gamma * alpha)

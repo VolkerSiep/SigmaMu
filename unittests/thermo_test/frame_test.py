@@ -42,13 +42,13 @@ def test_create_frame():
 def test_parameter_structure():
     """Retrieve an (empty) parameter structure from created frame"""
     frame = create_simple_frame()
-    assert_reproduction(frame.parameters.struct_values)
+    assert_reproduction(dict(frame.parameters))
 
 
 def test_parameter_names():
     """Retrieve parameter names from created frame"""
     frame = create_simple_frame()
-    assert_reproduction(frame.parameters.names)
+    assert_reproduction(list(frame.parameters.view(flat=True).keys()))
 
 
 def test_property_names():
@@ -84,7 +84,7 @@ def call_frame():
                 'cp_b': {'N2': 5.28694e-4, 'O2': 0.0}
                 }
               }
-    frame.parameters.struct_values = params
+    frame.parameters.set_struct_values(params)
     state = [398.15, 101325.0, 1, 1]
     result = frame(state)
     return frame, state, result
