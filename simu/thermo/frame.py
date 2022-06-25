@@ -25,9 +25,7 @@ class ThermoFrame:
     vector, and calculates a set of thermodynamic properties.
     """
 
-    def __init__(self,
-                 species: List[str],
-                 state_definition: StateDefinition,
+    def __init__(self, species: List[str], state_definition: StateDefinition,
                  contributions: dict):
         """This constructor establishes a thermo frame function object
         (casadi) with given species and contributions.
@@ -40,14 +38,17 @@ class ThermoFrame:
             further documented here.
         """
         # need to instantiate the contributions
-        contributions = {name: cls_(species, options)
-                         for name, (cls_, options) in contributions.items()}
+        contributions = {
+            name: cls_(species, options)
+            for name, (cls_, options) in contributions.items()
+        }
 
-        params = {name: con.parameter_structure
-                  for name, con in contributions.items()
-                  if con.parameter_structure}
+        params = {
+            name: con.parameter_structure
+            for name, con in contributions.items() if con.parameter_structure
+        }
 
-        parameters = FlexiDictionary(params)
+        parameters = FlexiDictionary(params, flat=False)
 
         # define thermodynamic state (th, mc, [ch])
         state = SX.sym("x", len(species) + 2)
@@ -64,17 +65,20 @@ class ThermoFrame:
         property_names = sorted(result.keys())
         properties = [result[n] for n in property_names]
 
-        self.__function = Function("thermo_frame",
-                                   [state, parameters.symbols], properties,
-                                   ["state", "parameters"], property_names)
+        self.__function = Function("thermo_frame", [state, parameters.symbols],
+                                   properties, ["state", "parameters"],
+                                   property_names)
 
         self.__contributions = contributions
         self.__state_definition = state_definition
         self.__default = None
         self.__parameters = parameters
 
+    def create_sym_state(self) -> SX:
+        return SX.sym('state', 2 + len(self.species))
+
     @property
-    def function(self) -> Function:
+    def func(self) -> Function:
         """The ``casadi`` function object representing the thermodynamic model,
         having two arguments: ``state`` and ``parameters``.
 
@@ -85,7 +89,7 @@ class ThermoFrame:
 
         The ``parameters`` are the set of thermodynamic parameters as required
         by the model contributions. The :meth:`__call__` calls this function
-        with ``parameters`` defined as ``flatten_dictionary(self.parameters)``.
+        with ``parameters`` defined as ``self.parameters.flat_values``.
 
         Instead of calling the call-operator, directly accessing the
         ``casadi.Function`` object allows to query further derivatives of the
@@ -93,23 +97,15 @@ class ThermoFrame:
         """
         return self.__function
 
-    def __call__(self, state: Collection,
-                 param_sym: bool = False) -> List[Collection]:
+    def __call__(self, state: Collection[float]) -> List[Collection[float]]:
         """Call to the function object :attr:`function`, in particular with
         current parameter set :attr:`parameters` and using evaluation with
-        float typed variables.>
-        :param param_sym: A flag indicating (if ``True``) whether to evaluate
-            the model with symbol or (else) float thermodynamic parameters.
-            To establish a calculation with constant parameters, it makes sense
-            to not bother representing the parameter symbolically, even if the
-            state is of symbolic type.
+        float typed variables.
 
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.
         """
-        param = (self.__parameters.symbols
-                 if param_sym else self.__parameters.flat_values)
-        return self.function(state, param)
+        return self.func(state, self.__parameters.flat_values)
 
     @property
     def species(self) -> List[str]:
@@ -153,12 +149,12 @@ class ThermoFrame:
           ``delta_state``. Hence a value of one describes full step length.
         """
         result = dict(zip(self.property_names, current_result))
-        return min([cont.relax(result, delta_state)
-                    for name, cont in self.__contributions.items()])
+        return min([
+            cont.relax(result, delta_state)
+            for name, cont in self.__contributions.items()
+        ])
 
-    def initial_state(self,
-                      temperature: float,
-                      pressure: float,
+    def initial_state(self, temperature: float, pressure: float,
                       quantities: Collection[float]) -> List[float]:
         """Return a state estimate for given temperature, pressure and
         molar quantities - at given parameter set.
@@ -184,10 +180,9 @@ class ThermoFrame:
         values = self(state)
         properties = {n: v for n, v in zip(self.property_names, values)}
 
-
         for cont in reversed(self.__contributions.values()):
-            result = cont.initial_state(temperature, pressure,
-                                        quantities, properties)
+            result = cont.initial_state(temperature, pressure, quantities,
+                                        properties)
             if result:
                 return result
         msg = "No initialisation found despite of non-Gibbs surface"
@@ -205,8 +200,9 @@ class ThermoFrame:
         if state is not None:
             num_species = len(self.species)
             if len(state) != 3:
-                raise ValueError("Default state must contain three elements, " +
-                                 f"found {len(state)} instead.")
+                raise ValueError(
+                    "Default state must contain three elements, " +
+                    f"found {len(state)} instead.")
             if len(state[2]) != num_species:
                 raise ValueError(f"Default state must cover {num_species} " +
                                  f"species, found {len(state[2])} instead.")
@@ -262,7 +258,6 @@ class ThermoFactory:
         """This property contains the full names of all so long registered
         properties"""
         return sorted(self.__contributions.keys())
-
 
     def create_frame(self, configuration: dict) -> ThermoFrame:
         """This factory method creates a :class:`ThermoFrame` object from the
@@ -320,7 +315,10 @@ class ThermoFactory:
         default = configuration.get("default_state", None)
         if default is not None:
             # make sure the values are float
-            default = [float(default[0]), float(default[1]),
-                    list(map(float, default[2]))]
+            default = [
+                float(default[0]),
+                float(default[1]),
+                list(map(float, default[2]))
+            ]
         result.default = default
         return result

@@ -16,6 +16,7 @@ class ThermoNode(dict):
     def __init__(self, frame: ThermoFrame):
         self.frame = frame
         state = SX.sym('x', 2 + len(self.frame.species))
+        # TODO: Here need to call frame with parameter symbols instead.
         dict.__init__(self, zip(self.frame.property_names, self.frame(state)))
 
 
@@ -53,16 +54,15 @@ class MyThermoFactory(ThermoFactory):
         create a wrapper object that hosts the properties for the instance."""
         return ThermoNode(self.frames[config_name])
 
-
-def relax(nodes: dict, result: dict, delta_x: list) -> float:
+def relax(frames: dict, result: dict, delta_x: list) -> float:
     """find relaxation factor"""
     gamma = 0.9  # relaxation distance
     alpha = 1 / gamma
     idx = 0
-    for name, node in nodes.items():
-        length = node["state"].rows()
-        new_alpha = node.frame.relax(result[name].values(),
-                                    delta_x[idx:idx + length])
+    for name, frame in frames.items():
+        res = result[name]
+        length = res["state"].rows()
+        new_alpha = frame.relax(res.values(), delta_x[idx:idx + length])
         alpha = min(alpha, new_alpha)
         idx += length
     return float(gamma * alpha)

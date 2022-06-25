@@ -16,16 +16,19 @@ from examples.rk_eos.rkt import ThermoNode, MyThermoFactory, relax
 def define_symbols(nodes: dict[str, ThermoNode], params: dict) -> dict:
     """Define the symbol dictionary to be calculated by casadi"""
     gas, liq = nodes["gas"], nodes["liq"]  # to define residuals easier
-    return {"thermo-nodes": nodes,
-            "residuals": vertcat(
-                (gas["T"] - params["T"]) / 1e-7,
-                (liq["T"] - params["T"]) / 1e-7,
-                (gas["p"] - params["p"]) / 1,
-                (liq["p"] - params["p"]) / 1,
-                (gas["mu"] - liq["mu"]) / 1e-7,  # 2 equations
-                (sum1(liq["n"]) - params["N"]) / 1e-7,
-                (sum1(gas["n"]) - params["N"]) / 1e-7)
-            }
+    return {
+        "thermo-nodes":
+        nodes,
+        "residuals":
+        vertcat(
+            (gas["T"] - params["T"]) / 1e-7,
+            (liq["T"] - params["T"]) / 1e-7,
+            (gas["p"] - params["p"]) / 1,
+            (liq["p"] - params["p"]) / 1,
+            (gas["mu"] - liq["mu"]) / 1e-7,  # 2 equations
+            (sum1(liq["n"]) - params["N"]) / 1e-7,
+            (sum1(gas["n"]) - params["N"]) / 1e-7)
+    }
 
 
 def main():
@@ -33,8 +36,10 @@ def main():
     # create thermodynamic nodes
 
     factory = MyThermoFactory()
-    nodes = {"liq": factory.create_node("LPG-RK-Liquid"),
-             "gas": factory.create_node("LPG-RK-Gas")}
+    nodes = {
+        "liq": factory.create_node("LPG-RK-Liquid"),
+        "gas": factory.create_node("LPG-RK-Gas")
+    }
     params = {"T": 298.15 + 2, "p": 10e5, "N": 1}
     symbols = define_symbols(nodes, params)
 
@@ -47,8 +52,8 @@ def main():
     func = Function("model", [state], symbols_flat.values())
 
     # now do the numerics
-    state = hstack([node.frame.initial_state(*node.frame.default)
-                   for node in nodes.values()])
+    frames = {key: node.frame for key, node in nodes.items()}
+    state = hstack([f.initial_state(*f.default) for f in frames.values()])
 
     for itr in range(30):
         # evaluate casadi function and unflatten dictionary
@@ -63,7 +68,7 @@ def main():
 
         # do Newton step
         delta_x = -solve(res["dr_dx"], residuals)
-        alpha = relax(nodes, res["thermo-nodes"], delta_x)
+        alpha = relax(frames, res["thermo-nodes"], delta_x)
         print(f"{itr:2d} {alpha:4.2g} {log10(err):>5.1f}")
 
         # apply scaled step

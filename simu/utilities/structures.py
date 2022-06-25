@@ -29,7 +29,7 @@ def iter_binary_parameters(species, parameters, name):
             yield (idx_1, idx_2, value)
 
 
-def flatten_dictionary(structure, prefix=''):
+def flatten_dictionary(structure, prefix=""):
     r"""Convert the given structure into a flat list of key value pairs,
     where the keys are ``SEPARATOR``-separated concatonations of the paths,
     and values are the values of the leafs. Non-string keys are converted
@@ -72,26 +72,60 @@ def unflatten_dictionary(flat_structure):
 
 
 class FlexiDictionary(Mapping):
-    def __init__(self, dictionary: dict,
-                 values_are_symbols: bool =False,
-                 flat: bool = False,
-                 symbol: bool = False):
+    """Using Casadi, we often deal with nested dictionaries that hold both
+    casadi symbols of type ``SX`` and floating point values. These structures
+    need to be used both in flat and in nested configuration.
+
+    The purpose of this class is to describe such structures, being able to
+    switch between the representations (flat or not, and symbolic or not).
+    """
+
+    def __init__(self, dictionary: dict, flat=True, symbol=False):
+        """Create a flexible dictionary from a source.
+
+        :param dictionary: The data source, either a flat or a nested
+            dictionary, and either with float or with casadi symbol values.
+        :param flat: Flag being ``True`` if the provided dictionary is flat, and
+            ``False`` if the dictionary is nested.
+        :param symbol: Flag being ``True`` if the provided dictionary has values
+            of type ``casadi.SX``, and ``False``, if floats are provided.
+
+        The internal representation is always a flattened dictionary with
+        a list of floats and a vector-shaped ``casadi.SX`` object.
+        """
         self._is_flat = flat
         self._is_symbol = symbol
-        flat_dict = flatten_dictionary(dictionary)
-        if values_are_symbols:
-            data = {"keys": flat_dict.keys(),
-                    "symbols": vertcat(*flat_dict.values()),
-                    "values":  [0.0] * len(flat_dict)}
+        if not flat:
+            dictionary = flatten_dictionary(dictionary)
+
+        if symbol:
+            data = {
+                "keys": dictionary.keys(),
+                "symbols": vertcat(*dictionary.values()),
+                "values": [0.0] * len(dictionary),
+            }
         else:
-            data = {"keys": flat_dict.keys(),
-                    "symbols": SX.sym("param", len(flat_dict)),
-                    "values":  list(flat_dict.values())}
+            data = {
+                "keys": dictionary.keys(),
+                "symbols": SX.sym("param", len(dictionary)),
+                "values": list(dictionary.values()),
+            }
         self._data = data
 
-    def view(self, flat: bool = True, symbol: bool = False):
-        result = FlexiDictionary({}, flat=flat, symbol = symbol)
-        result._data = self._data  # copy reference to data only, ...
+    def view(self, flat: bool = None, symbol: bool = None):
+        """Changes the view of the dictionary.
+
+        :param flat: ``True`` if the dictionary should appear flat.
+        :param symbol: ``True`` if the provided dictionary should appear
+            with casadi symbols as values.
+
+        If any parameter is left at ``None``, the original view attribute is
+        kept. Switching views is not changing the internal data representation.
+        """
+        flat = self._is_flat if flat is None else flat
+        symbol = self._is_symbol if symbol is None else symbol
+        result = FlexiDictionary({}, flat=flat, symbol=symbol)
+        result._data = self._data  # pylint: disable=protected-access
         return result
 
     def __getitem__(self, key):
@@ -118,7 +152,7 @@ class FlexiDictionary(Mapping):
 
     @property
     def flat_values(self) -> list[float]:
-        """The flat list of numeric values """
+        """The flat list of numeric values"""
         return self._data["values"]
 
     @flat_values.setter
@@ -150,12 +184,14 @@ class FlexiDictionary(Mapping):
 
 
 class SpeciesDict(dict):
+
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
 
     def filter(self, species):
-        return SpeciesDict({key: value for key, value in self.items()
-                            if key in species})
+        return SpeciesDict(
+            {key: value
+             for key, value in self.items() if key in species})
 
     @staticmethod
     def filter_species(dictionary, species):
@@ -171,24 +207,17 @@ class SpeciesDict(dict):
         except AttributeError:  # no, return object as is
             return dictionary
 
-        return {key: SpeciesDict.filter_species(value, species)
-                for key, value in items}
-
+        return {
+            key: SpeciesDict.filter_species(value, species)
+            for key, value in items
+        }
 
 
 # TODO: make below part of unit tests and test all of above!!
 
 
 def main():
-    t = {"A":
-         {"B.C": 1,
-          "C": {"D": 2,
-                "E": 3
-              }
-          },
-         "F": 4,
-         "10": 5
-         }
+    t = {"A": {"B.C": 1, "C": {"D": 2, "E": 3}}, "F": 4, "10": 5}
 
     flat = flatten_dictionary(t)
     print(unflatten_dictionary(flat))
