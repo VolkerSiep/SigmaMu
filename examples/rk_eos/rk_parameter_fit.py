@@ -6,7 +6,7 @@ from numpy.linalg import solve, LinAlgError
 from casadi import Function, jacobian, SX, vertcat
 import pylab
 
-from simu.utilities import (FlexiDictionary, flatten_dictionary,
+from simu.utilities import (FlexiDict, flatten_dictionary,
                             unflatten_dictionary)
 from examples.rk_eos.rkt import MyThermoFactory, relax
 
@@ -48,7 +48,7 @@ def define_symbols(frames):
     temperature_spec = SX.sym("T")
     pressure = p_sat(temperature_spec)
 
-    residuals = FlexiDictionary(
+    residuals = FlexiDict(
         {
             "gas temp": (gas["T"] - temperature_spec) / 1e-7,
             "liq temp": (liq["T"] - temperature_spec) / 1e-7,
@@ -59,10 +59,9 @@ def define_symbols(frames):
         },
         symbol=True)
 
-    properties = FlexiDictionary({"dmu": gas["mu"][0] - liq["mu"][0]},
-                                 symbol=True)
+    properties = FlexiDict({"dmu": gas["mu"][0] - liq["mu"][0]}, symbol=True)
 
-    parameters = FlexiDictionary({"T_spec": temperature_spec}, symbol=True)
+    parameters = FlexiDict({"T_spec": temperature_spec}, symbol=True)
 
     symbols = {
         "independent": {
@@ -85,7 +84,10 @@ def define_symbols(frames):
 
 
 def solve_one_point(frames, state, function, parameters, th_param):
-    for itr in range(30):
+    """Solve one data point and calculate delta mu.
+
+    Actually, this is already independent of the problem posed."""
+    for _ in range(30):
         # evaluate casadi function and unflatten dictionary
         res = function(state, parameters, th_param)
 
@@ -132,23 +134,23 @@ def main():
         raw = func(state, param, th_param)
         return unflatten_dictionary(dict(zip(symbols_flat, raw)))
 
-    temperatures = linspace(273, 600, num=201)
+    temperatures = linspace(273, 600, num=21)
 
     # now do the numerics
     th_param = indep["thermo_parameters"].flat_values
 
     errs = []
-    ts = []
-    R = 8.314426
+    temperatures_p = []
+    gas_const = 8.314426
 
-    for itr in range(3):
+    for _ in range(3):
         state = hstack(
             [frame.initial_state(*frame.default) for frame in frames.values()])
         obj = 0  # objective function (just to monitor)
         grad_obj = 0  # gradient of objective function
         hess_obj = 0  # hessian of objective function
         errs.append([])
-        ts.append([])
+        temperatures_p.append([])
         for temperature in temperatures:
             state = hstack([
                 frame.initial_state(temperature, p_sat(temperature), [1])
@@ -161,12 +163,13 @@ def main():
                 print(f"T = {temperature} failed to converge")
                 continue
             dmu = res['properties']['dmu']
-            err = exp(float(dmu) / (R * temperature)) - 1
+            err = exp(float(dmu) / (gas_const * temperature)) - 1
             errs[-1].append(err * 100)
-            ts[-1].append(temperature)
+            temperatures_p[-1].append(temperature)
             jac_yx, jac_yp, jac_rp, jac_rx = \
                 [res["jacobians"][i] for i in "dy_dx dy_dp dr_dp dr_dx".split()]
             try:
+                # calculate total differential for parameter sensitivity
                 dy_dp = jac_yp - dot(jac_yx, solve(jac_rx, jac_rp))
             except LinAlgError:
                 # print(f"T = {temperature} failed to show observability")
@@ -180,10 +183,8 @@ def main():
               d_eta)
         th_param[0] += d_eta
 
-    # pylab.plot(temperatures[::5], p_sat(temperatures[::5]), "k.")
     for k, err in enumerate(errs):
-        print(k, min(err), max(err))
-        tsk = array(ts[k])
+        tsk = array(temperatures_p[k])
         # pylab.plot(tsk, p_sat(tsk) * dmu, "-", label=str(k))
         pylab.plot(tsk, err, "-", label=str(k))
     pylab.grid()

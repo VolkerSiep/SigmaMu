@@ -10,7 +10,7 @@ from typing import Collection
 from collections.abc import Mapping
 
 # external modules
-from casadi import DM, SX, vertcat
+from casadi import SX, vertcat
 
 SEPARATOR = "."
 
@@ -71,7 +71,7 @@ def unflatten_dictionary(flat_structure):
     return result
 
 
-class FlexiDictionary(Mapping):
+class FlexiDict(Mapping):
     """Using Casadi, we often deal with nested dictionaries that hold both
     casadi symbols of type ``SX`` and floating point values. These structures
     need to be used both in flat and in nested configuration.
@@ -124,7 +124,7 @@ class FlexiDictionary(Mapping):
         """
         flat = self._is_flat if flat is None else flat
         symbol = self._is_symbol if symbol is None else symbol
-        result = FlexiDictionary({}, flat=flat, symbol=symbol)
+        result = FlexiDict({}, flat=flat, symbol=symbol)
         result._data = self._data  # pylint: disable=protected-access
         return result
 
@@ -162,6 +162,12 @@ class FlexiDictionary(Mapping):
         self._data["values"] = values
 
     def set_struct_values(self, struct: dict):
+        """Set float values, given in a possibly nested dictionary.
+
+        :param struct: A dictionary mapping the keys of the dictionary
+          to the values to be set. The given dictionary must be complete and not
+          contain keys that are not part of this instance.
+        """
         flat = flatten_dictionary(struct)
         keys = flat.keys()
         if len(keys) != len(self._data["keys"]):
@@ -184,20 +190,34 @@ class FlexiDictionary(Mapping):
 
 
 class SpeciesDict(dict):
+    """A specialised dictionary that can be reduced to only host a subset of
+    keys. This is primarily used to deal with data sets containing unary,
+    binary and higher order data on a set of chemical species."""
 
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
 
-    def filter(self, species):
+    def reduce(self, species: Collection[str]):
+        """Perform a shallow reduction on this instance.
+
+        :param species: The list of species to reduce the structure to.
+        :return: A copy of this dictionary, but only with the keys listed in
+          ``species``"""
         return SpeciesDict(
             {key: value
              for key, value in self.items() if key in species})
 
     @staticmethod
-    def filter_species(dictionary, species):
+    def deep_reduce(dictionary: dict, species: Collection[str]):
+        """Reduce the species of the given dictionary recursively.
+
+        If the dictionary itself is a ``SpeciesDict``, apply :py:meth:`reduce`.
+        Then (independent on above condition), apply reduction to all values of
+        ``dictionary`` recursively.
+        """
         # is this a species dict?
         try:
-            dictionary = dictionary.filter(species)
+            dictionary = dictionary.reduce(species)
         except AttributeError:  # no, just keep it
             dictionary = dict(dictionary)  # make a shallow copy
 
@@ -208,7 +228,7 @@ class SpeciesDict(dict):
             return dictionary
 
         return {
-            key: SpeciesDict.filter_species(value, species)
+            key: SpeciesDict.deep_reduce(value, species)
             for key, value in items
         }
 

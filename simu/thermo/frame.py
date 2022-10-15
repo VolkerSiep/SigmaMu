@@ -15,7 +15,7 @@ from typing import Type, List, Collection
 from casadi import Function, SX
 
 # internal modules
-from ..utilities import FlexiDictionary
+from ..utilities import FlexiDict
 from .contribution import ThermoContribution, StateDefinition
 
 
@@ -48,7 +48,7 @@ class ThermoFrame:
             for name, con in contributions.items() if con.parameter_structure
         }
 
-        parameters = FlexiDictionary(params, flat=False)
+        parameters = FlexiDict(params, flat=False)
 
         # define thermodynamic state (th, mc, [ch])
         state = SX.sym("x", len(species) + 2)
@@ -120,7 +120,7 @@ class ThermoFrame:
         return self.__function.name_out()
 
     @property
-    def parameters(self) -> FlexiDictionary:
+    def parameters(self) -> FlexiDict:
         """This property is to aid the process of parametrising a model.
         It returns the structure of all required model parameters. Initially,
         The returned object must be set with actual values or symbols before the
