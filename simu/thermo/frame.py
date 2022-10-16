@@ -178,7 +178,7 @@ class ThermoFrame:
         state = [float("NaN") if x is None else x for x in state]
         # calculate all propeties ... accept NaNs
         values = self(state)
-        properties = {n: v for n, v in zip(self.property_names, values)}
+        properties = dict(zip(self.property_names, values))
 
         for cont in reversed(self.__contributions.values()):
             result = cont.initial_state(temperature, pressure, quantities,
