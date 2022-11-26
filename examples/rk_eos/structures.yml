@@ -25,6 +25,7 @@ Boston-Mathias-Redlich-Kwong-Gas:
         source: c_i
         src_mode: parameter
         target: ceos_c
+        unit: "m ** 3 / mol"
     - RedlichKwongEOSGas
 
 Boston-Mathias-Redlich-Kwong-Liquid:
@@ -54,4 +55,5 @@ Boston-Mathias-Redlich-Kwong-Liquid:
         source: c_i
         src_mode: parameter
         target: ceos_c
+        unit: "m**3 / mol"
     - RedlichKwongEOSLiquid

@@ -12,21 +12,90 @@ from collections.abc import Mapping
 # external modules
 from casadi import SX, vertcat
 
+# internal modules
+from .quantity import Quantity, base_unit, qvertcat
+
 SEPARATOR = "."
 
 
-def iter_binary_parameters(species, parameters, name):
-    """For a sparse binary parameter structure in nested dictionaries, this is
-    a generator to yield tuples of indices and values."""
-    try:
-        current = parameters[name].items()
-    except KeyError:
-        return
-    for first, rest in current:
-        idx_1 = species.index(first)
-        for second, value in rest.items():
-            idx_2 = species.index(second)
-            yield (idx_1, idx_2, value)
+class ParameterDictionary(dict):
+    """This class is a nested dictionary of symbolic (casadi SX type)
+    parameters with functionality to be populated using the ``register_*``
+    methods.
+    """
+
+    class SparseMatrix(dict):
+        """This helper class represents a nested dictionary that contains
+        two levels of keys and values representing a quantity."""
+
+        def pair_items(self):
+            """Return a scalar quantity with the key pair for each element
+            in the sub-structure"""
+            for key_1, second in self.items():
+                for key_2, (magnitude, unit) in second.items():
+                    yield (key_1, key_2, Quantity(magnitude, unit))
+
+    def register_scalar(self, key: str, unit: str):
+        """Create a scalar quantity and add the structure to the dictionary"""
+        unit = base_unit(unit)
+        magnitude = SX.sym(key)
+        self[key] = [magnitude, unit]
+        return Quantity(magnitude, unit)
+
+    def register_vector(self, key: str, species: list[str], unit: str):
+        """Create a quantity vector with symbols and add the structure to
+        the dictionary"""
+        unit = base_unit(unit)
+        magnitude = vertcat(*[SX.sym(f"{key}.{s}") for s in species])
+        self[key] = {s: [magnitude[k], unit] for k, s in enumerate(species)}
+        return Quantity(magnitude, unit)
+
+    def register_sparse_matrix(self, key: str, pairs: dict, unit: str):
+        """Create a sparse matrix quantity and add the structure to the
+        dictionary. The given unit is converted to base units before being
+        applied, i.e. """
+        unit = base_unit(unit)
+        res = ParameterDictionary.SparseMatrix({f: {} for f, _ in pairs})
+        for first, second in pairs:
+            magnitude = SX.sym(f"{key}.{first}.{second}")
+            res[first][second] = [magnitude, unit]
+        self[key] = res
+        return res
+
+    def get_quantity(self, *keys):
+        """Extract a quantity from the given sequence of keys"""
+        entry = self
+        for key in keys:
+            entry = entry[key]
+        return Quantity(*entry)
+
+    def get_vector_quantity(self, *keys):
+        """Extract a vector quantity from the given sequence of keys"""
+        entry = self
+        for key in keys:
+            entry = entry[key]
+        quantities = [Quantity(*e) for e in entry.values()]
+        return qvertcat(*quantities)
+
+    # TODO: need to get vector of symbols from this - and vector of names
+    # wait: now I have the symbolic quantities. When calling the function, I
+    # need numeric quantities
+    # a quantity dictionary has to be converted to base units, and the magnitudes
+    # extracted to the vector.
+
+
+# def iter_binary_parameters(species, parameters, name):
+#     """For a sparse binary parameter structure in nested dictionaries, this is
+#     a generator to yield tuples of indices and values."""
+#     try:
+#         current = parameters[name].items()
+#     except KeyError:
+#         return
+#     for first, rest in current:
+#         idx_1 = species.index(first)
+#         for second, value in rest.items():
+#             idx_2 = species.index(second)
+#             yield (idx_1, idx_2, value)
 
 
 def flatten_dictionary(structure, prefix=""):
@@ -233,9 +302,61 @@ class SpeciesDict(dict):
         }
 
 
-# TODO: make below part of unit tests and test all of above!!
+def create_vector_struct(keys, unit):
+    """Create a parameter structure with ``None`` values for given keys and
+    unit of measurement. For instance
+
+    .. code-block::
+
+        >>> create_vector_struct(["A", "B", "C"], "J/mol")
+
+        [{"A": None, "B": None, "C": None}, "J/mol"]
+
+    """
+    return [{k: None for k in keys}, unit]
 
 
+def create_scalar_struct(unit):
+    """Create a scalar parameter structure with ``None`` values for a given
+    unit of measurement. For instance
+
+    .. code-block::
+
+        >>> create_scalar_struct("J/mol")
+
+        [None, "J/mol"]
+    """
+    return [None, unit]
+
+
+def create_vector(dictionary: dict, keys: Collection[str]) -> SX:
+    """During :meth:`define`, sub-directories often require to be converted
+    into a single ``casadi.SX`` vector. This method provides such
+    functionality.
+
+    .. code-block::
+
+        >>> struct = {"A": SX.sym("x"),
+                        "C": SX.sym("y"),
+                        "B": SX.sym("z")}
+        >>> print(create_vector(struct, ["A", "B", "C"])
+
+    yields ::
+
+        SX([x, z, y])
+
+    :param dictionary: The parameter structure, pointing to the node where
+        to extract the vector from
+    :param keys: The keys of the sub-dictionary to collect the ``casadi``
+        symbols from. If left as ``None``, the species names of the
+        contribution are assumed.
+    :return: The ``casadi.SX`` object containing the collected symbols
+    """
+    return vertcat(*[dictionary[key] for key in keys])
+
+
+# TODO: this should be in unit test -
+#   together with a lot of other bunch of stuff
 def main():
     t = {"A": {"B.C": 1, "C": {"D": 2, "E": 3}}, "F": 4, "10": 5}
 

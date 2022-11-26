@@ -37,7 +37,7 @@ setuptools.setup(
     install_requires=requirements,
     extras_require={
         "dev": [
-            "Sphinx>=2.2",
-            "sphinxcontrib-bibtex>=2.4",
-            "pytest>=5.3"]
+            "Sphinx>=2.2", "sphinxcontrib-bibtex>=2.4", "pytest>=5.3",
+            "matplotlib"
+        ]
     })

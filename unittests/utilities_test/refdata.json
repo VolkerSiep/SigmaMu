@@ -1,0 +1,31 @@
+{
+  "quantity_test.py::test_base_unit": {
+    "C": "A * s",
+    "V": "kg * m ** 2 / A / s ** 3",
+    "W/mol": "kg * m ** 2 / mol / s ** 3",
+    "barg": "kg / m / s ** 2",
+    "cm": "m",
+    "hour": "s",
+    "kmol": "mol",
+    "m**2/s": "m ** 2 / s",
+    "pi": "",
+    "t/hr": "kg / s"
+  },
+  "quantity_test.py::test_conditional": "@1=0.01, @2=0, @3=(((@1*x2.A)<x1.A)==@2), @4=100, @5=(((@1*x2.B)<x1.B)==@2), [((@3?(@4*x1.A):0)+((!@3)?x2.A:0)), ((@5?(@4*x1.B):0)+((!@5)?x2.B:0))] cm",
+  "quantity_test.py::test_exp": "@1=100, @2=0.01, [pow((@1*(x1.A/x2.A)),(@2*(x2.A/x1.A))), pow((@1*(x1.B/x2.B)),(@2*(x2.B/x1.B)))]",
+  "quantity_test.py::test_jacobian": "[[a, 00],  [00, a]] / s",
+  "quantity_test.py::test_log": "@1=100, [log((@1*(x1.A/x2.A))), log((@1*(x1.B/x2.B)))]",
+  "quantity_test.py::test_qfunction": "[1, 2] m / s",
+  "quantity_test.py::test_quantity": [
+    "1 cm",
+    "1 cm",
+    "1.0 kg * m ** 2 / mol / s ** 2",
+    "1 cm"
+  ],
+  "quantity_test.py::test_sqrt": "[sqrt(x.A), sqrt(x.B)] m",
+  "quantity_test.py::test_sum1": "((((((x1.A+x1.B)+x1.C)+x1.D)+x1.E)+x1.F)+x1.U) m",
+  "quantity_test.py::test_symbol_quantity": [
+    "[(a*x1.A), (a*x1.B)] m / s",
+    "[(a*x2_0), (a*x2_1)] kg / s"
+  ]
+}

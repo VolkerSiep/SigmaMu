@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-
 """This module defines the class :class:`ThermoContribution`, which defines
 the building blocks of a :class:`ThermoFrame` function object."""
 
+# stdlib modules
 from abc import ABC, abstractmethod
-from typing import Collection, List
+from typing import Collection
 
-# external modules
-from casadi import SX, vertcat
+# internal modules
+from ..utilities import Quantity, ParameterDictionary
+
+QuantityDict = dict[str, Quantity]
 
 
 class ThermoContribution(ABC):
@@ -32,14 +34,14 @@ class ThermoContribution(ABC):
     does not find a symbol.
     """
 
-    provides: List[str] = []
+    provides: list[str] = []
 
     def __init__(self, species, options):
         self.species = species
         self.options = options
 
     @abstractmethod
-    def define(self, res: dict, par:dict):
+    def define(self, res: QuantityDict, par: ParameterDictionary):
         """Abstract method to implement the ``casadi`` expressions
         that make up this contribution.
 
@@ -56,20 +58,7 @@ class ThermoContribution(ABC):
 
         """
 
-    @property
-    def parameter_structure(self) -> dict:
-        """Virtual parameter to propose a parameter structure, given the
-        configuration of the contribution, in particular ``species``.
-        The default implementation is empty, such that contributions with
-        no parameters need not to overwrite this method.
-
-        By convention, all (leaf) values of this data structure are to be
-        ``None``.
-        """
-        return {}
-
-    def relax(self,
-              current_result: dict,
+    def relax(self, current_result: dict,
               delta_state: Collection[float]) -> float:
         """Virtual function to report the maximal allowable step size in
         the state variables.
@@ -83,11 +72,9 @@ class ThermoContribution(ABC):
         del current_result, delta_state  # unused
         return 100  # a number greater than 1 / gamma for practical gamma
 
-    def initial_state(self,
-                      temperature: float,
-                      pressure: float,
-                      quantities: Collection[float],
-                      properties: dict) -> List[float]|None:
+    def initial_state(self, temperature: Quantity, pressure: Quantity,
+                      quantities: Quantity,
+                      properties: dict[str, Quantity]) -> Quantity | None:
         """When the :class:`ThermoFrame object is queried for an initial state
         representation and deviates from Gibbs coordinates, The upper-most
         contribution that implements this method and does not return ``None``
@@ -110,75 +97,6 @@ class ThermoContribution(ABC):
         del temperature, pressure, quantities, properties  # unused
         return None
 
-    @staticmethod
-    def create_tensor_structure(*keys) -> dict|None:
-        """A helper method to create a nested rectabgular structure as often
-        required for implementing :meth:`parameter_structure`.
-
-        For instance:
-
-        .. code-block::
-
-            >>> struct = ThermoContribution._tensor_structure
-            >>> print(struct(["A", "B"], ["C", "D", "E"])
-
-        yields ::
-
-            {
-              "A": {"C": None, "D": None, "E": None},
-              "B": {"C": None, "D": None, "E": None}
-            }
-
-        :param keys: Each element of ``keys`` is a list of strings, describing
-          the keys to define at each level.
-
-        :return: The nested dictionary with ``None`` as leaf values. Note that
-          the equal inner dictionaries are individual copies. This to prevent
-          a potential bug, if the client code just replaces the ``None`` values
-          with actual data.
-
-        .. todo::
-            make this a utility function
-
-        """
-        if not keys:
-            return None
-        current, *rest = keys
-        func = ThermoContribution.create_tensor_structure
-        return {k: func(*rest) for k in current}
-
-    def create_vector(self, dictionary: dict, keys: Collection[str] = None) -> SX:
-        """During :meth:`define`, sub-directories often require to be converted
-        into a single ``casadi.SX`` vector. This method provides such
-        functionality.
-
-        .. code-block::
-
-            >>> vector = ThermoContribution._vector
-            >>> struct = {"A": SX.sym("x"),
-                          "C": SX.sym("y"),
-                          "B": SX.sym("z")}
-            >>> print(vector(struct, ["A", "B", "C"])
-
-        yields ::
-
-            SX([x, z, y])
-
-        :param dictionary: The parameter structure, pointing to the node where
-          to extract the vector from
-        :param keys: The keys of the sub-dictionary to collect the ``casadi``
-          symbols from. If left as ``None``, the species names of the
-          contribution are assumed.
-        :return: The ``casadi.SX`` object containing the collected symbols
-
-        .. todo::
-            consider to make this a utility function ... or a generator
-            utility function function f = vector(species)
-
-        """
-        if keys is None:
-            keys = self.species
-        return vertcat(*[dictionary[key] for key in keys])
 
 class StateDefinition(ABC):
     """This class defines the interpretation of the state vector in terms of
@@ -199,7 +117,7 @@ class StateDefinition(ABC):
 
     @abstractmethod
     def reverse(self, temperature: float, pressure: float,
-                quantities: Collection[float]) -> List[float]:
+                quantities: Collection[float]) -> list[float]:
         """Return the state vector as complete as possible with given
         temperature, pressure and quantities. The task of the contributions'
         :meth:`ThermoContribution.initial_state` method is it then to

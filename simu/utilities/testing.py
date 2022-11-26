@@ -8,13 +8,15 @@ from types import TracebackType
 from pathlib import Path
 from difflib import Differ
 
+
 def user_agree(message):
     """Ask for confirmation, but assume "no", if not run interactively"""
     try:
         ans = input(f"{message} y/[n]? ")
         return ans.lower() == "y"
-    except OSError:  # run automatically with std streams caught
+    except (OSError, EOFError):  # run automatically with std streams caught
         return False
+
 
 def assert_reproduction(data, suffix=None):
     """Assert the json-dump of the data to be the same as before.
@@ -71,8 +73,9 @@ def assert_reproduction(data, suffix=None):
             except AssertionError:
                 differ = Differ()
                 diff = differ.compare(ref.splitlines(), val.splitlines())
-                msg = (f"Deviation from reference data detected ({meth_name}):" +
-                       "\n".join(diff) + "\n\nDo you accept the new data")
+                msg = (
+                    f"Deviation from reference data detected ({meth_name}):" +
+                    "\n".join(diff) + "\n\nDo you accept the new data")
                 if user_agree(msg):
                     save_data(data)
                 else:

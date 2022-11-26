@@ -1,67 +1,109 @@
 # -*- coding: utf-8 -*-
-
 """Test module for ideal contributions"""
 
-# stdlib modules
-from sys import argv
-
-# external modules
-from pytest import main
-from casadi import SX
-
 # internal modules
-from simu.thermo import (GibbsIdealGas, H0S0ReferenceState, IdealMix,
-                         LinearHeatCapacity)
-from simu.utilities import assert_reproduction
+from simu.thermo import (GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas,
+                         IdealMix, LinearHeatCapacity)
+from simu.utilities import (ParameterDictionary, QFunction, Quantity,
+                            SymbolQuantity, assert_reproduction, base_unit)
+
+
+# auxiliary functions
+def sym(name, units):
+    return SymbolQuantity(name, base_unit(units))
+
+
+def vec(name, size, units):
+    return SymbolQuantity(name, base_unit(units), size)
 
 
 def test_h0s0_reference_state():
     """Test definition of H0S0ReferenceState contribution"""
-    res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
-    par = {"dh_form": {"A": SX.sym('dh_form.A'),
-                       "B": SX.sym('dh_form.B')},
-           "s_0": {"A": SX.sym('s_0.A'),
-                   "B": SX.sym('s_0.B')},
-           "T_ref": SX.sym('T_ref'),
-           "p_ref": SX.sym('p_ref')}
+
+    res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
+    par = ParameterDictionary()
     cont = H0S0ReferenceState(["A", "B"], {})
     cont.define(res, par)
-    result = {i: str(res[i]) for i in "S mu".split()}
-    assert_reproduction(result)
+    to_reproduce = {
+        "res": {i: str(res[i])
+                for i in "S mu".split()},
+        "par_names": list(par.keys())
+    }
+    assert_reproduction(to_reproduce)
+
 
 def test_linear_heat_capacity():
     """Test definition of LinearHeatCapacity contribution"""
-    res = {"T": SX.sym('T'), "n": SX.sym('n', 2),
-           "S": SX.sym('S_ref'), "mu": SX.sym('mu_ref'),
-           "T_ref": SX.sym('T_ref')}
-    par = {"cp_a": {"A": SX.sym('cp_a.A'),
-                    "B": SX.sym('cp_a.B')},
-           "cp_b": {"A": SX.sym('cp_b.A'),
-                    "B": SX.sym('cp_b.B')}}
+    res = {
+        "T": sym("T", "K"),
+        "T_ref": sym("T_ref", "K"),
+        "n": vec("n", 2, "mol"),
+        "S": sym("S_ref", "J/K"),
+        "mu": vec("mu_ref", 2, "J/mol")
+    }
     cont = LinearHeatCapacity(["A", "B"], {})
+    par = ParameterDictionary()
     cont.define(res, par)
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
+
 def test_ideal_mix():
     """Test definition of IdealMix contribution"""
-    res = {"T": SX.sym('T'), "n": SX.sym('n', 2),
-           "S": SX.sym('S_std'), "mu": SX.sym('mu_std')}
+    res = {
+        "T": sym("T", "K"),
+        "n": vec("n", 2, "mol"),
+        "S": sym("S_std", "J/K"),
+        "mu": vec("mu_std", 2, "J/mol")
+    }
     cont = IdealMix(["A", "B"], {})
     cont.define(res, {})
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
+
 def test_gibbs_ideal_gas():
     """Test definition of GibbsIdealGas contribution"""
-    res = {"T": SX.sym('T'), "p": SX.sym('p'), "n": SX.sym('n', 2),
-           "p_ref": SX.sym('p_ref'),
-           "S": SX.sym('S_im'), "mu": SX.sym('mu_im')}
+    res = {
+        "T": sym("T", "K"),
+        "p": sym("p", "bar"),
+        "n": vec('n', 2, "mol"),
+        "p_ref": sym("p_ref", "bar"),
+        "S": sym("S_im", "J/K"),
+        "mu": vec("mu_im", 2, "J/mol")
+    }
     cont = GibbsIdealGas(["A", "B"], {})
     cont.define(res, {})
     result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
     assert_reproduction(result)
 
-if __name__ == "__main__":
-    # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-s", "-rP"] + argv[1:])
+    # unit correct?
+    assert res["S"].is_compatible_with("J/K")
+    assert res["V"].is_compatible_with("m**3")
+    assert res["mu"].is_compatible_with("J/mol")
+
+
+def test_helmholtz_ideal_gas():
+    """Test definition of GibbsIdealGas contribution"""
+    res = {
+        "T": sym("T", "K"),
+        "V": sym("V", "m ** 3"),
+        "n": vec('n', 2, "mol"),
+        "p_ref": sym("p_ref", "bar"),
+        "S": sym("S_im", "J/K"),
+        "mu": vec("mu_im", 2, "J/mol")
+    }
+    cont = HelmholtzIdealGas(["A", "B"], {})
+    cont.define(res, {})
+    result = {i: str(res[i]).split(", ") for i in "S p mu".split()}
+    assert_reproduction(result)
+
+
+def test_helmholtz_ideal_gas_initialise():
+    cont = HelmholtzIdealGas(["A", "B"], {})
+    # normally, we would need to provide numeric quantities as results,
+    #  but these are not used for ideal gas initialisation.
+    state = cont.initial_state(Quantity("25 degC"), Quantity("1 bar"),
+                               Quantity([1, 1], "mol"), {})
+    V_ref = 2 * 8.31446261815324 * (273.15 + 25) / 1e5
+    assert abs(state[1] / V_ref - 1) < 1e-7

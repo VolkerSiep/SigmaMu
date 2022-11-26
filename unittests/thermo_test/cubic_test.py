@@ -1,34 +1,37 @@
 # -*- coding: utf-8 -*-
-
 """Test module for cubic EOS contributions"""
 
-# stdlib modules
-from sys import argv
-
 # external modules
-from casadi import DM, SX, Function, jacobian, vertcat
 from numpy import linspace
-from pytest import main, mark, raises
+from pytest import mark, raises
 import pylab
 
 # internal modules
-from simu.constants import R_GAS
+from simu.utilities import (assert_reproduction, user_agree, base_unit,
+                            ParameterDictionary, SymbolQuantity, jacobian,
+                            QFunction, Quantity as Q, base_magnitude, sum1)
+from simu.utilities.constants import R_GAS
+from simu.thermo import (CriticalParameters, LinearMixingRule,
+                         RedlichKwongEOSLiquid, RedlichKwongEOSGas,
+                         NonSymmetricMixingRule, RedlichKwongAFunction,
+                         RedlichKwongBFunction, RedlichKwongMFactor,
+                         BostonMathiasAlphaFunction)
 from simu.thermo.cubic.rk import RedlichKwongEOS
-from simu.utilities import assert_reproduction, user_agree
-from simu.thermo import (
-    CriticalParameters, LinearMixingRule, RedlichKwongEOSLiquid,
-    RedlichKwongEOSGas, NonSymmetricMixingRule, RedlichKwongAFunction,
-    RedlichKwongBFunction, RedlichKwongMFactor, BostonMathiasAlphaFunction)
+
+
+# auxiliary functions
+def sym(name, units):
+    return SymbolQuantity(name, base_unit(units))
+
+
+def vec(name, size, units):
+    return SymbolQuantity(name, base_unit(units), size)
+
 
 def test_critical_parameters():
     """Test definition of CriticalParameters contribution"""
     res = {}
-    par = {"T_c": {"A": SX.sym('T_c.A'),
-                   "B": SX.sym('T_c.B')},
-           "p_c": {"A": SX.sym('p_c.A'),
-                   "B": SX.sym('p_c.B')},
-           "omega": {"A": SX.sym('omega.A'),
-                      "B": SX.sym('omega.B')}}
+    par = ParameterDictionary()
     cont = CriticalParameters(["A", "B"], {})
     cont.define(res, par)
     result = {key: str(value) for key, value in res.items()}
@@ -37,26 +40,47 @@ def test_critical_parameters():
 
 def test_linear_mixing_rule():
     """Test definition of LinearMixingRule contribution"""
-    res = {"T": SX.sym('T'), "n": SX.sym('n', 2)}
-    par = {"c_i": {"A": SX.sym('c_i.A'),
-                   "B": SX.sym('c_i.B')}}
-    opt = {"target": "c", "src_mode": LinearMixingRule.PARAMETER}
+    res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
+    par = ParameterDictionary()
+    opt = {
+        "target": "c",
+        "src_mode": LinearMixingRule.PARAMETER,
+        "unit": "m**3/mol"
+    }
     cont = LinearMixingRule(["A", "B"], opt)
     cont.define(res, par)
-    result = str(res["c"])
+    result = [str(res["c"]), str(par["c_i"])]
     assert_reproduction(result)
 
 
 def test_redlich_kwong_eos():
     """Test definition of RedlichKwongEOS contribution"""
-    res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
-           "S": SX.sym('S'), "p": SX.sym('p'), "mu": SX.sym('mu', 2)}
-    res["ceos_a"] = SX.sym('A0') + res["T"] * SX.sym('dAdT')
-    res["ceos_b"] = SX.sym('B0') + res["T"] * SX.sym('dBdT')
-    res["ceos_c"] = SX.sym('C0')
-    res["state"] = SX.sym('x', 4)
+    res = {
+        "T": sym("T", "K"),
+        "V": sym("V", "m**3"),
+        "n": vec("n", 2, "mol"),
+        "S": sym('S', "J/K"),
+        "p": sym('p', "Pa"),
+        "mu": vec('mu', 2, "J/mol")
+    }
+    res.update({
+        "ceos_a":
+        sym("A0", "Pa*m**6") + res["T"] * sym('dAdT', "Pa*m**6/K"),
+        "ceos_b":
+        sym("B0", "m**3") + res["T"] * sym('dBdT', "m**3/K"),
+        "ceos_c":
+        sym("C0", "m**3"),
+        "state":
+        vec("x", 4, "dimless")
+    })
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     cont.define(res, {})
+    keys = "S p mu ceos_a_T ceos_b_T VBC dp_dV".split()
+    result = {k: str(res[k]) for k in keys}
+    assert_reproduction(result)
+
+
+def test_abstract_class_init():
     with raises(TypeError) as excinfo:
         # pylint: disable=abstract-class-instantiated
         RedlichKwongEOS(["A", "B"], {})
@@ -65,20 +89,19 @@ def test_redlich_kwong_eos():
 
 def test_non_symmmetric_mixing_rule():
     """Test definition of NonSymmetricMixingRule contribution"""
-    res = {"T": SX.sym('T'), "n": SX.sym('n', 3),
-           "a_i": SX.sym('a_i', 3)}
+    res = {
+        "T": sym("T", "K"),
+        "n": vec("n", 3, "mol"),
+        "a_i": vec("a_i", 3, "Pa*m**6/mol")
+    }
     options = {
-      "k_1": [["A", "B"], ["A", "C"]],
-      "k_2": [["A", "B"]],
-      "l_1": [["B", "A"], ["C", "B"]],
-      "target": "a"}
+        "k_1": [["A", "B"], ["A", "C"]],
+        "k_2": [["A", "B"]],
+        "l_1": [["B", "A"], ["C", "B"]],
+        "target": "a"
+    }
     cont = NonSymmetricMixingRule(["A", "B", "C"], options)
-    par = {'T_ref': SX.sym("T_ref"),
-           'k_1': {'A': {'B': SX.sym("k_1_AB"),
-                         'C': SX.sym("k_1_AC")}},
-           'k_2': {'A': {'B': SX.sym("k_2_AB")}},
-           'l_1': {'B': {'A': SX.sym("k_1_AB")},
-                   'C': {'B': SX.sym("k_1_AB")}}}
+    par = ParameterDictionary()
     cont.define(res, par)
     result = str(res["a"])
     assert_reproduction(result)
@@ -86,16 +109,20 @@ def test_non_symmmetric_mixing_rule():
 
 def test_redlich_kwong_a_function():
     """Test definition of RedlichKwongAFunction contribution"""
-    res = {"alpha": SX.sym('alpha', 2),
-           "T_c": SX.sym('T_c', 2), "p_c": SX.sym('p_c', 2)}
+    res = {
+        "alpha": vec('alpha', 2, "dimless"),
+        "T_c": vec('T_c', 2, "K"),
+        "p_c": vec('p_c', 2, "bar")
+    }
     cont = RedlichKwongAFunction(["A", "B"], {})
     cont.define(res, {})
     result = str(res["ceos_a_i"])
     assert_reproduction(result)
 
+
 def test_redlich_kwong_b_function():
     """Test definition of RedlichKwongBFunction contribution"""
-    res = {"T_c": SX.sym('T_c', 2), "p_c": SX.sym('p_c', 2)}
+    res = {"T_c": vec('T_c', 2, "K"), "p_c": vec('p_c', 2, "bar")}
     cont = RedlichKwongBFunction(["A", "B"], {})
     cont.define(res, {})
     result = str(res["ceos_b_i"])
@@ -104,7 +131,7 @@ def test_redlich_kwong_b_function():
 
 def test_rk_m_factor():
     """Test definition of RedlichKwongMFactor contribution"""
-    res = {"omega": SX.sym('w', 2)}
+    res = {"omega": vec('w', 2, "dimless")}
     cont = RedlichKwongMFactor(["A", "B"], {})
     cont.define(res, {})
     result = str(res["m_factor"])
@@ -113,10 +140,12 @@ def test_rk_m_factor():
 
 def test_boston_mathias_alpha_function():
     """Test definition of BostonMathiasAlphaFunction contribution"""
-    res = {"m_factor": SX.sym('m', 2), "T_c": SX.sym('T_c', 2),
-           "T": SX.sym('T')}
-    par = {"eta": {"A": SX.sym('eta.A'),
-                   "B": SX.sym('eta.B')}}
+    res = {
+        "m_factor": vec("m", 2, "dimless"),
+        "T_c": vec("T_c", 2, "K"),
+        "T": sym("T", "K")
+    }
+    par = ParameterDictionary()
     cont = BostonMathiasAlphaFunction(["A", "B"], {})
     cont.define(res, par)
     result = str(res["alpha"][0])
@@ -128,34 +157,50 @@ def test_boston_mathias_alpha_function_smoothness():
     """Check smoothness of alpha function at critical temperature, where
     the expressions switches to the super-critical extrapolation"""
     res, par = test_boston_mathias_alpha_function()
-    T, T_c, m, alpha = res["T"], res["T_c"], res["m_factor"], res["alpha"]
-    eta = vertcat(par["eta"]["A"], par["eta"]["B"])
 
-    dadt = jacobian(alpha, T)
-    d2adt2 = jacobian(dadt, T)
+    args = {k: res[k] for k in ["T", "T_c", "m_factor"]}
+    args["eta"] = par.get_vector_quantity("eta")
 
-    f = Function("alpha", [T, T_c, m, eta], [alpha, dadt, d2adt2])
+    result = {"alpha": res["alpha"]}
+    result["a_t"] = jacobian(result["alpha"], args["T"])
+    result["a_tt"] = jacobian(result["a_t"], args["T"])
+
+    f = QFunction(args, result)
+
+    # now the numbers
+    args = {
+        "T_c": Q([300, 400], "K"),
+        "m_factor": Q([0.6, 0.6]),
+        "eta": Q([0.12, 0.06])
+    }
 
     def props(eps):
-        T, Tc, m, eta = 300 + eps, [300, 400], [0.6, 0.6], [0.12, 0.06]
-        res = f(T, Tc, m, eta)
-        return [float(r[0]) for r in res]
+        args["T"] = args["T_c"][0] + eps
+        res = f(**args)
+        return {k: v[0] for k, v in res.items()}
 
-    eps = 1e-10
-    a_sub, dadt_sub, d2adt2_sub = props(-eps)  # sub-critical
-    a_sup, dadt_sup, d2adt2_sup = props(eps)  # super-critical
+    eps = Q(1e-10, "K")
+    sub = props(-eps)  # sub-critical
+    sup = props(eps)  # super-critical
 
-    assert abs(a_sub - 1) < 1e-7, "sub-critical alpha unequal unity"
-    assert abs(a_sup - 1) < 1e-7, "super-critical alpha unequal unity"
-    assert abs(dadt_sub - dadt_sup) < 1e-7, "first derivative not smooth"
-    assert abs(d2adt2_sub - d2adt2_sup) < 1e-7, "second derivative not smooth"
+    assert abs(sub["alpha"] - 1) < 1e-7, "sub-critical alpha unequal unity"
+    assert abs(sup["alpha"] - 1) < 1e-7, "super-critical alpha unequal unity"
+    res = abs(sup["a_t"] / sub["a_t"] - 1)
+    assert res < 1e-7, "first derivative not smooth"
+    res = abs(sup["a_tt"] / sub["a_tt"] - 1)
+    assert res < 1e-7, "second derivative not smooth"
 
 
 def test_initialise_rk():
     """Test volume initialisation of RK-model"""
-    T, p, n = 370.0, 1e5, [0.5, 0.5]
+    T, p = Q("100 degC"), Q("1 bar")
+    n = Q([0.5, 0.5], "mol")
     # try to imitate water
-    res = {"ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5}
+    res = {
+        "ceos_a": Q("15 Pa * m**6"),
+        "ceos_b": Q("25 ml"),
+        "ceos_c": Q("10 ml")
+    }
     liq = RedlichKwongEOSLiquid(["A", "B"], {})
     gas = RedlichKwongEOSGas(["A", "B"], {})
     v_liq = liq.initial_state(T, p, n, res)[1]
@@ -164,43 +209,78 @@ def test_initialise_rk():
     assert 0.02 < v_gas < 0.03
 
 
-@mark.parametrize("Class", [RedlichKwongEOSGas, RedlichKwongEOSLiquid])
-def test_initialise_rk2(Class):
+@mark.parametrize("cls", [RedlichKwongEOSGas, RedlichKwongEOSLiquid])
+def test_initialise_rk2(cls):
     """test initialisation of rk gas and liquid"""
-    # define upstream expected results
-    res = {"T": SX.sym('T'), "V": SX.sym('V'), "n": SX.sym('n', 2),
-           "ceos_a": SX.sym('A'), "ceos_b": SX.sym('B'), "ceos_c": SX.sym('C'),
-           "S": 0, "mu": 0, "p": 0, "state": SX.sym('x', 4)}
-    cont = Class(["A", "B"], {})
-    cont.define(res, {})
 
-    T, p, n = 370.0, 1e5, [0.5, 0.5]
-    res_float = {"T": T, "n": n,
-                 "ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5}
-    state = cont.initial_state(T, p, n, res_float)
+    # TODO: can I make this test simpler again???
+
+    # define upstream expected results
+    res = {
+        "T": sym("T", "K"),
+        "V": sym("V", "m**3"),
+        "n": vec("n", 2, "mol"),
+        "ceos_a": sym("A", "bar*m**6"),
+        "ceos_b": sym("B", "m**3"),
+        "ceos_c": sym("C", "m**3"),
+        "state": vec('x', 4, "dimless")
+    }
+    ideal = {
+        "S": sym("S", "J/K"),
+        "mu": vec("mu", 2, "J/mol"),
+        "p": sym("p", "Pa")
+    }
+
+    res.update(ideal)
+    cont = cls(["A", "B"], {})
+    cont.define(res, {})  # now the ideal part in res is overwritten
+
+    # now with number quantities
+    T, p, n = Q("100 degC"), Q("1 bar"), Q([0.5, 0.5], "mol")
+    # try to imitate water
+    res_num = {
+        "T": T,
+        "n": n,
+        "ceos_a": Q("15 Pa * m**6"),
+        "ceos_b": Q("25 ml"),
+        "ceos_c": Q("10 ml"),
+    }
+    ideal_num = {"S": Q("0 J/K"), "p": Q("0 Pa"), "mu": Q([0, 0], "J/mol")}
+
+    state = cont.initial_state(T, p, n, res_num)
 
     # is the rest of the state (except volume) reproduced?
-    for ref, val in zip([T, None] + n, state):
-        assert ref is None or val == ref
-    res_float["V"] = state[1]
+    assert base_magnitude(T) == state[0]
+    assert base_magnitude(n).tolist() == state[2:]
+    res_num["V"] = Q(state[1], "m**3")
 
     # calculate contribution values with initial state to reproduce pressure
-    f = Function("f", [res[k] for k in res_float], [res["p"]])
-    p2 = f(*res_float.values()) + R_GAS * T / state[1]
-    assert abs(p2 - p) < 1
+    args = {k: res[k] for k in res_num}
+    args.update(ideal)
+    func = QFunction(args, {"p": res["p"]})
+
+    args = {**res_num, **ideal_num}
+    p2 = func(**args)["p"] + sum(n) * R_GAS * T / args["V"]
+    assert abs(p2 - p) < Q("1 Pa")
 
 
 def test_relax_rk():
     """test relaxation method for RK model"""
-    T, V, n = 370.0, 1.5260379390336834e-05, [0.5, 0.5]
-    res= {"T": T, "V": V, "n": n, "p": 1e5,
-          "ceos_a": 15, "ceos_b": 2.5e-5, "ceos_c": 1e-5,
-          "VBC": V + 1e-5 - 2.5e-5,
-          "dVBC_dx": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
-          "dp_dV": -1e10, "ddp_dV_dx": DM([0, 1e15, 0, 0]),
-          "dp_dx": DM([0, 0, 0, 0])}
+    v_magnitude = 1.5260379390336834e-05
+    V = Q(v_magnitude, "m**3")
+    res = {
+        "state": Q([370.0, v_magnitude, 0.5, 0.5]),
+        "V": V,
+        "p": Q("1 bar"),
+        "VBC": V + Q("-15 ml"),
+        "dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
+        "dp_dV": Q("-0.1 bar/ml"),
+        "ddp_dV_dx": Q([0, 1e4, 0, 0], "bar/ml"),
+        "dp_dx": Q([0, 0, 0, 0], "bar")
+    }
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
-    beta = cont.relax(res, DM([0.1, -V, 0.1, 0.1]))
+    delta = [0.1, -v_magnitude, 0.1, 0.1]  # this one is float
+    beta = cont.relax(res, delta)
     assert beta < 1
 
 
@@ -212,49 +292,67 @@ def test_relax_rk_advanced():
     - provide p_V and p_V_x[1] approximately correctly
     - relax from V = 4.6e-5 by dV = +0.4e-5"""
 
-    T, V, n = 370.0, 4.6e-5, [0.5, 0.5]
-    res= {"T": DM(T), "V": DM(V), "n": DM(n), "p": DM(1.1e6),
-          "ceos_a": DM(15), "ceos_b": DM(2.5e-5), "ceos_c": DM(1e-5),
-          "VBC": DM(V + 1e-5 - 2.5e-5),
-          "dVBC_dx": DM([0, 1, 1e-5 - 2.5e-5, 1e-5 - 2.5e-5]),
-          "dp_dV": DM(-2.5e11), "ddp_dV_dx": DM([0, 8.5e16, 0, 0]),
-          "dp_dx": DM([0, 0, 0, 0])}
+    state = [370.0, 4.6e-05, 0.5, 0.5]
+    T = Q(state[0], "K")
+    V = Q(state[1], "m**3")
+    n = Q(state[2:], "mol")
+    res = {
+        "state": Q(state),
+        "T": T,
+        "V": V,
+        "n": n,
+        "p": Q(11, "bar"),
+        "ceos_a": Q("15 Pa * m**6"),
+        "ceos_b": Q("25 ml"),
+        "ceos_c": Q("10 ml"),
+        "dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
+        "dp_dV": Q("-2.5 bar/ml"),
+        "ddp_dV_dx": Q([0, 8.5e5, 0, 0], "bar/ml"),
+        "dp_dx": Q([0, 0, 0, 0], "bar")
+    }
+    res["VBC"] = V + res["ceos_c"] - res["ceos_b"]
     # in above data, p, p_V and p_V_x are set approximately to reproduce
     # taylor approximation in graph. For plotting, p is evaluated exactly.
     if user_agree("Plot pV-plot for relaxation dp/dV < 0"):
         plot_pv(res)
 
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
-    beta = cont.relax(res, DM([0.0, 4e-6, 0.0, 0.0]))
+    beta = cont.relax(res, [0.0, 4e-6, 0.0, 0.0])
     assert 0.7 < beta < 0.8  # from plot, this is where dp/dV turns positive
 
 
 # *** auxiliary routines
 
+
 def plot_pv(res):
     """auxiliary method to plot pv-graph and linear/quadratic approximation"""
-    T, V  = res["T"], res["V"]
+    T, V = res["T"], res["V"]
+
     def p(V):
         A, B, C = [res[i] for i in "ceos_a ceos_b ceos_c".split()]
         A /= 33.7
         VC = V + C
-        return R_GAS * T / (VC - B)  - A / VC / (VC + B)
+        return sum1(res["n"]) * R_GAS * T / (VC - B) - A / VC / (VC + B)
 
     # only plot if running this file interactively
-    volumes = linspace(4.5e-5, 5.2e-5, num=100)
+    volumes = linspace(45, 52, num=100) * Q("1 ml")
     pressures = p(volumes)
     lin_p = p(V) + (volumes - V) * res["dp_dV"]
-    quad_p = lin_p + 0.5 * (volumes - V) ** 2 * res["ddp_dV_dx"][1]
-    pylab.plot(volumes, pressures.full(), 1)
-    pylab.plot(volumes, lin_p.full(), ":")
-    pylab.plot(volumes, quad_p.full(), "--")
+    ddp_dv2 = res["ddp_dV_dx"][1] * Q("m**-3")
+    quad_p = lin_p + (volumes - V)**2 * ddp_dv2 / 2
+    pylab.plot(volumes, pressures.to("bar"), 1)
+    pylab.plot(volumes, lin_p.to("bar"), ":")
+    pylab.plot(volumes, quad_p.to("bar"), "--")
     pylab.xlim([volumes[0], volumes[-1]])
-    pylab.ylim([0, 1.5e6])
+    # pylab.ylim(Q([0, 15], "bar"))
     pylab.xlabel("V [m3]")
-    pylab.ylabel("p [Pa]")
+    pylab.ylabel("p [bar]")
     pylab.grid()
     pylab.show()
 
+
 if __name__ == "__main__":
+    from pytest import main
+    from sys import argv
     # only this file, very verbose and print stdout when started from here.
     main([__file__, "-v", "-v", "-s", "-rP"] + argv[1:])

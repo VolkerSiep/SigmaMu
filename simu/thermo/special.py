@@ -6,6 +6,7 @@ from casadi import jacobian
 # internal modules
 from .contribution import ThermoContribution
 
+
 class Derivative(ThermoContribution):
     r"""This auxiliary contribution provides the derivative of an arbitrary
     property with respect to an independent (state) variable. This can for
@@ -22,6 +23,7 @@ class Derivative(ThermoContribution):
     The derivative :math:`\partial y/\partial x` will be provied as
     ``f"d{options['y']}_d{options['x']}"``.
     """
+
     def define(self, res, par):
         independent = self.options["x"]
         dependent = self.options["y"]

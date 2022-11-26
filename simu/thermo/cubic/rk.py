@@ -4,12 +4,13 @@
 from abc import abstractmethod
 
 # external modules
+from casadi import SX
 from numpy import dot, ravel, roots
-from casadi import log, jacobian, sum1, SX
 
 # internal modules
+from ...utilities import base_magnitude, jacobian, log, sum1
+from ...utilities.constants import R_GAS
 from ..contribution import ThermoContribution
-from ...constants import R_GAS
 
 
 class RedlichKwongEOS(ThermoContribution):
@@ -138,23 +139,23 @@ class RedlichKwongEOS(ThermoContribution):
     def relax(self, current_result, delta_state):
         # V - B + C > 0 ?
         y = current_result["VBC"]
-        d_y = dot(ravel(current_result["dVBC_dx"]), delta_state)
+        d_y = current_result["dVBC_dx"] @ delta_state
         beta = -y / d_y if d_y < 0 else 100
 
         # V > 0 ?
         if delta_state[1] < 0:
-            beta = min(beta, -current_result["V"] / delta_state[1])
+            beta = min(beta, -current_result["state"][1] / delta_state[1])
 
         #  dp/dV < 0 ?
         y = current_result["dp_dV"]
-        d_y = dot(ravel(current_result["ddp_dV_dx"]), delta_state)
+        d_y = current_result["ddp_dV_dx"] @ delta_state
         if d_y > 0:
             beta = min(beta, -y / d_y)
 
         # p > 0 for liquid phase? (cannot happen in gas phase)
         beta_more = self.relax_more(current_result, delta_state)
         beta = beta if beta_more is None else min(beta, beta_more)
-        return beta
+        return float(beta)
 
     @abstractmethod
     def relax_more(self, current_result, delta_state):
@@ -165,10 +166,13 @@ class RedlichKwongEOS(ThermoContribution):
 
     @staticmethod
     def find_zeros(T, p, n, properties):
-        A, B, C = [float(properties[f"ceos_{i}"]) for i in "abc"]
+        """Given conditions and properties (A, B, C contribution of RK-EOS),
+        calculate the compressibility factor roots analytically and return
+        the vector quantity of volumes based on these"""
+        A, B, C = [properties[f"ceos_{i}"] for i in "abc"]
         NRT = sum(n) * R_GAS * T
-        alpha = A * p / (NRT * NRT)
-        beta = B * p / NRT
+        alpha = float(A * p / (NRT * NRT))  # must be dimensionless
+        beta = float(B * p / NRT)  # dito
         zeros = roots([1, -1, alpha - beta * (1 + beta), -alpha * beta])
         zeros = zeros[abs(zeros.imag) < 1e-7 * abs(zeros)]
         return zeros[zeros > beta].real * NRT / p - C
@@ -188,9 +192,10 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
         return -y / d_y if d_y < 0 else None
 
     def initial_state(self, temperature, pressure, quantities, properties):
-        V = min(self.find_zeros(temperature, pressure, quantities,
-                                properties))
-        return [temperature, V] + quantities
+        V = min(self.find_zeros(temperature, pressure, quantities, properties))
+        return [base_magnitude(temperature), base_magnitude(V)] + \
+            list(base_magnitude(quantities))
+
 
 class RedlichKwongEOSGas(RedlichKwongEOS):
     """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
@@ -203,9 +208,9 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
         apply for both phases."""
 
     def initial_state(self, temperature, pressure, quantities, properties):
-        volume = max(self.find_zeros(temperature, pressure, quantities,
-                                properties))
-        return [temperature, volume] + quantities
+        V = max(self.find_zeros(temperature, pressure, quantities, properties))
+        return [base_magnitude(temperature), base_magnitude(V)] + \
+            list(base_magnitude(quantities))
 
 
 class RedlichKwongAFunction(ThermoContribution):
@@ -225,7 +230,7 @@ class RedlichKwongAFunction(ThermoContribution):
     provides = ["ceos_a_i"]
 
     def define(self, res, par):
-        omega_r2 = R_GAS * R_GAS / (9 * (2 ** (1 / 3) - 1))
+        omega_r2 = R_GAS * R_GAS / (9 * (2**(1 / 3) - 1))
         alpha, T_c, p_c = [res[i] for i in "alpha T_c p_c".split()]
         res["ceos_a_i"] = omega_r2 * alpha * (T_c * T_c) / p_c
 
@@ -245,7 +250,7 @@ class RedlichKwongBFunction(ThermoContribution):
     provides = ["ceos_b_i"]
 
     def define(self, res, par):
-        omega_r = R_GAS * (2 ** (1 / 3) - 1) / 3
+        omega_r = R_GAS * (2**(1 / 3) - 1) / 3
         T_c, p_c = [res[i] for i in "T_c p_c".split()]
         res["ceos_b_i"] = omega_r * T_c / p_c
 

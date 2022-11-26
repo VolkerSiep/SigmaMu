@@ -1,0 +1,11 @@
+# Own units, defined specifically for process engineering,
+#   and missing in standard pint
+
+# gauge pressure units
+
+bar_gauge = bar; offset: 1.01325 = barg
+standard_atmosphere_gauge = atm; offset: 1 = atmg
+kilo_pascal_gauge = kPa; offset: 101.325 = kPag
+
+# alias for dimensionless (dimensionless itself isn't defined here however)
+dimless = m/m

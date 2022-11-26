@@ -15,7 +15,7 @@ from typing import Type, List, Collection
 from casadi import Function, SX
 
 # internal modules
-from ..utilities import FlexiDict
+from ..utilities import FlexiDict, Quantity, ParameterDictionary
 from .contribution import ThermoContribution, StateDefinition
 
 
@@ -43,23 +43,25 @@ class ThermoFrame:
             for name, (cls_, options) in contributions.items()
         }
 
-        params = {
-            name: con.parameter_structure
-            for name, con in contributions.items() if con.parameter_structure
-        }
+        parameters = {}
+        # params = {
+        #     name: con.parameter_structure
+        #     for name, con in contributions.items() if con.parameter_structure
+        # }
 
-        parameters = FlexiDict(params, flat=False)
+        # parameters = FlexiDict(params, flat=False)
 
         # define thermodynamic state (th, mc, [ch])
         state = SX.sym("x", len(species) + 2)
         self.__species = species
 
         # call the contributions
-        result = {"state": state}
+        result = {"state": Quantity(state)}
         state_definition.prepare(result)
         for name, contribution in contributions.items():
-            param = parameters.view(flat=False, symbol=True).get(name, {})
-            contribution.define(result, param)
+            parameters[name] = ParameterDictionary()
+            # param = parameters.view(flat=False, symbol=True).get(name, {})
+            contribution.define(result, parameters[name])
 
         # extract properties of interest
         property_names = sorted(result.keys())
