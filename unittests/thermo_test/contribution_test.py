@@ -4,8 +4,8 @@
 # internal modules
 from simu.thermo import (GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas,
                          IdealMix, LinearHeatCapacity)
-from simu.utilities import (ParameterDictionary, QFunction, Quantity,
-                            SymbolQuantity, assert_reproduction, base_unit)
+from simu.utilities import (ParameterDictionary, Quantity, SymbolQuantity,
+                            assert_reproduction, base_unit)
 
 
 # auxiliary functions
@@ -100,6 +100,7 @@ def test_helmholtz_ideal_gas():
 
 
 def test_helmholtz_ideal_gas_initialise():
+    """Test initialisation via Helmholtz ideal gas contribution"""
     cont = HelmholtzIdealGas(["A", "B"], {})
     # normally, we would need to provide numeric quantities as results,
     #  but these are not used for ideal gas initialisation.

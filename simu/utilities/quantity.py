@@ -1,23 +1,22 @@
 from pathlib import Path
-from typing import Any
 
 # need to import entire numpy and casadi modules to distinguish functions
 # of same name
 import casadi as cas
 from pint import UnitRegistry
 from pint.errors import DimensionalityError
+from typing import Mapping, Union
 
 # instantiate pint unit registry entity
 unit_registry = UnitRegistry(autoconvert_offset_to_baseunit=True)
 unit_file = Path(__file__).resolve().parent / "uom_definitions.txt"
 unit_registry.load_definitions(unit_file)
-unit_registry.setup_matplotlib(True)  # allow plotting with units
 del unit_file
 
 _Q = unit_registry.Quantity
 
 
-class Quantity(_Q):
+class Quantity(_Q):  # type: ignore
     """Proper quantity base-class for sub-classing"""
 
     def __new__(cls, *args, **kwargs):
@@ -106,14 +105,14 @@ def conditional(condition: cas.SX, negative: Quantity,
 
     units = positive.units
     negative = negative.to(units)  # convert to same unit
-    tup = [condition, negative.magnitude, positive.magnitude]
-    tup = zip(*map(cas.vertsplit, tup))
+    tup_branches = [condition, negative.magnitude, positive.magnitude]
+    tup = zip(*map(cas.vertsplit, tup_branches))
 
     magnitude = cas.vertcat(*[cas.conditional(c, [n], p) for c, n, p in tup])
     return Quantity(magnitude, units)
 
 
-def qvertcat(*quantities):
+def qvertcat(*quantities: Quantity) -> Quantity:
     """Concatenate a bunch of scalar symbolic quantities with compatible units
     to a vector quantity"""
     units = quantities[0].units
@@ -137,10 +136,14 @@ def base_unit(unit: str) -> str:
     return f"{base:~}"
 
 
-def base_magnitude(quantity: Quantity):
+def base_magnitude(quantity: Quantity) -> float:
     """Return the magnitude of the quantity in base units. This works for
     symbolic and numeric quantities, and for scalars and vectors"""
     return quantity.to_base_units().magnitude
+
+
+NestedQDict_1 = Mapping[str, Quantity]
+NestedQDict = NestedQDict_1  # Mapping[str, Union[NestedQDict_1, Quantity]]
 
 
 class QFunction:
@@ -173,8 +176,8 @@ class QFunction:
         self.res_units = {k: v.u for k, v in results.items()}
         self.func = cas.Function(fname, arg_sym, res_sym, arg_names, res_names)
 
-    def __call__(self, **kwargs: Quantity):
+    def __call__(self, args: NestedQDict) -> NestedQDict:
         """Call operator for the function object, as described above."""
-        args = {k: v.to(self.arg_units[k]).m for k, v in kwargs.items()}
+        args = {k: v.to(self.arg_units[k]).m for k, v in args.items()}
         result = self.func(**args)  # calling Casadi function
         return {k: Quantity(v, self.res_units[k]) for k, v in result.items()}

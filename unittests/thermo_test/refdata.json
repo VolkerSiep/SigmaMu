@@ -139,5 +139,5 @@
     "p_std",
     "state"
   ],
-  "special_test.py::test_derivative": "((T*C_2)+(C_1+(C_2*T)))"
+  "special_test.py::test_derivative": "((tau*C_2)+(C_1+(C_2*tau))) dimensionless"
 }

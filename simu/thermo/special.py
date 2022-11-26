@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# external modules
-from casadi import jacobian
-
 # internal modules
+from ..utilities import jacobian
 from .contribution import ThermoContribution
 
 

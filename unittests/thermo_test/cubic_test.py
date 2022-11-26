@@ -9,7 +9,8 @@ import pylab
 # internal modules
 from simu.utilities import (assert_reproduction, user_agree, base_unit,
                             ParameterDictionary, SymbolQuantity, jacobian,
-                            QFunction, Quantity as Q, base_magnitude, sum1)
+                            QFunction, Quantity as Q, base_magnitude, sum1,
+                            unit_registry)
 from simu.utilities.constants import R_GAS
 from simu.thermo import (CriticalParameters, LinearMixingRule,
                          RedlichKwongEOSLiquid, RedlichKwongEOSGas,
@@ -20,11 +21,13 @@ from simu.thermo.cubic.rk import RedlichKwongEOS
 
 
 # auxiliary functions
-def sym(name, units):
+def sym(name: str, units: str) -> SymbolQuantity:
+    """Define a scalar symbolic quantity"""
     return SymbolQuantity(name, base_unit(units))
 
 
-def vec(name, size, units):
+def vec(name: str, size: int, units: str) -> SymbolQuantity:
+    "define a vector symbolic quantity"
     return SymbolQuantity(name, base_unit(units), size)
 
 
@@ -176,11 +179,11 @@ def test_boston_mathias_alpha_function_smoothness():
 
     def props(eps):
         args["T"] = args["T_c"][0] + eps
-        res = f(**args)
+        res = f(args)
         return {k: v[0] for k, v in res.items()}
 
     eps = Q(1e-10, "K")
-    sub = props(-eps)  # sub-critical
+    sub = props(-1.0 * eps)  # sub-critical
     sup = props(eps)  # super-critical
 
     assert abs(sub["alpha"] - 1) < 1e-7, "sub-critical alpha unequal unity"
@@ -212,8 +215,6 @@ def test_initialise_rk():
 @mark.parametrize("cls", [RedlichKwongEOSGas, RedlichKwongEOSLiquid])
 def test_initialise_rk2(cls):
     """test initialisation of rk gas and liquid"""
-
-    # TODO: can I make this test simpler again???
 
     # define upstream expected results
     res = {
@@ -260,7 +261,7 @@ def test_initialise_rk2(cls):
     func = QFunction(args, {"p": res["p"]})
 
     args = {**res_num, **ideal_num}
-    p2 = func(**args)["p"] + sum(n) * R_GAS * T / args["V"]
+    p2 = func(args)["p"] + sum(n) * R_GAS * T / args["V"]
     assert abs(p2 - p) < Q("1 Pa")
 
 
@@ -340,6 +341,8 @@ def plot_pv(res):
     lin_p = p(V) + (volumes - V) * res["dp_dV"]
     ddp_dv2 = res["ddp_dV_dx"][1] * Q("m**-3")
     quad_p = lin_p + (volumes - V)**2 * ddp_dv2 / 2
+
+    unit_registry.setup_matplotlib(True)  # allow plotting with units
     pylab.plot(volumes, pressures.to("bar"), 1)
     pylab.plot(volumes, lin_p.to("bar"), ":")
     pylab.plot(volumes, quad_p.to("bar"), "--")

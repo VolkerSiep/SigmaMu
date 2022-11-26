@@ -74,8 +74,8 @@ def assert_reproduction(data, suffix=None):
                 differ = Differ()
                 diff = differ.compare(ref.splitlines(), val.splitlines())
                 msg = (
-                    f"Deviation from reference data detected ({meth_name}):" +
-                    "\n".join(diff) + "\n\nDo you accept the new data")
+                    f"Deviation from reference data detected ({meth_name}):\n"
+                    + "\n".join(diff) + "\n\nDo you accept the new data")
                 if user_agree(msg):
                     save_data(data)
                 else:

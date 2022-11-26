@@ -70,12 +70,12 @@ def test_sqrt():
     assert_reproduction(qstr(z))
 
 
-def test_exp():
+def test_pow():
     x1 = SymbolQuantity("x1", "m", "AB")
     x2 = SymbolQuantity("x2", "cm", "AB")
 
     with pt_raises(TypeError):
-        z = qpow(x1)
+        z = qpow(x1, x2)
 
     z = qpow(x1 / x2, x2 / x1)
     assert_reproduction(qstr(z))
@@ -108,6 +108,6 @@ def test_qfunction():
     # and now with quantities
     x = Quantity([1, 2], "cm")
     a = Quantity("0.1 kHz")
-    y = f(x=x, a=a)["y"]
+    y = f({"x": x, "a": a})["y"]
 
     assert_reproduction(qstr(y))

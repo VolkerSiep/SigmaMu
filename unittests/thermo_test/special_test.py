@@ -1,27 +1,28 @@
 # -*- coding: utf-8 -*-
 
-# external modules
-from casadi import SX
-
 # internal modules
-from simu.utilities import assert_reproduction
+from simu.utilities import assert_reproduction, SymbolQuantity, base_unit
+from simu.thermo import Derivative
+
+
+# auxiliary functions
+def sym(name: str, units: str) -> SymbolQuantity:
+    """Define a scalar symbolic quantity"""
+    return SymbolQuantity(name, base_unit(units))
+
+
+def vec(name: str, size: int, units: str) -> SymbolQuantity:
+    "define a vector symbolic quantity"
+    return SymbolQuantity(name, base_unit(units), size)
 
 
 def test_derivative():
-    from simu.thermo import Derivative
-    T = SX.sym("T")
-    C = SX.sym("C", 3)
-    poly = C[0] + (C[1] + C[2] * T) * T
-    res = {"T": T, "poly": poly}
+    """Test definition of Derivative contribution"""
+    tau = sym("tau", "dimless")
+    C = vec("C", 3, "dimless")
+    poly = C[0] + (C[1] + C[2] * tau) * tau
+    res = {"T": tau, "poly": poly}
     opt = {"y": "poly", "x": "T"}
     deri = Derivative(["A", "B"], opt)
     deri.define(res, {})
     assert_reproduction(str(res["dpoly_dT"]))
-
-
-
-if __name__ == "__main__":
-    from pytest import main
-    from sys import argv
-    # only this file, very verbose and print stdout when started from here.
-    main([__file__, "-v", "-v", "-rP"] + argv[1:])
