@@ -2,10 +2,12 @@ from pytest import raises as pt_raises
 
 from simu.utilities import (Quantity, SymbolQuantity, assert_reproduction,
                             jacobian, sum1, log, exp, sqrt, qpow, conditional,
-                            base_unit, QFunction)
+                            base_unit, QFunction, flatten_dictionary,
+                            unflatten_dictionary, extract_units_dictionary)
 
 
 def qstr(q):
+    """Format a quantity as string in short notation"""
     return f"{q:~}"
 
 
@@ -100,6 +102,7 @@ def test_base_unit():
 
 
 def test_qfunction():
+    """test QFunction with flat parameters and results"""
     x = SymbolQuantity("x1", "m", ["A", "B"])
     a = SymbolQuantity("a", "1/s")
     y = a * x
@@ -111,3 +114,50 @@ def test_qfunction():
     y = f({"x": x, "a": a})["y"]
 
     assert_reproduction(qstr(y))
+
+
+def test_simple_flatten(run_as_test=True):
+    """Check that a simple dict is flattened as expected"""
+    orig = {"C": {"A": 1, "B": 2}, "A": 3}
+    flat = flatten_dictionary(orig)
+    assert_reproduction(flat)
+    return orig, flat
+
+
+def test_unflatten():
+    """Check that original dict is reproduced by unflattening"""
+    orig, flat = test_simple_flatten(run_as_test=False)
+    rep = unflatten_dictionary(flat)
+    assert rep == orig
+
+
+def test_flatten_escaped():
+    """Check that (un-)flattening works with escaped separators"""
+    orig = {"C": {"A/D": 1, "B": 2}, "A": 3}
+    flat = flatten_dictionary(orig)
+    assert_reproduction(flat)
+    rep = unflatten_dictionary(flat)
+    assert rep == orig
+
+
+def test_q_function_nested():
+    """test QFunction with nested parameters and results"""
+    x = SymbolQuantity("x1", "m", ["A", "B"])
+    a = SymbolQuantity("a", "1/s")
+    y = a * x
+    f = QFunction({"x": x, "b": {"a": a}}, {"z": {"y": y}})
+
+    # and now with quantities
+    x = Quantity([1, 2], "cm")
+    a = Quantity("0.1 kHz")
+    y = f({"x": x, "b": {"a": a}})["z"]["y"]
+    assert_reproduction(qstr(y))
+
+
+def test_extract_units_dictionary():
+    """Test extraction of units from a nested dictionary"""
+    x = Quantity([1, 2], "cm")
+    a = Quantity("0.1 kHz")
+    struct = {"x": x, "b": {"a": a}}
+    units = extract_units_dictionary(struct)
+    assert_reproduction(units)

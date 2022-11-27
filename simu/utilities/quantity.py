@@ -1,11 +1,12 @@
+# stdlib modules
 from pathlib import Path
+from re import split, escape
 
-# need to import entire numpy and casadi modules to distinguish functions
-# of same name
+# external modules
+# need to import entire casadi module to distinguish functions of same name
 import casadi as cas
 from pint import UnitRegistry
 from pint.errors import DimensionalityError
-from typing import Mapping, Union
 
 # instantiate pint unit registry entity
 unit_registry = UnitRegistry(autoconvert_offset_to_baseunit=True)
@@ -142,8 +143,69 @@ def base_magnitude(quantity: Quantity) -> float:
     return quantity.to_base_units().magnitude
 
 
-NestedQDict_1 = Mapping[str, Quantity]
-NestedQDict = NestedQDict_1  # Mapping[str, Union[NestedQDict_1, Quantity]]
+# Typing of recursive structures is basically impossible, more so because
+# mypy doesn't accept Quantity as a class (with its methods).
+
+QDict = dict[str, Quantity]
+
+_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
+
+
+def flatten_dictionary(structure, prefix: str = "") -> QDict:
+    r"""Convert the given structure into a flat list of key value pairs,
+    where the keys are ``SEPARATOR``-separated concatonations of the paths,
+    and values are the values of the leafs. Non-string keys are converted
+    to strings. Occurances of ``SEPARATOR`` are escaped by ``\``.
+    """
+    try:
+        items = structure.items()  # is this dictionary enough for us?
+    except AttributeError:  # doesn't seem so, this is just a value
+        return {prefix: structure}  # type: ignore
+
+    result: QDict = {}
+    # must sort to create the same sequence every time
+    # (dictionary might have content permutated)
+    for key, value in sorted(items):
+        key = str(key).replace(_SEPARATOR, rf"\{_SEPARATOR}")  # esc. separator
+        key = f"{prefix}{_SEPARATOR}{key}" if prefix else key
+        result.update(flatten_dictionary(value, key))
+    return result
+
+
+def unflatten_dictionary(flat_structure: QDict):
+    """This is the reverse of :func:`flatten_dictionary`, inflating the
+    given one-depth dictionary into a nested structure."""
+    result = {}  # type: ignore
+
+    def insert(struct, keys, value):
+        first = keys.pop(0)
+        if keys:
+            if first not in struct:
+                struct[first] = {}
+            insert(struct[first], keys, value)
+        else:
+            struct[first] = value
+
+    # split by non-escaped separators and unescape escaped separators
+    regex = rf'(?<!\\){escape(_SEPARATOR)}'
+    for key, value in flat_structure.items():
+        keys = [
+            k.replace(rf"\{_SEPARATOR}", _SEPARATOR)
+            for k in split(regex, key)
+        ]
+        insert(result, keys, value)
+    return result
+
+
+def extract_units_dictionary(structure):
+    """Based on a nested dictionary of Quantities, create a new nested
+    dictionaries with only the units of measurement"""
+    try:
+        items = structure.items()  # is this dictionary enough for us?
+    except AttributeError:  # doesn't seem so, this is just a quantity
+        return f"{structure.units:~}"
+
+    return {key: extract_units_dictionary(value) for key, value in items}
 
 
 class QFunction:
@@ -158,26 +220,28 @@ class QFunction:
     conversion is done to the initially defined units for the individual
     arguments. The result is given back as a dictionary of ``Quantity`` values
     in the same units as initially defined.
-
-    .. todo::
-        extend to allow nested dictionaries, that will only be flattened
-        internally, so the user doesn't need to care about it at all.
     """
 
     def __init__(self,
                  args: dict[str, SymbolQuantity],
-                 results: dict[str, Quantity],
+                 results: QDict,
                  fname: str = "f"):
-        arg_names = list(args.keys())
-        res_names = list(results.keys())
-        arg_sym = [v.m for v in args.values()]
-        res_sym = [v.m for v in results.values()]
-        self.arg_units = {k: v.u for k, v in args.items()}
-        self.res_units = {k: v.u for k, v in results.items()}
+        args_flat = flatten_dictionary(args)
+        results_flat = flatten_dictionary(results)
+        arg_names = list(args_flat.keys())
+        res_names = list(results_flat.keys())
+        arg_sym = [v.magnitude for v in args_flat.values()]
+        res_sym = [v.magnitude for v in results_flat.values()]
+        self.arg_units = {k: v.units for k, v in args_flat.items()}
+        self.res_units = {k: v.units for k, v in results_flat.items()}
         self.func = cas.Function(fname, arg_sym, res_sym, arg_names, res_names)
 
-    def __call__(self, args: NestedQDict) -> NestedQDict:
+    def __call__(self, args):
         """Call operator for the function object, as described above."""
-        args = {k: v.to(self.arg_units[k]).m for k, v in args.items()}
-        result = self.func(**args)  # calling Casadi function
-        return {k: Quantity(v, self.res_units[k]) for k, v in result.items()}
+        args_flat = {
+            key: value.to(self.arg_units[key]).magnitude
+            for key, value in flatten_dictionary(args).items()
+        }
+        result = self.func(**args_flat)  # calling Casadi function
+        result = {k: Quantity(v, self.res_units[k]) for k, v in result.items()}
+        return unflatten_dictionary(result)

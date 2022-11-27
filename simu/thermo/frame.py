@@ -12,10 +12,11 @@ from copy import deepcopy
 from typing import Type, List, Collection
 
 # external modules
-from casadi import Function, SX
+from casadi import SX
 
 # internal modules
-from ..utilities import FlexiDict, Quantity, ParameterDictionary
+from ..utilities import (Quantity, ParameterDictionary, QFunction,
+                         SymbolQuantity)
 from .contribution import ThermoContribution, StateDefinition
 
 
@@ -44,43 +45,32 @@ class ThermoFrame:
         }
 
         parameters = {}
-        # params = {
-        #     name: con.parameter_structure
-        #     for name, con in contributions.items() if con.parameter_structure
-        # }
-
-        # parameters = FlexiDict(params, flat=False)
 
         # define thermodynamic state (th, mc, [ch])
-        state = SX.sym("x", len(species) + 2)
+        state = SymbolQuantity("x", "dimless", len(species) + 2)
         self.__species = species
 
         # call the contributions
-        result = {"state": Quantity(state)}
+        result = {"state": state}
         state_definition.prepare(result)
         for name, contribution in contributions.items():
             parameters[name] = ParameterDictionary()
             # param = parameters.view(flat=False, symbol=True).get(name, {})
             contribution.define(result, parameters[name])
 
-        # extract properties of interest
-        property_names = sorted(result.keys())
-        properties = [result[n] for n in property_names]
-
-        self.__function = Function("thermo_frame", [state, parameters.symbols],
-                                   properties, ["state", "parameters"],
-                                   property_names)
+        args = {"state": state, "parameters": parameters}
+        self.__function = QFunction(args, result, "thermo_frame")
 
         self.__contributions = contributions
         self.__state_definition = state_definition
         self.__default = None
         self.__parameters = parameters
 
-    def create_sym_state(self) -> SX:
-        return SX.sym('state', 2 + len(self.species))
+    # def create_sym_state(self) -> SX:
+    #     return SX.sym('state', 2 + len(self.species))
 
     @property
-    def func(self) -> Function:
+    def func(self) -> QFunction:
         """The ``casadi`` function object representing the thermodynamic model,
         having two arguments: ``state`` and ``parameters``.
 
@@ -114,22 +104,22 @@ class ThermoFrame:
         """Returns a list of species names"""
         return deepcopy(self.__species)
 
-    @property
-    def property_names(self) -> List[str]:
-        """Returns a list of property names, defining the content and sequence
-        of returned properties from :meth:`__call__` and the function object
-        :attr:`function`."""
-        return self.__function.name_out()
+    # @property
+    # def property_names(self) -> List[str]:
+    #     """Returns a list of property names, defining the content and sequence
+    #     of returned properties from :meth:`__call__` and the function object
+    #     :attr:`function`."""
+    #     return self.__function.name_out()
 
-    @property
-    def parameters(self) -> FlexiDict:
-        """This property is to aid the process of parametrising a model.
-        It returns the structure of all required model parameters. Initially,
-        The returned object must be set with actual values or symbols before the
-        function can be called or :meth:`initialise` invoked. For the latter,
-        float values have to be provided to the parameter object.
-        """
-        return self.__parameters
+    # @property
+    # def parameters(self) -> dict:  # TODO: needed?
+    #     """This property is to aid the process of parametrising a model.
+    #     It returns the structure of all required model parameters. Initially,
+    #     The returned object must be set with actual values or symbols before the
+    #     function can be called or :meth:`initialise` invoked. For the latter,
+    #     float values have to be provided to the parameter object.
+    #     """
+    #     return self.__parameters
 
     def relax(self, current_result: List[Collection[float]],
               delta_state: Collection[float]) -> float:
