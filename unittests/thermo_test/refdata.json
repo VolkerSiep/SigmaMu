@@ -99,6 +99,7 @@
     "S": "19.69280941623939 kg * m ** 2 / K / s ** 2",
     "mu": "[-1486.852957088782 -1360.2165589869312] kg * m ** 2 / mol / s ** 2"
   },
+  "frame_test.py::test_initial_state": 0.049579140592047766,
   "frame_test.py::test_parameter_names": [
     "H0S0ReferenceState.T_ref",
     "H0S0ReferenceState.dh_form.N2",

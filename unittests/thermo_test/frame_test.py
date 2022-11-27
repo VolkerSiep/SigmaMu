@@ -65,40 +65,47 @@ def test_relax():
 
 
 def test_initial_state():
-    # TODO: test initial state (need ideal gas for that!)
-    assert False
+    """Test whether initialisation of a Helmholtz ideal gas contributioon
+    gives the correct volume"""
+    frame = create_simple_frame()
+    T, p, n = Q("25 degC"), Q("1 bar"), Q([1, 1], "mol")
+    x = frame.initial_state(T, p, n, example_parameters)
+    assert_reproduction(x[1])
 
 
-# helper functions
+# helper functions / data
+
+example_parameters = {
+    'H0S0ReferenceState': {
+        'dh_form': {
+            'N2': Q("0 J/mol"),
+            'O2': Q("0 J/mol")
+        },
+        's_0': {
+            'N2': Q("0 J/mol/K"),
+            'O2': Q("0 J/mol/K")
+        },
+        'T_ref': Q("25 degC"),
+        'p_ref': Q("1 atm")
+    },
+    'LinearHeatCapacity': {
+        'cp_a': {
+            'N2': Q("29.12379083 J/mol/K"),
+            'O2': Q("20.786 J/mol/K")
+        },
+        'cp_b': {
+            'N2': Q("5.28694e-4 J/mol/K**2"),
+            'O2': Q("0.0 J/mol/K**2")
+        }
+    }
+}
+
+
 def call_frame():
     """Call a frame object with a state and return all with the result"""
     frame = create_simple_frame()
-    params = {
-        'H0S0ReferenceState': {
-            'dh_form': {
-                'N2': Q("0 J/mol"),
-                'O2': Q("0 J/mol")
-            },
-            's_0': {
-                'N2': Q("0 J/mol/K"),
-                'O2': Q("0 J/mol/K")
-            },
-            'T_ref': Q("25 degC"),
-            'p_ref': Q("1 atm")
-        },
-        'LinearHeatCapacity': {
-            'cp_a': {
-                'N2': Q("29.12379083 J/mol/K"),
-                'O2': Q("20.786 J/mol/K")
-            },
-            'cp_b': {
-                'N2': Q("5.28694e-4 J/mol/K**2"),
-                'O2': Q("0.0 J/mol/K**2")
-            }
-        }
-    }
     state = Q([398.15, 0.0448, 1, 1])  # = T, V, *n
-    result = frame(state, params)
+    result = frame(state, example_parameters)
     return frame, state, result
 
 

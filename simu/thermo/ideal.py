@@ -34,7 +34,8 @@ class HelmholtzState(StateDefinition):
             result[name] = Quantity(result[name], base_unit(unit))
 
     def reverse(self, temperature, pressure, quantities):
-        return [base_magnitude(temperature), None] + base_magnitude(quantities)
+        return [base_magnitude(temperature), None] + \
+            list(base_magnitude(quantities))
 
 
 class GibbsState(StateDefinition):
@@ -57,8 +58,8 @@ class GibbsState(StateDefinition):
             result[name] = Quantity(result[name], base_unit(unit))
 
     def reverse(self, temperature, pressure, quantities):
-        return [base_magnitude(temperature),
-                base_magnitude(pressure)] + base_magnitude(quantities)
+        return [base_magnitude(temperature), base_magnitude(pressure)] + \
+            list(base_magnitude(quantities))
 
 
 class H0S0ReferenceState(ThermoContribution):
