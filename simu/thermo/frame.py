@@ -11,9 +11,6 @@ state and the model parameters.
 from copy import deepcopy
 from typing import Type, List, Collection
 
-# external modules
-from casadi import SX
-
 # internal modules
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
                          SymbolQuantity)
@@ -208,12 +205,6 @@ class ThermoFactory:
 
     The class is largely meant to be a singelton, but to keep doors open,
     multiple instances can be created."""
-
-    CATEGORY_SEPERATOR = "#"
-    """The separator character to join category and name. It can be changed
-    before any contributions are registered - otherwise yields inconisistent
-    behaviour. The separator cannot be a dot ``.``, as this would conflict
-    with the structuring of thermodynamic parameters."""
 
     def __init__(self):
         """Parameter-less constructor, initialising the data structure

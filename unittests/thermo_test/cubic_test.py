@@ -37,8 +37,7 @@ def test_critical_parameters():
     par = ParameterDictionary()
     cont = CriticalParameters(["A", "B"], {})
     cont.define(res, par)
-    result = {key: str(value) for key, value in res.items()}
-    assert_reproduction(result)
+    assert_reproduction(res)
 
 
 def test_linear_mixing_rule():
@@ -52,7 +51,7 @@ def test_linear_mixing_rule():
     }
     cont = LinearMixingRule(["A", "B"], opt)
     cont.define(res, par)
-    result = [str(res["c"]), str(par["c_i"])]
+    result = [res["c"], par]
     assert_reproduction(result)
 
 
@@ -79,11 +78,12 @@ def test_redlich_kwong_eos():
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     cont.define(res, {})
     keys = "S p mu ceos_a_T ceos_b_T VBC dp_dV".split()
-    result = {k: str(res[k]) for k in keys}
+    result = {k: res[k] for k in keys}
     assert_reproduction(result)
 
 
 def test_abstract_class_init():
+    """Check that abstract RedlichKwongEOS class cannot be instantiated"""
     with raises(TypeError) as excinfo:
         # pylint: disable=abstract-class-instantiated
         RedlichKwongEOS(["A", "B"], {})
@@ -106,8 +106,7 @@ def test_non_symmmetric_mixing_rule():
     cont = NonSymmetricMixingRule(["A", "B", "C"], options)
     par = ParameterDictionary()
     cont.define(res, par)
-    result = str(res["a"])
-    assert_reproduction(result)
+    assert_reproduction(res["a"])
 
 
 def test_redlich_kwong_a_function():
@@ -119,8 +118,7 @@ def test_redlich_kwong_a_function():
     }
     cont = RedlichKwongAFunction(["A", "B"], {})
     cont.define(res, {})
-    result = str(res["ceos_a_i"])
-    assert_reproduction(result)
+    assert_reproduction(res["ceos_a_i"])
 
 
 def test_redlich_kwong_b_function():
@@ -128,8 +126,7 @@ def test_redlich_kwong_b_function():
     res = {"T_c": vec('T_c', 2, "K"), "p_c": vec('p_c', 2, "bar")}
     cont = RedlichKwongBFunction(["A", "B"], {})
     cont.define(res, {})
-    result = str(res["ceos_b_i"])
-    assert_reproduction(result)
+    assert_reproduction(res["ceos_b_i"])
 
 
 def test_rk_m_factor():
@@ -137,8 +134,7 @@ def test_rk_m_factor():
     res = {"omega": vec('w', 2, "dimless")}
     cont = RedlichKwongMFactor(["A", "B"], {})
     cont.define(res, {})
-    result = str(res["m_factor"])
-    assert_reproduction(result)
+    assert_reproduction(res["m_factor"])
 
 
 def test_boston_mathias_alpha_function():
@@ -151,8 +147,7 @@ def test_boston_mathias_alpha_function():
     par = ParameterDictionary()
     cont = BostonMathiasAlphaFunction(["A", "B"], {})
     cont.define(res, par)
-    result = str(res["alpha"][0])
-    assert_reproduction(result)
+    assert_reproduction(res["alpha"][0])
     return res, par
 
 

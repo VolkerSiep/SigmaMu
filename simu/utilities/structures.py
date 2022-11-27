@@ -12,11 +12,11 @@ from casadi import SX, vertcat
 
 # internal modules
 from .quantity import (Quantity, base_unit, flatten_dictionary, qvertcat,
-                       unflatten_dictionary)
+                       unflatten_dictionary, SymbolQuantity)
 
 
 class ParameterDictionary(dict):
-    """This class is a nested dictionary of symbolic (casadi SX type)
+    """This class is a nested dictionary of SymbolQuantities to represent
     parameters with functionality to be populated using the ``register_*``
     methods.
     """
@@ -29,23 +29,22 @@ class ParameterDictionary(dict):
             """Return a scalar quantity with the key pair for each element
             in the sub-structure"""
             for key_1, second in self.items():
-                for key_2, (magnitude, unit) in second.items():
-                    yield (key_1, key_2, Quantity(magnitude, unit))
+                for key_2, quantity in second.items():
+                    yield (key_1, key_2, quantity)
 
     def register_scalar(self, key: str, unit: str):
         """Create a scalar quantity and add the structure to the dictionary"""
         unit = base_unit(unit)
-        magnitude = SX.sym(key)
-        self[key] = [magnitude, unit]
-        return Quantity(magnitude, unit)
+        quantity = SymbolQuantity(key, unit)
+        self[key] = quantity
+        return quantity
 
     def register_vector(self, key: str, species: list[str], unit: str):
         """Create a quantity vector with symbols and add the structure to
         the dictionary"""
         unit = base_unit(unit)
-        magnitude = vertcat(*[SX.sym(f"{key}.{s}") for s in species])
-        self[key] = {s: [magnitude[k], unit] for k, s in enumerate(species)}
-        return Quantity(magnitude, unit)
+        self[key] = {s: SymbolQuantity(f"{key}.{s}", unit) for s in species}
+        return qvertcat(*self[key].values())
 
     def register_sparse_matrix(self, key: str, pairs: dict, unit: str):
         """Create a sparse matrix quantity and add the structure to the
@@ -54,8 +53,8 @@ class ParameterDictionary(dict):
         unit = base_unit(unit)
         res = ParameterDictionary.SparseMatrix({f: {} for f, _ in pairs})
         for first, second in pairs:
-            magnitude = SX.sym(f"{key}.{first}.{second}")
-            res[first][second] = [magnitude, unit]
+            quantity = SymbolQuantity(f"{key}.{first}.{second}", unit)
+            res[first][second] = quantity
         self[key] = res
         return res
 
@@ -64,38 +63,17 @@ class ParameterDictionary(dict):
         entry = self
         for key in keys:
             entry = entry[key]
-        return Quantity(*entry)
+        return entry
 
     def get_vector_quantity(self, *keys):
         """Extract a vector quantity from the given sequence of keys"""
         entry = self
         for key in keys:
             entry = entry[key]
-        quantities = [Quantity(*e) for e in entry.values()]
-        return qvertcat(*quantities)
-
-    # TODO: need to get vector of symbols from this - and vector of names
-    # wait: now I have the symbolic quantities. When calling the function, I
-    # need numeric quantities
-    # a quantity dictionary has to be converted to base units, and the magnitudes
-    # extracted to the vector.
+        return qvertcat(*entry.values())
 
 
-# def iter_binary_parameters(species, parameters, name):
-#     """For a sparse binary parameter structure in nested dictionaries, this is
-#     a generator to yield tuples of indices and values."""
-#     try:
-#         current = parameters[name].items()
-#     except KeyError:
-#         return
-#     for first, rest in current:
-#         idx_1 = species.index(first)
-#         for second, value in rest.items():
-#             idx_2 = species.index(second)
-#             yield (idx_1, idx_2, value)
-
-
-class FlexiDict(Mapping):
+class FlexiDict(Mapping):  # maybe not needed anymore
     """Using Casadi, we often deal with nested dictionaries that hold both
     casadi symbols of type ``SX`` and floating point values. These structures
     need to be used both in flat and in nested configuration.
@@ -213,7 +191,7 @@ class FlexiDict(Mapping):
         return result
 
 
-class SpeciesDict(dict):
+class SpeciesDict(dict):  # better as a global function?
     """A specialised dictionary that can be reduced to only host a subset of
     keys. This is primarily used to deal with data sets containing unary,
     binary and higher order data on a set of chemical species."""

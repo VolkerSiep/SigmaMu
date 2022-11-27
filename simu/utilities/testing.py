@@ -2,11 +2,25 @@
 """auxiliary routines for unit testing"""
 
 # stdlib modules
-from json import dumps, load, loads
+from json import dumps, load, loads, JSONEncoder
 from sys import _getframe, exc_info
 from types import TracebackType
 from pathlib import Path
 from difflib import Differ
+
+from casadi import SX
+
+SX.__json__ = SX.__str__
+
+
+class CustomEncoder(JSONEncoder):
+    """Custom encoder for Objects"""
+
+    def default(self, o):
+        try:
+            return o.__json__()
+        except AttributeError:
+            return super().default(o)
 
 
 def user_agree(message):
@@ -48,7 +62,8 @@ def assert_reproduction(data, suffix=None):
     filename = caller_file.absolute().parent / "refdata.json"
     ref_data_all = load_file()
 
-    data = loads(dumps(data))  # to align and assure compatibility
+    # to align and assure compatibility
+    data = loads(dumps(data, cls=CustomEncoder))
     meth_name = _getframe(1).f_code.co_name  # get name of calling method
     meth_name = f"{caller_file.name}::{meth_name}"
     if suffix:
@@ -56,7 +71,7 @@ def assert_reproduction(data, suffix=None):
     ref_data = ref_data_all.get(meth_name, None)
 
     try:
-        if not ref_data:
+        if ref_data is None:
             msg = (f"No reference data exists for {meth_name}. " +
                    "The following data is generated now:\n\n" +
                    dumps(data, indent=2, sort_keys=True) +

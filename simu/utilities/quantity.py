@@ -25,6 +25,13 @@ class Quantity(_Q):  # type: ignore
         obj.__class__ = cls
         return obj
 
+    def __json__(self):
+        """Custom method to export to json for testing"""
+        return f"{self:~}"
+
+# write back class, so it's used as result of quantity operations
+unit_registry.Quantity = Quantity
+
 
 class SymbolQuantity(Quantity):
     """A quantity class specialised to host casadi symbols (SX)."""
@@ -45,6 +52,10 @@ class SymbolQuantity(Quantity):
             return magnitude, units
 
         return super().__new__(Quantity, *attributes(*args, **kwargs))
+
+    def __json__(self):
+        """Custom method to export to json for testing"""
+        return f"{str(self.magnitude)}{self.units:~}"
 
 
 # redefine jacobian to propanatural logarithmusgate pint units
@@ -222,10 +233,7 @@ class QFunction:
     in the same units as initially defined.
     """
 
-    def __init__(self,
-                 args: dict[str, SymbolQuantity],
-                 results: QDict,
-                 fname: str = "f"):
+    def __init__(self, args, results, fname: str = "f"):
         args_flat = flatten_dictionary(args)
         results_flat = flatten_dictionary(results)
         arg_names = list(args_flat.keys())

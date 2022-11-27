@@ -6,18 +6,13 @@ from simu.utilities import (Quantity, SymbolQuantity, assert_reproduction,
                             unflatten_dictionary, extract_units_dictionary)
 
 
-def qstr(q):
-    """Format a quantity as string in short notation"""
-    return f"{q:~}"
-
-
 def test_symbol_quantity():
     x_1 = SymbolQuantity("x1", "m", ["A", "B"])
     x_2 = SymbolQuantity("x2", "kg", 2)
     a = SymbolQuantity("a", "1/s")
     y_1 = a * x_1
     y_2 = a * x_2
-    assert_reproduction([qstr(y_1), qstr(y_2)])
+    assert_reproduction([y_1, y_2])
 
 
 def test_quantity():
@@ -27,7 +22,7 @@ def test_quantity():
         Quantity(1, "J/mol").to_base_units()
     ]
     x.append(Quantity(x[0]))
-    assert_reproduction(list(map(qstr, x)))
+    assert_reproduction(x)
 
 
 def test_jacobian():
@@ -35,13 +30,13 @@ def test_jacobian():
     a = SymbolQuantity("a", "1/s")
     y = a * x
     z = jacobian(y, x)
-    assert_reproduction(qstr(z))
+    assert_reproduction(z)
 
 
 def test_sum1():
     x = SymbolQuantity("x1", "m", "ABCDEFU")
     y = sum1(x)
-    assert_reproduction(qstr(y))
+    assert_reproduction(y)
 
 
 def test_log():
@@ -52,7 +47,7 @@ def test_log():
         z = log(x1)
 
     z = log(x1 / x2)
-    assert_reproduction(qstr(z))
+    assert_reproduction(z)
 
 
 def test_exp():
@@ -63,13 +58,13 @@ def test_exp():
         z = exp(x1)
 
     z = exp(x1 / x2)
-    assert_reproduction(qstr(z))
+    assert_reproduction(z)
 
 
 def test_sqrt():
     x = SymbolQuantity("x", "m^2", "AB")
     z = sqrt(x)
-    assert_reproduction(qstr(z))
+    assert_reproduction(z)
 
 
 def test_pow():
@@ -80,7 +75,7 @@ def test_pow():
         z = qpow(x1, x2)
 
     z = qpow(x1 / x2, x2 / x1)
-    assert_reproduction(qstr(z))
+    assert_reproduction(z)
 
 
 def test_conditional():
@@ -90,7 +85,7 @@ def test_conditional():
     # try invalid condition
     cond = x1 > x2
     z = conditional(cond, x1, x2)
-    assert_reproduction(qstr(z))
+    assert_reproduction(z)
 
 
 def test_base_unit():
@@ -113,7 +108,7 @@ def test_qfunction():
     a = Quantity("0.1 kHz")
     y = f({"x": x, "a": a})["y"]
 
-    assert_reproduction(qstr(y))
+    assert_reproduction(y)
 
 
 def test_simple_flatten(run_as_test=True):
@@ -151,7 +146,7 @@ def test_q_function_nested():
     x = Quantity([1, 2], "cm")
     a = Quantity("0.1 kHz")
     y = f({"x": x, "b": {"a": a}})["z"]["y"]
-    assert_reproduction(qstr(y))
+    assert_reproduction(y)
 
 
 def test_extract_units_dictionary():
