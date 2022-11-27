@@ -5,6 +5,7 @@ from re import split, escape
 # external modules
 # need to import entire casadi module to distinguish functions of same name
 import casadi as cas
+from numpy import squeeze
 from pint import UnitRegistry
 from pint.errors import DimensionalityError
 
@@ -28,6 +29,7 @@ class Quantity(_Q):  # type: ignore
     def __json__(self):
         """Custom method to export to json for testing"""
         return f"{self:~}"
+
 
 # write back class, so it's used as result of quantity operations
 unit_registry.Quantity = Quantity
@@ -244,12 +246,21 @@ class QFunction:
         self.res_units = {k: v.units for k, v in results_flat.items()}
         self.func = cas.Function(fname, arg_sym, res_sym, arg_names, res_names)
 
-    def __call__(self, args):
+    def __call__(self, args, squeeze_results=True):
         """Call operator for the function object, as described above."""
         args_flat = {
             key: value.to(self.arg_units[key]).magnitude
             for key, value in flatten_dictionary(args).items()
         }
         result = self.func(**args_flat)  # calling Casadi function
+        if squeeze_results:
+            result = {k: squeeze(v) for k, v in result.items()}
         result = {k: Quantity(v, self.res_units[k]) for k, v in result.items()}
         return unflatten_dictionary(result)
+
+    @property
+    def result_structure(self):
+        """Return the result structure as a nested dictionary, only including
+        the units of measurements as values of end nodes"""
+        units = {k: f"{v:~}" for k, v in self.res_units.items()}
+        return unflatten_dictionary(units)

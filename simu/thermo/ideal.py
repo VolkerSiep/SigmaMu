@@ -5,7 +5,6 @@ from copy import copy
 
 # external modules
 from casadi import vertcat, vertsplit
-from numpy import ravel
 
 # internal modules
 from ..utilities import (ParameterDictionary, Quantity, base_magnitude,
@@ -35,7 +34,7 @@ class HelmholtzState(StateDefinition):
             result[name] = Quantity(result[name], base_unit(unit))
 
     def reverse(self, temperature, pressure, quantities):
-        return [temperature, None] + quantities
+        return [base_magnitude(temperature), None] + base_magnitude(quantities)
 
 
 class GibbsState(StateDefinition):
@@ -58,7 +57,8 @@ class GibbsState(StateDefinition):
             result[name] = Quantity(result[name], base_unit(unit))
 
     def reverse(self, temperature, pressure, quantities):
-        return [temperature, pressure] + quantities
+        return [base_magnitude(temperature),
+                base_magnitude(pressure)] + base_magnitude(quantities)
 
 
 class H0S0ReferenceState(ThermoContribution):
@@ -167,7 +167,7 @@ class LinearHeatCapacity(ThermoContribution):
         res["mu"] += d_h - T * d_s
 
     def relax(self, current_result, delta_state):
-        T, d_T = current_result["T"], delta_state[0]
+        T, d_T = current_result["state"][0], delta_state[0]
         return -T / d_T if d_T < 0 else 100
 
 
@@ -227,10 +227,9 @@ class IdealMix(ThermoContribution):
         res["mu"] += T * gtn
 
     def relax(self, current_result, delta_state):
-        n, d_n = current_result["n"], delta_state[2:]
-        n, d_n = map(ravel, [n, d_n])
+        n, d_n = current_result["state"][2:], delta_state[2:]
         cand = [-n_i / dn_i for n_i, dn_i in zip(n, d_n) if dn_i < 0]
-        return min(cand) if cand else 100
+        return min(cand) if cand else 999
 
 
 class GibbsIdealGas(ThermoContribution):
@@ -270,7 +269,7 @@ class GibbsIdealGas(ThermoContribution):
         res["mu"] += T * gtn
 
     def relax(self, current_result, delta_state):
-        p, d_p = current_result["p"], delta_state[1]
+        p, d_p = current_result["state"][1], delta_state[1]
         return -p / d_p if d_p < 0 else 100
 
 
@@ -312,7 +311,7 @@ class HelmholtzIdealGas(ThermoContribution):
         res["mu"] += T * gtn
 
     def relax(self, current_result, delta_state):
-        V, d_V = current_result["V"], delta_state[1]
+        V, d_V = current_result["state"][1], delta_state[1]
         return -V / d_V if d_V < 0 else 100
 
     def initial_state(self, temperature, pressure, quantities, properties):

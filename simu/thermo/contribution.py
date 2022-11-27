@@ -63,14 +63,14 @@ class ThermoContribution(ABC):
         """Virtual function to report the maximal allowable step size in
         the state variables.
 
-        :param current_result: The results based on the current state
+        :param current_result: The numeric results based on the current state
         :param delta_state: The given direction
 
         :seealso: :meth:`ThermoFrame.relax`
         """
         # default implementation
         del current_result, delta_state  # unused
-        return 100  # a number greater than 1 / gamma for practical gamma
+        return 999  # a number greater than 1 / gamma for practical gamma
 
     def initial_state(self, temperature: Quantity, pressure: Quantity,
                       quantities: Quantity,
@@ -116,8 +116,8 @@ class StateDefinition(ABC):
         """
 
     @abstractmethod
-    def reverse(self, temperature: float, pressure: float,
-                quantities: Collection[float]) -> list[float]:
+    def reverse(self, temperature: Quantity, pressure: Quantity,
+                quantities: Quantity) -> list[float]:
         """Return the state vector as complete as possible with given
         temperature, pressure and quantities. The task of the contributions'
         :meth:`ThermoContribution.initial_state` method is it then to

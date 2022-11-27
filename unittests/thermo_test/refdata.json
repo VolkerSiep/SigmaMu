@@ -95,6 +95,10 @@
     "p": "@1=(V+C0), @2=(B0+(T*dBdT)), (p-((((8.31446*(n_0+n_1))*T)*((1./V)-(1./(@1-@2))))+((A0+(T*dAdT))/(@1*(@1+@2))))) kg / m / s ** 2"
   },
   "cubic_test.py::test_rk_m_factor": "@1=0.48508, @2=0.15613, @3=1.55171, [(@1-(((@2*w_0)-@3)*w_0)), (@1-(((@2*w_1)-@3)*w_1))]",
+  "frame_test.py::test_call_frame": {
+    "S": "19.69280941623939 kg * m ** 2 / K / s ** 2",
+    "mu": "[-1486.852957088782 -1360.2165589869312] kg * m ** 2 / mol / s ** 2"
+  },
   "frame_test.py::test_parameter_names": [
     "H0S0ReferenceState.T_ref",
     "H0S0ReferenceState.dh_form.N2",
@@ -109,27 +113,30 @@
   ],
   "frame_test.py::test_parameter_structure": {
     "H0S0ReferenceState": {
-      "T_ref": null,
+      "T_ref": "K",
       "dh_form": {
-        "N2": null,
-        "O2": null
+        "N2": "kg * m ** 2 / mol / s ** 2",
+        "O2": "kg * m ** 2 / mol / s ** 2"
       },
-      "p_ref": null,
+      "p_ref": "kg / m / s ** 2",
       "s_0": {
-        "N2": null,
-        "O2": null
+        "N2": "kg * m ** 2 / K / mol / s ** 2",
+        "O2": "kg * m ** 2 / K / mol / s ** 2"
       }
     },
+    "HelmholtzIdealGas": {},
+    "IdealMix": {},
     "LinearHeatCapacity": {
       "cp_a": {
-        "N2": null,
-        "O2": null
+        "N2": "kg * m ** 2 / K / mol / s ** 2",
+        "O2": "kg * m ** 2 / K / mol / s ** 2"
       },
       "cp_b": {
-        "N2": null,
-        "O2": null
+        "N2": "kg * m ** 2 / K ** 2 / mol / s ** 2",
+        "O2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
       }
-    }
+    },
+    "StandardState": {}
   },
   "frame_test.py::test_property_names": [
     "S",
@@ -144,5 +151,19 @@
     "p_std",
     "state"
   ],
+  "frame_test.py::test_property_structure": {
+    "S": "kg * m ** 2 / K / s ** 2",
+    "S_std": "kg * m ** 2 / K / s ** 2",
+    "T": "K",
+    "T_ref": "K",
+    "V": "m ** 3",
+    "mu": "kg * m ** 2 / mol / s ** 2",
+    "mu_std": "kg * m ** 2 / mol / s ** 2",
+    "n": "mol",
+    "p": "J / m ** 3",
+    "p_ref": "kg / m / s ** 2",
+    "p_std": "kg / m / s ** 2",
+    "state": "dimless"
+  },
   "special_test.py::test_derivative": "((tau*C_2)+(C_1+(C_2*tau))) dimensionless"
 }

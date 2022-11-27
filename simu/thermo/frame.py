@@ -13,7 +13,7 @@ from typing import Type, List, Collection
 
 # internal modules
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
-                         SymbolQuantity)
+                         SymbolQuantity, extract_units_dictionary)
 from .contribution import ThermoContribution, StateDefinition
 
 
@@ -61,32 +61,9 @@ class ThermoFrame:
         self.__contributions = contributions
         self.__state_definition = state_definition
         self.__default = None
-        self.__parameters = parameters
+        self.__param_struct = extract_units_dictionary(parameters)
 
-    # def create_sym_state(self) -> SX:
-    #     return SX.sym('state', 2 + len(self.species))
-
-    @property
-    def func(self) -> QFunction:
-        """The ``casadi`` function object representing the thermodynamic model,
-        having two arguments: ``state`` and ``parameters``.
-
-        The ``state`` represents the independent variables of the state
-        function. These are initially obtained from the :meth:`initial_state`
-        method and then normally updated by some numerical scheme to solve the
-        problem at hand.
-
-        The ``parameters`` are the set of thermodynamic parameters as required
-        by the model contributions. The :meth:`__call__` calls this function
-        with ``parameters`` defined as ``self.parameters.flat_values``.
-
-        Instead of calling the call-operator, directly accessing the
-        ``casadi.Function`` object allows to query further derivatives of the
-        function with respect to the state and parameters.
-        """
-        return self.__function
-
-    def __call__(self, state: Collection[float]) -> List[Collection[float]]:
+    def __call__(self, state: Quantity, parameters):
         """Call to the function object :attr:`function`, in particular with
         current parameter set :attr:`parameters` and using evaluation with
         float typed variables.
@@ -94,32 +71,31 @@ class ThermoFrame:
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.
         """
-        return self.func(state, self.__parameters.flat_values)
+        return self.__function({"state": state, "parameters": parameters})
 
     @property
     def species(self) -> List[str]:
         """Returns a list of species names"""
         return deepcopy(self.__species)
 
-    # @property
-    # def property_names(self) -> List[str]:
-    #     """Returns a list of property names, defining the content and sequence
-    #     of returned properties from :meth:`__call__` and the function object
-    #     :attr:`function`."""
-    #     return self.__function.name_out()
+    @property
+    def property_structure(self) -> dict:
+        """Returns a recusive structure properties, defining the calculated
+        properties from :meth:`__call__` """
+        return self.__function.result_structure
 
-    # @property
-    # def parameters(self) -> dict:  # TODO: needed?
-    #     """This property is to aid the process of parametrising a model.
-    #     It returns the structure of all required model parameters. Initially,
-    #     The returned object must be set with actual values or symbols before the
-    #     function can be called or :meth:`initialise` invoked. For the latter,
-    #     float values have to be provided to the parameter object.
-    #     """
-    #     return self.__parameters
+    @property
+    def parameter_structure(self) -> dict:
+        """This property is to aid the process of parametrising a model.
+        It returns the structure of all required model parameters. Initially,
+        the returned object contains units of measurements that must be
+        replaced with actual quantities (symbolic or not) before the
+        function can be called or :meth:`initialise` invoked. For the latter,
+        float quantities have to be provided to the parameter object.
+        """
+        return self.__param_struct
 
-    def relax(self, current_result: List[Collection[float]],
-              delta_state: Collection[float]) -> float:
+    def relax(self, current_result, delta_state: Collection[float]) -> float:
         """As a thermodynamic function, this object's contributions hold
         information on the domain limits of the state variables. This is mostly
         as trivial as demanding positive temperature, pressure, or quantities,
@@ -137,14 +113,12 @@ class ThermoFrame:
         :return: The maximal allowed step size as a pre-factor to
           ``delta_state``. Hence a value of one describes full step length.
         """
-        result = dict(zip(self.property_names, current_result))
-        return min([
-            cont.relax(result, delta_state)
-            for name, cont in self.__contributions.items()
-        ])
+        return float(min(
+            cont.relax(current_result, delta_state)
+            for cont in self.__contributions.values()))
 
-    def initial_state(self, temperature: float, pressure: float,
-                      quantities: Collection[float]) -> List[float]:
+    def initial_state(self, temperature: Quantity, pressure: Quantity,
+                      quantities: Quantity, parameters) -> List[float]:
         """Return a state estimate for given temperature, pressure and
         molar quantities - at given parameter set.
 
@@ -164,10 +138,9 @@ class ThermoFrame:
         if None not in state:
             return state
 
-        state = [float("NaN") if x is None else x for x in state]
+        state = Quantity([float("NaN") if x is None else x for x in state])
         # calculate all propeties ... accept NaNs
-        values = self(state)
-        properties = dict(zip(self.property_names, values))
+        properties = self(state, parameters)
 
         for cont in reversed(self.__contributions.values()):
             result = cont.initial_state(temperature, pressure, quantities,
