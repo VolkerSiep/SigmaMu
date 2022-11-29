@@ -11,7 +11,7 @@ from typing import Collection
 from casadi import SX, vertcat
 
 # internal modules
-from .quantity import (Quantity, base_unit, flatten_dictionary, qvertcat,
+from .quantity import (base_unit, flatten_dictionary, qvertcat,
                        unflatten_dictionary, SymbolQuantity)
 
 
@@ -219,7 +219,7 @@ class SpeciesDict(dict):  # better as a global function?
         """
         # is this a species dict?
         try:
-            dictionary = dictionary.reduce(species)
+            dictionary = dictionary.reduce(species)  # type: ignore
         except AttributeError:  # no, just keep it
             dictionary = dict(dictionary)  # make a shallow copy
 
@@ -242,8 +242,7 @@ def create_vector_struct(keys, unit):
     .. code-block::
 
         >>> create_vector_struct(["A", "B", "C"], "J/mol")
-
-        [{"A": None, "B": None, "C": None}, "J/mol"]
+        [{'A': None, 'B': None, 'C': None}, 'J/mol']
 
     """
     return [{k: None for k in keys}, unit]
@@ -256,8 +255,7 @@ def create_scalar_struct(unit):
     .. code-block::
 
         >>> create_scalar_struct("J/mol")
-
-        [None, "J/mol"]
+        [None, 'J/mol']
     """
     return [None, unit]
 
@@ -270,12 +268,9 @@ def create_vector(dictionary: dict, keys: Collection[str]) -> SX:
     .. code-block::
 
         >>> struct = {"A": SX.sym("x"),
-                        "C": SX.sym("y"),
-                        "B": SX.sym("z")}
-        >>> print(create_vector(struct, ["A", "B", "C"])
-
-    yields ::
-
+        ...           "C": SX.sym("y"),
+        ...           "B": SX.sym("z")}
+        >>> create_vector(struct, ["A", "B", "C"])
         SX([x, z, y])
 
     :param dictionary: The parameter structure, pointing to the node where
@@ -286,16 +281,3 @@ def create_vector(dictionary: dict, keys: Collection[str]) -> SX:
     :return: The ``casadi.SX`` object containing the collected symbols
     """
     return vertcat(*[dictionary[key] for key in keys])
-
-
-# TODO: this should be in unit test -
-#   together with a lot of other bunch of stuff
-def main():
-    t = {"A": {"B.C": 1, "C": {"D": 2, "E": 3}}, "F": 4, "10": 5}
-
-    flat = flatten_dictionary(t)
-    print(unflatten_dictionary(flat))
-
-
-if __name__ == "__main__":
-    main()

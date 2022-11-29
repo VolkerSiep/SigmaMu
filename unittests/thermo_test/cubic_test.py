@@ -66,18 +66,18 @@ def test_redlich_kwong_eos():
         "mu": vec('mu', 2, "J/mol")
     }
     res.update({
-        "ceos_a":
+        "_ceos_a":
         sym("A0", "Pa*m**6") + res["T"] * sym('dAdT', "Pa*m**6/K"),
-        "ceos_b":
+        "_ceos_b":
         sym("B0", "m**3") + res["T"] * sym('dBdT', "m**3/K"),
-        "ceos_c":
+        "_ceos_c":
         sym("C0", "m**3"),
-        "state":
+        "_state":
         vec("x", 4, "dimless")
     })
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     cont.define(res, {})
-    keys = "S p mu ceos_a_T ceos_b_T VBC dp_dV".split()
+    keys = "S p mu _ceos_a_T _ceos_b_T _VBC _dp_dV".split()
     result = {k: res[k] for k in keys}
     assert_reproduction(result)
 
@@ -112,42 +112,42 @@ def test_non_symmmetric_mixing_rule():
 def test_redlich_kwong_a_function():
     """Test definition of RedlichKwongAFunction contribution"""
     res = {
-        "alpha": vec('alpha', 2, "dimless"),
-        "T_c": vec('T_c', 2, "K"),
-        "p_c": vec('p_c', 2, "bar")
+        "_alpha": vec('alpha', 2, "dimless"),
+        "_T_c": vec('T_c', 2, "K"),
+        "_p_c": vec('p_c', 2, "bar")
     }
     cont = RedlichKwongAFunction(["A", "B"], {})
     cont.define(res, {})
-    assert_reproduction(res["ceos_a_i"])
+    assert_reproduction(res["_ceos_a_i"])
 
 
 def test_redlich_kwong_b_function():
     """Test definition of RedlichKwongBFunction contribution"""
-    res = {"T_c": vec('T_c', 2, "K"), "p_c": vec('p_c', 2, "bar")}
+    res = {"_T_c": vec('T_c', 2, "K"), "_p_c": vec('p_c', 2, "bar")}
     cont = RedlichKwongBFunction(["A", "B"], {})
     cont.define(res, {})
-    assert_reproduction(res["ceos_b_i"])
+    assert_reproduction(res["_ceos_b_i"])
 
 
 def test_rk_m_factor():
     """Test definition of RedlichKwongMFactor contribution"""
-    res = {"omega": vec('w', 2, "dimless")}
+    res = {"_omega": vec('w', 2, "dimless")}
     cont = RedlichKwongMFactor(["A", "B"], {})
     cont.define(res, {})
-    assert_reproduction(res["m_factor"])
+    assert_reproduction(res["_m_factor"])
 
 
 def test_boston_mathias_alpha_function():
     """Test definition of BostonMathiasAlphaFunction contribution"""
     res = {
-        "m_factor": vec("m", 2, "dimless"),
-        "T_c": vec("T_c", 2, "K"),
+        "_m_factor": vec("m", 2, "dimless"),
+        "_T_c": vec("T_c", 2, "K"),
         "T": sym("T", "K")
     }
     par = ParameterDictionary()
     cont = BostonMathiasAlphaFunction(["A", "B"], {})
     cont.define(res, par)
-    assert_reproduction(res["alpha"][0])
+    assert_reproduction(res["_alpha"][0])
     return res, par
 
 
@@ -156,24 +156,24 @@ def test_boston_mathias_alpha_function_smoothness():
     the expressions switches to the super-critical extrapolation"""
     res, par = test_boston_mathias_alpha_function()
 
-    args = {k: res[k] for k in ["T", "T_c", "m_factor"]}
-    args["eta"] = par.get_vector_quantity("eta")
+    args = {k: res[k] for k in ["T", "_T_c", "_m_factor"]}
+    args["_eta"] = par.get_vector_quantity("eta")
 
-    result = {"alpha": res["alpha"]}
-    result["a_t"] = jacobian(result["alpha"], args["T"])
-    result["a_tt"] = jacobian(result["a_t"], args["T"])
+    result = {"_alpha": res["_alpha"]}
+    result["_a_t"] = jacobian(result["_alpha"], args["T"])
+    result["_a_tt"] = jacobian(result["_a_t"], args["T"])
 
     f = QFunction(args, result)
 
     # now the numbers
     args = {
-        "T_c": Q([300, 400], "K"),
-        "m_factor": Q([0.6, 0.6]),
-        "eta": Q([0.12, 0.06])
+        "_T_c": Q([300, 400], "K"),
+        "_m_factor": Q([0.6, 0.6]),
+        "_eta": Q([0.12, 0.06])
     }
 
     def props(eps):
-        args["T"] = args["T_c"][0] + eps
+        args["T"] = args["_T_c"][0] + eps
         res = f(args)
         return {k: v[0] for k, v in res.items()}
 
@@ -181,11 +181,11 @@ def test_boston_mathias_alpha_function_smoothness():
     sub = props(-1.0 * eps)  # sub-critical
     sup = props(eps)  # super-critical
 
-    assert abs(sub["alpha"] - 1) < 1e-7, "sub-critical alpha unequal unity"
-    assert abs(sup["alpha"] - 1) < 1e-7, "super-critical alpha unequal unity"
-    res = abs(sup["a_t"] / sub["a_t"] - 1)
+    assert abs(sub["_alpha"] - 1) < 1e-7, "sub-critical alpha unequal unity"
+    assert abs(sup["_alpha"] - 1) < 1e-7, "super-critical alpha unequal unity"
+    res = abs(sup["_a_t"] / sub["_a_t"] - 1)
     assert res < 1e-7, "first derivative not smooth"
-    res = abs(sup["a_tt"] / sub["a_tt"] - 1)
+    res = abs(sup["_a_tt"] / sub["_a_tt"] - 1)
     assert res < 1e-7, "second derivative not smooth"
 
 
@@ -195,9 +195,9 @@ def test_initialise_rk():
     n = Q([0.5, 0.5], "mol")
     # try to imitate water
     res = {
-        "ceos_a": Q("15 Pa * m**6"),
-        "ceos_b": Q("25 ml"),
-        "ceos_c": Q("10 ml")
+        "_ceos_a": Q("15 Pa * m**6"),
+        "_ceos_b": Q("25 ml"),
+        "_ceos_c": Q("10 ml")
     }
     liq = RedlichKwongEOSLiquid(["A", "B"], {})
     gas = RedlichKwongEOSGas(["A", "B"], {})
@@ -216,10 +216,10 @@ def test_initialise_rk2(cls):
         "T": sym("T", "K"),
         "V": sym("V", "m**3"),
         "n": vec("n", 2, "mol"),
-        "ceos_a": sym("A", "bar*m**6"),
-        "ceos_b": sym("B", "m**3"),
-        "ceos_c": sym("C", "m**3"),
-        "state": vec('x', 4, "dimless")
+        "_ceos_a": sym("A", "bar*m**6"),
+        "_ceos_b": sym("B", "m**3"),
+        "_ceos_c": sym("C", "m**3"),
+        "_state": vec('x', 4, "dimless")
     }
     ideal = {
         "S": sym("S", "J/K"),
@@ -237,9 +237,9 @@ def test_initialise_rk2(cls):
     res_num = {
         "T": T,
         "n": n,
-        "ceos_a": Q("15 Pa * m**6"),
-        "ceos_b": Q("25 ml"),
-        "ceos_c": Q("10 ml"),
+        "_ceos_a": Q("15 Pa * m**6"),
+        "_ceos_b": Q("25 ml"),
+        "_ceos_c": Q("10 ml"),
     }
     ideal_num = {"S": Q("0 J/K"), "p": Q("0 Pa"), "mu": Q([0, 0], "J/mol")}
 
@@ -265,14 +265,14 @@ def test_relax_rk():
     v_magnitude = 1.5260379390336834e-05
     V = Q(v_magnitude, "m**3")
     res = {
-        "state": Q([370.0, v_magnitude, 0.5, 0.5]),
+        "_state": Q([370.0, v_magnitude, 0.5, 0.5]),
         "V": V,
         "p": Q("1 bar"),
-        "VBC": V + Q("-15 ml"),
-        "dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
-        "dp_dV": Q("-0.1 bar/ml"),
-        "ddp_dV_dx": Q([0, 1e4, 0, 0], "bar/ml"),
-        "dp_dx": Q([0, 0, 0, 0], "bar")
+        "_VBC": V + Q("-15 ml"),
+        "_dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
+        "_dp_dV": Q("-0.1 bar/ml"),
+        "_ddp_dV_dx": Q([0, 1e4, 0, 0], "bar/ml"),
+        "_dp_dx": Q([0, 0, 0, 0], "bar")
     }
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     delta = [0.1, -v_magnitude, 0.1, 0.1]  # this one is float
@@ -293,24 +293,27 @@ def test_relax_rk_advanced():
     V = Q(state[1], "m**3")
     n = Q(state[2:], "mol")
     res = {
-        "state": Q(state),
+        "_state": Q(state),
         "T": T,
         "V": V,
         "n": n,
         "p": Q(11, "bar"),
-        "ceos_a": Q("15 Pa * m**6"),
-        "ceos_b": Q("25 ml"),
-        "ceos_c": Q("10 ml"),
-        "dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
-        "dp_dV": Q("-2.5 bar/ml"),
-        "ddp_dV_dx": Q([0, 8.5e5, 0, 0], "bar/ml"),
-        "dp_dx": Q([0, 0, 0, 0], "bar")
+        "_ceos_a": Q("15 Pa * m**6"),
+        "_ceos_b": Q("25 ml"),
+        "_ceos_c": Q("10 ml"),
+        "_dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
+        "_dp_dV": Q("-2.5 bar/ml"),
+        "_ddp_dV_dx": Q([0, 8.5e5, 0, 0], "bar/ml"),
+        "_dp_dx": Q([0, 0, 0, 0], "bar")
     }
-    res["VBC"] = V + res["ceos_c"] - res["ceos_b"]
+    res["_VBC"] = V + res["_ceos_c"] - res["_ceos_b"]
     # in above data, p, p_V and p_V_x are set approximately to reproduce
     # taylor approximation in graph. For plotting, p is evaluated exactly.
-    if user_agree("Plot pV-plot for relaxation dp/dV < 0"):
-        plot_pv(res)
+
+
+    # TODO: make an example folder with these things.
+    # if user_agree("Plot pV-plot for relaxation dp/dV < 0"):
+    #     plot_pv(res)
 
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     beta = cont.relax(res, [0.0, 4e-6, 0.0, 0.0])
@@ -325,7 +328,7 @@ def plot_pv(res):
     T, V = res["T"], res["V"]
 
     def p(V):
-        A, B, C = [res[i] for i in "ceos_a ceos_b ceos_c".split()]
+        A, B, C = [res[i] for i in "_ceos_a _ceos_b _ceos_c".split()]
         A /= 33.7
         VC = V + C
         return sum1(res["n"]) * R_GAS * T / (VC - B) - A / VC / (VC + B)
@@ -333,8 +336,8 @@ def plot_pv(res):
     # only plot if running this file interactively
     volumes = linspace(45, 52, num=100) * Q("1 ml")
     pressures = p(volumes)
-    lin_p = p(V) + (volumes - V) * res["dp_dV"]
-    ddp_dv2 = res["ddp_dV_dx"][1] * Q("m**-3")
+    lin_p = p(V) + (volumes - V) * res["_dp_dV"]
+    ddp_dv2 = res["_ddp_dV_dx"][1] * Q("m**-3")
     quad_p = lin_p + (volumes - V)**2 * ddp_dv2 / 2
 
     unit_registry.setup_matplotlib(True)  # allow plotting with units

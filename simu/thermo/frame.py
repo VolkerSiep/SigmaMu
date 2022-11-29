@@ -48,11 +48,10 @@ class ThermoFrame:
         self.__species = species
 
         # call the contributions
-        result = {"state": state}
+        result = {"_state": state}
         state_definition.prepare(result)
         for name, contribution in contributions.items():
             parameters[name] = ParameterDictionary()
-            # param = parameters.view(flat=False, symbol=True).get(name, {})
             contribution.define(result, parameters[name])
 
         args = {"state": state, "parameters": parameters}
@@ -113,9 +112,10 @@ class ThermoFrame:
         :return: The maximal allowed step size as a pre-factor to
           ``delta_state``. Hence a value of one describes full step length.
         """
-        return float(min(
-            cont.relax(current_result, delta_state)
-            for cont in self.__contributions.values()))
+        return float(
+            min(
+                cont.relax(current_result, delta_state)
+                for cont in self.__contributions.values()))
 
     def initial_state(self, temperature: Quantity, pressure: Quantity,
                       quantities: Quantity, parameters) -> List[float]:

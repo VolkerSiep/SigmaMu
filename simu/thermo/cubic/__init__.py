@@ -171,12 +171,12 @@ class CriticalParameters(ThermoContribution):
     actual model contributions to be consumed.
     """
 
-    provides = ["T_c", "p_c", "omega"]
+    provides = ["_T_c", "_p_c", "_omega"]
 
     def define(self, res, par):
-        res["T_c"] = par.register_vector("T_c", self.species, "K")
-        res["p_c"] = par.register_vector("p_c", self.species, "bar")
-        res["omega"] = par.register_vector("omega", self.species, "dimless")
+        res["_T_c"] = par.register_vector("T_c", self.species, "K")
+        res["_p_c"] = par.register_vector("p_c", self.species, "bar")
+        res["_omega"] = par.register_vector("omega", self.species, "dimless")
 
 
 class BostonMathiasAlphaFunction(ThermoContribution):
@@ -213,22 +213,13 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         \quad\text{and}\quad d = 1 + \frac{4\,\eta}{c} + c
 
     The calculated vector is provided as a property called ``alpha``
-
-    .. warning::
-        This alpha-function is implemented to reproduce results of
-        thermodynamic models that have been parameterised in
-        `Aspen Plus by AspenTech <http://aspentech.com>`_. The models differ
-        however in the continuity of the second derivative (see
-        :ref:`alpha_extensions`) and therefore slightly in the calculated
-        properties for temperatures higher than critical temperatures of the
-        involved species.
     """
 
-    provides = ["alpha"]
+    provides = ["_alpha"]
 
     def define(self, res, par):
         eta = par.register_vector("eta", self.species, "dimless")
-        temp, critical_temp, m_fac = res["T"], res["T_c"], res["m_factor"]
+        temp, critical_temp, m_fac = res["T"], res["_T_c"], res["_m_factor"]
         tau = temp / critical_temp
         stau = sqrt(tau)
 
@@ -241,4 +232,4 @@ class BostonMathiasAlphaFunction(ThermoContribution):
 
         alpha = conditional(tau > 1, alpha_sub, alpha_sup)
         # result is square of above
-        res["alpha"] = alpha * alpha
+        res["_alpha"] = alpha * alpha

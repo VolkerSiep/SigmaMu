@@ -140,9 +140,9 @@ def base_unit(unit: str) -> str:
     .. code-block::
 
         >>> print(base_unit("light_year"))
-        meter
+        m
         >>> print(base_unit("week"))
-        second
+        s
     """
     if unit == "":
         unit = "dimensionless"

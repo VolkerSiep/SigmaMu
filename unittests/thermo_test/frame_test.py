@@ -29,10 +29,10 @@ def test_create_frame():
     fac = create_frame_factory()
     config = {
         "species": ["N2", "O2", "Ar", "CO2", "H2O"],
-        "state":
-        "HelmholtzState",
-        "contributions":
-        ["H0S0ReferenceState", "LinearHeatCapacity", "StandardState"],
+        "state": "HelmholtzState",
+        "contributions": [
+            "H0S0ReferenceState", "LinearHeatCapacity", "StandardState"
+        ],
     }
     return fac.create_frame(config)
 
@@ -123,8 +123,7 @@ def create_simple_frame():
     fac = create_frame_factory()
     config = {
         "species": ["N2", "O2"],
-        "state":
-        "HelmholtzState",
+        "state": "HelmholtzState",
         "contributions": [
             "H0S0ReferenceState", "LinearHeatCapacity", "StandardState",
             "IdealMix", "HelmholtzIdealGas"

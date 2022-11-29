@@ -94,12 +94,12 @@ class RedlichKwongEOS(ThermoContribution):
         It is yet unclear which approach is correct.
     """
 
-    provides = ["VCB", "VCB_x", "p_x", "p_V", "p_V_x"]
+    provides = ["_VCB", "_VCB_x", "_p_x", "_p_V", "_p_V_x"]
 
     def define(self, res, par):
-        abc_names = ["ceos_a", "ceos_b", "ceos_c"]
+        abc_names = ["_ceos_a", "_ceos_b", "_ceos_c"]
         T, V, n, A, B = [res[i] for i in ["T", "V", "n"] + abc_names[:-1]]
-        C = res.get("ceos_c", SX(1, 1))  # C is optional
+        C = res.get("_ceos_c", SX(1, 1))  # C is optional
         for i in abc_names:
             res[f"{i}_T"] = jacobian(res[i], T)
             res[f"{i}_n"] = jacobian(res[i], n).T  # jacobian transposes
@@ -129,26 +129,26 @@ class RedlichKwongEOS(ThermoContribution):
         res["mu"] += dmu
 
         # quantities specific for relaxation
-        state = res["state"]
-        res["VBC"] = VmBC
-        res["dVBC_dx"] = jacobian(VmBC, state)
-        res["dp_dx"] = jacobian(res["p"], state)
-        res["dp_dV"] = jacobian(res["p"], V)
-        res["ddp_dV_dx"] = jacobian(res["dp_dV"], state)
+        state = res["_state"]
+        res["_VBC"] = VmBC
+        res["_dVBC_dx"] = jacobian(VmBC, state)
+        res["_dp_dx"] = jacobian(res["p"], state)
+        res["_dp_dV"] = jacobian(res["p"], V)
+        res["_ddp_dV_dx"] = jacobian(res["_dp_dV"], state)
 
     def relax(self, current_result, delta_state):
         # V - B + C > 0 ?
-        y = current_result["VBC"]
-        d_y = current_result["dVBC_dx"] @ delta_state
+        y = current_result["_VBC"]
+        d_y = current_result["_dVBC_dx"] @ delta_state
         beta = -y / d_y if d_y < 0 else 100
 
         # V > 0 ?
         if delta_state[1] < 0:
-            beta = min(beta, -current_result["state"][1] / delta_state[1])
+            beta = min(beta, -current_result["_state"][1] / delta_state[1])
 
         #  dp/dV < 0 ?
-        y = current_result["dp_dV"]
-        d_y = current_result["ddp_dV_dx"] @ delta_state
+        y = current_result["_dp_dV"]
+        d_y = current_result["_ddp_dV_dx"] @ delta_state
         if d_y > 0:
             beta = min(beta, -y / d_y)
 
@@ -169,7 +169,7 @@ class RedlichKwongEOS(ThermoContribution):
         """Given conditions and properties (A, B, C contribution of RK-EOS),
         calculate the compressibility factor roots analytically and return
         the vector quantity of volumes based on these"""
-        A, B, C = [properties[f"ceos_{i}"] for i in "abc"]
+        A, B, C = [properties[f"_ceos_{i}"] for i in "abc"]
         NRT = sum(n) * R_GAS * T
         alpha = float(A * p / (NRT * NRT))  # must be dimensionless
         beta = float(B * p / NRT)  # dito
@@ -188,7 +188,7 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
         """Additionally to the main relaxation method, this implementation
         also assures positive pressures"""
         y = current_result["p"]
-        d_y = dot(ravel(current_result["dp_dx"]), delta_state)
+        d_y = dot(ravel(current_result["_dp_dx"]), delta_state)
         return -y / d_y if d_y < 0 else None
 
     def initial_state(self, temperature, pressure, quantities, properties):
@@ -231,8 +231,8 @@ class RedlichKwongAFunction(ThermoContribution):
 
     def define(self, res, par):
         omega_r2 = R_GAS * R_GAS / (9 * (2**(1 / 3) - 1))
-        alpha, T_c, p_c = [res[i] for i in "alpha T_c p_c".split()]
-        res["ceos_a_i"] = omega_r2 * alpha * (T_c * T_c) / p_c
+        alpha, T_c, p_c = [res[i] for i in "_alpha _T_c _p_c".split()]
+        res["_ceos_a_i"] = omega_r2 * alpha * (T_c * T_c) / p_c
 
 
 class RedlichKwongBFunction(ThermoContribution):
@@ -247,12 +247,12 @@ class RedlichKwongBFunction(ThermoContribution):
         \Omega_b = \frac13\,(2^{1/3} - 1)
     """
 
-    provides = ["ceos_b_i"]
+    provides = ["_ceos_b_i"]
 
     def define(self, res, par):
         omega_r = R_GAS * (2**(1 / 3) - 1) / 3
-        T_c, p_c = [res[i] for i in "T_c p_c".split()]
-        res["ceos_b_i"] = omega_r * T_c / p_c
+        T_c, p_c = [res[i] for i in "_T_c _p_c".split()]
+        res["_ceos_b_i"] = omega_r * T_c / p_c
 
 
 class RedlichKwongMFactor(ThermoContribution):
@@ -268,5 +268,5 @@ class RedlichKwongMFactor(ThermoContribution):
     provides = ["m_factor"]
 
     def define(self, res, par):
-        omega = res["omega"]
-        res["m_factor"] = 0.48508 + (1.55171 - 0.15613 * omega) * omega
+        omega = res["_omega"]
+        res["_m_factor"] = 0.48508 + (1.55171 - 0.15613 * omega) * omega

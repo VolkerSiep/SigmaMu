@@ -7,6 +7,7 @@ from simu.utilities import (Quantity, SymbolQuantity, assert_reproduction,
 
 
 def test_symbol_quantity():
+    """Test propagation of symbolic quantities"""
     x_1 = SymbolQuantity("x1", "m", ["A", "B"])
     x_2 = SymbolQuantity("x2", "kg", 2)
     a = SymbolQuantity("a", "1/s")
@@ -16,6 +17,7 @@ def test_symbol_quantity():
 
 
 def test_quantity():
+    """Test instantiation of quantities"""
     x = [
         Quantity(1, "cm"),
         Quantity("1 cm"),
@@ -26,6 +28,7 @@ def test_quantity():
 
 
 def test_jacobian():
+    """Test jacobian function for quantities"""
     x = SymbolQuantity("x1", "m", ["A", "B"])
     a = SymbolQuantity("a", "1/s")
     y = a * x
@@ -34,12 +37,14 @@ def test_jacobian():
 
 
 def test_sum1():
+    """Test sum function for quantities"""
     x = SymbolQuantity("x1", "m", "ABCDEFU")
     y = sum1(x)
     assert_reproduction(y)
 
 
 def test_log():
+    """Test log function for quantities"""
     x1 = SymbolQuantity("x1", "m", "AB")
     x2 = SymbolQuantity("x2", "cm", "AB")
 
@@ -51,6 +56,7 @@ def test_log():
 
 
 def test_exp():
+    """Test exp function for quantities"""
     x1 = SymbolQuantity("x1", "m", "AB")
     x2 = SymbolQuantity("x2", "cm", "AB")
 
@@ -62,12 +68,14 @@ def test_exp():
 
 
 def test_sqrt():
+    """Test sqrt function for quantities"""
     x = SymbolQuantity("x", "m^2", "AB")
     z = sqrt(x)
     assert_reproduction(z)
 
 
 def test_pow():
+    """Test pow function for quantities"""
     x1 = SymbolQuantity("x1", "m", "AB")
     x2 = SymbolQuantity("x2", "cm", "AB")
 
@@ -79,6 +87,7 @@ def test_pow():
 
 
 def test_conditional():
+    """Test conditional function for branching"""
     x1 = SymbolQuantity("x1", "m", "AB")
     x2 = SymbolQuantity("x2", "cm", "AB")
 
@@ -89,6 +98,7 @@ def test_conditional():
 
 
 def test_base_unit():
+    """Test converting units into base-units"""
     candidates = [
         "cm", "hour", "kmol", "t/hr", "barg", "W/mol", "m**2/s", "C", "V", "pi"
     ]
@@ -115,7 +125,8 @@ def test_simple_flatten(run_as_test=True):
     """Check that a simple dict is flattened as expected"""
     orig = {"C": {"A": 1, "B": 2}, "A": 3}
     flat = flatten_dictionary(orig)
-    assert_reproduction(flat)
+    if run_as_test:
+        assert_reproduction(flat)
     return orig, flat
 
 

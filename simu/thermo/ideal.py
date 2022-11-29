@@ -27,7 +27,7 @@ class HelmholtzState(StateDefinition):
     """
 
     def prepare(self, result):
-        state = result["state"].magnitude
+        state = result["_state"].magnitude
         result["T"], result["V"], *result["n"] = vertsplit(state, 1)
         result["n"] = vertcat(*result["n"])
         for name, unit in [("T", "K"), ("V", "m**3"), ("n", "mol")]:
@@ -52,7 +52,8 @@ class GibbsState(StateDefinition):
     """
 
     def prepare(self, result):
-        result["T"], result["p"], *result["n"] = vertsplit(result["state"], 1)
+        state = result["_state"].magnitude
+        result["T"], result["p"], *result["n"] = vertsplit(state, 1)
         result["n"] = vertcat(*result["n"])
         for name, unit in [("T", "K"), ("p", "Pa"), ("n", "mol")]:
             result[name] = Quantity(result[name], base_unit(unit))
@@ -168,7 +169,7 @@ class LinearHeatCapacity(ThermoContribution):
         res["mu"] += d_h - T * d_s
 
     def relax(self, current_result, delta_state):
-        T, d_T = current_result["state"][0], delta_state[0]
+        T, d_T = current_result["_state"][0], delta_state[0]
         return -T / d_T if d_T < 0 else 100
 
 
@@ -228,7 +229,7 @@ class IdealMix(ThermoContribution):
         res["mu"] += T * gtn
 
     def relax(self, current_result, delta_state):
-        n, d_n = current_result["state"][2:], delta_state[2:]
+        n, d_n = current_result["_state"][2:], delta_state[2:]
         cand = [-n_i / dn_i for n_i, dn_i in zip(n, d_n) if dn_i < 0]
         return min(cand) if cand else 999
 
@@ -270,7 +271,7 @@ class GibbsIdealGas(ThermoContribution):
         res["mu"] += T * gtn
 
     def relax(self, current_result, delta_state):
-        p, d_p = current_result["state"][1], delta_state[1]
+        p, d_p = current_result["_state"][1], delta_state[1]
         return -p / d_p if d_p < 0 else 100
 
 
@@ -312,7 +313,7 @@ class HelmholtzIdealGas(ThermoContribution):
         res["mu"] += T * gtn
 
     def relax(self, current_result, delta_state):
-        V, d_V = current_result["state"][1], delta_state[1]
+        V, d_V = current_result["_state"][1], delta_state[1]
         return -V / d_V if d_V < 0 else 100
 
     def initial_state(self, temperature, pressure, quantities, properties):
