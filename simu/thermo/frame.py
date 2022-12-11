@@ -62,7 +62,7 @@ class ThermoFrame:
         self.__default = None
         self.__param_struct = extract_units_dictionary(parameters)
 
-    def __call__(self, state: Quantity, parameters):
+    def __call__(self, state: Quantity, parameters, squeeze_results=True):
         """Call to the function object :attr:`function`, in particular with
         current parameter set :attr:`parameters` and using evaluation with
         float typed variables.
@@ -70,7 +70,10 @@ class ThermoFrame:
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.
         """
-        return self.__function({"state": state, "parameters": parameters})
+        return self.__function({
+                "state": state,
+                "parameters": parameters
+            }, squeeze_results)
 
     @property
     def species(self) -> List[str]:

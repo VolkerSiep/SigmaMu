@@ -6,11 +6,12 @@ from re import split, escape
 # need to import entire casadi module to distinguish functions of same name
 import casadi as cas
 from numpy import squeeze
-from pint import UnitRegistry
+from pint import UnitRegistry, set_application_registry
 from pint.errors import DimensionalityError
 
 # instantiate pint unit registry entity
 unit_registry = UnitRegistry(autoconvert_offset_to_baseunit=True)
+set_application_registry(unit_registry)
 unit_file = Path(__file__).resolve().parent / "uom_definitions.txt"
 unit_registry.load_definitions(unit_file)
 del unit_file
