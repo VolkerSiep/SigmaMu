@@ -1,0 +1,14 @@
+{
+  "model_test.py::test_square": {
+    "area": "sq(length) m ** 2",
+    "length": "length m"
+  },
+  "model_test.py::test_square_numerics": [
+    {
+      "length": "10 cm"
+    },
+    {
+      "area": "0.010000000000000002 m ** 2"
+    }
+  ]
+}

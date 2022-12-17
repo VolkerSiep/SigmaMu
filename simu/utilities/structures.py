@@ -4,6 +4,7 @@ levels, while relying to maximal degree on standard python structures.
 """
 
 # stdlib modules
+from collections import Counter
 from collections.abc import Mapping
 from typing import Collection
 
@@ -13,6 +14,36 @@ from casadi import SX, vertcat
 # internal modules
 from .quantity import (base_unit, flatten_dictionary, qvertcat,
                        unflatten_dictionary, SymbolQuantity)
+
+
+class MCounter(Counter):
+    """This is a slight extention of the ``Collections.Counter`` class
+    to also allow multiplication with integers:
+
+        >>> a = MCounter({"a": 1})
+        >>> b = MCounter({"b": 1})
+        >>> a + 2 * b
+        MCounter({'b': 2, 'a': 1})
+
+    """
+
+    def __mul__(self, other):
+        if not isinstance(other, int):
+            raise TypeError("Non-int factor")
+        return MCounter({k: other * v for k, v in self.items()})
+
+    def __rmul__(self, other):
+        return self * other  # call __mul__
+
+    def __add__(self, other):
+        return MCounter(super().__add__(other))
+
+    def __pos__(self):
+        return self
+
+    @classmethod
+    def fromkeys(cls, iterable, v=None):
+        raise NotImplementedError()
 
 
 class ParameterDictionary(dict):
