@@ -4,6 +4,7 @@ from ..utilities import QFunction
 from .property import PropertyHandler
 from .parameter import ParameterHandler
 from .numeric import NumericHandler
+from .hierarchy import HierarchyHandler
 
 
 class Model(ABC):
@@ -15,7 +16,7 @@ class Model(ABC):
 
         self.interface()
 
-        self.hierarchy = None  # hierarchy handler
+        self.hierarchy = HierarchyHandler()  # hierarchy handler
         self.residuals = None  # residual handler
 
         self.define()
@@ -24,23 +25,32 @@ class Model(ABC):
 
         self.numerics = NumericHandler(self)
 
-    def __enter__(self):
-        # prepare an object that can connect the actual symbols and ports.
-        return self
+    # def __enter__(self):
+    #     # prepare an object that can connect the actual symbols and ports.
+    #     return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.finalise()
+    # def __exit__(self, exc_type, exc_value, exc_traceback):
+    #     self.finalise()
 
-    def finalise(self):
-        """recreate the casadi nodes using the previously defined funtion."""
+    def finalise(self, top=True):
+        """recreate the casadi nodes using the previously defined funtion.
+        Use the parameters, child module properties, material objects, and
+        locally defined non-canonical states to define a function,
+        based on the :meth:`define` method's implementation.
+        """
+        # finalise child modules
+        for child in self.hierarchy.values():
+            child.finalise(top=False)
+
         self.parameters.check()  # all required parameters connected?
         self.properties.check()  # all promised properties calculated?
 
-        args = {
-            "parameters": self.parameters.symbols
-        }  # now they are connected
+        args = self.__collect_args()
         res = self.function(args, squeeze_results=False)
-        self.properties.symbols = res["properties"]
+        self.properties.finalise(res["properties"])
+        self.parameters.finalise()
+        if top:
+            self.numerics.prepare()
         return self
 
     @property
@@ -57,9 +67,19 @@ class Model(ABC):
 
     def __make_function(self):
         name = self.__class__.__name__
-        args = {"parameters": self.parameters.symbols}
-        results = {"properties": self.properties.symbols}
+        args = self.__collect_args()
+        results = {"properties": self.properties.raw_symbols}
         return QFunction(args, results, name)
+
+    def __collect_args(self):
+        child_properties = {
+            name: child.properties.symbols
+            for name, child in self.hierarchy.items()
+        }
+        return {
+            "parameters": self.parameters.symbols,
+            "properties": child_properties
+        }
 
 
 # class MyModel(Model):

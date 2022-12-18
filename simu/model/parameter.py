@@ -7,6 +7,7 @@ class ParameterHandler:
         self.__symbols = {}
         self.__values = {}
         self.__required = set()
+        self.__finalised = False
 
     def define(self, name: str, value: float = None, unit: str = "dimless"):
         """Define a parameter in the context of the model. The name must be
@@ -34,6 +35,8 @@ class ParameterHandler:
 
     def provide(self, **kwargs):
         """Connect input to another symbolic quantity"""
+        if self.__finalised:
+            raise RuntimeError("Providing parameter to finalised model")
         for name, symbol in kwargs.items():
             if name not in self.__symbols:
                 raise KeyError(f"Parameter '{name}' undefined")
@@ -61,3 +64,6 @@ class ParameterHandler:
     @property
     def values(self):
         return self.__values
+
+    def finalise(self):
+        self.__finalised = True

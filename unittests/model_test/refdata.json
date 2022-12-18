@@ -1,4 +1,8 @@
 {
+  "model_test.py::test_hierarchy_param": {
+    "depth": "5.0 cm",
+    "square/length": "10.0 m"
+  },
   "model_test.py::test_square": {
     "area": "sq(length) m ** 2",
     "length": "length m"

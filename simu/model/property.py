@@ -4,42 +4,40 @@ from ..utilities import SymbolQuantity
 class PropertyHandler:
 
     def __init__(self):
-        self.__defined = {}
         self.__symbols = {}
+        self.__raw_symbols = {}
+        self.__required = set()
 
     def provide(self, name: str, unit: str):
-        if name in self.__defined:
+        if name in self.__symbols:
             raise ValueError(f"Property '{name}' already defined")
-        self.__defined[name] = unit
+        self.__symbols[name] = SymbolQuantity(name, unit)
+        self.__required.add(name)
 
     def __getitem__(self, name: str) -> SymbolQuantity:
         return self.__symbols[name]
 
     def __setitem__(self, name: str, symbol: SymbolQuantity):
-        unit = self.__defined[name]
-        symbol.to(unit)  # raises DimensionalityError if not compatible
-        self.__symbols[name] = symbol
+        if not name in self.__required:
+            raise ValueError(f"Property {name} already set or not defined")
+        prototype = self.__symbols[name]
+        symbol.to(prototype.units)  # DimensionalityError if not compatible
+        self.__raw_symbols[name] = symbol
+        self.__required.remove(name)
 
     def check(self):
-        defined = set(self.__defined.keys())
-        provided = set(self.__symbols.keys())
-
-        # are all promised properties calculated?
-        missing = defined - provided
-        if missing:
-            missing = ", ".join(missing)
+        if self.__required:
+            missing = ", ".join(self.__required)
             raise ValueError(f"Promised properties not provided: {missing}")
-
-        # are
-        surplus = provided - defined
-        if surplus:
-            surplus = ", ".join(surplus)
-            raise Warning(f"Surplus properties are provided: {surplus}")
 
     @property
     def symbols(self):
         return self.__symbols
 
-    @symbols.setter
-    def symbols(self, symbols):
+    @property
+    def raw_symbols(self):
+        """The raw symbols as defined in :meth:`simu.Model.define`"""
+        return self.__raw_symbols
+
+    def finalise(self, symbols):
         self.__symbols = symbols

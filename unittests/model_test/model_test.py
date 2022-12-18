@@ -1,4 +1,4 @@
-from simu.model import Model
+from simu import Model
 from simu.utilities.testing import assert_reproduction
 
 
@@ -17,6 +17,18 @@ class SquareTestModel(Model):
         self.properties["area"] = length * length
 
 
+class HierarchyTestModel(Model):
+
+    def interface(self):
+        self.parameters.define("depth", 5.0, "cm")
+        self.properties.provide("volume", unit="m**3")
+
+    def define(self):
+        child = self.hierarchy["square"] = SquareTestModel()
+        volume = child.properties["area"] * self.parameters["depth"]
+        self.properties["volume"] = volume
+
+
 def test_square():
     """Test to instantiate the square test model and check symbols"""
     model = SquareTestModel().finalise()
@@ -28,8 +40,8 @@ def test_square():
 
 
 def test_square_numerics():
-    with SquareTestModel() as model:
-        model.parameters.update(length="10 cm")
+    model = SquareTestModel()
+    model.parameters.update(length="10 cm")
 
     numerics = model.numerics
     # the numerics interface wraps the entire model into a new function
@@ -41,3 +53,10 @@ def test_square_numerics():
     #  should be something like {"area": Q("100 cm**2")}
     res = [param, properties]
     assert_reproduction(res)
+
+
+def test_hierarchy():
+    model = HierarchyTestModel().finalise()
+    numerics = model.numerics
+    param = numerics.parameters
+    assert_reproduction(param, suffix="param")
