@@ -40,19 +40,19 @@ def test_square():
 
 
 def test_square_numerics():
-    model = SquareTestModel()
+    model = SquareTestModel().finalise()
     model.parameters.update(length="10 cm")
 
     numerics = model.numerics
     # the numerics interface wraps the entire model into a new function
     # and provides numerical structures for parameters, states, residuals, etc.
     param = numerics.parameters
+    assert_reproduction(param, suffix="param")
     #  should be something like {"length": Q("10 cm")}
     numerics.evaluate()  # I probably need that to evaluate the casadi function
-    properties = numerics.properties
+    props = numerics.properties
     #  should be something like {"area": Q("100 cm**2")}
-    res = [param, properties]
-    assert_reproduction(res)
+    assert_reproduction(props, suffix="props")
 
 
 def test_hierarchy():
@@ -60,3 +60,7 @@ def test_hierarchy():
     numerics = model.numerics
     param = numerics.parameters
     assert_reproduction(param, suffix="param")
+
+    numerics.evaluate()
+    props = numerics.properties
+    assert_reproduction(props, suffix="props")

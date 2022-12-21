@@ -3,16 +3,18 @@
     "depth": "5.0 cm",
     "square/length": "10.0 m"
   },
+  "model_test.py::test_hierarchy_props": {
+    "square/area": "100.0 m ** 2",
+    "volume": "500.0 cm * m ** 2"
+  },
   "model_test.py::test_square": {
     "area": "sq(length) m ** 2",
     "length": "length m"
   },
-  "model_test.py::test_square_numerics": [
-    {
-      "length": "10 cm"
-    },
-    {
-      "area": "0.010000000000000002 m ** 2"
-    }
-  ]
+  "model_test.py::test_square_numerics_param": {
+    "length": "10 cm"
+  },
+  "model_test.py::test_square_numerics_props": {
+    "area": "0.010000000000000002 m ** 2"
+  }
 }

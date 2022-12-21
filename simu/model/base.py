@@ -59,11 +59,43 @@ class Model(ABC):
 
     @abstractmethod
     def interface(self):
-        ...  # todo: replace with document string
+        '''This abstract method is to define model parameters, material ports,
+        and properties provided by this model. This makes the interface of
+        the model in the hierarchical context nearly self-documenting.
+        A trivial example implementation could be
+
+        .. code-block::
+
+            def interface(self):
+                """Here a nice documentation of the model inteface"""
+                self.parameters.define("length", 10.0, "m")
+                self.properties.provide("area", unit="m**2")
+
+        Above interface requires a parameter called ``length`` with a default
+        value of 10 metres. It promises to calculate a property called ``area``
+        which has a unit compatible to square metres.
+        '''
 
     @abstractmethod
     def define(self):
-        ...  # todo: replace with document string
+        '''This abstract method is to define the model implementation,
+        including the use of sub-modules, creation of internal materials, and
+        calculation of residuals and model properties. Matching to the example
+        described in the :meth:`interface` method, a trivial implementation
+        could be
+
+        .. code-block::
+
+            def define(self):
+                """Here documentation of the internal function of the model.
+                This distinction can be used to include this doc-string only
+                for detailed documenation sections."""
+                length = self.parameters["length"]
+                self.properties["area"] = length * length
+
+        Here we read out the previously defined parameter ``length`` and
+        calculate the property ``area``.
+        '''
 
     def __make_function(self):
         name = self.__class__.__name__

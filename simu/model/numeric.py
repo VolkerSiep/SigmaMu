@@ -1,14 +1,17 @@
-from ..utilities import flatten_dictionary
+from ..utilities import flatten_dictionary, QFunction, Quantity, SymbolQuantity
 
 
 class NumericHandler:
 
     def __init__(self, parent):
         self.__parent = parent
+        self.__function = None
         self.__result = None
 
     @property
-    def parameters(self):
+    def parameters(self) -> dict[str, Quantity]:
+        """After successful evaluation (:meth:`evaluate`), this method returns
+        a flat dictionary of calculated properties."""
         params = flatten_dictionary({
             name: child.numerics.parameters
             for name, child in self.__parent.hierarchy.items()
@@ -17,20 +20,63 @@ class NumericHandler:
         return params
 
     def evaluate(self):
-        # TODO: need to use function defined under prepare.
-        #  maybe create public QFunction object
-        args = {"parameters": self.parameters}
-        self.__result = self.__parent.function(args)
+        """After calling :meth:`prepare`, the constructed function
+        :meth:`function` is hereby called with the current state of the model,
+        meaning parameters and independent variables.
+        """
+        args = {"model_parameters": self.parameters}
+        self.__result = self.__function(args)
 
     def prepare(self):
-        # define function for the entire model
-        # define parameters as flat array
-        #   maybe even states
-        #  ... and properties of course
-        #  ... what about thermodynamic properties?
-        pass
+        """This method is intended to be called for the top level model and
+        constructs a ``QFunction`` object as described here: :meth:`function`
+        """
+        parameters = self.all_parameter_symbols
+        properties = self.all_property_symbols
+        # TODO: add residuals and thermodynamic states / parameters
+
+        args = {"model_parameters": parameters}
+        results = {"properties": properties}
+
+        # TODO: do I need to make the secondary entries completely flat
+        #   for casadi (to avoid thousands of arguments and results)
+        self.__function = QFunction(args, results, "process_model")
 
     @property
-    def properties(self):
-        # todo: dive into hierarchy to get child results
+    def function(self) -> QFunction:
+        """After calling :meth:`prepare`, this property holds a casadi
+        function that maps the model parameters and independent variables
+        to calculated properties and residuals."""
+        return self.__function
+
+    @property
+    def properties(self) -> dict[str, Quantity]:
         return self.__result["properties"]
+
+    @property
+    def all_property_symbols(self) -> dict[str, SymbolQuantity]:
+        """Return the property symbols of the associated model and all sub
+        modules as a flattened dictionary with symbolic quantities as values
+        This property is mainly intented to aid constructing an overall
+        :class:`QFunction` object that represents the model
+        """
+        prop = flatten_dictionary({
+            name: child.numerics.all_property_symbols
+            for name, child in self.__parent.hierarchy.items()
+        })
+        prop.update(self.__parent.properties.symbols)
+        return prop
+
+    @property
+    def all_parameter_symbols(self) -> dict[str, SymbolQuantity]:
+        """Return the parameter symbols of the associated model and all sub
+        modules as a flattened dictionary with symbolic quantities as values
+        This property is mainly intented to aid constructing an overall
+        :class:`QFunction` object that represents the model
+        """
+        param = flatten_dictionary({
+            name: child.numerics.all_parameter_symbols
+            for name, child in self.__parent.hierarchy.items()
+        })
+        param.update(self.__parent.parameters.symbols)
+        return param
