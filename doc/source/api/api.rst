@@ -5,5 +5,6 @@ API documentation
    :maxdepth: 2
 
    thermo/thermo
-   utilities/structures
+   modelling/modelling
+   utilities/utilities
 

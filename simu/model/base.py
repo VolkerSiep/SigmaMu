@@ -1,3 +1,4 @@
+"""This module defines the abstract :class:`Model` class."""
 from abc import ABC, abstractmethod
 
 from ..utilities import QFunction
@@ -8,6 +9,12 @@ from .hierarchy import HierarchyHandler
 
 
 class Model(ABC):
+    """The model is the central base class for process modelling.
+
+    .. todo::
+
+        much more documentation here!!
+    """
 
     def __init__(self):
         self.material = None  # material handler
@@ -16,7 +23,7 @@ class Model(ABC):
 
         self.interface()
 
-        self.hierarchy = HierarchyHandler()  # hierarchy handler
+        self.hierarchy = HierarchyHandler()
         self.residuals = None  # residual handler
 
         self.define()
@@ -54,11 +61,13 @@ class Model(ABC):
         return self
 
     @property
-    def function(self):
+    def function(self) -> QFunction:
+        """The local casadi function that represents the calculations
+        performed in the particular instance of this class."""
         return self.__function
 
     @abstractmethod
-    def interface(self):
+    def interface(self) -> None:
         '''This abstract method is to define model parameters, material ports,
         and properties provided by this model. This makes the interface of
         the model in the hierarchical context nearly self-documenting.
@@ -77,7 +86,7 @@ class Model(ABC):
         '''
 
     @abstractmethod
-    def define(self):
+    def define(self) -> None:
         '''This abstract method is to define the model implementation,
         including the use of sub-modules, creation of internal materials, and
         calculation of residuals and model properties. Matching to the example

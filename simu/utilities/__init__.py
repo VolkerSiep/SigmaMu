@@ -6,5 +6,8 @@ from .quantity import (QFunction, Quantity, SymbolQuantity, base_magnitude,
                        base_unit, conditional, exp, jacobian, log, qpow,
                        qvertcat, sqrt, sum1, unit_registry, flatten_dictionary,
                        unflatten_dictionary, extract_units_dictionary)
-from .structures import (FlexiDict, ParameterDictionary, SpeciesDict)
+from .structures import (
+    ParameterDictionary,
+    MCounter,
+)
 from .testing import assert_reproduction, user_agree

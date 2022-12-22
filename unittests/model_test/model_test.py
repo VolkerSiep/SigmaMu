@@ -1,9 +1,10 @@
+"""Unit tests related to the model class"""
 from simu import Model
 from simu.utilities.testing import assert_reproduction
 
 
 class SquareTestModel(Model):
-
+    """A simple model that calculates the square of a parameter as a surface"""
     def interface(self):
         """Here I can nicely document the inteface of the model"""
         self.parameters.define("length", 10.0, "m")
@@ -18,7 +19,9 @@ class SquareTestModel(Model):
 
 
 class HierarchyTestModel(Model):
-
+    """A simple hierarchical model, where the child module calculates the
+    square (surface) of a parameter, and the parent model calculates the
+    volume as function of the calculated surface and a depth parameter."""
     def interface(self):
         self.parameters.define("depth", 5.0, "cm")
         self.properties.provide("volume", unit="m**3")
@@ -40,6 +43,7 @@ def test_square():
 
 
 def test_square_numerics():
+    """Test evaluating a simple model with just parameters and properties"""
     model = SquareTestModel().finalise()
     model.parameters.update(length="10 cm")
 
@@ -56,6 +60,8 @@ def test_square_numerics():
 
 
 def test_hierarchy():
+    """Test evaluating a simple hierarchical model with just parameters and
+    properties"""
     model = HierarchyTestModel().finalise()
     numerics = model.numerics
     param = numerics.parameters

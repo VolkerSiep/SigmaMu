@@ -1,3 +1,7 @@
+"""This module defines classes and functionality around ``pint`` quantities.
+These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes, or
+numeric."""
+
 # stdlib modules
 from pathlib import Path
 from re import split, escape
@@ -20,8 +24,13 @@ _Q = unit_registry.Quantity
 
 
 class Quantity(_Q):  # type: ignore
-    """Proper quantity base-class for sub-classing"""
+    """Proper quantity base-class for sub-classing.
 
+    Being a sub-class of ``pint.Quantity``, this class only really adds the
+    ``__json__`` method to return its json representation.
+
+    The constructor is used as for ``pint.Quantity``.
+    """
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(_Q, *args, **kwargs)
         obj.__class__ = cls
@@ -37,7 +46,8 @@ unit_registry.Quantity = Quantity
 
 
 class SymbolQuantity(Quantity):
-    """A quantity class specialised to host casadi symbols (SX)."""
+    """A quantity class specialised to host casadi symbols (SX) of in
+    particular independent variables."""
 
     def __new__(cls, *args, **kwargs):
         """Really generate an object of type ``Quantity``. This is just a
@@ -70,7 +80,15 @@ def jacobian(dependent: Quantity, independent: SymbolQuantity) -> Quantity:
 
 def sum1(quantity: Quantity) -> Quantity:
     """Sum a symbol vector quantity same was a ``casadi.sum1``, considering
-    units of measurements"""
+    units of measurements. This function only applies to quantity objects with
+    ``casadi.SX`` objects as magnitudes.
+
+    .. note::
+
+        This function sums the elements of the single, but vectorial argument,
+        and is in that different from the builtin ``sum`` function that sums
+        over an iterator of objects.
+    """
     return Quantity(cas.sum1(quantity.magnitude), quantity.units)
 
 

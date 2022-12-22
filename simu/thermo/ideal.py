@@ -118,7 +118,7 @@ class LinearHeatCapacity(ThermoContribution):
     Parameter Description                            Symbol
     ========= ====================================== ===============
     ``cp_a``  Molar heat capacity coefficient vector :math:`c_{p,a}`
-    ``cp_b``  Molar heat capacity coefficient vector :math:`c_{p,a}`
+    ``cp_b``  Molar heat capacity coefficient vector :math:`c_{p,b}`
     ========= ====================================== ===============
 
     Heat capacity is here defined as

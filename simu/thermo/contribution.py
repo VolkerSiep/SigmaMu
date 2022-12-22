@@ -75,7 +75,7 @@ class ThermoContribution(ABC):
     def initial_state(self, temperature: Quantity, pressure: Quantity,
                       quantities: Quantity,
                       properties: dict[str, Quantity]) -> Quantity | None:
-        """When the :class:`ThermoFrame object is queried for an initial state
+        """When the :class:`ThermoFrame` object is queried for an initial state
         representation and deviates from Gibbs coordinates, The upper-most
         contribution that implements this method and does not return ``None``
         takes the responsibility of calculating that state.

@@ -1,7 +1,12 @@
+"""The module defining the :class:`NumericHandler` class"""
 from ..utilities import flatten_dictionary, QFunction, Quantity, SymbolQuantity
 
 
 class NumericHandler:
+    """The numeric handler (``NumericHandler``) is the object that represents the
+    interface for all numerical calculations. It treats the ``Model`` object that
+    it is associated to as the top level model, and includes all sub models
+    recursively."""
 
     def __init__(self, parent):
         self.__parent = parent
@@ -51,6 +56,8 @@ class NumericHandler:
 
     @property
     def properties(self) -> dict[str, Quantity]:
+        """Return the calculated model properties after the model is evaluated.
+        """
         return self.__result["properties"]
 
     @property
