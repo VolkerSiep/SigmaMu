@@ -46,7 +46,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns: list[str] = []
 
 # bibtex file
 bibtex_bibfiles = ['bibliographics.bib']
@@ -55,8 +55,21 @@ bibtex_bibfiles = ['bibliographics.bib']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'sphinx_rtd_theme'  # 'nature' 'pyramid' 'classic'
+
+html_theme = 'nature'
+
+# other ok themes:
+# 'sphinx_rtd_theme' (search hangs),
+# 'pyramid' (headings not standing out),
+# 'classic' (a bit boring)
+
+
+# manual configuration of side-bars to have the global toc folded and not
+# messed up with all autodoc entries
+html_sidebars = {
+    '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
+    'using/windows': ['windowssidebar.html', 'searchbox.html'],
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -75,6 +88,6 @@ mathjax3_config = {
     }
 }
 
-rst_prolog = """
+rst_prolog = r"""
 .. |m3| replace:: m\ :sup:`3`
 """

@@ -31,6 +31,7 @@ class Quantity(_Q):  # type: ignore
 
     The constructor is used as for ``pint.Quantity``.
     """
+
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(_Q, *args, **kwargs)
         obj.__class__ = cls
@@ -52,7 +53,21 @@ class SymbolQuantity(Quantity):
     def __new__(cls, *args, **kwargs):
         """Really generate an object of type ``Quantity``. This is just a
         hacky way to specialise the constructor, due to the way the base-class
-        is implemented."""
+        is implemented. The arguments are:
+
+        - ``name`` (str): The name of the ``casadi.SX`` symbol
+        - ``units`` (str): The unit of measurement conform to ``pint`` units
+        - ``sub_keys`` (Iterator[str]): If not ``None``, defines a vectorial
+          quantity with given sub-keys.
+
+            >>> s = SymbolQuantity("speed", "m/s")
+            >>> print(f"{s:~}")
+            speed m / s
+
+            >>> v = SymbolQuantity("vel", "m/s", "xyz")
+            >>> print(f"{v:~}")
+            [vel.x, vel.y, vel.z] m / s
+        """
 
         def attributes(name: str, units: str, sub_keys: list[str] = None):
             if sub_keys is None:
@@ -73,8 +88,16 @@ class SymbolQuantity(Quantity):
 
 # redefine jacobian to propanatural logarithmusgate pint units
 def jacobian(dependent: Quantity, independent: SymbolQuantity) -> Quantity:
-    """Calculate the casadi Jacobian and reattach the units of measurements."""
-    return Quantity(cas.jacobian(dependent.magnitude, independent.magnitude),
+    """Calculate the casadi Jacobian and reattach the units of measurements.
+
+    >>> x = SymbolQuantity("x", "m")
+    >>> y = (x * x) / 2
+    >>> dy_dx = jacobian(y, x)
+    >>> print(f"{dy_dx:~}")
+    x m
+    """
+    magnitude = cas.jacobian(dependent.magnitude, independent.magnitude)
+    return Quantity(cas.simplify(magnitude),
                     dependent.units / independent.units)
 
 
@@ -134,8 +157,24 @@ def qpow(base: Quantity, exponent: Quantity) -> Quantity:
 def conditional(condition: cas.SX, negative: Quantity,
                 positive: Quantity) -> Quantity:
     """Element-wise branching into the positive and negative branch
-    depending on the condition and considering the units of measurements"""
+    depending on the condition and considering the units of measurements.
 
+        >>> x = SymbolQuantity("x", "m")
+        >>> y = conditional(x > 0, -x, x)  # abs function
+        >>> print(y)
+        @1=0, @2=((@1<x)==@1), ((@2?(-x):0)+((!@2)?x:0)) meter
+
+    As non-recommended as it is to use this function exessively, the resulting
+    ``casadi`` expression is indeed overcomplicated and could simplify to ::
+
+        (x>0)?(x):(-x) meter
+
+    .. note::
+
+        You cannot just code ``x if x > 0 else -x``, as this would not allow
+        ``casadi`` branching dynamically dependent on the value of ``x``
+        later-on.
+    """
     units = positive.units
     negative = negative.to(units)  # convert to same unit
     tup_branches = [condition, negative.magnitude, positive.magnitude]
@@ -156,12 +195,10 @@ def qvertcat(*quantities: Quantity) -> Quantity:
 def base_unit(unit: str) -> str:
     """Create the base unit of given unit.
 
-    .. code-block::
-
-        >>> print(base_unit("light_year"))
-        m
-        >>> print(base_unit("week"))
-        s
+    >>> print(base_unit("light_year"))
+    m
+    >>> print(base_unit("week"))
+    s
     """
     if unit == "":
         unit = "dimensionless"
@@ -171,7 +208,24 @@ def base_unit(unit: str) -> str:
 
 def base_magnitude(quantity: Quantity) -> float:
     """Return the magnitude of the quantity in base units. This works for
-    symbolic and numeric quantities, and for scalars and vectors"""
+    symbolic and numeric quantities, and for scalars and vectors
+
+    >>> base_magnitude(Quantity("1 km"))
+    1000.0
+    >>> base_magnitude(Quantity("20 celsius"))
+    293.15
+    >>> int(base_magnitude(Quantity("1 barg")))
+    201325
+    >>> base_magnitude(Quantity("speed_of_light"))
+    299792458.0
+
+    The base units are likely the SI unit system, but code shall not rely on
+    this fact - only that it is a cosistent (and offset-free) unit system.
+
+    .. note::
+
+        Use SI or I will BTU you with my feet!
+    """
     return quantity.to_base_units().magnitude
 
 
@@ -188,6 +242,10 @@ def flatten_dictionary(structure, prefix: str = "") -> QDict:
     where the keys are ``SEPARATOR``-separated concatonations of the paths,
     and values are the values of the leafs. Non-string keys are converted
     to strings. Occurances of ``SEPARATOR`` are escaped by ``\``.
+
+    >>> d = {"a": {"b": 1, "c": 2}, "d": {"e/f": 3}}
+    >>> flatten_dictionary(d)
+    {'a/b': 1, 'a/c': 2, 'd/e\\/f': 3}
     """
     try:
         items = structure.items()  # is this dictionary enough for us?
@@ -205,8 +263,13 @@ def flatten_dictionary(structure, prefix: str = "") -> QDict:
 
 
 def unflatten_dictionary(flat_structure: QDict):
-    """This is the reverse of :func:`flatten_dictionary`, inflating the
-    given one-depth dictionary into a nested structure."""
+    r"""This is the reverse of :func:`flatten_dictionary`, inflating the
+    given one-depth dictionary into a nested structure.
+
+    >>> d = {"a/b": 1, "a/c": 2, r"d/e\/f": 3}
+    >>> unflatten_dictionary(d)
+    {'a': {'b': 1, 'c': 2}, 'd': {'e/f': 3}}
+    """
     result = {}  # type: ignore
 
     def insert(struct, keys, value):
@@ -231,7 +294,12 @@ def unflatten_dictionary(flat_structure: QDict):
 
 def extract_units_dictionary(structure):
     """Based on a nested dictionary of Quantities, create a new nested
-    dictionaries with only the units of measurement"""
+    dictionaries with only the units of measurement
+
+    >>> d = {"a": {"b": Quantity("1 m"), "c": Quantity("1 min")}}
+    >>> extract_units_dictionary(d)
+    {'a': {'b': 'm', 'c': 'min'}}
+    """
     try:
         items = structure.items()  # is this dictionary enough for us?
     except AttributeError:  # doesn't seem so, this is just a quantity

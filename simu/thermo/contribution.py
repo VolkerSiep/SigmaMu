@@ -95,7 +95,6 @@ class ThermoContribution(ABC):
         .. seealso:: :meth:`ThermoFrame.initial_state`
         """
         del temperature, pressure, quantities, properties  # unused
-        return None
 
 
 class StateDefinition(ABC):
