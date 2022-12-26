@@ -5,6 +5,7 @@ from simu.utilities.testing import assert_reproduction
 
 class SquareTestModel(Model):
     """A simple model that calculates the square of a parameter as a surface"""
+
     def interface(self):
         """Here I can nicely document the inteface of the model"""
         self.parameters.define("length", 10.0, "m")
@@ -22,11 +23,14 @@ class HierarchyTestModel(Model):
     """A simple hierarchical model, where the child module calculates the
     square (surface) of a parameter, and the parent model calculates the
     volume as function of the calculated surface and a depth parameter."""
+
     def interface(self):
         self.parameters.define("depth", 5.0, "cm")
         self.properties.provide("volume", unit="m**3")
 
     def define(self):
+        child = self.hierarchy.add("square", SquareTestModel())
+
         child = self.hierarchy["square"] = SquareTestModel()
         volume = child.properties["area"] * self.parameters["depth"]
         self.properties["volume"] = volume
@@ -34,10 +38,10 @@ class HierarchyTestModel(Model):
 
 def test_square():
     """Test to instantiate the square test model and check symbols"""
-    model = SquareTestModel().finalise()
+    model = SquareTestModel().instance().finalise()
 
     area = model.properties["area"]
-    length = model.parameters["length"]
+    length = model.parameters.symbols["length"]
     result = {"length": length, "area": area}
     assert_reproduction(result)
 

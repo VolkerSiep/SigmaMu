@@ -16,5 +16,9 @@
   },
   "model_test.py::test_square_numerics_props": {
     "area": "0.010000000000000002 m ** 2"
+  },
+  "parameter_test.py::test_definition_symbols": "length m",
+  "parameter_test.py::test_update": {
+    "length": "1 cm"
   }
 }

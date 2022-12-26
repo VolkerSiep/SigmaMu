@@ -166,5 +166,5 @@
     "p_ref": "kg / m / s ** 2",
     "p_std": "kg / m / s ** 2"
   },
-  "special_test.py::test_derivative": "((tau*C_2)+(C_1+(C_2*tau))) dimensionless"
+  "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless"
 }

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from ..utilities import QFunction
 from .property import PropertyHandler
-from .parameter import ParameterHandler
+from .parameter import ParameterDefinition
 from .numeric import NumericHandler
 from .hierarchy import HierarchyHandler
 
@@ -17,48 +17,28 @@ class Model(ABC):
     """
 
     def __init__(self):
-        self.material = None  # material handler
-        self.parameters = ParameterHandler()
+        self.material = None  # TODO: material handler
+        self.parameters = ParameterDefinition()
         self.properties = PropertyHandler()
 
         self.interface()
 
-        self.hierarchy = HierarchyHandler()
-        self.residuals = None  # residual handler
+        self.hierarchy = None  # TODO: HierarchyHandler()
+        self.residuals = None  # TODO: residual handler
 
         self.define()
 
         self.__function = self.__make_function()
 
-        self.numerics = NumericHandler(self)
-
     # def __enter__(self):
     #     # prepare an object that can connect the actual symbols and ports.
-    #     return self
+    #     return ModelInstance(self)
 
     # def __exit__(self, exc_type, exc_value, exc_traceback):
     #     self.finalise()
 
-    def finalise(self, top=True):
-        """recreate the casadi nodes using the previously defined funtion.
-        Use the parameters, child module properties, material objects, and
-        locally defined non-canonical states to define a function,
-        based on the :meth:`define` method's implementation.
-        """
-        # finalise child modules
-        for child in self.hierarchy.values():
-            child.finalise(top=False)
-
-        self.parameters.check()  # all required parameters connected?
-        self.properties.check()  # all promised properties calculated?
-
-        args = self.__collect_args()
-        res = self.function(args, squeeze_results=False)
-        self.properties.finalise(res["properties"])
-        self.parameters.finalise()
-        if top:
-            self.numerics.prepare()
-        return self
+    def instance(self):
+        return ModelInstance(self)
 
     @property
     def function(self) -> QFunction:
@@ -113,13 +93,57 @@ class Model(ABC):
         return QFunction(args, results, name)
 
     def __collect_args(self):
-        child_properties = {
-            name: child.properties.symbols
-            for name, child in self.hierarchy.items()
-        }
+        # child_properties = {
+        #     name: child.properties.symbols
+        #     for name, child in self.hierarchy.items()
+        # }
         return {
             "parameters": self.parameters.symbols,
-            "properties": child_properties
+            # "properties": child_properties
+        }
+
+
+class ModelInstance:
+
+    def __init__(self, model: Model):
+        # self.material = None  # TODO: material handler
+        self.parameters = model.parameters.create_handler()
+        self.properties = model.properties  # TODO: need to enable multiple instances
+        # self.hierarchy = None  # TODO: model.hierarchy.create_handler()
+        # self.residuals = None  # TODO: residual handler
+
+        # self.numerics = NumericHandler(self)
+
+        self.__function = model.function  # by reference
+
+    def finalise(self, top_level: bool = True):
+        """recreate the casadi nodes using the previously defined funtion.
+        Use the parameters, child module properties, material objects, and
+        locally defined non-canonical states to define a function,
+        based on the :meth:`define` method's implementation.
+        """
+        # finalise child modules
+        # for child in self.hierarchy.values():
+        #     child.finalise(top_level=False)
+
+        self.parameters.finalise()  # all required parameters connected?
+        self.properties.check()  # all promised properties calculated?
+
+        args = self.__collect_args()
+        res = self.__function(args, squeeze_results=False)
+        self.properties.finalise(res["properties"])
+        # if top_level:
+        #     self.numerics.prepare()
+        return self
+
+    def __collect_args(self):
+        # child_properties = {
+        #     name: child.properties.symbols
+        #     for name, child in self.hierarchy.items()
+        # }
+        return {
+            "parameters": self.parameters.symbols,
+            # "properties": child_properties
         }
 
 
