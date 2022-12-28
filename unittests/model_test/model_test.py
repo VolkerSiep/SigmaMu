@@ -1,6 +1,6 @@
 """Unit tests related to the model class"""
 from simu import Model
-from simu.utilities.testing import assert_reproduction
+from simu.utilities import assert_reproduction, SymbolQuantity
 
 
 class SquareTestModel(Model):
@@ -30,6 +30,7 @@ class HierarchyTestModel(Model):
 
     def define(self):
         child = self.hierarchy.add("square", SquareTestModel())
+        child = self.hierarchy["square"] = SquareTestModel().F
         # above creates an instance, and could take an optional argument
         #   to finalise it right away (but it's never top level!)
 
@@ -39,20 +40,36 @@ class HierarchyTestModel(Model):
 
 def test_square():
     """Test to instantiate the square test model and check symbols"""
-    model = SquareTestModel().instance(finalise=True)
+    instance = SquareTestModel().F
 
-    area = model.properties["area"]
-    length = model.parameters.symbols["length"]
+    area = instance.properties["area"]
+    length = instance.parameters.symbols["length"]
     result = {"length": length, "area": area}
     assert_reproduction(result)
 
 
+def test_two_instances():
+    """Check that two instances don't interfer"""
+    model = SquareTestModel()
+    num = 3
+    instances = [model.I for _ in range(num)]
+    lengths = [SymbolQuantity(f"l_{i}", "m") for i in range(num)]
+    for i in range(num):
+        instances[i].parameters.provide(length=lengths[i])
+        instances[i].finalise()
+    res = [
+        instance.properties.symbols["area"].magnitude for instance in instances
+    ]
+    assert_reproduction(res)
+
+
 def test_square_numerics():
     """Test evaluating a simple model with just parameters and properties"""
-    model = SquareTestModel().instance().finalise()
-    model.parameters.update(length="10 cm")
+    instance = SquareTestModel().I
+    instance.parameters.update(length="10 cm")
+    instance.finalise()
 
-    numerics = model.numerics
+    numerics = instance.create_numerics()
     # the numerics interface wraps the entire model into a new function
     # and provides numerical structures for parameters, states, residuals, etc.
     param = numerics.parameters

@@ -1,3 +1,4 @@
+"""Unit tests related to the parameter handler classes"""
 from simu.model.parameter import ParameterDefinition
 from simu.utilities import assert_reproduction, SymbolQuantity
 from simu.model.utils import ModelStatus

@@ -17,8 +17,17 @@
   "model_test.py::test_square_numerics_props": {
     "area": "0.010000000000000002 m ** 2"
   },
+  "model_test.py::test_two_instances": [
+    "sq(l_0)",
+    "sq(l_1)",
+    "sq(l_2)"
+  ],
   "parameter_test.py::test_definition_symbols": "length m",
   "parameter_test.py::test_update": {
     "length": "1 cm"
+  },
+  "property_test.py::test_define": "sq(length) m ** 2",
+  "property_test.py::test_handler_status": {
+    "area": "sq(length) m ** 2"
   }
 }

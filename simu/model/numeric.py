@@ -10,32 +10,9 @@ class NumericHandler:
 
     def __init__(self, parent):
         self.__parent = parent
-        self.__function = None
         self.__result = None
 
-    @property
-    def parameters(self) -> dict[str, Quantity]:
-        """After successful evaluation (:meth:`evaluate`), this method returns
-        a flat dictionary of calculated properties."""
-        params = flatten_dictionary({
-            name: child.numerics.parameters
-            for name, child in self.__parent.hierarchy.items()
-        })
-        params.update(self.__parent.parameters.values)
-        return params
-
-    def evaluate(self):
-        """After calling :meth:`prepare`, the constructed function
-        :meth:`function` is hereby called with the current state of the model,
-        meaning parameters and independent variables.
-        """
-        args = {"model_parameters": self.parameters}
-        self.__result = self.__function(args)
-
-    def prepare(self):
-        """This method is intended to be called for the top level model and
-        constructs a ``QFunction`` object as described here: :meth:`function`
-        """
+        # create overall function
         parameters = self.all_parameter_symbols
         properties = self.all_property_symbols
         # TODO: add residuals and thermodynamic states / parameters
@@ -46,6 +23,26 @@ class NumericHandler:
         # TODO: do I need to make the secondary entries completely flat
         #   for casadi (to avoid thousands of arguments and results)
         self.__function = QFunction(args, results, "process_model")
+
+    @property
+    def parameters(self) -> dict[str, Quantity]:
+        """After successful evaluation (:meth:`evaluate`), this method returns
+        a flat dictionary of calculated properties."""
+        # params = flatten_dictionary({
+        #     name: child.numerics.parameters
+        #     for name, child in self.__parent.hierarchy.items()
+        # })
+        params = {}  # TODO: remove this again with hierarchy handler
+        params.update(self.__parent.parameters.values)
+        return params
+
+    def evaluate(self):
+        """After calling :meth:`prepare`, the constructed function
+        :meth:`function` is hereby called with the current state of the model,
+        meaning parameters and independent variables.
+        """
+        args = {"model_parameters": self.parameters}
+        self.__result = self.__function(args)
 
     @property
     def function(self) -> QFunction:
@@ -67,10 +64,11 @@ class NumericHandler:
         This property is mainly intented to aid constructing an overall
         :class:`QFunction` object that represents the model
         """
-        prop = flatten_dictionary({
-            name: child.numerics.all_property_symbols
-            for name, child in self.__parent.hierarchy.items()
-        })
+        # prop = flatten_dictionary({
+        #     name: child.numerics.all_property_symbols
+        #     for name, child in self.__parent.hierarchy.items()
+        # })
+        prop = {}  # TODO: remove this again with hierarchy handler
         prop.update(self.__parent.properties.symbols)
         return prop
 
@@ -81,9 +79,10 @@ class NumericHandler:
         This property is mainly intented to aid constructing an overall
         :class:`QFunction` object that represents the model
         """
-        param = flatten_dictionary({
-            name: child.numerics.all_parameter_symbols
-            for name, child in self.__parent.hierarchy.items()
-        })
+        # param = flatten_dictionary({
+        #     name: child.numerics.all_parameter_symbols
+        #     for name, child in self.__parent.hierarchy.items()
+        # })
+        param = {}  # TODO: remove this again with hierarchy handler
         param.update(self.__parent.parameters.symbols)
         return param

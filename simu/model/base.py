@@ -5,8 +5,69 @@ from ..utilities import QFunction
 from .utils import ModelStatus
 from .property import PropertyDefinition
 from .parameter import ParameterDefinition
-# from .numeric import NumericHandler
+from .numeric import NumericHandler
 # from .hierarchy import HierarchyHandler
+
+
+class ModelInstance:
+    def __init__(self, model: "Model"):
+        self.__status = ModelStatus.READY
+
+        # self.material = None  # TODO: material handler
+        self.parameters = model.parameters.create_handler()
+        self.properties = model.properties.create_handler()
+        # self.hierarchy = None  # TODO: model.hierarchy.create_handler()
+        # self.residuals = None  # TODO: residual handler
+
+        self.numerics = None  # NumericHandler(self)
+
+        self.__function = model.function  # by reference
+
+    def finalise(self):
+        """recreate the casadi nodes using the previously defined funtion.
+        Use the parameters, child module properties, material objects, and
+        locally defined non-canonical states to define a function,
+        based on the :meth:`define` method's implementation.
+        """
+        # finalise child modules
+        # for child in self.hierarchy.values():
+        #     child.finalise()
+
+        self.parameters.finalise()  # all required parameters connected?
+
+        args = self.__collect_args()
+        res = self.__function(args, squeeze_results=False)
+        self.properties.finalise(res["properties"])
+
+        self.__set_status(ModelStatus.FINALISED)
+
+        return self
+
+    def create_numerics(self) -> NumericHandler:
+        """Considering this model instance to be top level, this method creates
+        and returns a ``NumericHandler``.
+        """
+        self.status.assure(ModelStatus.FINALISED, "creating numeric handler")
+        return NumericHandler(self)
+
+    def __collect_args(self):
+        # child_properties = {
+        #     name: child.properties.symbols
+        #     for name, child in self.hierarchy.items()
+        # }
+        return {
+            "parameters": self.parameters.symbols,
+            # "properties": child_properties
+        }
+
+    @property
+    def status(self) -> ModelStatus:
+        return self.__status
+
+    def __set_status(self, status):
+        self.__status = status
+        self.parameters.status = status
+        # TODO: add others
 
 
 class Model(ABC):
@@ -50,18 +111,25 @@ class Model(ABC):
         self.properties.status = status
         # TODO: add status update to other handlers
 
-    def instance(self, finalise: bool = False, top_level: bool = True):
+    def instance(self, finalise: bool = False) -> ModelInstance:
         """Create an instance of the model. If ``finalise`` is set to ``True``,
         also finalise the instance right away. This is useful if no further
         connections are to be done.
-
-        The most common case of doing this is to instantiate the top level
-        model, indicated by the ``top_level`` argument (default ``True``)
         """
         instance = ModelInstance(self)
         if finalise:
-            instance.finalise(top_level)
+            instance.finalise()
         return instance
+
+    @property
+    def I(self) -> ModelInstance:  # pylint: disable=invalid-name
+        """Shortcut for ``instance()``"""
+        return self.instance()
+
+    @property
+    def F(self) -> ModelInstance:  # pylint: disable=invalid-name
+        """Shortcut for ``instance(finalise=True)``"""
+        return self.instance(finalise=True)
 
     @property
     def function(self) -> QFunction:
@@ -126,61 +194,6 @@ class Model(ABC):
         }
 
 
-class ModelInstance:
-
-    def __init__(self, model: Model):
-        self.__status = ModelStatus.READY
-
-        # self.material = None  # TODO: material handler
-        self.parameters = model.parameters.create_handler()
-        self.properties = model.properties.create_handler()
-        # self.hierarchy = None  # TODO: model.hierarchy.create_handler()
-        # self.residuals = None  # TODO: residual handler
-
-        # self.numerics = NumericHandler(self)
-
-        self.__function = model.function  # by reference
-
-    def finalise(self, top_level: bool = True):
-        """recreate the casadi nodes using the previously defined funtion.
-        Use the parameters, child module properties, material objects, and
-        locally defined non-canonical states to define a function,
-        based on the :meth:`define` method's implementation.
-        """
-        # finalise child modules
-        # for child in self.hierarchy.values():
-        #     child.finalise(top_level=False)
-
-        self.parameters.finalise()  # all required parameters connected?
-
-        args = self.__collect_args()
-        res = self.__function(args, squeeze_results=False)
-        self.properties.finalise(res["properties"])
-
-        self.__set_status(ModelStatus.FINALISED)
-
-        # if top_level:
-        #     self.numerics.prepare()
-        return self
-
-    def __collect_args(self):
-        # child_properties = {
-        #     name: child.properties.symbols
-        #     for name, child in self.hierarchy.items()
-        # }
-        return {
-            "parameters": self.parameters.symbols,
-            # "properties": child_properties
-        }
-
-    @property
-    def status(self):
-        return self.__status
-
-    def __set_status(self, status):
-        self.__status = status
-        self.parameters.status = status
-        # TODO: add others
 
 
 # class MyModel(Model):
