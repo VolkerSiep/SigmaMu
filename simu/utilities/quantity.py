@@ -48,7 +48,7 @@ unit_registry.Quantity = Quantity
 
 class SymbolQuantity(Quantity):
     """A quantity class specialised to host casadi symbols (SX) of in
-    particular independent variables."""
+    particular, but not necessarily, independent variables."""
 
     def __new__(cls, *args, **kwargs):
         """Really generate an object of type ``Quantity``. This is just a

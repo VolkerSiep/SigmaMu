@@ -5,3 +5,4 @@ sandbox
 .vscode
 doc/build
 doc/literature
+*.dia.autosave

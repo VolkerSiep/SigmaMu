@@ -3,19 +3,31 @@ Process modelling
 
 Model
 -----
-
 .. autoclass:: simu.model.Model
+    :members:
+
+ModelStatus
+"""""""""""
+.. autoclass:: simu.model.utils.ModelStatus
+    :members:
+
+ParameterDefinition
+-------------------
+.. autoclass:: simu.model.parameter.ParameterDefinition
     :members:
 
 ParameterHandler
 ----------------
-
 .. autoclass:: simu.model.parameter.ParameterHandler
+    :members:
+
+PropertyDefinition
+------------------
+.. autoclass:: simu.model.property.PropertyDefinition
     :members:
 
 PropertyHandler
 ---------------
-
 .. autoclass:: simu.model.property.PropertyHandler
     :members:
 

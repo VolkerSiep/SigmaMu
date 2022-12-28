@@ -2,10 +2,11 @@
 from abc import ABC, abstractmethod
 
 from ..utilities import QFunction
-from .property import PropertyHandler
+from .utils import ModelStatus
+from .property import PropertyDefinition
 from .parameter import ParameterDefinition
-from .numeric import NumericHandler
-from .hierarchy import HierarchyHandler
+# from .numeric import NumericHandler
+# from .hierarchy import HierarchyHandler
 
 
 class Model(ABC):
@@ -17,28 +18,50 @@ class Model(ABC):
     """
 
     def __init__(self):
+        self.__status = ModelStatus.INTERFACE
         self.material = None  # TODO: material handler
         self.parameters = ParameterDefinition()
-        self.properties = PropertyHandler()
+        self.properties = PropertyDefinition()
 
         self.interface()
+
+        self.__set_status(ModelStatus.DEFINE)
 
         self.hierarchy = None  # TODO: HierarchyHandler()
         self.residuals = None  # TODO: residual handler
 
         self.define()
 
+        self.__set_status(ModelStatus.FUNCTION)
+
         self.__function = self.__make_function()
 
-    # def __enter__(self):
-    #     # prepare an object that can connect the actual symbols and ports.
-    #     return ModelInstance(self)
+        self.__set_status(ModelStatus.READY)
 
-    # def __exit__(self, exc_type, exc_value, exc_traceback):
-    #     self.finalise()
+    @property
+    def status(self) -> ModelStatus:
+        """Returns the current status of the model as a
+        :class:`~simu.model.utils.ModelStatus` entity."""
+        return self.__status
 
-    def instance(self):
-        return ModelInstance(self)
+    def __set_status(self, status: ModelStatus):
+        self.__status = status
+        self.parameters.status = status
+        self.properties.status = status
+        # TODO: add status update to other handlers
+
+    def instance(self, finalise: bool = False, top_level: bool = True):
+        """Create an instance of the model. If ``finalise`` is set to ``True``,
+        also finalise the instance right away. This is useful if no further
+        connections are to be done.
+
+        The most common case of doing this is to instantiate the top level
+        model, indicated by the ``top_level`` argument (default ``True``)
+        """
+        instance = ModelInstance(self)
+        if finalise:
+            instance.finalise(top_level)
+        return instance
 
     @property
     def function(self) -> QFunction:
@@ -89,7 +112,7 @@ class Model(ABC):
     def __make_function(self):
         name = self.__class__.__name__
         args = self.__collect_args()
-        results = {"properties": self.properties.raw_symbols}
+        results = {"properties": self.properties.local_symbols}
         return QFunction(args, results, name)
 
     def __collect_args(self):
@@ -106,9 +129,11 @@ class Model(ABC):
 class ModelInstance:
 
     def __init__(self, model: Model):
+        self.__status = ModelStatus.READY
+
         # self.material = None  # TODO: material handler
         self.parameters = model.parameters.create_handler()
-        self.properties = model.properties  # TODO: need to enable multiple instances
+        self.properties = model.properties.create_handler()
         # self.hierarchy = None  # TODO: model.hierarchy.create_handler()
         # self.residuals = None  # TODO: residual handler
 
@@ -127,11 +152,13 @@ class ModelInstance:
         #     child.finalise(top_level=False)
 
         self.parameters.finalise()  # all required parameters connected?
-        self.properties.check()  # all promised properties calculated?
 
         args = self.__collect_args()
         res = self.__function(args, squeeze_results=False)
         self.properties.finalise(res["properties"])
+
+        self.__set_status(ModelStatus.FINALISED)
+
         # if top_level:
         #     self.numerics.prepare()
         return self
@@ -145,6 +172,15 @@ class ModelInstance:
             "parameters": self.parameters.symbols,
             # "properties": child_properties
         }
+
+    @property
+    def status(self):
+        return self.__status
+
+    def __set_status(self, status):
+        self.__status = status
+        self.parameters.status = status
+        # TODO: add others
 
 
 # class MyModel(Model):

@@ -30,15 +30,16 @@ class HierarchyTestModel(Model):
 
     def define(self):
         child = self.hierarchy.add("square", SquareTestModel())
+        # above creates an instance, and could take an optional argument
+        #   to finalise it right away (but it's never top level!)
 
-        child = self.hierarchy["square"] = SquareTestModel()
         volume = child.properties["area"] * self.parameters["depth"]
         self.properties["volume"] = volume
 
 
 def test_square():
     """Test to instantiate the square test model and check symbols"""
-    model = SquareTestModel().instance().finalise()
+    model = SquareTestModel().instance(finalise=True)
 
     area = model.properties["area"]
     length = model.parameters.symbols["length"]
@@ -48,7 +49,7 @@ def test_square():
 
 def test_square_numerics():
     """Test evaluating a simple model with just parameters and properties"""
-    model = SquareTestModel().finalise()
+    model = SquareTestModel().instance().finalise()
     model.parameters.update(length="10 cm")
 
     numerics = model.numerics
