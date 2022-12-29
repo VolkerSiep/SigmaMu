@@ -3,13 +3,37 @@ from abc import ABC, abstractmethod
 
 from ..utilities import QFunction
 from .utils import ModelStatus
-from .property import PropertyDefinition
-from .parameter import ParameterDefinition
+from .property import PropertyDefinition, PropertyHandler
+from .parameter import ParameterDefinition, ParameterHandler
 from .numeric import NumericHandler
-from .hierarchy import HierarchyDefinition
+from .hierarchy import HierarchyDefinition, HierarchyHandler
 
 
 class ModelInstance:
+    """When a :class:`Model` is created, the initial configuration is common
+    for all later instances, and it creates one function object to represent
+    itself. A model instance object - as described by this class - is an object
+    specifically used once as part of the overall (top-level) model.
+
+    As an example, the ``Model`` object may describe a tray in a column. Then,
+    one ``ModelInstance`` object is created and used for each tray.
+
+    An end-user of ``simu``, normally does not need to relate to this class
+    directly.
+    """
+
+    parameters: ParameterHandler
+    """The object to handle all parameter related functionality."""
+
+    properties: PropertyHandler
+    """The object to handle all property related functionality."""
+
+    hierarchy: HierarchyHandler
+    """The object to handle all child-module related functionality."""
+
+    numerics: NumericHandler
+    """The object to handle all functionality related to performing actual
+    calculations."""
 
     def __init__(self, model: "Model"):
         self.__status = ModelStatus.READY
@@ -24,7 +48,7 @@ class ModelInstance:
 
         self.__function = model.function  # by reference
 
-    def finalise(self):
+    def finalise(self) -> "ModelInstance":
         """recreate the casadi nodes using the previously defined funtion.
         Use the parameters, child module properties, material objects, and
         locally defined non-canonical states to define a function,
@@ -60,7 +84,7 @@ class ModelInstance:
         :class:`~simu.model.utils.ModelStatus` entity."""
         return self.__status
 
-    def __set_status(self, status):
+    def __set_status(self, status: ModelStatus):
         self.__status = status
         self.parameters.status = status
         self.hierarchy.status = status
@@ -73,6 +97,14 @@ class Model(ABC):
 
         much more documentation here!!
     """
+    parameters: ParameterDefinition
+    """The object to handle all parameter related functionality."""
+
+    properties: PropertyDefinition
+    """The object to handle all property related functionality."""
+
+    hierarchy: HierarchyDefinition
+    """The object to handle all child-module related functionality."""
 
     def __init__(self):
         # interface phase
@@ -94,45 +126,6 @@ class Model(ABC):
 
         # ready to be instantiated
         self.__set_status(ModelStatus.READY)
-
-    @property
-    def status(self) -> ModelStatus:
-        """Returns the current status of the model as a
-        :class:`~simu.model.utils.ModelStatus` entity."""
-        return self.__status
-
-    def __set_status(self, status: ModelStatus):
-        self.__status = status
-        self.parameters.status = status
-        self.properties.status = status
-        self.hierarchy.status = status
-        # TODO: add status update to other handlers
-
-    def instance(self, finalise: bool = False) -> ModelInstance:
-        """Create an instance of the model. If ``finalise`` is set to ``True``,
-        also finalise the instance right away. This is useful if no further
-        connections are to be done.
-        """
-        instance = ModelInstance(self)
-        if finalise:
-            instance.finalise()
-        return instance
-
-    @property
-    def I(self) -> ModelInstance:  # pylint: disable=invalid-name
-        """Shortcut for ``instance()``"""
-        return self.instance()
-
-    @property
-    def F(self) -> ModelInstance:  # pylint: disable=invalid-name
-        """Shortcut for ``instance(finalise=True)``"""
-        return self.instance(finalise=True)
-
-    @property
-    def function(self) -> QFunction:
-        """The local casadi function that represents the calculations
-        performed in the particular instance of this class."""
-        return self.__function
 
     @abstractmethod
     def interface(self) -> None:
@@ -174,51 +167,66 @@ class Model(ABC):
         calculate the property ``area``.
         '''
 
+    @property
+    def status(self) -> ModelStatus:
+        """Returns the current status of the model as a
+        :class:`~simu.model.utils.ModelStatus` entity."""
+        return self.__status
+
+    def __set_status(self, status: ModelStatus):
+        self.__status = status
+        self.parameters.status = status
+        self.properties.status = status
+        self.hierarchy.status = status
+        # TODO: add status update to other handlers
+
+    def instance(self) -> ModelInstance:
+        """Create an instance of the model. This is normally done either from
+        within the :class:`HierarchyHandler` for child models or in the
+        :attr:`N` property for the top level model."""
+        return ModelInstance(self)
+
+    @property
+    def N(self) -> NumericHandler:  # pylint: disable=invalid-name
+        """Shortcut for ``self.instance().finalise().numerics.prepare()``
+
+        This need letter does a couple of things required for
+        using the top level model:
+
+            - Instantiate the model to a :class:`ModelInstance` object
+            - Finalise the instance object
+            - query the :class:`NumericHandler` object
+            - prepare the numeric handler as top level model
+            - return the numeric handler
+
+        Typical top level code is::
+
+            class MyTopLevelModel(Model):
+                def interface(self):
+                    ...
+                def define(self):
+                    ...
+
+            def main():
+                num_obj = MyTopLevelModel().N
+                ... # do some actual calculations
+        """
+        return self.instance().finalise().numerics.prepare()
+
+    @property
+    def function(self) -> QFunction:
+        """The local casadi function that represents the calculations
+        performed in the particular instance of this class."""
+        return self.__function
+
     def __make_function(self):
         name = self.__class__.__name__
-        args = self.__collect_args()
+        args = {
+            "parameters": self.parameters.symbols,
+            "properties": {
+                name: child.properties.symbols
+                for name, child in self.hierarchy.items()
+            }
+        }
         results = {"properties": self.properties.local_symbols}
         return QFunction(args, results, name)
-
-    def __collect_args(self):
-        child_properties = {
-            name: child.properties.symbols
-            for name, child in self.hierarchy.items()
-        }
-        return {
-            "parameters": self.parameters.symbols,
-            "properties": child_properties
-        }
-
-
-# class MyModel(Model):
-
-#     def interface(self):
-#         # require ports
-#         self.material.require("inlet", "NitricAcid")
-#         # define decorators as additional arguiments here!
-
-#         # define process parameter
-#         self.variables.define("pressure_drop", 0.3, "bar")  # with default
-#         self.variables.define("heat_loss", unit="kW")  # no default
-
-#         self.variables.provide("froth_density", unit="kg/m**3")
-
-#     def define(self):
-#         # need to define casadi graph that defines output from input
-#         # base class has made SX source nodes ready upfront.
-#         # How do I know UOM of input?
-#         #   - parameters are fine
-#         #   - material variables and child module variables:
-#         #     from their definitions (QFunction.res_units) ?
-
-#         # create own internal materials
-#         self.material.create("intern", "NOxGas")
-
-#         dp = self.variables["pressure_drop"]
-#         T = self.material["inlet"]["T"]
-
-#         self.variables["froth_density"] = dp * T  # not really
-
-#         dp_calc = self.material["s301"]["p"] - self.material["intern"]["p"]
-#         self.residuals.add("dp", dp_calc - dp, "5 bar")  # last arg is tolerance basis

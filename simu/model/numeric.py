@@ -2,6 +2,7 @@
 from ..utilities import flatten_dictionary, QFunction, Quantity, SymbolQuantity
 from .utils import ModelStatus
 
+
 class NumericHandler:
     """The numeric handler (``NumericHandler``) is the object that represents the
     interface for all numerical calculations. It treats the ``Model`` object that
@@ -13,7 +14,6 @@ class NumericHandler:
         self.__result = None
         self.__function = None
         self.status = ModelStatus.READY
-
 
     def prepare(self) -> "NumericHandler":
         """This method assumes the associated model instance to be the top

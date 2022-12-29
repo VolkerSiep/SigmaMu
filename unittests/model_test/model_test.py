@@ -38,7 +38,7 @@ class HierarchyTestModel(Model):
 
 def test_square():
     """Test to instantiate the square test model and check symbols"""
-    instance = SquareTestModel().F
+    instance = SquareTestModel().instance().finalise()
 
     area = instance.properties["area"]
     length = instance.parameters.symbols["length"]
@@ -50,7 +50,7 @@ def test_two_instances():
     """Check that two instances don't interfer"""
     model = SquareTestModel()
     num = 3
-    instances = [model.I for _ in range(num)]
+    instances = [model.instance() for _ in range(num)]
     lengths = [SymbolQuantity(f"l_{i}", "m") for i in range(num)]
     for i in range(num):
         instances[i].parameters.provide(length=lengths[i])
@@ -63,7 +63,7 @@ def test_two_instances():
 
 def test_square_numerics():
     """Test evaluating a simple model with just parameters and properties"""
-    instance = SquareTestModel().I
+    instance = SquareTestModel().instance()
     instance.parameters.update(length="10 cm")
     instance.finalise()
 
@@ -80,9 +80,8 @@ def test_square_numerics():
 def test_hierarchy():
     """Test evaluating a simple hierarchical model with just parameters and
     properties"""
-    instance = HierarchyTestModel().F
+    numerics = HierarchyTestModel().N
 
-    numerics = instance.numerics.prepare()
     param = numerics.parameters
     assert_reproduction(param, suffix="param")
 

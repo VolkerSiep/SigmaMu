@@ -37,5 +37,6 @@ class HierarchyHandler(dict):
     created from the ``HierachyDefinition`` object."""
 
     def __init__(self, definition: HierarchyDefinition):
-        self.update({name: model.I for name, model in definition.items()})
+        self.update({name: model.instance()
+                     for name, model in definition.items()})
         self.status = ModelStatus.READY
