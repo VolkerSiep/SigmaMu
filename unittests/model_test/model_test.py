@@ -29,10 +29,8 @@ class HierarchyTestModel(Model):
         self.properties.provide("volume", unit="m**3")
 
     def define(self):
-        child = self.hierarchy.add("square", SquareTestModel())
-        child = self.hierarchy["square"] = SquareTestModel().F
-        # above creates an instance, and could take an optional argument
-        #   to finalise it right away (but it's never top level!)
+        # register child model .. doesn't instantiate it yet
+        child = self.hierarchy["square"] = SquareTestModel()
 
         volume = child.properties["area"] * self.parameters["depth"]
         self.properties["volume"] = volume
@@ -69,13 +67,11 @@ def test_square_numerics():
     instance.parameters.update(length="10 cm")
     instance.finalise()
 
-    numerics = instance.create_numerics()
-    # the numerics interface wraps the entire model into a new function
-    # and provides numerical structures for parameters, states, residuals, etc.
+    numerics = instance.numerics.prepare()
     param = numerics.parameters
     assert_reproduction(param, suffix="param")
     #  should be something like {"length": Q("10 cm")}
-    numerics.evaluate()  # I probably need that to evaluate the casadi function
+    numerics.evaluate()  # evaluate the casadi function
     props = numerics.properties
     #  should be something like {"area": Q("100 cm**2")}
     assert_reproduction(props, suffix="props")
@@ -84,8 +80,9 @@ def test_square_numerics():
 def test_hierarchy():
     """Test evaluating a simple hierarchical model with just parameters and
     properties"""
-    model = HierarchyTestModel().finalise()
-    numerics = model.numerics
+    instance = HierarchyTestModel().F
+
+    numerics = instance.numerics.prepare()
     param = numerics.parameters
     assert_reproduction(param, suffix="param")
 

@@ -1,3 +1,6 @@
+"""This module is concerned about properties that are calculated from within
+the models."""
+
 from ..utilities import SymbolQuantity, Quantity
 from .utils import ModelStatus
 
@@ -82,12 +85,19 @@ class PropertyDefinition:
         prototype = self.__symbols[name]
         symbol.to(prototype.units)  # DimensionalityError if not compatible
         self.__local_symbols[name] = symbol
+        return symbol  # to chain assignments
 
     def __getitem__(self, name: str) -> Quantity:
-        """For convenience, the set property can be re-obtained from this
-        object for further calculations during definition phase."""
-        self.status.assure(ModelStatus.DEFINE, "property access")
+        """When the child model is registered, and the parent model is in
+        its ``define`` method, it can hereby access this model's properties."""
+        self.status.assure(ModelStatus.READY, "property access")
         return self.__local_symbols[name]
+
+    @property
+    def symbols(self):
+        """This property holds the empty quantities to connect to an outer
+        model."""
+        return self.__symbols
 
     @property
     def local_symbols(self) -> dict[str, Quantity]:
@@ -105,6 +115,6 @@ class PropertyDefinition:
         # check if all symbols are defined
         missing = set(self.__symbols) - set(self.__local_symbols)
         if missing:
-            missing = ", ".join(missing)
-            raise ValueError(f"Promised properties not assigned: {missing}")
+            lst = ", ".join(missing)
+            raise ValueError(f"Promised properties not assigned: {lst}")
         return PropertyHandler(self.__symbols, self.__local_symbols)

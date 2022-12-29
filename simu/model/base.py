@@ -6,20 +6,21 @@ from .utils import ModelStatus
 from .property import PropertyDefinition
 from .parameter import ParameterDefinition
 from .numeric import NumericHandler
-# from .hierarchy import HierarchyHandler
+from .hierarchy import HierarchyDefinition
 
 
 class ModelInstance:
+
     def __init__(self, model: "Model"):
         self.__status = ModelStatus.READY
 
         # self.material = None  # TODO: material handler
         self.parameters = model.parameters.create_handler()
         self.properties = model.properties.create_handler()
-        # self.hierarchy = None  # TODO: model.hierarchy.create_handler()
+        self.hierarchy = model.hierarchy.create_handler()
         # self.residuals = None  # TODO: residual handler
 
-        self.numerics = None  # NumericHandler(self)
+        self.numerics = NumericHandler(self)
 
         self.__function = model.function  # by reference
 
@@ -29,9 +30,10 @@ class ModelInstance:
         locally defined non-canonical states to define a function,
         based on the :meth:`define` method's implementation.
         """
+        self.status.assure(ModelStatus.READY, "finalising model")
         # finalise child modules
-        # for child in self.hierarchy.values():
-        #     child.finalise()
+        for child in self.hierarchy.values():
+            child.finalise()
 
         self.parameters.finalise()  # all required parameters connected?
 
@@ -40,15 +42,7 @@ class ModelInstance:
         self.properties.finalise(res["properties"])
 
         self.__set_status(ModelStatus.FINALISED)
-
         return self
-
-    def create_numerics(self) -> NumericHandler:
-        """Considering this model instance to be top level, this method creates
-        and returns a ``NumericHandler``.
-        """
-        self.status.assure(ModelStatus.FINALISED, "creating numeric handler")
-        return NumericHandler(self)
 
     def __collect_args(self):
         # child_properties = {
@@ -62,12 +56,14 @@ class ModelInstance:
 
     @property
     def status(self) -> ModelStatus:
+        """Returns the current status of the model instance as a
+        :class:`~simu.model.utils.ModelStatus` entity."""
         return self.__status
 
     def __set_status(self, status):
         self.__status = status
         self.parameters.status = status
-        # TODO: add others
+        self.hierarchy.status = status
 
 
 class Model(ABC):
@@ -79,24 +75,24 @@ class Model(ABC):
     """
 
     def __init__(self):
+        # interface phase
         self.__status = ModelStatus.INTERFACE
         self.material = None  # TODO: material handler
         self.parameters = ParameterDefinition()
         self.properties = PropertyDefinition()
-
         self.interface()
 
-        self.__set_status(ModelStatus.DEFINE)
-
-        self.hierarchy = None  # TODO: HierarchyHandler()
+        # definition phase
+        self.hierarchy = HierarchyDefinition()
         self.residuals = None  # TODO: residual handler
-
+        self.__set_status(ModelStatus.DEFINE)
         self.define()
 
+        # function phase
         self.__set_status(ModelStatus.FUNCTION)
-
         self.__function = self.__make_function()
 
+        # ready to be instantiated
         self.__set_status(ModelStatus.READY)
 
     @property
@@ -109,6 +105,7 @@ class Model(ABC):
         self.__status = status
         self.parameters.status = status
         self.properties.status = status
+        self.hierarchy.status = status
         # TODO: add status update to other handlers
 
     def instance(self, finalise: bool = False) -> ModelInstance:
@@ -184,16 +181,14 @@ class Model(ABC):
         return QFunction(args, results, name)
 
     def __collect_args(self):
-        # child_properties = {
-        #     name: child.properties.symbols
-        #     for name, child in self.hierarchy.items()
-        # }
+        child_properties = {
+            name: child.properties.symbols
+            for name, child in self.hierarchy.items()
+        }
         return {
             "parameters": self.parameters.symbols,
-            # "properties": child_properties
+            "properties": child_properties
         }
-
-
 
 
 # class MyModel(Model):

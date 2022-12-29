@@ -18,6 +18,7 @@ def test_define():
     props.status = ModelStatus.DEFINE
     length = SymbolQuantity("length", "m")
     props["area"] = length * length
+    props.status = ModelStatus.READY
     area = props["area"]
     assert_reproduction(area)
     return props
