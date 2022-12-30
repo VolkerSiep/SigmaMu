@@ -1,7 +1,7 @@
 """This module defines the abstract :class:`Model` class."""
 from abc import ABC, abstractmethod
 
-from ..utilities import QFunction
+from ..utilities import QFunction, flatten_dictionary
 from .utils import ModelStatus
 from .property import PropertyDefinition, PropertyHandler
 from .parameter import ParameterDefinition, ParameterHandler
@@ -15,8 +15,9 @@ class ModelInstance:
     itself. A model instance object - as described by this class - is an object
     specifically used once as part of the overall (top-level) model.
 
-    As an example, the ``Model`` object may describe a tray in a column. Then,
-    one ``ModelInstance`` object is created and used for each tray.
+    As an example, the :class:`Model` object may describe a tray in a column.
+    Then, one :class:`ModelInstance` object is created and used for each
+    tray.
 
     An end-user of ``simu``, normally does not need to relate to this class
     directly.
@@ -48,35 +49,38 @@ class ModelInstance:
 
         self.__function = model.function  # by reference
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not exc_type is None:
+            return  # let exception be passed further
+        self.finalise()
+
     def finalise(self) -> "ModelInstance":
         """recreate the casadi nodes using the previously defined funtion.
         Use the parameters, child module properties, material objects, and
         locally defined non-canonical states to define a function,
-        based on the :meth:`define` method's implementation.
+        based on the :meth:`Model.define <simu.model.Model.define>` method's
+        implementation.
         """
         self.status.assure(ModelStatus.READY, "finalising model")
-        # finalise child modules
-        for child in self.hierarchy.values():
-            child.finalise()
 
         self.parameters.finalise()  # all required parameters connected?
 
-        args = self.__collect_args()
+        params = flatten_dictionary({
+            name: child.parameters.free_symbols
+            for name, child in self.hierarchy.items()
+        })
+        params.update(self.parameters.symbols)
+
+        args = {"parameters": params}
+
         res = self.__function(args, squeeze_results=False)
-        self.properties.finalise(res["properties"])
+        self.properties.finalise(res.get("properties", {}))
 
         self.__set_status(ModelStatus.FINALISED)
         return self
-
-    def __collect_args(self):
-        # child_properties = {
-        #     name: child.properties.symbols
-        #     for name, child in self.hierarchy.items()
-        # }
-        return {
-            "parameters": self.parameters.symbols,
-            # "properties": child_properties
-        }
 
     @property
     def status(self) -> ModelStatus:
@@ -93,9 +97,9 @@ class ModelInstance:
 class Model(ABC):
     """The model is the central base class for process modelling.
 
-    .. todo::
-
-        much more documentation here!!
+    To implement a model, derive from this class and implement the
+    :meth:`interface` and :meth:`define` methods, using the handlers to
+    address parameters, materials, residuals, properties, and hierarchy.
     """
     parameters: ParameterDefinition
     """The object to handle all parameter related functionality."""
@@ -182,8 +186,8 @@ class Model(ABC):
 
     def instance(self) -> ModelInstance:
         """Create an instance of the model. This is normally done either from
-        within the :class:`HierarchyHandler` for child models or in the
-        :attr:`N` property for the top level model."""
+        within the :class:`~hierarchy.HierarchyHandler` for child models or in
+        the :attr:`N` property for the top level model."""
         return ModelInstance(self)
 
     @property
@@ -193,9 +197,9 @@ class Model(ABC):
         This need letter does a couple of things required for
         using the top level model:
 
-            - Instantiate the model to a :class:`ModelInstance` object
+            - Instantiate the model to a :class:`~base.ModelInstance` object
             - Finalise the instance object
-            - query the :class:`NumericHandler` object
+            - query the :class:`~numeric.NumericHandler` object
             - prepare the numeric handler as top level model
             - return the numeric handler
 
@@ -221,12 +225,13 @@ class Model(ABC):
 
     def __make_function(self):
         name = self.__class__.__name__
-        args = {
-            "parameters": self.parameters.symbols,
-            "properties": {
-                name: child.properties.symbols
-                for name, child in self.hierarchy.items()
-            }
-        }
+
+        params = flatten_dictionary({
+            name: child.parameters.free_symbols
+            for name, child in self.hierarchy.items()
+        })
+        params.update(self.parameters.symbols)
+
+        args = {"parameters": params}
         results = {"properties": self.properties.local_symbols}
         return QFunction(args, results, name)

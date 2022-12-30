@@ -7,10 +7,12 @@ class ModelStatus(Enum):
     """Enumeration class to define status of model."""
 
     INTERFACE = auto()
-    """The model is currently calling its :meth:`interface` method"""
+    """The model is currently calling its
+    :meth:`Model.interface <simu.model.Model.interface>` method"""
 
     DEFINE = auto()
-    """The model is currently calling its :meth:`define` method"""
+    """The model is currently calling its
+    :meth:`Model.define <simu.model.Model.define>` method"""
 
     FUNCTION = auto()
     """The model is currently creating its local function representation"""
@@ -39,4 +41,6 @@ class ModelStatus(Enum):
             RuntimeError: Status READY required for doing fun stuff
         """
         if not self is desired:
-            raise RuntimeError(f"Status {desired.name} required for {what}")
+            n_d, n_s = desired.name, self.name
+            msg = f"Status {n_d} (not {n_s}) required for {what}"
+            raise RuntimeError(msg)

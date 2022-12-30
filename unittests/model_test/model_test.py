@@ -30,10 +30,28 @@ class HierarchyTestModel(Model):
 
     def define(self):
         # register child model .. doesn't instantiate it yet
-        child = self.hierarchy["square"] = SquareTestModel()
+        with self.hierarchy.add("square", SquareTestModel()) as child:
+            pass  # could connect stuff here
 
         volume = child.properties["area"] * self.parameters["depth"]
         self.properties["volume"] = volume
+
+
+class HierarchyTestModel2(Model):
+    """A simple hierarchical model, where the parent model calculates the
+    length of a parameter, and the child model calculates the
+    surface as function of the calculated length."""
+
+    def interface(self):
+        self.parameters.define("radius", 5.0, "cm")
+
+    def define(self):
+        length = 2 * self.parameters["radius"]
+
+        # # later shortcut syntax proposal:
+        # with self.child("square", SquareTestModel()) as child:
+        with self.hierarchy.add("square", SquareTestModel()) as child:
+            child.parameters.provide(length=length)
 
 
 def test_square():
@@ -81,6 +99,19 @@ def test_hierarchy():
     """Test evaluating a simple hierarchical model with just parameters and
     properties"""
     numerics = HierarchyTestModel().N
+
+    param = numerics.parameters
+    assert_reproduction(param, suffix="param")
+
+    numerics.evaluate()
+    props = numerics.properties
+    assert_reproduction(props, suffix="props")
+
+
+def test_hierarchy2():
+    """Test evaluating a simple hierarchical model with just parameters and
+    properties"""
+    numerics = HierarchyTestModel2().N
 
     param = numerics.parameters
     assert_reproduction(param, suffix="param")

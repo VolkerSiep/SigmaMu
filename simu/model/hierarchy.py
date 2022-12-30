@@ -17,15 +17,28 @@ class HierarchyDefinition(dict):
     def __init__(self):
         self.status = ModelStatus.INTERFACE
 
-    def __setitem__(self, name: str, model: "Model"):
+    def add(self, name: str, model: "Model") -> "ModelInstance":
         """Define an instance of the given ``model`` to be sub-model in the
         current context, named ``name``.
         """
         self.status.assure(ModelStatus.DEFINE, "defining child module")
         if name in self:
             raise KeyError(f"Sub-model of name {name} already defined")
-        super().__setitem__(name, model)
-        return model
+        instance = model.instance()
+        super().__setitem__(name, instance)
+        return instance
+
+
+    # def __setitem__(self, name: str, model: "Model"):
+    #     """Define an instance of the given ``model`` to be sub-model in the
+    #     current context, named ``name``.
+    #     """
+    #     self.status.assure(ModelStatus.DEFINE, "defining child module")
+    #     if name in self:
+    #         raise KeyError(f"Sub-model of name {name} already defined")
+    #     instance = model.instance()
+    #     super().__setitem__(name, instance)
+    #     return instance
 
     def create_handler(self) -> "HierarchyHandler":
         self.status.assure(ModelStatus.READY, "defining child module")
@@ -37,6 +50,5 @@ class HierarchyHandler(dict):
     created from the ``HierachyDefinition`` object."""
 
     def __init__(self, definition: HierarchyDefinition):
-        self.update({name: model.instance()
-                     for name, model in definition.items()})
+        self.update(definition)
         self.status = ModelStatus.READY

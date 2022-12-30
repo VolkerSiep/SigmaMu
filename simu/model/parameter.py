@@ -1,28 +1,27 @@
+"""Module related to parameter handling during process modelling"""
+
 from ..utilities import Quantity, SymbolQuantity
+from ..utilities.quantity import QuantityDict, SymbolQuantityDict
 from .utils import ModelStatus
 
 
 class ParameterHandler:
     """When initiated by the :class:`ParameterDefinition` object, the instance
     holds the known value quantities for a subset of the parameters. The
-    remaining parameters are in the ``required`` set and need to be either
+    remaining parameters are still marked as required and need to be either
     given a value or a dependent symbol.
 
     After all configuration has been done, all required parameters shall be
     provided a dependent symbol or a numeric quantity.
-
-    Then, the ``_symbols`` dictionary contains the dependent symbols, and the
-    ``_values`` dictionary contains the independent parameters.
-
     """
 
-    def __init__(self, symbols: dict[str, SymbolQuantity],
-                 values: dict[str, Quantity], required: set[str]):
+    def __init__(self, symbols: SymbolQuantityDict, values: QuantityDict,
+                 required: set[str]):
         # I need to take a real copy here, as the model (ParameterDefinition)
         # instance can be reused. The _initial_ parameter situation is however
         # always the same.
-        self.__symbols: dict[str, SymbolQuantity] = dict(symbols)
-        self.__values: dict[str, Quantity] = dict(values)
+        self.__symbols: SymbolQuantityDict = dict(symbols)
+        self.__values: QuantityDict = dict(values)
         self.__required: set[str] = set(required)
         self.__provided: set[str] = set()
         self.status = ModelStatus.READY
@@ -32,7 +31,7 @@ class ParameterHandler:
         the result as a boolean."""
         return name in self.__symbols
 
-    def update(self, **kwargs: dict[str, str]):
+    def update(self, **kwargs: str) -> None:
         """Update or provide the default value of the parameter"""
         self.status.assure(ModelStatus.READY, "parameter update")
         for name, value in kwargs.items():
@@ -44,7 +43,7 @@ class ParameterHandler:
             self.__values[name] = value
             self.__required -= set([name])
 
-    def provide(self, **kwargs):
+    def provide(self, **kwargs: SymbolQuantity) -> None:
         """Connect input to another symbolic quantity"""
         self.status.assure(ModelStatus.READY, "parameter provide")
         for name, symbol in kwargs.items():
@@ -57,7 +56,7 @@ class ParameterHandler:
             if name in self.__values:  # parameter no longer independent
                 del self.__values[name]
 
-    def finalise(self):
+    def finalise(self) -> None:
         """Check that the configuration is ready to be finalised.
         Throw appropriate exceptions if this is not the case."""
         self.status.assure(ModelStatus.READY, "finalising")
@@ -67,13 +66,13 @@ class ParameterHandler:
         self.status = ModelStatus.FINALISED
 
     @property
-    def values(self) -> dict[str, Quantity]:
+    def values(self) -> QuantityDict:
         """Return a dictionary with the proposed parameter values as
         ``Quantity`` objects with numerical magnitude."""
         return self.__values
 
     @property
-    def symbols(self) -> dict[str, SymbolQuantity]:
+    def symbols(self) -> SymbolQuantityDict:
         """Return dictionary of symbols representing all defined parameters,
         including those that are dependent symbols.
         """
@@ -84,7 +83,7 @@ class ParameterHandler:
         return self.__symbols
 
     @property
-    def free_symbols(self) -> dict[str, SymbolQuantity]:
+    def free_symbols(self) -> SymbolQuantityDict:
         """Return dictionary of all symbols that represent free parameters.
 
         .. deprecated:: V0.1a1
@@ -133,13 +132,16 @@ class ParameterDefinition:
         self.__symbols[name] = SymbolQuantity(name, unit)
 
     @property
-    def symbols(self) -> dict[str, SymbolQuantity]:
+    def symbols(self) -> SymbolQuantityDict:
         """Return dictionary of symbols representing all defined parameters,
         including those that are dependent symbols.
         """
         return self.__symbols
 
     def __getitem__(self, name: str) -> SymbolQuantity:
+        """Essential to use the defined parameters in the
+        :meth:`Model.define <simu.model.Model.define>` method is to utilise
+        this operator."""
         self.status.assure(ModelStatus.DEFINE, "parameter query")
         return self.__symbols[name]
 

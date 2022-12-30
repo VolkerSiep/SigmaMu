@@ -232,12 +232,13 @@ def base_magnitude(quantity: Quantity) -> float:
 # Typing of recursive structures is basically impossible, more so because
 # mypy doesn't accept Quantity as a class (with its methods).
 
-QDict = dict[str, Quantity]
+QuantityDict = dict[str, Quantity]
+SymbolQuantityDict = dict[str, SymbolQuantity]
 
 _SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 
-def flatten_dictionary(structure, prefix: str = "") -> QDict:
+def flatten_dictionary(structure, prefix: str = "") -> QuantityDict:
     r"""Convert the given structure into a flat list of key value pairs,
     where the keys are ``SEPARATOR``-separated concatonations of the paths,
     and values are the values of the leafs. Non-string keys are converted
@@ -252,7 +253,7 @@ def flatten_dictionary(structure, prefix: str = "") -> QDict:
     except AttributeError:  # doesn't seem so, this is just a value
         return {prefix: structure}  # type: ignore
 
-    result: QDict = {}
+    result: QuantityDict = {}
     # must sort to create the same sequence every time
     # (dictionary might have content permutated)
     for key, value in sorted(items):
@@ -262,7 +263,7 @@ def flatten_dictionary(structure, prefix: str = "") -> QDict:
     return result
 
 
-def unflatten_dictionary(flat_structure: QDict):
+def unflatten_dictionary(flat_structure: QuantityDict):
     r"""This is the reverse of :func:`flatten_dictionary`, inflating the
     given one-depth dictionary into a nested structure.
 
