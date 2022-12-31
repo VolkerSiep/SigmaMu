@@ -1,156 +1,152 @@
-from ..utilities import Quantity, SymbolQuantity
-from .utils import ModelStatus
+"""This module implements functionality related to parameter handling"""
 
+from typing import Optional, TYPE_CHECKING
+from collections.abc import KeysView
+
+from ..utilities.quantity import (
+    QuantityDict, SymbolQuantity, Quantity, NestedQuantityDict)
+from ..utilities.errors import DataFlowError
+
+if TYPE_CHECKING:  # avoid circular dependencies just for typing
+    from .base import Model, ModelProxy
 
 class ParameterHandler:
-    """When initiated by the :class:`ParameterDefinition` object, the instance
-    holds the known value quantities for a subset of the parameters. The
-    remaining parameters are in the ``required`` set and need to be either
-    given a value or a dependent symbol.
-
-    After all configuration has been done, all required parameters shall be
-    provided a dependent symbol or a numeric quantity.
-
-    Then, the ``_symbols`` dictionary contains the dependent symbols, and the
-    ``_values`` dictionary contains the independent parameters.
-
-    """
-
-    def __init__(self, symbols: dict[str, SymbolQuantity],
-                 values: dict[str, Quantity], required: set[str]):
-        # I need to take a real copy here, as the model (ParameterDefinition)
-        # instance can be reused. The _initial_ parameter situation is however
-        # always the same.
-        self.__symbols: dict[str, SymbolQuantity] = dict(symbols)
-        self.__values: dict[str, Quantity] = dict(values)
-        self.__required: set[str] = set(required)
-        self.__provided: set[str] = set()
-        self.status = ModelStatus.READY
-
-    def defined(self, name: str) -> bool:
-        """Check whether a parameter of given ``name`` is defined and return
-        the result as a boolean."""
-        return name in self.__symbols
-
-    def update(self, **kwargs: dict[str, str]):
-        """Update or provide the default value of the parameter"""
-        self.status.assure(ModelStatus.READY, "parameter update")
-        for name, value in kwargs.items():
-            if not self.defined(name):
-                raise KeyError(f"Parameter '{name}' undefined")
-            if name in self.__provided:
-                raise KeyError(f"Parameter '{name}' not independent")
-            value = Quantity(value)
-            self.__values[name] = value
-            self.__required -= set([name])
-
-    def provide(self, **kwargs):
-        """Connect input to another symbolic quantity"""
-        self.status.assure(ModelStatus.READY, "parameter provide")
-        for name, symbol in kwargs.items():
-            if not self.defined(name):
-                raise KeyError(f"Parameter '{name}' undefined")
-            self.__symbols[name] = symbol
-            self.__required -= set([name])
-            self.__provided.add(name)
-
-            if name in self.__values:  # parameter no longer independent
-                del self.__values[name]
-
-    def finalise(self):
-        """Check that the configuration is ready to be finalised.
-        Throw appropriate exceptions if this is not the case."""
-        self.status.assure(ModelStatus.READY, "finalising")
-        if self.__required:
-            missing = ", ".join(self.__required)
-            raise ValueError(f"Non-supplied required parameters: {missing}")
-        self.status = ModelStatus.FINALISED
-
-    @property
-    def values(self) -> dict[str, Quantity]:
-        """Return a dictionary with the proposed parameter values as
-        ``Quantity`` objects with numerical magnitude."""
-        return self.__values
-
-    @property
-    def symbols(self) -> dict[str, SymbolQuantity]:
-        """Return dictionary of symbols representing all defined parameters,
-        including those that are dependent symbols.
-        """
-        self.status.assure(ModelStatus.FINALISED, "querying symbols")
-        if self.status is not ModelStatus.FINALISED:
-            msg = "Symbols can only be queried when instance is prepared"
-            raise RuntimeError(msg)
-        return self.__symbols
-
-    @property
-    def free_symbols(self) -> dict[str, SymbolQuantity]:
-        """Return dictionary of all symbols that represent free parameters.
-
-        .. deprecated:: V0.1a1
-
-            Don't need this, can be constructed as implemented from symbols and
-            values, and it's only needed once (in prepare)::
-
-                {name: self.symbols[name] for name in self.values}
-
-            """
-        self.status.assure(ModelStatus.FINALISED, "querying free symbols")
-        return {name: self.symbols[name] for name in self.values}
-
-
-class ParameterDefinition:
-    """During the definition phase of a model, an instance of this class is
-    used to define and connect the parameters of the module.
-    This is only done once for each Model implementation.
-
-    Once the mode instance is created, the object of this class is replaced
-    with a :class:`ParameterHandler` object that handles parameter access
-    from ouside the scope of the model itself.
-    """
+    """This class, being instantiated as the :attr:`Model.parameters`
+    attribute, allows to define and access process parameters."""
 
     def __init__(self):
-        self.__symbols = {}
-        self.__values = {}
-        self.__required = set()
-        self.status = ModelStatus.INTERFACE
+        self.__params: QuantityDict = {}
+        self.__values: QuantityDict = {}
 
-    def define(self, name: str, value: float = None, unit: str = "dimless"):
-        """Define a parameter in the context of the model. The name must be
-        unique in the context. If value is not given (``None``), the parameter
-        must be provided from the outside - and be compliant with the given
-        unit of measurement. Otherwise, the value-unit pair defines the
-        default value of the parameter, if not provided from parent module"""
-        self.status.assure(ModelStatus.INTERFACE, "parameter declaration")
-        if self.defined(name):
-            raise ValueError(f"Parameter '{name}' already defined")
+    def define(self,
+               name: str,
+               value: Optional[float] = None,
+               unit: str = "dimless") -> None:
+        """Define a parameter from within the :method:`Model.interface`
+        method."""
 
-        if value is None:
-            self.__required.add(name)
-        else:
+        if name in self.__params:
+            raise KeyError(f"Parameter '{name}' already defined")
+
+        self.__params[name] = SymbolQuantity(name, unit)
+        if value is not None:
             self.__values[name] = Quantity(value, unit)
 
-        self.__symbols[name] = SymbolQuantity(name, unit)
+    def __getitem__(self, name: str) -> Quantity:
+        """Return the symbol of a defined parameter. This is to be used within
+        the :method:`Model.define` method."""
+        return self.__params[name]
+
+    def names(self) -> KeysView[str]:
+        """An iterator over all names of defined parameters"""
+        return self.__params.keys()
+
+    def values(self) -> QuantityDict:
+        """Return the (default) values for the defined parameters that have
+        such default value."""
+        return dict(self.__values)  # create copy to preserve own set
+
+    def create_proxy(self, name: str) -> "ParameterProxy":
+        """Create a proxy object for configuration in hierarchy context"""
+        return ParameterProxy(name, self)
+
+
+    def collect_all(self, model: "Model") -> NestedQuantityDict:
+        """Collect own parameters (all) and the yet free parameters of all
+        child modules recursively."""
+        params: NestedQuantityDict = dict(self.__params)
+
+        def add_child_param(params: NestedQuantityDict,
+                            name: str, child: "ModelProxy") -> None:
+            if name in params:
+                msg = f"Child model and parameter name clash: '{name}'"
+                raise KeyError(msg)
+            params[name] = collect(child)
+
+        def collect(sub_model: "ModelProxy") -> NestedQuantityDict:
+            params = sub_model.parameters.free
+            for c_name, child in sub_model.hierarchy.items():
+                add_child_param(params, c_name, child)
+            return params
+
+        for c_name, child in model.hierarchy.items():
+            add_child_param(params, c_name, child)
+        return params
+
+
+class ParameterProxy:
+    """This class is instantiated by the parent's :class:`ParameterHandler`
+    to configure the parameter connections from the parent context."""
+
+    def __init__(self, model_name: str, handler: ParameterHandler):
+        self.model_name = model_name
+        self.handler = handler
+
+        self.__provided: QuantityDict = {}
+        self.__free: QuantityDict = {}
+        self.__values = handler.values()
+
+    def provide(self, **kwargs: Quantity) -> None:
+        """Connect a parameter from parent context to child parameter."""
+        for name, quantity in kwargs.items():
+            self.__assure_ok(name, quantity)
+            self.__provided[name] = quantity
+
+    def update(self, name: str, value: float, unit: str) -> None:
+        """Provide new default value for child parameter"""
+        quantity = Quantity(value, unit)
+        self.__assure_ok(name, quantity)
+        self.__values[name] = quantity
+
+    def __assure_ok(self, name: str, quantity: Quantity) -> None:
+        """Check that a new quantity can be processed and is compatible with
+        the previously defined slot."""
+        if name not in self.handler.names():
+            msg = f"Parameter '{name}' not defined in '{self.model_name}'"
+            raise KeyError(msg)
+        if name in self.__provided:
+            msg = f"Parameter '{name}' already provided in '{self.model_name}'"
+            raise KeyError(msg)
+
+        quantity.to(self.handler[name].units)  # complains if not compatible
 
     @property
-    def symbols(self) -> dict[str, SymbolQuantity]:
-        """Return dictionary of symbols representing all defined parameters,
-        including those that are dependent symbols.
-        """
-        return self.__symbols
+    def free(self):
+        """Symbols representing the parameters that have not been provided.
+        These must be used to create an overall function, when parmeter values
+        are provided from the outside."""
+        return dict(self.__free)
 
-    def __getitem__(self, name: str) -> SymbolQuantity:
-        self.status.assure(ModelStatus.DEFINE, "parameter query")
-        return self.__symbols[name]
+    @property
+    def arg(self) -> QuantityDict:
+        """The function argument of the belonging model function, composed of
+        the provided properties and the still free symbols."""
+        arg = dict(self.__provided)
+        arg.update(self.free)
+        return arg
 
-    def defined(self, name: str) -> bool:
-        """Check whether a parameter of given ``name`` is defined and return
-        the result as a boolean."""
-        return name in self.__symbols
+    def finalise(self) -> None:
+        """Make sure there are values for all non-provided parameters with
+        no value. Remove values of provided parameters"""
 
-    def create_handler(self) -> ParameterHandler:
-        """After the definition phase, this method creates a
-        :class:`ParameterHandler` object that handles further processing of
-        the parameters in the model instance."""
-        self.status.assure(ModelStatus.READY, "creating handler")
-        return ParameterHandler(self.symbols, self.__values, self.__required)
+        # are all required connected?
+        provided = set(self.__provided.keys())
+        values = set(self.__values.keys())
+        all_ = set(self.handler.names())
+        missing = all_ - (provided | values)
+        if missing:
+            lst = ", ".join(map(lambda m: f"'{m}'", missing))
+            msg = f"Model '{self.model_name}' has missing parameters: {lst}"
+            raise DataFlowError(msg)
+
+        # clean values of provided parameters
+        self.__values = {
+            name: quantity
+            for name, quantity in self.__values.items() if name not in provided
+        }
+
+        # create symbols for still free variables (for later overall function)
+        self.__free = {
+            name: self.handler[name]
+            for name in self.handler.names() if name in self.__values
+        }

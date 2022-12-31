@@ -9,7 +9,7 @@ class SquareTestModel(Model):
     def interface(self):
         """Here I can nicely document the inteface of the model"""
         self.parameters.define("length", 10.0, "m")
-        self.properties.provide("area", unit="m**2")
+        self.properties.declare("area", unit="m**2")
 
     def define(self):
         """Here I can document the internal function of the model.
@@ -26,22 +26,39 @@ class HierarchyTestModel(Model):
 
     def interface(self):
         self.parameters.define("depth", 5.0, "cm")
-        self.properties.provide("volume", unit="m**3")
+        self.properties.declare("volume", unit="m**3")
 
     def define(self):
-        # register child model .. doesn't instantiate it yet
-        child = self.hierarchy["square"] = SquareTestModel()
+        with self.hierarchy.add("square", SquareTestModel()) as child:
+            pass
 
         volume = child.properties["area"] * self.parameters["depth"]
         self.properties["volume"] = volume
 
 
+class HierarchyTestModel2(Model):
+    """A simple hierarchical model, where the parent model calculates the
+    length of a parameter, and the child model calculates the
+    surface as function of the calculated length."""
+
+    def interface(self):
+        self.parameters.define("radius", 5.0, "cm")
+
+    def define(self):
+        length = 2 * self.parameters["radius"]
+
+        # # later shortcut syntax proposal:
+        # with self.child("square", SquareTestModel()) as child:
+        with self.hierarchy.add("square", SquareTestModel()) as child:
+            child.parameters.provide(length=length)
+
+
 def test_square():
     """Test to instantiate the square test model and check symbols"""
-    instance = SquareTestModel().instance().finalise()
+    instance = SquareTestModel().as_top_model()
 
     area = instance.properties["area"]
-    length = instance.parameters.symbols["length"]
+    length = instance.parameters.free["length"]
     result = {"length": length, "area": area}
     assert_reproduction(result)
 
@@ -50,14 +67,12 @@ def test_two_instances():
     """Check that two instances don't interfer"""
     model = SquareTestModel()
     num = 3
-    instances = [model.instance() for _ in range(num)]
+    instances = [model.create_proxy(f"m_{i}") for i in range(num)]
     lengths = [SymbolQuantity(f"l_{i}", "m") for i in range(num)]
     for i in range(num):
         instances[i].parameters.provide(length=lengths[i])
         instances[i].finalise()
-    res = [
-        instance.properties.symbols["area"].magnitude for instance in instances
-    ]
+    res = [instance.properties["area"].magnitude for instance in instances]
     assert_reproduction(res)
 
 

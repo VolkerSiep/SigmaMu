@@ -1,42 +1,31 @@
-"""This module facilitates model hierarchy.
-
-    "*Hei, Ricky!*"
-"""
-
+"""This module handles functionality concerning model hierarchy."""
 from typing import TYPE_CHECKING
-from .utils import ModelStatus
+from collections.abc import ItemsView
 
-if TYPE_CHECKING:  # To avoid circular dependencies / need for abstract classes
-    from .base import Model, ModelInstance
+if TYPE_CHECKING:  # avoid circular dependencies just for typing
+    from .base import Model, ModelProxy
 
-class HierarchyDefinition(dict):
-    """The hierarchy definition keeps references to all child models as being a
-    subclass of an ordinary dictionary.
-    """
-
-    def __init__(self):
-        self.status = ModelStatus.INTERFACE
-
-    def __setitem__(self, name: str, model: "Model"):
-        """Define an instance of the given ``model`` to be sub-model in the
-        current context, named ``name``.
-        """
-        self.status.assure(ModelStatus.DEFINE, "defining child module")
-        if name in self:
-            raise KeyError(f"Sub-model of name {name} already defined")
-        super().__setitem__(name, model)
-        return model
-
-    def create_handler(self) -> "HierarchyHandler":
-        self.status.assure(ModelStatus.READY, "defining child module")
-        return HierarchyHandler(self)
+ModelProxyDictionary = dict[str, "ModelProxy"]
 
 
-class HierarchyHandler(dict):
-    """The hierarchy handler creates instances for all child modules, when
-    created from the ``HierachyDefinition`` object."""
+class HierarchyHandler:
+    """This class, being instantiated as the :attr:`Model.hierachy` attribute,
+    allows to define child models in a hierachy context."""
 
-    def __init__(self, definition: HierarchyDefinition):
-        self.update({name: model.instance()
-                     for name, model in definition.items()})
-        self.status = ModelStatus.READY
+    def __init__(self, model: "Model"):
+        self.model = model
+        self.__childs: ModelProxyDictionary = {}
+
+    def add(self, name: str, model: "Model") -> "ModelProxy":
+        """Add an instance of ``model`` as child to the current (parent)
+        context. A :class:`ModelProxy` object is created, registered, and
+        returned."""
+        if name in self.__childs:
+            raise KeyError(f"Child model '{name}' already exists")
+        instance = model.create_proxy(name)
+        self.__childs[name] = instance
+        return instance
+
+    def items(self) -> ItemsView[str, "ModelProxy"]:
+        """Return an iterator over the dictionary of child module proxies."""
+        return self.__childs.items()
