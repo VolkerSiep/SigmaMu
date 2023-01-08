@@ -20,28 +20,33 @@ class Model(ABC):
     hierarchy: HierarchyHandler
     """A handler object that takes care of defining sub models"""
 
+    @classmethod
+    def as_top_model(cls, name: str = "model") -> "ModelProxy":
+        """Define this model as top level model, hence instantiate and finalise
+        it."""
+        return cls().create_proxy(name).finalise()
+
     def __init__(self):
         self.parameters = ParameterHandler()
         self.properties = PropertyHandler()
 
         self.interface()
-
         self.hierarchy = HierarchyHandler(self)
-
         self.define()
-
         self.__func = self.__make_function()
 
     def interface(self) -> None:
-        '''This abstract method is to define model parameters, material ports,
-        and properties provided by this model. This makes the interface of
-        the model in the hierarchical context nearly self-documenting.
+        '''This abstract method is to define all model parameters, material
+        ports, and properties provided by this model. This makes the interface
+        of the model in the hierarchical context nearly self-documenting.
         A trivial example implementation could be
+
         .. code-block::
             def interface(self):
                 """Here a nice documentation of the model inteface"""
                 self.parameters.define("length", 10.0, "m")
                 self.properties.provide("area", unit="m**2")
+
         Above interface requires a parameter called ``length`` with a default
         value of 10 metres. It promises to calculate a property called ``area``
         which has a unit compatible to square metres.
@@ -70,23 +75,13 @@ class Model(ABC):
 
         return ModelProxy(name, self)
 
-    def as_top_model(self, name: str = "model") -> "ModelProxy":
-        """Define this model as top level model, hence instantiate and finalise
-        it."""
-        return self.create_proxy(name).finalise()
-
     def __make_function(self) -> QFunction:
         """This method creates a function object that also includes the child
         models.
         """
         name = self.__class__.__name__
-        params = self.parameters.collect_all(self)
-
-        args = {"parameters": params}
-        # also collect free parameters of child modules
-
+        args = {"parameters": self.parameters.all}
         props = {n: self.properties[n] for n in self.properties.names()}
-        # also collect properties of child modules ... no!
 
         res = {"properties": props}
         return QFunction(args, res, name)
@@ -127,7 +122,6 @@ class ModelProxy:
         # and calculate properties
         self.parameters.finalise()
 
-        # TODO: also here collect all free parameter symbols
         args = {"parameters": self.parameters.arg}
         result = self.model.function(args, squeeze_results=False)
 

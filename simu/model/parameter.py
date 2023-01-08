@@ -3,12 +3,12 @@
 from typing import Optional, TYPE_CHECKING
 from collections.abc import KeysView
 
-from ..utilities.quantity import (
-    QuantityDict, SymbolQuantity, Quantity, NestedQuantityDict)
+from ..utilities.quantity import (QuantityDict, SymbolQuantity, Quantity)
 from ..utilities.errors import DataFlowError
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import Model, ModelProxy
+
 
 class ParameterHandler:
     """This class, being instantiated as the :attr:`Model.parameters`
@@ -41,6 +41,11 @@ class ParameterHandler:
         """An iterator over all names of defined parameters"""
         return self.__params.keys()
 
+    @property
+    def all(self) -> QuantityDict:
+        """Return a dictionary of all defined parameters on this level"""
+        return dict(self.__params)
+
     def values(self) -> QuantityDict:
         """Return the (default) values for the defined parameters that have
         such default value."""
@@ -49,29 +54,6 @@ class ParameterHandler:
     def create_proxy(self, name: str) -> "ParameterProxy":
         """Create a proxy object for configuration in hierarchy context"""
         return ParameterProxy(name, self)
-
-
-    def collect_all(self, model: "Model") -> NestedQuantityDict:
-        """Collect own parameters (all) and the yet free parameters of all
-        child modules recursively."""
-        params: NestedQuantityDict = dict(self.__params)
-
-        def add_child_param(params: NestedQuantityDict,
-                            name: str, child: "ModelProxy") -> None:
-            if name in params:
-                msg = f"Child model and parameter name clash: '{name}'"
-                raise KeyError(msg)
-            params[name] = collect(child)
-
-        def collect(sub_model: "ModelProxy") -> NestedQuantityDict:
-            params = sub_model.parameters.free
-            for c_name, child in sub_model.hierarchy.items():
-                add_child_param(params, c_name, child)
-            return params
-
-        for c_name, child in model.hierarchy.items():
-            add_child_param(params, c_name, child)
-        return params
 
 
 class ParameterProxy:

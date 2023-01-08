@@ -26,6 +26,11 @@ class HierarchyHandler:
         self.__childs[name] = instance
         return instance
 
+    def __getitem__(self, name: str):
+        """Re-obtain the proxy of named module, avoiding to have to keep a
+        holding variable in the client scope code."""
+        return self.__childs[name]
+
     def items(self) -> ItemsView[str, "ModelProxy"]:
         """Return an iterator over the dictionary of child module proxies."""
         return self.__childs.items()

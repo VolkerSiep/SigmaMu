@@ -354,3 +354,10 @@ class QFunction:
         the units of measurements as values of end nodes"""
         units = {k: f"{v:~}" for k, v in self.res_units.items()}
         return unflatten_dictionary(units)
+
+    @property
+    def arg_structure(self):
+        """Return the argument structure as a nested dictionary, only including
+        the units of measurements as values of end nodes"""
+        units = {k: f"{v:~}" for k, v in self.arg_units.items()}
+        return unflatten_dictionary(units)

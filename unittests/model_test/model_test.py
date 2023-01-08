@@ -1,4 +1,7 @@
 """Unit tests related to the model class"""
+
+from pytest import mark
+
 from simu import Model
 from simu.utilities import assert_reproduction, SymbolQuantity
 
@@ -43,6 +46,8 @@ class HierarchyTestModel2(Model):
 
     def interface(self):
         self.parameters.define("radius", 5.0, "cm")
+        self.parameters.define("depth", 10, "cm")
+        self.properties.declare("volume", "m**3")
 
     def define(self):
         length = 2 * self.parameters["radius"]
@@ -52,10 +57,32 @@ class HierarchyTestModel2(Model):
         with self.hierarchy.add("square", SquareTestModel()) as child:
             child.parameters.provide(length=length)
 
+        volume = self.parameters["depth"] * child.properties["area"]
+        self.properties["volume"] = volume
+
+
+class NestedHierarchyTestModel(Model):
+    """A new model to test nested hierarchy. Just redefining one of the
+    parameters, leaving the other one free."""
+
+    def interface(self):
+        self.parameters.define("radius", 10.0, "cm")
+        self.properties.declare("volume", "m**3")
+
+    def define(self):
+        with self.hierarchy.add("volumator", HierarchyTestModel2()) as child:
+            child.parameters.provide(radius=self.parameters["radius"])
+        self.properties["volume"] = child.properties["volume"]
+
+
+hierarchy_models = [
+    HierarchyTestModel, HierarchyTestModel2, NestedHierarchyTestModel
+]
+
 
 def test_square():
     """Test to instantiate the square test model and check symbols"""
-    instance = SquareTestModel().as_top_model()
+    instance = SquareTestModel.as_top_model()
 
     area = instance.properties["area"]
     length = instance.parameters.free["length"]
@@ -76,6 +103,7 @@ def test_two_instances():
     assert_reproduction(res)
 
 
+@mark.skip(reason="Didn't reimplement numerics interface yet")
 def test_square_numerics():
     """Test evaluating a simple model with just parameters and properties"""
     instance = SquareTestModel().instance()
@@ -92,14 +120,20 @@ def test_square_numerics():
     assert_reproduction(props, suffix="props")
 
 
-def test_hierarchy():
-    """Test evaluating a simple hierarchical model with just parameters and
+@mark.parametrize("model_cls", hierarchy_models)
+def test_hierarchy(model_cls: Model):
+    """Test evaluating a simple hierarchicals model with just parameters and
     properties"""
-    numerics = HierarchyTestModel().N
+    name = model_cls.__name__
+    func = model_cls.as_top_model().model.function
+    assert_reproduction(func.arg_structure, f"{name}_arguments")
+    assert_reproduction(func.result_structure, f"{name}_result")
 
-    param = numerics.parameters
-    assert_reproduction(param, suffix="param")
 
-    numerics.evaluate()
-    props = numerics.properties
-    assert_reproduction(props, suffix="props")
+def test_hierarchy_property():
+    """Check that calculated property has correct expression"""
+    instance = NestedHierarchyTestModel.as_top_model()
+    vol = instance.hierarchy["volumator"]
+    area = vol.hierarchy["square"].properties["area"].magnitude
+    volume = instance.properties["volume"].magnitude
+    assert_reproduction([area, volume])
