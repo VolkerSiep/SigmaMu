@@ -8,8 +8,13 @@ SiMu Documentation
 
    introduction
    api/api
+
+.. toctree::
+   :maxdepth: 1
+
+   release_notes
    bibliographics
- 
+
 
 Indices and tables
 ==================

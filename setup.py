@@ -11,12 +11,13 @@ import setuptools
 # with open("README.md", "r") as fh:
 #     long_description = fh.read()
 
-version = "0.1a1"
+from src.simu._version import VERSION
+
 long_description = "TODO: write this"
 
 setuptools.setup(
     name="simu",
-    version=version,
+    version=VERSION,
     author="Volker Siepmann",
     author_email="volker.siepmann@gmail.com",
     description="Equation oriented process modelling library",

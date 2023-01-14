@@ -22,11 +22,13 @@ Logo and history
 The logo pictures a goose riding a python for obvious reasons, that is to get from A to B efficiently. The real question is: Why a goose, and why is it not afraid of the snake?
 
 .. image:: figures/simu_logo.jpeg
+    :width: 400
+    :align: center
 
 The name of the goose became *Muriel* at a later point in time. Muriel was first alone, and I met it in Canada on a business trip. It nested on a site that was scheduled for excavation. Due to protection laws, the project got delayed by 2 weeks and everybody was angry with her. At that time, I was writing in-house code for a custom process simulation in another project. My wife drew the first logo, which I included in the report - a bit to tease the engineers on site.
 
 .. image:: figures/goose.png
- :align: center
+    :align: center
 
 At first, Muriel was afraid of the snake and didn't trust python for being its modelling language. That in-house model was built on my phd work :cite:p:`Siepmann_2006` and written with help of python, but defined in text files with their own format. After the project, Muriel started to trust the snake more and I decided to convert the software into a pure python library and thus make python itself the modelling language. This is when Muriel started to ride the python, and my wife created above logo.
 

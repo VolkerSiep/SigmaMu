@@ -22,7 +22,7 @@ class ParameterHandler:
                name: str,
                value: Optional[float] = None,
                unit: str = "dimless") -> None:
-        """Define a parameter from within the :method:`Model.interface`
+        """Define a parameter from within the :meth:`Model.interface`
         method."""
 
         if name in self.__params:
@@ -34,7 +34,7 @@ class ParameterHandler:
 
     def __getitem__(self, name: str) -> Quantity:
         """Return the symbol of a defined parameter. This is to be used within
-        the :method:`Model.define` method."""
+        the :meth:`Model.define` method."""
         return self.__params[name]
 
     def names(self) -> KeysView[str]:

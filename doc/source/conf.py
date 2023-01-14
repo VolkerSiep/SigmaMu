@@ -15,13 +15,13 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
+from simu import __version__ as release
+
 
 project = 'SiMu'
-copyright = '2021-2022, Volker Siepmann'
+copyright = '2021-2023, Volker Siepmann'
 author = 'Volker Siepmann'
 
-# The full version, including alpha/beta/rc tags
-release = '0.1a1'
 
 # -- General configuration ---------------------------------------------------
 

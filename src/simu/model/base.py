@@ -13,7 +13,7 @@ class Model(ABC):
     """This is the base class for all process models to be implemented."""
 
     parameters: ParameterHandler
-    """A handlder object that takes care of parameter configuration"""
+    """A handler object that takes care of parameter configuration"""
 
     properties: PropertyHandler
     """A handlder object that takes care of property configuration"""
@@ -26,7 +26,8 @@ class Model(ABC):
                      name: str = "model"
                      ) -> tuple["ModelProxy", NumericHandler]:
         """Define this model as top level model, hence instantiate and finalise
-        it."""
+        it.
+        """
         proxy = cls().create_proxy(name).finalise()
         return (proxy, proxy.numeric)
 
@@ -46,6 +47,7 @@ class Model(ABC):
         A trivial example implementation could be
 
         .. code-block::
+
             def interface(self):
                 """Here a nice documentation of the model inteface"""
                 self.parameters.define("length", 10.0, "m")
@@ -63,13 +65,16 @@ class Model(ABC):
         calculation of residuals and model properties. Matching to the example
         described in the :meth:`interface` method, a trivial implementation
         could be
+
         .. code-block::
+
             def define(self):
                 """Here documentation of the internal function of the model.
                 This distinction can be used to include this doc-string only
                 for detailed documenation sections."""
                 length = self.parameters["length"]
                 self.properties["area"] = length * length
+
         Here we read out the previously defined parameter ``length`` and
         calculate the property ``area``.
         '''

@@ -6,20 +6,15 @@ Model
 .. autoclass:: simu.model.Model
     :members:
 
-ModelInstance
+ModelProxy
 """""""""""""
 
-.. autoclass:: simu.model.base.ModelInstance
+.. autoclass:: simu.model.base.ModelProxy
     :members:
 
-ModelStatus
-"""""""""""
-.. autoclass:: simu.model.utils.ModelStatus
-    :members:
-
-ParameterDefinition
+ParameterProxy
 -------------------
-.. autoclass:: simu.model.parameter.ParameterDefinition
+.. autoclass:: simu.model.parameter.ParameterProxy
     :members:
 
 ParameterHandler
@@ -27,9 +22,9 @@ ParameterHandler
 .. autoclass:: simu.model.parameter.ParameterHandler
     :members:
 
-PropertyDefinition
+PropertyProxy
 ------------------
-.. autoclass:: simu.model.property.PropertyDefinition
+.. autoclass:: simu.model.property.PropertyProxy
     :members:
 
 PropertyHandler
