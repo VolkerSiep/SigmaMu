@@ -14,11 +14,6 @@ import setuptools
 version = "0.1a1"
 long_description = "TODO: write this"
 
-packages = setuptools.find_packages(include=["simu.*", "simu"])
-
-with open("requirements.txt", encoding="utf-8") as file:
-    requirements = file.readlines()
-
 setuptools.setup(
     name="simu",
     version=version,
@@ -28,13 +23,12 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/VolkerSiep/SiMu",
-    packages=packages,
     # package_data={'simu': ['units.xml']},
     classifiers=[
         "Programming Language :: Python :: 3",
     ],
     python_requires='>=3.9',
-    install_requires=requirements,
+    install_requires=["numpy", "scipy", "casadi", "pyyaml"],
     extras_require={
         "dev": [
             "Sphinx>=2.2", "sphinxcontrib-bibtex>=2.4", "pytest>=5.3",

@@ -1,5 +1,7 @@
 """Unit tests related to the model class"""
 
+from typing import Type
+
 from pytest import mark
 
 from simu import Model
@@ -82,7 +84,7 @@ hierarchy_models = [
 
 def test_square():
     """Test to instantiate the square test model and check symbols"""
-    instance = SquareTestModel.as_top_model()
+    instance, _ = SquareTestModel.as_top_model()
 
     area = instance.properties["area"]
     length = instance.parameters.free["length"]
@@ -121,18 +123,18 @@ def test_square_numerics():
 
 
 @mark.parametrize("model_cls", hierarchy_models)
-def test_hierarchy(model_cls: Model):
+def test_hierarchy(model_cls: Type[Model]):
     """Test evaluating a simple hierarchicals model with just parameters and
     properties"""
     name = model_cls.__name__
-    func = model_cls.as_top_model().model.function
+    func = model_cls.as_top_model()[0].model.function
     assert_reproduction(func.arg_structure, f"{name}_arguments")
     assert_reproduction(func.result_structure, f"{name}_result")
 
 
 def test_hierarchy_property():
     """Check that calculated property has correct expression"""
-    instance = NestedHierarchyTestModel.as_top_model()
+    instance, _ = NestedHierarchyTestModel.as_top_model()
     vol = instance.hierarchy["volumator"]
     area = vol.hierarchy["square"].properties["area"].magnitude
     volume = instance.properties["volume"].magnitude
