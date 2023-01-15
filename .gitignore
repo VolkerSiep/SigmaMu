@@ -6,3 +6,5 @@ sandbox
 doc/build
 doc/literature
 *.dia.autosave
+build/
+dist/
