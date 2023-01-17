@@ -1,5 +1,5 @@
 """This module defines classes and functionality around ``pint`` quantities.
-These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes, or
+These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes), or
 numeric."""
 
 # stdlib modules
@@ -27,7 +27,7 @@ _Q = unit_registry.Quantity
 class Quantity(_Q):  # type: ignore
     """Proper quantity base-class for sub-classing.
 
-    Being a sub-class of ``pint.Quantity``, this class only really adds the
+    Being a subclass of ``pint.Quantity``, this class only really adds the
     ``__json__`` method to return its json representation.
 
     The constructor is used as for ``pint.Quantity``.
@@ -42,7 +42,7 @@ class Quantity(_Q):  # type: ignore
         """Custom method to export to json for testing and serialisation"""
         try:
             return f"{self:~.16g}"
-        except TypeError:  # magnitude cannot be formated, probably symbol
+        except TypeError:  # magnitude cannot be formatted, probably symbol
             return f"{self:~}"
 
 
@@ -90,7 +90,7 @@ class SymbolQuantity(Quantity):
         return f"{str(self.magnitude)}{self.units:~}"
 
 
-# redefine jacobian to propanatural logarithmusgate pint units
+# redefine Jacobian to propagate pint units
 def jacobian(dependent: Quantity, independent: SymbolQuantity) -> Quantity:
     """Calculate the casadi Jacobian and reattach the units of measurements.
 
@@ -120,7 +120,7 @@ def sum1(quantity: Quantity) -> Quantity:
 
 
 def log(quantity: Quantity) -> Quantity:
-    """Determine natural logarithmus of symbolic quantity, considering units of
+    """Determine natural logarithms of symbolic quantity, considering units of
     measurements"""
     quantity = quantity.to_base_units()
     if not quantity.dimensionless:
@@ -260,7 +260,7 @@ def flatten_dictionary(structure, prefix: str = "") -> QuantityDict:
 
     result: QuantityDict = {}
     # must sort to create the same sequence every time
-    # (dictionary might have content permutated)
+    # (dictionary might have content permuted)
     for key, value in sorted(items):
         key = str(key).replace(_SEPARATOR, rf"\{_SEPARATOR}")  # esc. separator
         key = f"{prefix}{_SEPARATOR}{key}" if prefix else key

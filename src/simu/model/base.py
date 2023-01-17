@@ -16,7 +16,7 @@ class Model(ABC):
     """A handler object that takes care of parameter configuration"""
 
     properties: PropertyHandler
-    """A handlder object that takes care of property configuration"""
+    """A handler object that takes care of property configuration"""
 
     hierarchy: HierarchyHandler
     """A handler object that takes care of defining sub models"""
@@ -29,7 +29,7 @@ class Model(ABC):
         it.
         """
         proxy = cls().create_proxy(name).finalise()
-        return (proxy, proxy.numeric)
+        return proxy, proxy.numeric
 
     def __init__(self):
         self.parameters = ParameterHandler()
@@ -41,7 +41,7 @@ class Model(ABC):
         self.__func = self.__make_function()
 
     def interface(self) -> None:
-        '''This abstract method is to define all model parameters, material
+        """This abstract method is to define all model parameters, material
         ports, and properties provided by this model. This makes the interface
         of the model in the hierarchical context nearly self-documenting.
         A trivial example implementation could be
@@ -49,19 +49,19 @@ class Model(ABC):
         .. code-block::
 
             def interface(self):
-                """Here a nice documentation of the model inteface"""
+                \"\"\"Here a nice documentation of the model interface\"\"\"
                 self.parameters.define("length", 10.0, "m")
                 self.properties.provide("area", unit="m**2")
 
         Above interface requires a parameter called ``length`` with a default
         value of 10 metres. It promises to calculate a property called ``area``
         which has a unit compatible to square metres.
-        '''
+        """
 
     @abstractmethod
     def define(self) -> None:
-        '''This abstract method is to define the model implementation,
-        including the use of sub-modules, creation of internal materials, and
+        """This abstract method is to define the model implementation,
+        including the use of submodules, creation of internal materials, and
         calculation of residuals and model properties. Matching to the example
         described in the :meth:`interface` method, a trivial implementation
         could be
@@ -69,15 +69,15 @@ class Model(ABC):
         .. code-block::
 
             def define(self):
-                """Here documentation of the internal function of the model.
+                \"\"\"Here documentation of the internal function of the model.
                 This distinction can be used to include this doc-string only
-                for detailed documenation sections."""
+                for detailed documentation sections.\"\"\"
                 length = self.parameters["length"]
                 self.properties["area"] = length * length
 
         Here we read out the previously defined parameter ``length`` and
         calculate the property ``area``.
-        '''
+        """
 
     def create_proxy(self, name: str) -> "ModelProxy":
         """Create a proxy object for configuration in hierarchy context"""
