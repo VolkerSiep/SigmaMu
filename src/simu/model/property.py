@@ -63,3 +63,8 @@ class PropertyProxy:
         properties can be used by the parent model via the ``__getitem__``
         operator (``[]``)"""
         self.__wired_props = wired_props
+
+    @property
+    def all(self) -> QuantityDict:
+        """A dictionary of all properties."""
+        return dict(self.__wired_props)

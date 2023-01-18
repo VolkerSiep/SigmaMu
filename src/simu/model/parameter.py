@@ -1,13 +1,10 @@
 """This module implements functionality related to parameter handling"""
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 from collections.abc import KeysView
 
 from ..utilities.quantity import (QuantityDict, SymbolQuantity, Quantity)
 from ..utilities.errors import DataFlowError
-
-if TYPE_CHECKING:  # avoid circular dependencies just for typing
-    from .base import Model, ModelProxy
 
 
 class ParameterHandler:
@@ -95,8 +92,8 @@ class ParameterProxy:
     @property
     def free(self):
         """Symbols representing the parameters that have not been provided.
-        These must be used to create an overall function, when parmeter values
-        are provided from the outside."""
+        These must be used to create an overall function, when parameter
+        values are provided from the outside."""
         return dict(self.__free)
 
     @property
@@ -111,7 +108,7 @@ class ParameterProxy:
         """Make sure there are values for all non-provided parameters with
         no value. Remove values of provided parameters"""
 
-        # are all required connected?
+        # are all required parameters connected?
         provided = set(self.__provided.keys())
         values = set(self.__values.keys())
         all_ = set(self.handler.names())

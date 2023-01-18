@@ -9,28 +9,28 @@ ModelProxyDictionary = dict[str, "ModelProxy"]
 
 
 class HierarchyHandler:
-    """This class, being instantiated as the :attr:`Model.hierachy` attribute,
-    allows to define child models in a hierachy context."""
+    """This class, being instantiated as the :attr:`Model.hierarchy` attribute,
+    allows to define child models in a hierarchy context."""
 
     def __init__(self, model: "Model"):
         self.model = model
-        self.__childs: ModelProxyDictionary = {}
+        self.__children: ModelProxyDictionary = {}
 
     def add(self, name: str, model: "Model") -> "ModelProxy":
         """Add an instance of ``model`` as child to the current (parent)
         context. A :class:`ModelProxy` object is created, registered, and
         returned."""
-        if name in self.__childs:
+        if name in self.__children:
             raise KeyError(f"Child model '{name}' already exists")
         instance = model.create_proxy(name)
-        self.__childs[name] = instance
+        self.__children[name] = instance
         return instance
 
     def __getitem__(self, name: str):
         """Re-obtain the proxy of named module, avoiding to have to keep a
         holding variable in the client scope code."""
-        return self.__childs[name]
+        return self.__children[name]
 
     def items(self) -> ItemsView[str, "ModelProxy"]:
         """Return an iterator over the dictionary of child module proxies."""
-        return self.__childs.items()
+        return self.__children.items()
