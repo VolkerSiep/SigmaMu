@@ -3,7 +3,6 @@ These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes), or
 numeric."""
 
 # stdlib modules
-from pathlib import Path
 from typing import Union
 from re import split, escape
 
@@ -14,10 +13,12 @@ from numpy import squeeze
 from pint import UnitRegistry, set_application_registry
 from pint.errors import DimensionalityError
 
+from ..data import DATA_DIR
+
 # instantiate pint unit registry entity
 unit_registry = UnitRegistry(autoconvert_offset_to_baseunit=True)
 set_application_registry(unit_registry)
-unit_file = Path(__file__).resolve().parent / "uom_definitions.txt"
+unit_file = DATA_DIR / "uom_definitions.txt"
 unit_registry.load_definitions(unit_file)
 del unit_file
 
@@ -74,6 +75,8 @@ class SymbolQuantity(Quantity):
         """
 
         def attributes(name: str, units: str, sub_keys: list[str] = None):
+            """Turn the constructor arguments into arguments for the
+            baseclass"""
             if sub_keys is None:
                 magnitude = cas.SX.sym(name)
             elif isinstance(sub_keys, int):
@@ -233,11 +236,7 @@ def base_magnitude(quantity: Quantity) -> float:
     return quantity.to_base_units().magnitude
 
 
-# Typing of recursive structures is basically impossible, more so because
-# mypy doesn't accept Quantity as a class (with its methods).
-
 QuantityDict = dict[str, Quantity]
-
 NestedQuantityDict = dict[str, Union[Quantity, "NestedQuantityDict"]]
 
 _SEPARATOR = "/"  # separator when (un-)flattening dictionaries

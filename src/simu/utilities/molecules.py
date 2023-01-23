@@ -1,12 +1,12 @@
 """This module defines a parser for formulae that can be used to establish
-generic element balances, and to calculate moecular weights."""
+generic element balances, and to calculate molecular weights."""
 
-from pathlib import Path
 from re import compile as re_compile
 from yaml import safe_load
 
 from .structures import MCounter
 from .quantity import Quantity
+from ..data import DATA_DIR
 
 
 class FormulaParser:
@@ -18,7 +18,7 @@ class FormulaParser:
     NUM_REG = re_compile(r"\d+(\.\d*)?")
 
     def __init__(self):
-        filename = Path(__file__).resolve().parent / "atomic_weights.yml"
+        filename = DATA_DIR / "atomic_weights.yml"
         with open(filename, encoding="utf-8") as file:
             data = safe_load(file)
         self._atomic_weights = {
@@ -68,15 +68,25 @@ class FormulaParser:
         """
 
         def repl_el(arg):
+            """Replace element ``El`` with ``+El``"""
             return f"+{arg.group(0)}"
 
         def repl_fac(arg):
+            """Replace coefficient ``3`` with ``*3``"""
             return f"*{arg.group(0)}"
 
         if self.VALID_REG.match(formula) is None:
             raise ValueError(f"Invalid syntax of formula: {formula}")
+
+        # Let's turn the formula into an equation with elements as symbols:
+        # E.g. (NH4)2SO4 to (+N+H*4)*2+S+O*4
+        # This is done by prepending '+' to each element and '*' to each
+        # coefficient.
+
         f_mod = self.EL_REG.sub(repl_el, formula)
         f_mod = self.NUM_REG.sub(repl_fac, f_mod)
+
+        # now it can just be evaluated.
         scope = self._element_counters
         try:
             return eval(f_mod, {}, scope)  # pylint: disable=eval-used

@@ -2,7 +2,7 @@ Introduction
 ============
 Naming
 ------
-The name ``SiMu`` [zi:mʊ] superficially is an abbreviation for *simulation* or *simulator*, but it is also represented by the Greek letters
+The name ``SiMu`` [zi:my:] superficially is an abbreviation for *simulation* or *simulator* (or then pronounced more like *simülator*), but it is also represented by the Greek letters sigma and mu:
 
 .. math::
 

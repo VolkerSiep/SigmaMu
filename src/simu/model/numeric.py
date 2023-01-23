@@ -1,7 +1,9 @@
 """This module implements functionality concerning the numerical handling
 of the top model instance."""
+
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable
+
 from ..utilities.quantity import NestedQuantityDict
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
@@ -35,8 +37,8 @@ class NumericHandler:
         """
 
         def fetch_in_hierarchy(
-                root: ModelProxy,
-                func: Callable[[ModelProxy], NestedQuantityDict],
+                root: "ModelProxy",
+                func: Callable[["ModelProxy"], NestedQuantityDict],
                 typ: str,
                 path: Optional[list[str]] = None) -> NestedQuantityDict:
             """Drill recursively into child models to collect all free

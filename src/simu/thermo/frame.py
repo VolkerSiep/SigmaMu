@@ -4,7 +4,7 @@ This module defines the :cls:`ThermoFrame` and the :cls:`ThermoFactory`
 classes, of which the latter one is a factory for the former.
 
 :cls:`ThermoFrame` objects represent thermodynamic models as state function
-objects, calculating thermophysical properties as function of their
+objects, calculating thermochemical properties as function of their
 state and the model parameters.
 """
 # stdlib modules
@@ -30,7 +30,7 @@ class ThermoFrame:
 
         .. note::
 
-            This constructor shall not be called directly, but is ivoked by
+            This constructor shall not be called directly, but is invoked by
             the :meth:`ThermoFactory.create_frame` method that handles the
             house-keeping of contribution classes. For this reason, it is not
             further documented here.
@@ -82,13 +82,13 @@ class ThermoFrame:
 
     @property
     def property_structure(self) -> dict:
-        """Returns a recusive structure properties, defining the calculated
+        """Returns a recursive structure properties, defining the calculated
         properties from :meth:`__call__` """
         return self.__function.result_structure
 
     @property
     def parameter_structure(self) -> dict:
-        """This property is to aid the process of parametrising a model.
+        """This property is to aid the process of parametrizing a model.
         It returns the structure of all required model parameters. Initially,
         the returned object contains units of measurements that must be
         replaced with actual quantities (symbolic or not) before the
@@ -113,7 +113,7 @@ class ThermoFrame:
         :param delta_state: The direction vector (typically suggested by a
           solver)
         :return: The maximal allowed step size as a pre-factor to
-          ``delta_state``. Hence a value of one describes full step length.
+          ``delta_state``. Hence, a value of one describes full step length.
         """
         return float(
             min(
@@ -142,7 +142,7 @@ class ThermoFrame:
             return state
 
         state = Quantity([float("NaN") if x is None else x for x in state])
-        # calculate all propeties ... accept NaNs
+        # calculate all properties ... accept NaNs
         properties = self(state, parameters)
 
         for cont in reversed(self.__contributions.values()):
@@ -157,7 +157,7 @@ class ThermoFrame:
     def default(self):
         """The definition of the object can optionally contain a default state.
         If this is applied, the given default state is stored in this
-        property. Its interpretation is alwyas in ``T, p, n`` coordinates."""
+        property. Its interpretation is always in ``T, p, n`` coordinates."""
         return self.__default
 
     @default.setter
@@ -179,8 +179,8 @@ class ThermoFactory:
     contributions*, enabling it to create instances of thermodynamic models of
     class :class:`ThermoFrame`.
 
-    The class is largely meant to be a singelton, but to keep doors open,
-    multiple instances can be created."""
+    The class is largely meant to be a singleton, but to keep doors open,
+    static attributes are avoided."""
 
     def __init__(self):
         """Parameter-less constructor, initialising the data structure
