@@ -10,10 +10,13 @@ state and the model parameters.
 # stdlib modules
 from copy import deepcopy
 from typing import Type, List, Collection
+from collections.abc import Mapping
 
 # internal modules
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
                          SymbolQuantity, extract_units_dictionary)
+from ..utilities.types import (
+    NestedStringDict, ThermoContributionDict, NestedQuantityDict, QuantityDict)
 from .contribution import ThermoContribution, StateDefinition
 
 
@@ -24,7 +27,7 @@ class ThermoFrame:
     """
 
     def __init__(self, species: List[str], state_definition: StateDefinition,
-                 contributions: dict):
+                 contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
         (casadi) with given species and contributions.
 
@@ -62,10 +65,9 @@ class ThermoFrame:
         self.__default = None
         self.__param_struct = extract_units_dictionary(parameters)
 
-    def __call__(self, state: Quantity, parameters, squeeze_results=True):
-        """Call to the function object :attr:`function`, in particular with
-        current parameter set :attr:`parameters` and using evaluation with
-        float typed variables.
+    def __call__(self, state: Quantity, parameters: NestedQuantityDict,
+                 squeeze_results: bool = True):
+        """Shortcut: Call to the function object :attr:`function`.
 
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.
@@ -81,13 +83,13 @@ class ThermoFrame:
         return deepcopy(self.__species)
 
     @property
-    def property_structure(self) -> dict:
+    def property_structure(self) -> NestedStringDict:
         """Returns a recursive structure properties, defining the calculated
         properties from :meth:`__call__` """
         return self.__function.result_structure
 
     @property
-    def parameter_structure(self) -> dict:
+    def parameter_structure(self) -> NestedStringDict:
         """This property is to aid the process of parametrizing a model.
         It returns the structure of all required model parameters. Initially,
         the returned object contains units of measurements that must be
@@ -97,7 +99,8 @@ class ThermoFrame:
         """
         return self.__param_struct
 
-    def relax(self, current_result, delta_state: Collection[float]) -> float:
+    def relax(self, current_result: QuantityDict,
+              delta_state: Collection[float]) -> float:
         """As a thermodynamic function, this object's contributions hold
         information on the domain limits of the state variables. This is mostly
         as trivial as demanding positive temperature, pressure, or quantities,
@@ -152,6 +155,9 @@ class ThermoFrame:
                 return result
         msg = "No initialisation found despite of non-Gibbs surface"
         raise NotImplementedError(msg)
+
+    # TODO: Should default state be better in terms of quantities? This
+    #  because its in the interpretation of T, p, n.
 
     @property
     def default(self):
@@ -218,7 +224,7 @@ class ThermoFactory:
         properties"""
         return sorted(self.__contributions.keys())
 
-    def create_frame(self, configuration: dict) -> ThermoFrame:
+    def create_frame(self, configuration: Mapping) -> ThermoFrame:
         """This factory method creates a :class:`ThermoFrame` object from the
         given ``configuration``.
 

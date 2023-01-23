@@ -3,8 +3,8 @@ These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes), or
 numeric."""
 
 # stdlib modules
-from typing import Union
 from re import split, escape
+from typing import Union
 
 # external modules
 # need to import entire casadi module to distinguish functions of same name
@@ -13,15 +13,24 @@ from numpy import squeeze
 from pint import UnitRegistry, set_application_registry
 from pint.errors import DimensionalityError
 
+# internal modules
 from ..data import DATA_DIR
+from .types import (
+    TDict, NestedTDict, QuantityDict, NestedQuantityDict, NestedStringDict)
 
-# instantiate pint unit registry entity
-unit_registry = UnitRegistry(autoconvert_offset_to_baseunit=True)
-set_application_registry(unit_registry)
-unit_file = DATA_DIR / "uom_definitions.txt"
-unit_registry.load_definitions(unit_file)
-del unit_file
+_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
+
+def _create_registry() -> UnitRegistry:
+    """Instantiate the application's unit registry"""
+    reg = UnitRegistry(autoconvert_offset_to_baseunit=True)
+    set_application_registry(reg)
+    unit_file = DATA_DIR / "uom_definitions.txt"
+    reg.load_definitions(unit_file)
+    return reg
+
+
+unit_registry = _create_registry()
 _Q = unit_registry.Quantity
 
 
@@ -39,7 +48,7 @@ class Quantity(_Q):  # type: ignore
         obj.__class__ = cls
         return obj
 
-    def __json__(self):
+    def __json__(self) -> str:
         """Custom method to export to json for testing and serialisation"""
         try:
             return f"{self:~.16g}"
@@ -88,13 +97,13 @@ class SymbolQuantity(Quantity):
 
         return super().__new__(Quantity, *attributes(*args, **kwargs))
 
-    def __json__(self):
+    def __json__(self) -> str:
         """Custom method to export to json for testing"""
         return f"{str(self.magnitude)}{self.units:~}"
 
 
 # redefine Jacobian to propagate pint units
-def jacobian(dependent: Quantity, independent: SymbolQuantity) -> Quantity:
+def jacobian(dependent: Quantity, independent: Quantity) -> Quantity:
     """Calculate the casadi Jacobian and reattach the units of measurements.
 
     >>> x = SymbolQuantity("x", "m")
@@ -236,13 +245,7 @@ def base_magnitude(quantity: Quantity) -> float:
     return quantity.to_base_units().magnitude
 
 
-QuantityDict = dict[str, Quantity]
-NestedQuantityDict = dict[str, Union[Quantity, "NestedQuantityDict"]]
-
-_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
-
-
-def flatten_dictionary(structure, prefix: str = "") -> QuantityDict:
+def flatten_dictionary(structure: NestedTDict, prefix: str = "") -> TDict:
     r"""Convert the given structure into a flat list of key value pairs,
     where the keys are ``SEPARATOR``-separated concatonations of the paths,
     and values are the values of the leafs. Non-string keys are converted
@@ -267,7 +270,7 @@ def flatten_dictionary(structure, prefix: str = "") -> QuantityDict:
     return result
 
 
-def unflatten_dictionary(flat_structure: QuantityDict):
+def unflatten_dictionary(flat_structure: TDict) -> NestedTDict:
     r"""This is the reverse of :func:`flatten_dictionary`, inflating the
     given one-depth dictionary into a nested structure.
 
@@ -277,14 +280,15 @@ def unflatten_dictionary(flat_structure: QuantityDict):
     """
     result = {}  # type: ignore
 
-    def insert(struct, keys, value):
-        first = keys.pop(0)
-        if keys:
+    def insert(struct, sub_keys, sub_value):
+        """insert one element into the nested structure"""
+        first = sub_keys.pop(0)
+        if sub_keys:
             if first not in struct:
                 struct[first] = {}
-            insert(struct[first], keys, value)
+            insert(struct[first], sub_keys, sub_value)
         else:
-            struct[first] = value
+            struct[first] = sub_value
 
     # split by non-escaped separators and unescape escaped separators
     regex = rf'(?<!\\){escape(_SEPARATOR)}'
@@ -297,7 +301,7 @@ def unflatten_dictionary(flat_structure: QuantityDict):
     return result
 
 
-def extract_units_dictionary(structure):
+def extract_units_dictionary(structure: Union[NestedQuantityDict, Quantity]):
     """Based on a nested dictionary of Quantities, create a new nested
     dictionaries with only the units of measurement
 
@@ -306,10 +310,9 @@ def extract_units_dictionary(structure):
     {'a': {'b': 'm', 'c': 'min'}}
     """
     try:
-        items = structure.items()  # is this dictionary enough for us?
-    except AttributeError:  # doesn't seem so, this is just a quantity
+        items = structure.items()
+    except AttributeError:
         return f"{structure.units:~}"
-
     return {key: extract_units_dictionary(value) for key, value in items}
 
 
@@ -327,7 +330,8 @@ class QFunction:
     in the same units as initially defined.
     """
 
-    def __init__(self, args, results, fname: str = "f"):
+    def __init__(self, args: NestedQuantityDict, results: NestedQuantityDict,
+                 func_name: str = "f"):
         args_flat = flatten_dictionary(args)
         results_flat = flatten_dictionary(results)
         arg_names = list(args_flat.keys())
@@ -336,9 +340,11 @@ class QFunction:
         res_sym = [v.magnitude for v in results_flat.values()]
         self.arg_units = {k: v.units for k, v in args_flat.items()}
         self.res_units = {k: v.units for k, v in results_flat.items()}
-        self.func = cas.Function(fname, arg_sym, res_sym, arg_names, res_names)
+        self.func = cas.Function(func_name, arg_sym, res_sym, arg_names,
+                                 res_names)
 
-    def __call__(self, args, squeeze_results=True):
+    def __call__(self, args: NestedQuantityDict,
+                 squeeze_results: bool = True) -> NestedQuantityDict:
         """Call operator for the function object, as described above."""
         args_flat = {
             key: value.to(self.arg_units[key]).magnitude
@@ -351,14 +357,14 @@ class QFunction:
         return unflatten_dictionary(result)
 
     @property
-    def result_structure(self):
+    def result_structure(self) -> NestedStringDict:
         """Return the result structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
         units = {k: f"{v:~}" for k, v in self.res_units.items()}
         return unflatten_dictionary(units)
 
     @property
-    def arg_structure(self):
+    def arg_structure(self) -> NestedStringDict:
         """Return the argument structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
         units = {k: f"{v:~}" for k, v in self.arg_units.items()}
