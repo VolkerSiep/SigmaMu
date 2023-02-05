@@ -4,7 +4,7 @@ the building blocks of a :class:`ThermoFrame` function object."""
 
 # stdlib modules
 from abc import ABC, abstractmethod
-from typing import Collection
+from typing import Collection, Sequence
 
 # internal modules
 from ..utilities import Quantity, ParameterDictionary
@@ -58,8 +58,8 @@ class ThermoContribution(ABC):
 
         """
 
-    def relax(self, current_result: dict,
-              delta_state: Collection[float]) -> float:
+    def relax(self, current_result: QuantityDict,
+              delta_state: Sequence[float]) -> float:
         """Virtual function to report the maximal allowable step size in
         the state variables.
 
@@ -76,13 +76,13 @@ class ThermoContribution(ABC):
                       quantities: Quantity,
                       properties: dict[str, Quantity]) -> Quantity | None:
         """When the :class:`ThermoFrame` object is queried for an initial state
-        representation and deviates from Gibbs coordinates, The upper-most
+        representation and deviates from Gibbs coordinates, The uppermost
         contribution that implements this method and does not return ``None``
         takes the responsibility of calculating that state.
 
         Hence, normally only Helmholtz models need to implement this method.
         The true model coordinates can however be entirely unconventionally,
-        such that it is solely up to the contributions on how to obtain the
+        such that it is solely up to the contributions, how to obtain the
         initial state.
 
         :param temperature: Temperature [K]
@@ -95,6 +95,7 @@ class ThermoContribution(ABC):
         .. seealso:: :meth:`ThermoFrame.initial_state`
         """
         del temperature, pressure, quantities, properties  # unused
+        return None
 
 
 class StateDefinition(ABC):

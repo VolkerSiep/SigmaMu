@@ -12,7 +12,7 @@ class ThermoDataSource(ABC):
         pass
 
     @abstractmethod
-    def query(self, parameter_structure: dict):
+    def extract(self, parameter_structure: dict):
         """Given a recursive structure, of which the leaf values are strings
         representing the units of measurements, extract the parameters from the
         database."""

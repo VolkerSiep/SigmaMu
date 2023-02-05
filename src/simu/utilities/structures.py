@@ -2,14 +2,14 @@
 This module contains general helper functions that are useful on several
 levels, while relying to maximal degree on standard python structures.
 """
-
+from re import escape, split
 # stdlib modules
-from typing import Tuple
 from collections import Counter
-from collections.abc import Iterable
 
 # internal modules
-from .quantity import base_unit, qvertcat, SymbolQuantity
+from .types import NestedTDict, TDict
+
+_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 
 class MCounter(Counter):
@@ -42,111 +42,57 @@ class MCounter(Counter):
     #     raise NotImplementedError()
 
 
-class ParameterDictionary(dict):
-    """This class is a nested dictionary of SymbolQuantities to represent
-    parameters with functionality to be populated using the ``register_*``
-    methods.
+def flatten_dictionary(structure: NestedTDict, prefix: str = "") -> TDict:
+    r"""Convert the given structure into a flat list of key value pairs,
+    where the keys are ``SEPARATOR``-separated concatonations of the paths,
+    and values are the values of the leafs. Non-string keys are converted
+    to strings. Occurances of ``SEPARATOR`` are escaped by ``\``.
+
+    >>> d = {"a": {"b": 1, "c": 2}, "d": {"e/f": 3}}
+    >>> flatten_dictionary(d)
+    {'a/b': 1, 'a/c': 2, 'd/e\\/f': 3}
     """
+    try:
+        items = structure.items()  # is this dictionary enough for us?
+    except AttributeError:  # doesn't seem so, this is just a value
+        return {prefix: structure}  # type: ignore
 
-    class SparseMatrix(dict):
-        """This helper class represents a nested dictionary that contains
-        two levels of keys and values representing a quantity."""
+    result: TDict = {}
+    # must sort to create the same sequence every time
+    # (dictionary might have content permuted)
+    for key, value in sorted(items):
+        key = str(key).replace(_SEPARATOR, rf"\{_SEPARATOR}")  # esc. separator
+        key = f"{prefix}{_SEPARATOR}{key}" if prefix else key
+        result.update(flatten_dictionary(value, key))
+    return result
 
-        def pair_items(self):
-            """Return an iterator yielding a scalar quantity with the key pair
-            for each element in the sub-structure. The elements have the
-            shape ``(key_1, key_2, quantity)``."""
-            for key_1, second in self.items():
-                for key_2, quantity in second.items():
-                    yield key_1, key_2, quantity
 
-    def register_scalar(self, key: str, unit: str):
-        """Create a scalar quantity and add the structure to the dictionary.
-        The given unit is converted to base units before being applied. Calling
-        the method returns the created quantity
+def unflatten_dictionary(flat_structure: TDict) -> NestedTDict:
+    r"""This is the reverse of :func:`flatten_dictionary`, inflating the
+    given one-depth dictionary into a nested structure.
 
-            >>> pdict = ParameterDictionary()
-            >>> print(pdict.register_scalar("speed", "cm/h"))
-            speed meter / second
+    >>> d = {"a/b": 1, "a/c": 2, r"d/e\/f": 3}
+    >>> unflatten_dictionary(d)
+    {'a': {'b': 1, 'c': 2}, 'd': {'e/f': 3}}
+    """
+    result = {}  # type: ignore
 
-        In this output, ``speed`` is the name of the ``casadi.SX`` node
-        representing the magnitude of returned Quantity. The dictionary then
-        contains the following entry:
+    def insert(struct, sub_keys, sub_value):
+        """insert one element into the nested structure"""
+        first = sub_keys.pop(0)
+        if sub_keys:
+            if first not in struct:
+                struct[first] = {}
+            insert(struct[first], sub_keys, sub_value)
+        else:
+            struct[first] = sub_value
 
-            >>> print(pdict)
-            {'speed': <Quantity(speed, 'meter / second')>}
-        """
-        unit = base_unit(unit)
-        quantity = SymbolQuantity(key, unit)
-        self[key] = quantity
-        return quantity
-
-    def register_vector(self, key: str, sub_keys: Iterable[str], unit: str):
-        """Create a quantity vector with symbols and add the structure to
-        the dictionary. The given unit is converted to base units before being
-        applied. Calling the method returns the created quantity
-
-            >>> pdict = ParameterDictionary()
-            >>> print(pdict.register_vector("velocity", "xyz", "knot"))
-            [velocity.x, velocity.y, velocity.z] meter / second
-
-        The dictionary then contains the following entries:
-
-            >>> from pprint import pprint
-            >>> pprint(pdict)
-            {'velocity': {'x': <Quantity(velocity.x, 'meter / second')>,
-                          'y': <Quantity(velocity.y, 'meter / second')>,
-                          'z': <Quantity(velocity.z, 'meter / second')>}}
-        """
-        unit = base_unit(unit)
-        self[key] = {s: SymbolQuantity(f"{key}.{s}", unit) for s in sub_keys}
-        return qvertcat(*self[key].values())
-
-    def register_sparse_matrix(self, key: str,
-                               pairs: Iterable[Tuple[str, str]], unit: str):
-        """Create a sparse matrix quantity and add the structure to the
-        dictionary. The given unit is converted to base units before being
-        applied.
-
-            >>> pdict = ParameterDictionary()
-            >>> binaries = [("H2O", "CO2"), ("H2O", "CH4")]
-            >>> from pprint import pprint
-            >>> pprint(pdict.register_sparse_matrix("K_ij", binaries, "K"))
-            {'H2O': {'CH4': <Quantity(K_ij.H2O.CH4, 'kelvin')>,
-                     'CO2': <Quantity(K_ij.H2O.CO2, 'kelvin')>}}
-
-        After above call, the dictionary contains the following entries:
-
-            >>> from pprint import pprint
-            >>> pprint(pdict)
-            {'K_ij': {'H2O': {'CH4': <Quantity(K_ij.H2O.CH4, 'kelvin')>,
-                              'CO2': <Quantity(K_ij.H2O.CO2, 'kelvin')>}}}
-
-        """
-        unit = base_unit(unit)
-        res = ParameterDictionary.SparseMatrix({f: {} for f, _ in pairs})
-        for first, second in pairs:
-            quantity = SymbolQuantity(f"{key}.{first}.{second}", unit)
-            res[first][second] = quantity
-        self[key] = res
-        return res
-
-    def get_quantity(self, *keys):
-        """Extract a quantity from the given sequence of key. Being a nested
-        dictionary, each key from the argument list is used to navigate into
-        the structure. The value of the most inner addressed key is returned.
-        For normal usage, this should be of type ``Quantity``."""
-        entry = self
-        for key in keys:
-            entry = entry[key]
-        return entry
-
-    def get_vector_quantity(self, *keys):
-        """Extract a vector quantity from the given sequence of keys. The
-        method extracts the values of the structure below the sequence of
-        argument keys, and concatenates them as a single vector property.
-        """
-        entry = self
-        for key in keys:
-            entry = entry[key]
-        return qvertcat(*entry.values())
+    # split by non-escaped separators and unescape escaped separators
+    regex = rf'(?<!\\){escape(_SEPARATOR)}'
+    for key, value in flat_structure.items():
+        keys = [
+            k.replace(rf"\{_SEPARATOR}", _SEPARATOR)
+            for k in split(regex, key)
+        ]
+        insert(result, keys, value)
+    return result

@@ -77,6 +77,17 @@ class NestedHierarchyTestModel(Model):
         self.properties["volume"] = child.properties["volume"]
 
 
+class MaterialTestModel(Model):
+
+    def interface(self):
+        no_gas = MaterialSpec(species=["NO", "NO2", "O2", "*"])
+        self.material.require("inlet", no_gas)
+
+    def define(self):
+        inlet = self.material["inlet"]
+        intermediate = self.material.create("intermediate", NOxGas())
+        intermediate_2 = self.material.create("intermediate_2", inlet.type)
+
 hierarchy_models = [
     HierarchyTestModel, HierarchyTestModel2, NestedHierarchyTestModel
 ]

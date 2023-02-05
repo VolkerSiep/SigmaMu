@@ -2,7 +2,8 @@
 
 from collections.abc import KeysView
 
-from ..utilities.quantity import QuantityDict, Quantity
+from ..utilities.types import QuantityDict
+from ..utilities.quantity import Quantity
 from ..utilities.errors import DataFlowError
 
 

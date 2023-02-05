@@ -3,7 +3,6 @@ These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes), or
 numeric."""
 
 # stdlib modules
-from re import split, escape
 from typing import Union
 
 # external modules
@@ -13,12 +12,11 @@ from numpy import squeeze
 from pint import UnitRegistry, set_application_registry
 from pint.errors import DimensionalityError
 
+from . import flatten_dictionary, unflatten_dictionary
 # internal modules
 from ..data import DATA_DIR
 from .types import (
-    TDict, NestedTDict, QuantityDict, NestedQuantityDict, NestedStringDict)
-
-_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
+    NestedQuantityDict, NestedStringDict)
 
 
 def _create_registry() -> UnitRegistry:
@@ -243,62 +241,6 @@ def base_magnitude(quantity: Quantity) -> float:
         Use SI or I will BTU you with my feet!
     """
     return quantity.to_base_units().magnitude
-
-
-def flatten_dictionary(structure: NestedTDict, prefix: str = "") -> TDict:
-    r"""Convert the given structure into a flat list of key value pairs,
-    where the keys are ``SEPARATOR``-separated concatonations of the paths,
-    and values are the values of the leafs. Non-string keys are converted
-    to strings. Occurances of ``SEPARATOR`` are escaped by ``\``.
-
-    >>> d = {"a": {"b": 1, "c": 2}, "d": {"e/f": 3}}
-    >>> flatten_dictionary(d)
-    {'a/b': 1, 'a/c': 2, 'd/e\\/f': 3}
-    """
-    try:
-        items = structure.items()  # is this dictionary enough for us?
-    except AttributeError:  # doesn't seem so, this is just a value
-        return {prefix: structure}  # type: ignore
-
-    result: QuantityDict = {}
-    # must sort to create the same sequence every time
-    # (dictionary might have content permuted)
-    for key, value in sorted(items):
-        key = str(key).replace(_SEPARATOR, rf"\{_SEPARATOR}")  # esc. separator
-        key = f"{prefix}{_SEPARATOR}{key}" if prefix else key
-        result.update(flatten_dictionary(value, key))
-    return result
-
-
-def unflatten_dictionary(flat_structure: TDict) -> NestedTDict:
-    r"""This is the reverse of :func:`flatten_dictionary`, inflating the
-    given one-depth dictionary into a nested structure.
-
-    >>> d = {"a/b": 1, "a/c": 2, r"d/e\/f": 3}
-    >>> unflatten_dictionary(d)
-    {'a': {'b': 1, 'c': 2}, 'd': {'e/f': 3}}
-    """
-    result = {}  # type: ignore
-
-    def insert(struct, sub_keys, sub_value):
-        """insert one element into the nested structure"""
-        first = sub_keys.pop(0)
-        if sub_keys:
-            if first not in struct:
-                struct[first] = {}
-            insert(struct[first], sub_keys, sub_value)
-        else:
-            struct[first] = sub_value
-
-    # split by non-escaped separators and unescape escaped separators
-    regex = rf'(?<!\\){escape(_SEPARATOR)}'
-    for key, value in flat_structure.items():
-        keys = [
-            k.replace(rf"\{_SEPARATOR}", _SEPARATOR)
-            for k in split(regex, key)
-        ]
-        insert(result, keys, value)
-    return result
 
 
 def extract_units_dictionary(structure: Union[NestedQuantityDict, Quantity]):

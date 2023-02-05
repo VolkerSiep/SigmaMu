@@ -127,6 +127,8 @@ class FormulaParser:
             -2
             >>> parser.charge("Al:3+")
             3
+            >>> parser.charge("S6:12-")
+            -12
         """
         if self.VALID_REG.match(formula) is None:
             raise ValueError(f"Invalid syntax of formula: {formula}")
