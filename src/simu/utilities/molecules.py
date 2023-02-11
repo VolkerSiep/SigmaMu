@@ -1,24 +1,26 @@
 """This module defines a parser for formulae that can be used to establish
-generic element balances, and to calculate moecular weights."""
+generic element balances, and to calculate molecular weights."""
 
-from pathlib import Path
 from re import compile as re_compile
 from yaml import safe_load
 
 from .structures import MCounter
 from .quantity import Quantity
+from ..data import DATA_DIR
 
 
 class FormulaParser:
     """This class implements the functionality to analyse chemical sum
     formulae. The atomic composition and molecular weight can be obtained.
     """
-    VALID_REG = re_compile(r"^[A-Za-z0-9.()]+$")
+    VALID_REG = re_compile(r"^[A-Za-z0-9.()=\-+]+(:\d+[+-])?$")
     EL_REG = re_compile(r"([A-Z][a-z]*|[(])")
     NUM_REG = re_compile(r"\d+(\.\d*)?")
+    STRUC_REG = re_compile(r"[=\-+]")
+    CHARGE_REG = re_compile(r":\d+[+-]$")
 
     def __init__(self):
-        filename = Path(__file__).resolve().parent / "atomic_weights.yml"
+        filename = DATA_DIR / "atomic_weights.yml"
         with open(filename, encoding="utf-8") as file:
             data = safe_load(file)
         self._atomic_weights = {
@@ -47,6 +49,10 @@ class FormulaParser:
             MCounter({'F': 1, 'I': 1, 'S': 1, 'H': 1})
             >>> parser.parse("(NH4)2HPO4")
             MCounter({'H': 9, 'O': 4, 'N': 2, 'P': 1})
+            >>> parser.parse("CH3-(CH2)3-CH=O")
+            MCounter({'H': 10, 'C': 5, 'O': 1})
+            >>> parser.parse("SO4:2-")
+            MCounter({'O': 4, 'S': 1})
 
         .. warning::
 
@@ -68,15 +74,27 @@ class FormulaParser:
         """
 
         def repl_el(arg):
+            """Replace element ``El`` with ``+El``"""
             return f"+{arg.group(0)}"
 
         def repl_fac(arg):
+            """Replace coefficient ``3`` with ``*3``"""
             return f"*{arg.group(0)}"
 
         if self.VALID_REG.match(formula) is None:
             raise ValueError(f"Invalid syntax of formula: {formula}")
-        f_mod = self.EL_REG.sub(repl_el, formula)
+
+        # Let's turn the formula into an equation with elements as symbols:
+        # E.g. (NH4)2SO4 to (+N+H*4)*2+S+O*4
+        # This is done by prepending '+' to each element and '*' to each
+        # coefficient.
+
+        f_mod = self.CHARGE_REG.sub("", formula)
+        f_mod = self.STRUC_REG.sub("", f_mod)
+        f_mod = self.EL_REG.sub(repl_el, f_mod)
         f_mod = self.NUM_REG.sub(repl_fac, f_mod)
+
+        # now it can just be evaluated.
         scope = self._element_counters
         try:
             return eval(f_mod, {}, scope)  # pylint: disable=eval-used
@@ -89,11 +107,34 @@ class FormulaParser:
         are originally obtained from [CoplenShrestha_2016]_.
 
             >>> parser = FormulaParser()
-            >>> mw = parser.molecular_weight("CH3(CH2)24CH3")
+            >>> mw = parser.molecular_weight("CH3-(CH2)24-CH3")
             >>> print(f"{mw:~.2f}")
             366.72 g / mol
 
         """
         elements = self.parse(formula)
         weights = self.atomic_weights
-        return sum(weights[sym] * nu for sym, nu in elements.items())
+        w_0 = Quantity(0, "g/mol")
+        return sum((weights[sym] * nu for sym, nu in elements.items()), w_0)
+
+    def charge(self, formula: str) -> int:
+        """Return the charge associated to the given formula.
+
+            >>> parser = FormulaParser()
+            >>> parser.charge("H2SO4")
+            0
+            >>> parser.charge("SO4:2-")
+            -2
+            >>> parser.charge("Al:3+")
+            3
+            >>> parser.charge("S6:12-")
+            -12
+        """
+        if self.VALID_REG.match(formula) is None:
+            raise ValueError(f"Invalid syntax of formula: {formula}")
+
+        match = self.CHARGE_REG.search(formula)
+        if match is None:
+            return 0
+        raw = match.group(0)
+        return int(f"{raw[-1]}{raw[1:-1]}")

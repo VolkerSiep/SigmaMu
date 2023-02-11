@@ -97,7 +97,7 @@
   "cubic_test.py::test_rk_m_factor": "@1=0.48508, @2=0.15613, @3=1.55171, [(@1-(((@2*w_0)-@3)*w_0)), (@1-(((@2*w_1)-@3)*w_1))]",
   "frame_test.py::test_call_frame": {
     "S": "19.69280941623939 kg * m ** 2 / K / s ** 2",
-    "mu": "[-1486.852957088782 -1360.2165589869312] kg * m ** 2 / mol / s ** 2"
+    "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
   },
   "frame_test.py::test_initial_state": 0.049579140592047766,
   "frame_test.py::test_parameter_names": [

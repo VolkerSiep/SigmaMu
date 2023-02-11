@@ -10,6 +10,7 @@ from casadi import vertcat, vertsplit
 from ..utilities import (ParameterDictionary, Quantity, base_magnitude,
                          base_unit, log, sum1)
 from ..utilities.constants import R_GAS
+from ..utilities.types import QuantityDict
 from .contribution import StateDefinition, ThermoContribution
 
 
@@ -26,14 +27,15 @@ class HelmholtzState(StateDefinition):
     ======== ============================
     """
 
-    def prepare(self, result):
+    def prepare(self, result: QuantityDict):
         state = result["_state"].magnitude
         result["T"], result["V"], *result["n"] = vertsplit(state, 1)
         result["n"] = vertcat(*result["n"])
         for name, unit in [("T", "K"), ("V", "m**3"), ("n", "mol")]:
             result[name] = Quantity(result[name], base_unit(unit))
 
-    def reverse(self, temperature, pressure, quantities):
+    def reverse(self, temperature: Quantity, pressure: Quantity,
+                quantities: Quantity) -> list:
         return [base_magnitude(temperature), None] + \
             list(base_magnitude(quantities))
 
@@ -51,14 +53,15 @@ class GibbsState(StateDefinition):
     ======== ============================
     """
 
-    def prepare(self, result):
+    def prepare(self, result: QuantityDict):
         state = result["_state"].magnitude
         result["T"], result["p"], *result["n"] = vertsplit(state, 1)
         result["n"] = vertcat(*result["n"])
         for name, unit in [("T", "K"), ("p", "Pa"), ("n", "mol")]:
             result[name] = Quantity(result[name], base_unit(unit))
 
-    def reverse(self, temperature, pressure, quantities):
+    def reverse(self, temperature: Quantity, pressure: Quantity,
+                quantities: Quantity) -> list:
         return [base_magnitude(temperature), base_magnitude(pressure)] + \
             list(base_magnitude(quantities))
 

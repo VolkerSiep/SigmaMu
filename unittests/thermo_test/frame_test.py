@@ -16,7 +16,7 @@ from simu.utilities import assert_reproduction, Quantity as Q
 
 def test_create_thermo_factory():
     """just create a ThermoFactory"""
-    return ThermoFactory()
+    ThermoFactory()
 
 
 def test_register_contributions():
@@ -34,7 +34,7 @@ def test_create_frame():
             "H0S0ReferenceState", "LinearHeatCapacity", "StandardState"
         ],
     }
-    return fac.create_frame(config)
+    fac.create_frame(config)
 
 
 def test_parameter_structure():
@@ -111,7 +111,7 @@ def call_frame():
 
 def create_frame_factory():
     """Create a ThermoFactory and register standard state contributions"""
-    fac = test_create_thermo_factory()
+    fac = ThermoFactory()
     fac.register(H0S0ReferenceState, LinearHeatCapacity, StandardState,
                  IdealMix, HelmholtzIdealGas)
     fac.register_state_definition(HelmholtzState)

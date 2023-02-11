@@ -1,33 +1,46 @@
 {
-  "model_test.py::test_hierarchy_param": {
-    "depth": "5.0 cm",
-    "square/length": "10.0 m"
+  "model_test.py::test_hierarchy_HierarchyTestModel2_arguments": {
+    "parameters": {
+      "depth": "cm",
+      "radius": "cm"
+    }
   },
-  "model_test.py::test_hierarchy_props": {
-    "square/area": "100.0 m ** 2",
-    "volume": "500.0 cm * m ** 2"
+  "model_test.py::test_hierarchy_HierarchyTestModel2_result": {
+    "properties": {
+      "volume": "cm * m ** 2"
+    }
   },
+  "model_test.py::test_hierarchy_HierarchyTestModel_arguments": {
+    "parameters": {
+      "depth": "cm"
+    }
+  },
+  "model_test.py::test_hierarchy_HierarchyTestModel_result": {
+    "properties": {
+      "volume": "cm * m ** 2"
+    }
+  },
+  "model_test.py::test_hierarchy_NestedHierarchyTestModel_arguments": {
+    "parameters": {
+      "radius": "cm"
+    }
+  },
+  "model_test.py::test_hierarchy_NestedHierarchyTestModel_result": {
+    "properties": {
+      "volume": "cm * m ** 2"
+    }
+  },
+  "model_test.py::test_hierarchy_property": [
+    "sq((0.01*(2*radius)))",
+    "(depth*sq((0.01*(2*radius))))"
+  ],
   "model_test.py::test_square": {
     "area": "sq(length) m ** 2",
     "length": "length m"
-  },
-  "model_test.py::test_square_numerics_param": {
-    "length": "10 cm"
-  },
-  "model_test.py::test_square_numerics_props": {
-    "area": "0.010000000000000002 m ** 2"
   },
   "model_test.py::test_two_instances": [
     "sq(l_0)",
     "sq(l_1)",
     "sq(l_2)"
-  ],
-  "parameter_test.py::test_definition_symbols": "length m",
-  "parameter_test.py::test_update": {
-    "length": "1 cm"
-  },
-  "property_test.py::test_define": "sq(length) m ** 2",
-  "property_test.py::test_handler_status": {
-    "area": "sq(length) m ** 2"
-  }
+  ]
 }

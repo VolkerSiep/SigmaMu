@@ -1,10 +1,9 @@
 """This module defines classes and functionality around ``pint`` quantities.
-These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes, or
+These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes), or
 numeric."""
 
 # stdlib modules
-from pathlib import Path
-from re import split, escape
+from typing import Union
 
 # external modules
 # need to import entire casadi module to distinguish functions of same name
@@ -13,13 +12,23 @@ from numpy import squeeze
 from pint import UnitRegistry, set_application_registry
 from pint.errors import DimensionalityError
 
-# instantiate pint unit registry entity
-unit_registry = UnitRegistry(autoconvert_offset_to_baseunit=True)
-set_application_registry(unit_registry)
-unit_file = Path(__file__).resolve().parent / "uom_definitions.txt"
-unit_registry.load_definitions(unit_file)
-del unit_file
+from . import flatten_dictionary, unflatten_dictionary
+# internal modules
+from ..data import DATA_DIR
+from .types import (
+    NestedQuantityDict, NestedStringDict)
 
+
+def _create_registry() -> UnitRegistry:
+    """Instantiate the application's unit registry"""
+    reg = UnitRegistry(autoconvert_offset_to_baseunit=True)
+    set_application_registry(reg)
+    unit_file = DATA_DIR / "uom_definitions.txt"
+    reg.load_definitions(unit_file)
+    return reg
+
+
+unit_registry = _create_registry()
 _Q = unit_registry.Quantity
 
 
@@ -37,9 +46,12 @@ class Quantity(_Q):  # type: ignore
         obj.__class__ = cls
         return obj
 
-    def __json__(self):
-        """Custom method to export to json for testing"""
-        return f"{self:~}"
+    def __json__(self) -> str:
+        """Custom method to export to json for testing and serialisation"""
+        try:
+            return f"{self:~.16g}"
+        except TypeError:  # magnitude cannot be formatted, probably symbol
+            return f"{self:~}"
 
 
 # write back class, so it's used as result of quantity operations
@@ -70,6 +82,8 @@ class SymbolQuantity(Quantity):
         """
 
         def attributes(name: str, units: str, sub_keys: list[str] = None):
+            """Turn the constructor arguments into arguments for the
+            baseclass"""
             if sub_keys is None:
                 magnitude = cas.SX.sym(name)
             elif isinstance(sub_keys, int):
@@ -81,13 +95,13 @@ class SymbolQuantity(Quantity):
 
         return super().__new__(Quantity, *attributes(*args, **kwargs))
 
-    def __json__(self):
+    def __json__(self) -> str:
         """Custom method to export to json for testing"""
         return f"{str(self.magnitude)}{self.units:~}"
 
 
-# redefine jacobian to propanatural logarithmusgate pint units
-def jacobian(dependent: Quantity, independent: SymbolQuantity) -> Quantity:
+# redefine Jacobian to propagate pint units
+def jacobian(dependent: Quantity, independent: Quantity) -> Quantity:
     """Calculate the casadi Jacobian and reattach the units of measurements.
 
     >>> x = SymbolQuantity("x", "m")
@@ -113,24 +127,6 @@ def sum1(quantity: Quantity) -> Quantity:
         over an iterator of objects.
     """
     return Quantity(cas.sum1(quantity.magnitude), quantity.units)
-
-
-def log(quantity: Quantity) -> Quantity:
-    """Determine natural logarithmus of symbolic quantity, considering units of
-    measurements"""
-    quantity = quantity.to_base_units()
-    if not quantity.dimensionless:
-        raise DimensionalityError(quantity.units, "dimensionless")
-    return Quantity(cas.log(quantity.magnitude))
-
-
-def exp(quantity: Quantity) -> Quantity:
-    """Determine exponent of symbolic quantity, considering units of
-    measurements"""
-    quantity = quantity.to_base_units()
-    if not quantity.dimensionless:
-        raise DimensionalityError(quantity.units, "dimensionless")
-    return Quantity(cas.exp(quantity.magnitude))
 
 
 def sqrt(quantity: Quantity) -> Quantity:
@@ -229,71 +225,7 @@ def base_magnitude(quantity: Quantity) -> float:
     return quantity.to_base_units().magnitude
 
 
-# Typing of recursive structures is basically impossible, more so because
-# mypy doesn't accept Quantity as a class (with its methods).
-
-QuantityDict = dict[str, Quantity]
-SymbolQuantityDict = dict[str, SymbolQuantity]
-
-_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
-
-
-def flatten_dictionary(structure, prefix: str = "") -> QuantityDict:
-    r"""Convert the given structure into a flat list of key value pairs,
-    where the keys are ``SEPARATOR``-separated concatonations of the paths,
-    and values are the values of the leafs. Non-string keys are converted
-    to strings. Occurances of ``SEPARATOR`` are escaped by ``\``.
-
-    >>> d = {"a": {"b": 1, "c": 2}, "d": {"e/f": 3}}
-    >>> flatten_dictionary(d)
-    {'a/b': 1, 'a/c': 2, 'd/e\\/f': 3}
-    """
-    try:
-        items = structure.items()  # is this dictionary enough for us?
-    except AttributeError:  # doesn't seem so, this is just a value
-        return {prefix: structure}  # type: ignore
-
-    result: QuantityDict = {}
-    # must sort to create the same sequence every time
-    # (dictionary might have content permutated)
-    for key, value in sorted(items):
-        key = str(key).replace(_SEPARATOR, rf"\{_SEPARATOR}")  # esc. separator
-        key = f"{prefix}{_SEPARATOR}{key}" if prefix else key
-        result.update(flatten_dictionary(value, key))
-    return result
-
-
-def unflatten_dictionary(flat_structure: QuantityDict):
-    r"""This is the reverse of :func:`flatten_dictionary`, inflating the
-    given one-depth dictionary into a nested structure.
-
-    >>> d = {"a/b": 1, "a/c": 2, r"d/e\/f": 3}
-    >>> unflatten_dictionary(d)
-    {'a': {'b': 1, 'c': 2}, 'd': {'e/f': 3}}
-    """
-    result = {}  # type: ignore
-
-    def insert(struct, keys, value):
-        first = keys.pop(0)
-        if keys:
-            if first not in struct:
-                struct[first] = {}
-            insert(struct[first], keys, value)
-        else:
-            struct[first] = value
-
-    # split by non-escaped separators and unescape escaped separators
-    regex = rf'(?<!\\){escape(_SEPARATOR)}'
-    for key, value in flat_structure.items():
-        keys = [
-            k.replace(rf"\{_SEPARATOR}", _SEPARATOR)
-            for k in split(regex, key)
-        ]
-        insert(result, keys, value)
-    return result
-
-
-def extract_units_dictionary(structure):
+def extract_units_dictionary(structure: Union[NestedQuantityDict, Quantity]):
     """Based on a nested dictionary of Quantities, create a new nested
     dictionaries with only the units of measurement
 
@@ -302,10 +234,9 @@ def extract_units_dictionary(structure):
     {'a': {'b': 'm', 'c': 'min'}}
     """
     try:
-        items = structure.items()  # is this dictionary enough for us?
-    except AttributeError:  # doesn't seem so, this is just a quantity
+        items = structure.items()
+    except AttributeError:
         return f"{structure.units:~}"
-
     return {key: extract_units_dictionary(value) for key, value in items}
 
 
@@ -323,7 +254,8 @@ class QFunction:
     in the same units as initially defined.
     """
 
-    def __init__(self, args, results, fname: str = "f"):
+    def __init__(self, args: NestedQuantityDict, results: NestedQuantityDict,
+                 func_name: str = "f"):
         args_flat = flatten_dictionary(args)
         results_flat = flatten_dictionary(results)
         arg_names = list(args_flat.keys())
@@ -332,9 +264,11 @@ class QFunction:
         res_sym = [v.magnitude for v in results_flat.values()]
         self.arg_units = {k: v.units for k, v in args_flat.items()}
         self.res_units = {k: v.units for k, v in results_flat.items()}
-        self.func = cas.Function(fname, arg_sym, res_sym, arg_names, res_names)
+        self.func = cas.Function(func_name, arg_sym, res_sym, arg_names,
+                                 res_names)
 
-    def __call__(self, args, squeeze_results=True):
+    def __call__(self, args: NestedQuantityDict,
+                 squeeze_results: bool = True) -> NestedQuantityDict:
         """Call operator for the function object, as described above."""
         args_flat = {
             key: value.to(self.arg_units[key]).magnitude
@@ -347,8 +281,15 @@ class QFunction:
         return unflatten_dictionary(result)
 
     @property
-    def result_structure(self):
+    def result_structure(self) -> NestedStringDict:
         """Return the result structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
         units = {k: f"{v:~}" for k, v in self.res_units.items()}
+        return unflatten_dictionary(units)
+
+    @property
+    def arg_structure(self) -> NestedStringDict:
+        """Return the argument structure as a nested dictionary, only including
+        the units of measurements as values of end nodes"""
+        units = {k: f"{v:~}" for k, v in self.arg_units.items()}
         return unflatten_dictionary(units)

@@ -1,0 +1,53 @@
+meta:
+  source: https://janaf.nist.gov
+
+data:
+  formulae:
+    H2O: H2O
+    C3: CH3-CH2-CH3
+    nCH4: CH3-(CH2)2-CH3
+  H0S0ReferenceState:
+    T_ref: 25 degC
+    dh_form:  # heat of formation
+      H2O: -241.826 kJ/mol
+      C3: -104.7 kJ/mol
+      nC4: -125.6 kJ/mol
+    p_ref: 1.0 bar
+    s_0:
+      H2O: 0.0 J/(mol*K)  # missing
+      C3: 0.0 J/(mol*K)  # missing
+      nC4: 0.0 J/(mol*K)  # missing
+  LinearHeatCapacity:
+    cp_a:
+      H2O: 0.0 J/(mol*K)  # missing
+      C3: 0.0 J/(mol*K)  # missing
+      nC4: 0.0 J/(mol*K)  # missing
+    cp_b:
+      H2O: 0.0 J/(mol*K**2)
+      C3: 0.0 J/(mol*K**2)  # missing
+      nC4: 0.0 J/(mol*K**2)  # missing
+  CriticalParameters:
+    T_c:
+      H2O: 647 K
+      C3: 369.8 K
+      nC4: 425.2 K
+    omega:
+      H2O: 0.344
+      C3: 0.153
+      nC4: 0.199
+    p_c:
+      H2O: 220.64 bar
+      C3: 42.5 bar
+      nC4: 38.0 bar
+  BostonMathiasAlphaFunction:
+    eta:
+      H2O: 0
+      C3: 0
+      nC4: 0
+  MixingRule_A:
+    T_ref: 25 degC
+  MixingRule_C:
+    c_i:
+      H2O: 0.0 m**3/mol  # missing
+      C3: 0.0 m**3/mol  # missing
+      nC4: 0.0 m**3/mol # missing

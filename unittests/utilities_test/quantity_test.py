@@ -1,4 +1,5 @@
 from pytest import raises as pt_raises
+from casadi import SX
 
 from simu.utilities import (Quantity, SymbolQuantity, assert_reproduction,
                             jacobian, sum1, log, exp, sqrt, qpow, conditional,
@@ -28,7 +29,7 @@ def test_quantity():
 
 
 def test_jacobian():
-    """Test jacobian function for quantities"""
+    """Test Jacobian function for quantities"""
     x = SymbolQuantity("x1", "m", ["A", "B"])
     a = SymbolQuantity("a", "1/s")
     y = a * x
@@ -49,7 +50,7 @@ def test_log():
     x2 = SymbolQuantity("x2", "cm", "AB")
 
     with pt_raises(TypeError):
-        z = log(x1)
+        log(x1)
 
     z = log(x1 / x2)
     assert_reproduction(z)
@@ -61,7 +62,7 @@ def test_exp():
     x2 = SymbolQuantity("x2", "cm", "AB")
 
     with pt_raises(TypeError):
-        z = exp(x1)
+        exp(x1)
 
     z = exp(x1 / x2)
     assert_reproduction(z)
@@ -80,7 +81,7 @@ def test_pow():
     x2 = SymbolQuantity("x2", "cm", "AB")
 
     with pt_raises(TypeError):
-        z = qpow(x1, x2)
+        qpow(x1, x2)
 
     z = qpow(x1 / x2, x2 / x1)
     assert_reproduction(z)
@@ -92,7 +93,7 @@ def test_conditional():
     x2 = SymbolQuantity("x2", "cm", "AB")
 
     # try invalid condition
-    cond = x1 > x2
+    cond: SX = x1 > x2  # this is not a boolean, but an SX node.
     z = conditional(cond, x1, x2)
     assert_reproduction(z)
 
@@ -121,18 +122,21 @@ def test_qfunction():
     assert_reproduction(y)
 
 
-def test_simple_flatten(run_as_test=True):
-    """Check that a simple dict is flattened as expected"""
+def create_flat():
     orig = {"C": {"A": 1, "B": 2}, "A": 3}
     flat = flatten_dictionary(orig)
-    if run_as_test:
-        assert_reproduction(flat)
     return orig, flat
 
 
+def test_simple_flatten():
+    """Check that a simple dict is flattened as expected"""
+    orig, flat = create_flat()
+    assert_reproduction(flat)
+
+
 def test_unflatten():
-    """Check that original dict is reproduced by unflattening"""
-    orig, flat = test_simple_flatten(run_as_test=False)
+    """Check that original dict is reproduced by un-flattening"""
+    orig, flat = create_flat()
     rep = unflatten_dictionary(flat)
     assert rep == orig
 
