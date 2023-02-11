@@ -1,6 +1,14 @@
 """This module contains data structures that build on the quantity datatype"""
 
+# stdlibs
 from typing import Iterable, Tuple, Union
+from collections.abc import Callable
+
+# external libs
+import casadi as cas
+from pint.errors import DimensionalityError
+
+# internal libs
 from . import base_unit, Quantity, SymbolQuantity, qvertcat
 
 
@@ -114,8 +122,9 @@ class ParameterDictionary(dict):
         return qvertcat(*entry.values())
 
 
-_OType = Union[Quantity, "QuantityDict"]
-
+_OType = Union[float, Quantity, "QuantityDict"]
+_RType = Union[Quantity,"QuantityDict"]
+_SType = Union[float, cas.SX]
 
 class QuantityDict(dict[str, Quantity]):
     """Many properties on process modelling level are vectorial. This includes
@@ -161,6 +170,19 @@ class QuantityDict(dict[str, Quantity]):
         >>> for key, value in y.items(): print(f"{key}: {value:~}")
         B: 1 m ** 2
         C: 50 cm * m
+
+      - floats as second operands in binary operators act as dimensionless
+        quantities
+
+        >>> y = 3 * a
+        >>> for key, value in y.items(): print(f"{key}: {value:~}")
+        A: 3 m
+        B: 150 cm
+
+        >>> y = 3 + a
+        Traceback (most recent call last):
+        ...
+        pint.errors.DimensionalityError: ...
      """
     @classmethod
     def from_vector_quantity(cls, quantity: Quantity,
@@ -179,10 +201,13 @@ class QuantityDict(dict[str, Quantity]):
         return cls({key: quantity[k] for k, key in enumerate(keys)})
 
     def __add__(self, other: _OType) -> "QuantityDict":
-        if isinstance(other, Quantity):
+        try:
+            items = other.items()
+        except AttributeError:
             return QuantityDict({k: v + other for k, v in self.items()})
+
         result = self.copy()
-        for key, value in other.items():
+        for key, value in items:
             result[key] = (result[key] + value) if key in self else value
         return QuantityDict(result)
 
@@ -190,8 +215,11 @@ class QuantityDict(dict[str, Quantity]):
         return self + other
 
     def __mul__(self, other: _OType) -> "QuantityDict":
-        if isinstance(other, Quantity):
+        try:
+            other.items()
+        except AttributeError:
             return QuantityDict({k: v * other for k, v in self.items()})
+
         result = {k: v * other[k] for k, v in self.items() if k in other}
         return QuantityDict(result)
 
@@ -211,8 +239,11 @@ class QuantityDict(dict[str, Quantity]):
         return (-self) + other
 
     def __truediv__(self, other: _OType) -> "QuantityDict":
-        if isinstance(other, Quantity):
+        try:
+            other.items()
+        except AttributeError:
             return QuantityDict({k: v / other for k, v in self.items()})
+
         try:
             result = {k: v / other[k] for k, v in self.items()}
         except KeyError:
@@ -221,13 +252,83 @@ class QuantityDict(dict[str, Quantity]):
         return QuantityDict(result)
 
     def __rtruediv__(self, other: _OType) -> "QuantityDict":
-        if isinstance(other, Quantity):
-            return QuantityDict({k: other / v for k, v in self.items()})
         try:
-            result = {k: v / self[k] for k, v in other.items()}
+            items = other.items()
+        except AttributeError:
+            return QuantityDict({k: other / v for k, v in self.items()})
+
+        try:
+            result = {k: v / self[k] for k, v in items}
         except KeyError:
             msg = "Missing denominator element in QuantityDict division"
             raise ZeroDivisionError(msg) from None
         return QuantityDict(result)
 
-    # TODO: exponential operator, dot product @, unary functioons, ...
+# TODO: exponential operator, dot product @, unary functioons, ...
+
+
+
+
+def unary_func(quantity: _OType, func: Callable[[_SType], _SType]) -> _RType:
+    """Call a unary function that requires a dimensionless argument on the
+    argument, accepting that argument to be a float, a scalar quantity,
+    a symbolic quantity, or a QuantityDict object (well, any dictionary
+    of the above, actually."""
+    def scalar_func(value):
+        """Call the unary function on the value's magnitude"""
+        try:
+            value = value.to_base_units()
+            magnitude = value.magnitude
+        except AttributeError:
+            magnitude = value
+        else:
+            if not value.dimensionless:
+                raise DimensionalityError(value.units, "dimensionless")
+        return Quantity(func(magnitude))
+
+    try:
+        items = quantity.items()
+    except AttributeError:
+        return scalar_func(quantity)
+
+    return QuantityDict({k: unary_func(v, func) for k, v in items})
+
+
+def log(quantity: _OType) -> _RType:
+    """Determine natural logarithms, considering units of
+    measurements. The main intent is to use this version for symbolic
+    quantities and QuantityDict objects, but it also works on floats.
+
+    >>> x = Quantity(10.0, "cm/m")
+    >>> log(x)
+    <Quantity(-2.30258509, 'dimensionless')>
+
+    >>> a = {"A": SymbolQuantity("A", "dimless"),
+    ...      "B": SymbolQuantity("B", "dimless")}
+    >>> y = log(a)
+    >>> for key, value in y.items(): print(f"{key}: {value:~}")
+    A: log(A)
+    B: log(B)
+
+    >>> log(10)
+    <Quantity(2.30258509, 'dimensionless')>
+
+    The other unary functions are defined in the same manner.
+    """
+    return unary_func(quantity, cas.log)
+
+
+log10 = lambda x: unary_func(x, cas.log10)
+exp = lambda x: unary_func(x, cas.exp)
+sin = lambda x: unary_func(x, cas.sin)
+cos = lambda x: unary_func(x, cas.cos)
+tan = lambda x: unary_func(x, cas.tan)
+arcsin = lambda x: unary_func(x, cas.arcsin)
+arccos = lambda x: unary_func(x, cas.arccos)
+arctan = lambda x: unary_func(x, cas.arctan)
+sinh = lambda x: unary_func(x, cas.sinh)
+cosh = lambda x: unary_func(x, cas.cosh)
+tanh = lambda x: unary_func(x, cas.tanh)
+arcsinh = lambda x: unary_func(x, cas.arcsinh)
+arccosh = lambda x: unary_func(x, cas.arccosh)
+arctanh = lambda x: unary_func(x, cas.arctanh)

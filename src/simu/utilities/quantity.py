@@ -129,24 +129,6 @@ def sum1(quantity: Quantity) -> Quantity:
     return Quantity(cas.sum1(quantity.magnitude), quantity.units)
 
 
-def log(quantity: Quantity) -> Quantity:
-    """Determine natural logarithms of symbolic quantity, considering units of
-    measurements"""
-    quantity = quantity.to_base_units()
-    if not quantity.dimensionless:
-        raise DimensionalityError(quantity.units, "dimensionless")
-    return Quantity(cas.log(quantity.magnitude))
-
-
-def exp(quantity: Quantity) -> Quantity:
-    """Determine exponent of symbolic quantity, considering units of
-    measurements"""
-    quantity = quantity.to_base_units()
-    if not quantity.dimensionless:
-        raise DimensionalityError(quantity.units, "dimensionless")
-    return Quantity(cas.exp(quantity.magnitude))
-
-
 def sqrt(quantity: Quantity) -> Quantity:
     """Determine square root of symbolic quantity, considering units of
     measurement"""
