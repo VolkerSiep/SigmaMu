@@ -11,6 +11,8 @@ Quantity
 .. autoclass:: simu.utilities.Quantity
     :members:
 
+.. auto
+
 SymbolQuantity
 ^^^^^^^^^^^^^^
 .. autoclass:: simu.utilities.SymbolQuantity

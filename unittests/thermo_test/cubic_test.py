@@ -139,22 +139,14 @@ def test_rk_m_factor():
 
 def test_boston_mathias_alpha_function():
     """Test definition of BostonMathiasAlphaFunction contribution"""
-    res = {
-        "_m_factor": vec("m", 2, "dimless"),
-        "_T_c": vec("T_c", 2, "K"),
-        "T": sym("T", "K")
-    }
-    par = ParameterDictionary()
-    cont = BostonMathiasAlphaFunction(["A", "B"], {})
-    cont.define(res, par)
+    res, par = create_boston_mathias_alpha_function()
     assert_reproduction(res["_alpha"][0])
-    return res, par
 
 
 def test_boston_mathias_alpha_function_smoothness():
     """Check smoothness of alpha function at critical temperature, where
     the expressions switches to the super-critical extrapolation"""
-    res, par = test_boston_mathias_alpha_function()
+    res, par = create_boston_mathias_alpha_function()
 
     args = {k: res[k] for k in ["T", "_T_c", "_m_factor"]}
     args["_eta"] = par.get_vector_quantity("eta")
@@ -322,6 +314,16 @@ def test_relax_rk_advanced():
 
 # *** auxiliary routines
 
+def create_boston_mathias_alpha_function():
+    res = {
+        "_m_factor": vec("m", 2, "dimless"),
+        "_T_c": vec("T_c", 2, "K"),
+        "T": sym("T", "K")
+    }
+    par = ParameterDictionary()
+    cont = BostonMathiasAlphaFunction(["A", "B"], {})
+    cont.define(res, par)
+    return res, par
 
 def plot_pv(res):
     """auxiliary method to plot pv-graph and linear/quadratic approximation"""

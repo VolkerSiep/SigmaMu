@@ -122,18 +122,21 @@ def test_qfunction():
     assert_reproduction(y)
 
 
-def test_simple_flatten(run_as_test=True):
-    """Check that a simple dict is flattened as expected"""
+def create_flat():
     orig = {"C": {"A": 1, "B": 2}, "A": 3}
     flat = flatten_dictionary(orig)
-    if run_as_test:
-        assert_reproduction(flat)
     return orig, flat
+
+
+def test_simple_flatten():
+    """Check that a simple dict is flattened as expected"""
+    orig, flat = create_flat()
+    assert_reproduction(flat)
 
 
 def test_unflatten():
     """Check that original dict is reproduced by un-flattening"""
-    orig, flat = test_simple_flatten(run_as_test=False)
+    orig, flat = create_flat()
     rep = unflatten_dictionary(flat)
     assert rep == orig
 

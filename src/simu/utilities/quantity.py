@@ -35,7 +35,7 @@ _Q = unit_registry.Quantity
 class Quantity(_Q):  # type: ignore
     """Proper quantity base-class for sub-classing.
 
-    Being a subclass of ``pint.Quantity``, this class only really adds the
+    Being a sub-class of ``pint.Quantity``, this class only really adds the
     ``__json__`` method to return its json representation.
 
     The constructor is used as for ``pint.Quantity``.

@@ -1,7 +1,6 @@
 """Unit tests related to the model class"""
 
 from typing import Type
-
 from pytest import mark
 
 from simu import Model
