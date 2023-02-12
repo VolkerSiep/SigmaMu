@@ -79,17 +79,17 @@ class NestedHierarchyTestModel(Model):
 class MaterialTestModel(Model):
 
     def interface(self):
-        no_gas = MaterialSpec(species=["NO", "NO2", "O2", "*"])
-        self.material.require("inlet", no_gas)
+        no_gas_spec = MaterialSpec(species=["NO", "NO2", "O2", "*"])
+        no_gas_spec.require(FancyAugmentor)
+        self.material.require("inlet_1", no_gas_spec)
+        self.material.require("inlet_2", no_gas.spec)
 
     def define(self):
-        inlet = self.material["inlet"]
-        intermediate = self.material.create("intermediate", NOxGas())
-        intermediate_2 = self.material.create("intermediate_2", inlet.type)
-
-hierarchy_models = [
-    HierarchyTestModel, HierarchyTestModel2, NestedHierarchyTestModel
-]
+        inlet_1 = self.material["inlet_1"]
+        inlet_2 = self.material["inlet_2"]
+        no_gas : ThermoFrame = "This is used as a template"
+        intermediate_1 = self.material.create("intermediate_1", no_gas)
+        intermediate_2 = self.material.create("intermediate_2", inlet_1.type)
 
 
 def test_square():
@@ -130,6 +130,11 @@ def test_square_numerics():
     props = numerics.properties
     #  should be something like {"area": Q("100 cm**2")}
     assert_reproduction(props, suffix="props")
+
+
+hierarchy_models = [
+    HierarchyTestModel, HierarchyTestModel2, NestedHierarchyTestModel
+]
 
 
 @mark.parametrize("model_cls", hierarchy_models)
