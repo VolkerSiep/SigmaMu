@@ -1,0 +1,23 @@
+LPG-RK-Gas:
+  species: [C3, nC4]
+  default_state: [302.15, 10e5, [0.4, 0.6]]
+  structure: Boston-Mathias-Redlich-Kwong-Gas
+  parameters: LNG-RK
+
+LPG-RK-Liquid:
+  species: [C3, nC4]
+  default_state: [302.15, 10e5, [0.6, 0.4]]
+  structure: Boston-Mathias-Redlich-Kwong-Liquid
+  parameters: LNG-RK
+
+Water-RK-Liquid:
+  species: [H2O]
+  default_state: [373.15, 1e5, [1.0]]
+  structure: Boston-Mathias-Redlich-Kwong-Liquid
+  parameters: Water-RK
+
+Water-RK-Gas:
+  species: [H2O]
+  default_state: [373.15, 1e5, [1.0]]
+  structure: Boston-Mathias-Redlich-Kwong-Gas
+  parameters: Water-RK

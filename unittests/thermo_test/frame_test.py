@@ -3,15 +3,24 @@
 
 # stdlib modules
 from sys import argv
+from pathlib import Path
 
 # external modules
 from pytest import main
+from logging import DEBUG
+from yaml import safe_load
 
 # internal modules
 from simu.thermo import (H0S0ReferenceState, HelmholtzState, ThermoFactory,
                          LinearHeatCapacity, StandardState, IdealMix,
                          HelmholtzIdealGas)
-from simu.utilities import assert_reproduction, Quantity as Q
+from simu.utilities import (
+    assert_reproduction, parse_quantities_in_struct, Quantity as Q)
+
+
+filename = Path(__file__).resolve().parent / "example_parameters.yml"
+with open(filename, encoding="utf-8") as file:
+    example_parameters = parse_quantities_in_struct(safe_load(file))
 
 
 def test_create_thermo_factory():
@@ -24,7 +33,7 @@ def test_register_contributions():
     create_frame_factory()
 
 
-def test_create_frame():
+def test_create_frame(caplog):
     """create a ThermoFrame object"""
     fac = create_frame_factory()
     config = {
@@ -34,7 +43,11 @@ def test_create_frame():
             "H0S0ReferenceState", "LinearHeatCapacity", "StandardState"
         ],
     }
-    fac.create_frame(config)
+    with caplog.at_level(DEBUG, logger="simu"):
+        fac.create_frame(config)
+    msg = "\n".join([r.message for r in caplog.records])
+    for contrib in config["contributions"]:
+        assert contrib in msg
 
 
 def test_parameter_structure():
@@ -73,33 +86,7 @@ def test_initial_state():
     assert_reproduction(x[1])
 
 
-# helper functions / data
-
-example_parameters = {
-    'H0S0ReferenceState': {
-        'dh_form': {
-            'N2': Q("0 J/mol"),
-            'O2': Q("0 J/mol")
-        },
-        's_0': {
-            'N2': Q("0 J/mol/K"),
-            'O2': Q("0 J/mol/K")
-        },
-        'T_ref': Q("25 degC"),
-        'p_ref': Q("1 atm")
-    },
-    'LinearHeatCapacity': {
-        'cp_a': {
-            'N2': Q("29.12379083 J/mol/K"),
-            'O2': Q("20.786 J/mol/K")
-        },
-        'cp_b': {
-            'N2': Q("5.28694e-4 J/mol/K**2"),
-            'O2': Q("0.0 J/mol/K**2")
-        }
-    }
-}
-
+# *** helper functions
 
 def call_frame():
     """Call a frame object with a state and return all with the result"""

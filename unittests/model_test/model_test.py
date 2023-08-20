@@ -4,6 +4,7 @@ from typing import Type
 from pytest import mark
 
 from simu import Model
+from simu.model import Augmentor, MaterialSpec
 from simu.utilities import assert_reproduction, SymbolQuantity
 
 
@@ -79,17 +80,18 @@ class NestedHierarchyTestModel(Model):
 class MaterialTestModel(Model):
 
     def interface(self):
-        no_gas_spec = MaterialSpec(species=["NO", "NO2", "O2", "*"])
-        no_gas_spec.require(FancyAugmentor)
-        self.material.require("inlet_1", no_gas_spec)
-        self.material.require("inlet_2", no_gas.spec)
+        gas_spec = MaterialSpec(species=["NO", "NO2", "O2", "*"])
+        # gas_spec.require(FancyAugmentor)
+        self.material.require("inlet_1", gas_spec)
+        self.material.require("inlet_2", gas_spec)
 
     def define(self):
         inlet_1 = self.material["inlet_1"]
         inlet_2 = self.material["inlet_2"]
-        no_gas : ThermoFrame = "This is used as a template"
-        intermediate_1 = self.material.create("intermediate_1", no_gas)
-        intermediate_2 = self.material.create("intermediate_2", inlet_1.type)
+        # should be defined upfront for project
+        gas: MaterialDefinition = "This is used as a template"
+        intermediate_1 = self.material.create("intermediate_1", gas)
+        intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
 
 
 def test_square():
@@ -109,8 +111,8 @@ def test_two_instances():
     instances = [model.create_proxy(f"m_{i}") for i in range(num)]
     lengths = [SymbolQuantity(f"l_{i}", "m") for i in range(num)]
     for i in range(num):
-        instances[i].parameters.provide(length=lengths[i])
-        instances[i].finalise()
+        with instances[i] as unit:
+            unit.parameters.provide(length=lengths[i])
     res = [instance.properties["area"].magnitude for instance in instances]
     assert_reproduction(res)
 

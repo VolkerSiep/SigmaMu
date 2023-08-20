@@ -10,6 +10,7 @@ from collections.abc import Iterable, Set, Sequence
 from ..utilities.types import NestedQuantityDict
 from ..thermo import ThermoFrame
 
+
 class Augmentor(ABC):
     """An Augmentor is a specific class to extend the physical properties
     calculated on a material instance."""
@@ -22,22 +23,20 @@ class Augmentor(ABC):
 
 
 class MaterialSpec:
-    """Representation of a requirement to a material object."""
-    def __init__(self, species: Optional[Iterable[str]] = None,
-                 augmentors: Optional[Iterable[Type[Augmentor]]] = None):
+    """Representation of a requirement to a material object.
+
+    Objects of this class are used to define the requirements to a material,
+    typically in a material port of a Model. It defines which species are
+    required and whether additional species are allowed.
+    """
+    def __init__(self, species: Optional[Iterable[str]] = None):
         self.__locked = not (species is None or "*" in species)
-        self.__species = set() if species is None else (set(species) - "*")
-        self.__augmentors = set() if augmentors is None else set(augmentors)
+        self.__species = set() if species is None else set(species) - set("*")
 
     @property
     def species(self) -> Set[str]:
         """The set of species that must be provided."""
         return set(self.__species)
-
-    @property
-    def augmentors(self) -> Set[Type[Augmentor]]:
-        """The set of required augmentor classes"""
-        return set(self.__augmentors)
 
     @property
     def locked(self) -> bool:
@@ -54,21 +53,56 @@ class MaterialSpec:
           - none of the specified augmentors are missing in the material
         """
         spe, mspe = self.species, set(material.species)
-        aug, maug = self.augmentors, material.augmentors
         locked = self.locked
-        return not ((spe - mspe) or (locked and (mspe - spe) or (aug - maug)))
+        return not ((spe - mspe) or (locked and (mspe - spe)))
 
 
-class Material:
+class MaterialDefinition:
     def __init__(self,
                  thermo_frame: ThermoFrame,
                  parameter_set: NestedQuantityDict):
-        pass
+        self.__thermo_frame = thermo_frame
+        self.__parameter_set = parameter_set  # numerical parameters??
+
+    @property
+    def frame(self) -> ThermoFrame:
+        return self.__thermo_frame
+
+
+class Material:
+    def __init__(self, definition: MaterialDefinition):
+        self.__definition = definition
+
 
     @property
     def species(self) -> Sequence[str]:
-        pass
+        return self.__definition.frame.species
 
     @property
     def augmentors(self) -> Set[Type[Augmentor]]:
+        pass
+
+    @property
+    def definition(self) -> MaterialDefinition:
+        return self.__definition
+
+
+class MaterialHandler:
+    def __init__(self):
+        self.__required = {}
+        self.__materials = {}
+
+    def require(self, name: str, spec: Optional[MaterialSpec] = None):
+        """Define a material requirement of the given name and specification.
+        The name must be unique in this context. If no ``spec`` is given,
+        any material is accepted.
+        """
+        if name in self.__required:
+            raise KeyError(f"Material '{name}' already required")
+        self.__required[name] = MaterialSpec() if spec is None else spec
+
+    def __getitem__(self, name: str):
+        return self.__materials[name]
+
+    def create(self, name: str, definition: MaterialDefinition):
         pass

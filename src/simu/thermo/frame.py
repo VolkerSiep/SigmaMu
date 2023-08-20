@@ -11,6 +11,7 @@ state and the model parameters.
 from copy import deepcopy
 from typing import Type, List, Collection
 from collections.abc import Mapping
+from logging import getLogger
 
 # internal modules
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
@@ -18,6 +19,8 @@ from ..utilities import (Quantity, ParameterDictionary, QFunction,
 from ..utilities.types import (
     NestedStringDict, ThermoContributionDict, NestedQuantityDict, QuantityDict)
 from .contribution import ThermoContribution, StateDefinition
+
+logger = getLogger(__name__)
 
 
 class ThermoFrame:
@@ -56,6 +59,7 @@ class ThermoFrame:
         for name, contribution in contributions.items():
             parameters[name] = ParameterDictionary()
             contribution.define(result, parameters[name])
+            logger.debug(f"Defining contribution '{name}'")
 
         args = {"state": state, "parameters": parameters}
         self.__function = QFunction(args, result, "thermo_frame")

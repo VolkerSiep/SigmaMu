@@ -19,3 +19,5 @@ all_contributions = [H0S0ReferenceState, LinearHeatCapacity, StandardState,
                      RedlichKwongEOSLiquid, RedlichKwongEOSGas,
                      RedlichKwongAFunction, RedlichKwongBFunction,
                      RedlichKwongMFactor, Derivative]
+
+all_states = [HelmholtzState, GibbsState]

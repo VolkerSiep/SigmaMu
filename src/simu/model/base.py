@@ -7,6 +7,7 @@ from .parameter import ParameterHandler
 from .hierarchy import HierarchyHandler
 from .property import PropertyHandler
 from .numeric import NumericHandler
+from .material import MaterialHandler
 
 
 class Model(ABC):
@@ -21,6 +22,9 @@ class Model(ABC):
     hierarchy: HierarchyHandler
     """A handler object that takes care of defining sub models"""
 
+    material: MaterialHandler
+    """A handler object that takes care of materials"""
+
     @classmethod
     def as_top_model(cls,
                      name: str = "model"
@@ -34,6 +38,7 @@ class Model(ABC):
     def __init__(self):
         self.parameters = ParameterHandler()
         self.properties = PropertyHandler()
+        self.material = MaterialHandler()
 
         self.interface()
         self.hierarchy = HierarchyHandler(self)
@@ -81,7 +86,6 @@ class Model(ABC):
 
     def create_proxy(self, name: str) -> "ModelProxy":
         """Create a proxy object for configuration in hierarchy context"""
-
         return ModelProxy(name, self)
 
     def __make_function(self) -> QFunction:

@@ -10,6 +10,7 @@ from pint.errors import DimensionalityError
 
 # internal libs
 from . import base_unit, Quantity, SymbolQuantity, qvertcat
+from .types import NestedStringDict
 
 
 class ParameterDictionary(dict):
@@ -125,6 +126,7 @@ class ParameterDictionary(dict):
 _OType = Union[float, Quantity, "QuantityDict"]
 _RType = Union[Quantity,"QuantityDict"]
 _SType = Union[float, cas.SX]
+
 
 class QuantityDict(dict[str, Quantity]):
     """Many properties on process modelling level are vectorial. This includes
@@ -264,9 +266,7 @@ class QuantityDict(dict[str, Quantity]):
             raise ZeroDivisionError(msg) from None
         return QuantityDict(result)
 
-# TODO: exponential operator, dot product @, unary functioons, ...
-
-
+# TODO: exponential operator, dot product @
 
 
 def unary_func(quantity: _OType, func: Callable[[_SType], _SType]) -> _RType:
@@ -332,3 +332,13 @@ tanh = lambda x: unary_func(x, cas.tanh)
 arcsinh = lambda x: unary_func(x, cas.arcsinh)
 arccosh = lambda x: unary_func(x, cas.arccosh)
 arctanh = lambda x: unary_func(x, cas.arctanh)
+
+
+def parse_quantities_in_struct(struct: Union[NestedStringDict, str]):
+    """Return a new struct that contains parsed quantities at the leaf
+    values of the given input struct."""
+    try:
+        items = struct.items()
+    except AttributeError:
+        return Quantity(struct)
+    return {key: parse_quantities_in_struct(value) for key, value in items}
