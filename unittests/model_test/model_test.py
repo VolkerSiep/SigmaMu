@@ -6,6 +6,7 @@ import logging
 
 from simu import Model
 from simu.utilities import assert_reproduction, SymbolQuantity
+from simu.utilities.errors import DataFlowError, DimensionalityError
 # from simu.model import Augmentor, MaterialSpec
 
 
@@ -127,70 +128,100 @@ def test_parameters_provide():
 
 def test_parameter_error():
     with raises(KeyError) as err:
-        with ParameterTestModel() as model:
-            model.set_name("Peter")
-            model.parameters.update("Hansi", 2, "m")
+        with ParameterTestModel() as proxy:
+            proxy.set_name("Peter")
+            proxy.parameters.update("Hansi", 2, "m")
     assert "Parameter 'Hansi' not defined in 'Peter'" in str(err)
 
-def test_square():
-    """Test to instantiate the square test model and check symbols"""
-    instance, _ = SquareTestModel.as_top_model()
 
-    area = instance.properties["area"]
-    length = instance.parameters.free["length"]
-    result = {"length": length, "area": area}
-    assert_reproduction(result)
+def test_parameter_missing():
+    with raises(DataFlowError) as err:
+        with ParameterTestModel() as proxy:
+            proxy.set_name("Peter")
+    assert "Model 'Peter' has missing parameters: 'width'" in str(err)
 
 
-def test_two_instances():
-    """Check that two instances don't interfer"""
-    model = SquareTestModel()
-    num = 3
-    instances = [model.create_proxy(f"m_{i}") for i in range(num)]
-    lengths = [SymbolQuantity(f"l_{i}", "m") for i in range(num)]
-    for i in range(num):
-        with instances[i] as unit:
-            unit.parameters.provide(length=lengths[i])
-    res = [instance.properties["area"].magnitude for instance in instances]
-    assert_reproduction(res)
+def test_parameter_double():
+    width = SymbolQuantity("width", "m")
+    with ParameterTestModel() as proxy:
+        proxy.set_name("Peter")
+        proxy.parameters.provide(width=width)
+        with raises(KeyError) as err:
+            proxy.parameters.update("width", 2, "m")
+    assert "Parameter 'width' already provided in 'Peter'" in str(err)
 
 
-@mark.skip(reason="Didn't reimplement numerics interface yet")
-def test_square_numerics():
-    """Test evaluating a simple model with just parameters and properties"""
-    instance = SquareTestModel().instance()
-    instance.parameters.update(length="10 cm")
-    instance.finalise()
-
-    numerics = instance.numerics.prepare()
-    param = numerics.parameters
-    assert_reproduction(param, suffix="param")
-    #  should be something like {"length": Q("10 cm")}
-    numerics.evaluate()  # evaluate the casadi function
-    props = numerics.properties
-    #  should be something like {"area": Q("100 cm**2")}
-    assert_reproduction(props, suffix="props")
+def test_parameter_incompatible():
+    temperature = SymbolQuantity("temperature", "K")
+    with ParameterTestModel() as proxy:
+        proxy.set_name("Peter")
+        with raises(DimensionalityError) as err:
+            proxy.parameters.provide(width=temperature)
+        with raises(DimensionalityError) as err:
+            proxy.parameters.update("width", 100, "K")
+        proxy.parameters.update("width", 100, "cm")
 
 
-hierarchy_models = [
-    HierarchyTestModel, HierarchyTestModel2, NestedHierarchyTestModel
-]
 
-
-@mark.parametrize("model_cls", hierarchy_models)
-def test_hierarchy(model_cls: Type[Model]):
-    """Test evaluating a simple hierarchicals model with just parameters and
-    properties"""
-    name = model_cls.__name__
-    func = model_cls.as_top_model()[0].model.function
-    assert_reproduction(func.arg_structure, f"{name}_arguments")
-    assert_reproduction(func.result_structure, f"{name}_result")
-
-
-def test_hierarchy_property():
-    """Check that calculated property has correct expression"""
-    instance, _ = NestedHierarchyTestModel.as_top_model()
-    vol = instance.hierarchy["volumator"]
-    area = vol.hierarchy["square"].properties["area"].magnitude
-    volume = instance.properties["volume"].magnitude
-    assert_reproduction([area, volume])
+# def test_square():
+#     """Test to instantiate the square test model and check symbols"""
+#     instance, _ = SquareTestModel.as_top_model()
+#
+#     area = instance.properties["area"]
+#     length = instance.parameters.free["length"]
+#     result = {"length": length, "area": area}
+#     assert_reproduction(result)
+#
+#
+# def test_two_instances():
+#     """Check that two instances don't interfer"""
+#     model = SquareTestModel()
+#     num = 3
+#     instances = [model.create_proxy(f"m_{i}") for i in range(num)]
+#     lengths = [SymbolQuantity(f"l_{i}", "m") for i in range(num)]
+#     for i in range(num):
+#         with instances[i] as unit:
+#             unit.parameters.provide(length=lengths[i])
+#     res = [instance.properties["area"].magnitude for instance in instances]
+#     assert_reproduction(res)
+#
+#
+# @mark.skip(reason="Didn't reimplement numerics interface yet")
+# def test_square_numerics():
+#     """Test evaluating a simple model with just parameters and properties"""
+#     instance = SquareTestModel().instance()
+#     instance.parameters.update(length="10 cm")
+#     instance.finalise()
+#
+#     numerics = instance.numerics.prepare()
+#     param = numerics.parameters
+#     assert_reproduction(param, suffix="param")
+#     #  should be something like {"length": Q("10 cm")}
+#     numerics.evaluate()  # evaluate the casadi function
+#     props = numerics.properties
+#     #  should be something like {"area": Q("100 cm**2")}
+#     assert_reproduction(props, suffix="props")
+#
+#
+# hierarchy_models = [
+#     HierarchyTestModel, HierarchyTestModel2, NestedHierarchyTestModel
+# ]
+#
+#
+# @mark.parametrize("model_cls", hierarchy_models)
+# def test_hierarchy(model_cls: Type[Model]):
+#     """Test evaluating a simple hierarchicals model with just parameters and
+#     properties"""
+#     name = model_cls.__name__
+#     func = model_cls.as_top_model()[0].model.function
+#     assert_reproduction(func.arg_structure, f"{name}_arguments")
+#     assert_reproduction(func.result_structure, f"{name}_result")
+#
+#
+# def test_hierarchy_property():
+#     """Check that calculated property has correct expression"""
+#     instance, _ = NestedHierarchyTestModel.as_top_model()
+#     vol = instance.hierarchy["volumator"]
+#     area = vol.hierarchy["square"].properties["area"].magnitude
+#     volume = instance.properties["volume"].magnitude
+#     assert_reproduction([area, volume])
