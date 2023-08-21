@@ -1,12 +1,26 @@
 """Unit tests related to the model class"""
 
 from typing import Type
-from pytest import mark
+from pytest import mark, raises
+import logging
 
 from simu import Model
-from simu.model import Augmentor, MaterialSpec
 from simu.utilities import assert_reproduction, SymbolQuantity
+# from simu.model import Augmentor, MaterialSpec
 
+
+class ParameterTestModel(Model):
+    """A simple model to test parameters"""
+
+    def interface(self):
+        pdef = self.parameters.define
+        pdef("length", 10, "m")
+        pdef("width", unit="m")
+
+    def define(self):
+        par = self.parameters
+        area = par["length"] * par["width"]
+        logging.debug(f"area = {area:~}")
 
 class SquareTestModel(Model):
     """A simple model that calculates the square of a parameter as a surface"""
@@ -93,6 +107,30 @@ class MaterialTestModel(Model):
         intermediate_1 = self.material.create("intermediate_1", gas)
         intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
 
+
+def test_parameters_update(caplog):
+    caplog.set_level(logging.DEBUG)
+    with ParameterTestModel() as proxy:
+        proxy.parameters.update("width", 2, "m")
+    assert "area = (length*width) m ** 2" in caplog.text
+    assert "width" in proxy.parameters.free
+    assert "length" in proxy.parameters.free
+
+
+def test_parameters_provide():
+    width = SymbolQuantity("width", "m")
+    with ParameterTestModel() as proxy:
+        proxy.parameters.provide(width=width)
+    assert "width" not in proxy.parameters.free
+    assert "length" in proxy.parameters.free
+
+
+def test_parameter_error():
+    with raises(KeyError) as err:
+        with ParameterTestModel() as model:
+            model.set_name("Peter")
+            model.parameters.update("Hansi", 2, "m")
+    assert "Parameter 'Hansi' not defined in 'Peter'" in str(err)
 
 def test_square():
     """Test to instantiate the square test model and check symbols"""
