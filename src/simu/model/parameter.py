@@ -119,7 +119,7 @@ class ParameterProxy:
 
         self.__provided: set[str] = set()
 
-    def set_name(self, name:str):
+    def set_name(self, name: str):
         """Set the name of the model for better error diagnostics"""
         self.__model_name = name
 

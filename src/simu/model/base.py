@@ -6,7 +6,9 @@ from ..utilities import QFunction
 
 from .parameter import ParameterHandler, ParameterProxy
 # from .hierarchy import HierarchyHandler
-# from .property import PropertyHandler
+from .property import PropertyHandler, PropertyProxy
+
+
 # from .numeric import NumericHandler
 # from .material import MaterialHandler
 
@@ -17,7 +19,7 @@ class Model(ABC):
     parameters: ParameterHandler
     """A handler object that takes care of parameter configuration"""
 
-    # properties: PropertyHandler
+    properties: PropertyHandler
     """A handler object that takes care of property configuration"""
 
     # hierarchy: HierarchyHandler
@@ -38,7 +40,7 @@ class Model(ABC):
     def __init__(self):
         self.__proxy = None
         self.parameters = ParameterHandler(self.cls_name)
-        # self.properties = PropertyHandler()
+        self.properties = PropertyHandler()
         # self.material = MaterialHandler()
 
         self.interface()
@@ -84,8 +86,6 @@ class Model(ABC):
         """
 
     def __enter__(self):
-        # TODO: return model proxy here, so model.parameters has another
-        #  meaning
         self.__proxy = self.create_proxy()
         return self.__proxy
 
@@ -106,6 +106,7 @@ class Model(ABC):
         this method is called to process its own modelling code"""
         self.__proxy.parameters.finalise()  # parameters are final now
         self.define()
+        self.__proxy.properties.finalise()  # properties can be queried now
 
     # TODO: method that allows the numeric handler to collect the symbols
     #       and values.
@@ -131,13 +132,16 @@ class ModelProxy:
     parameters: ParameterProxy
     """The proxy of the parameter handler, to connect and update parameters"""
 
+    properties: PropertyProxy
+    """The proxy of the property handler, making properties available"""
+
     def __init__(self, model: Model):
         self.parameters = model.parameters.create_proxy()
+        self.properties = model.properties.create_proxy()
 
     def set_name(self, name):
         """Set the name of the model for better error diagnostics"""
         self.parameters.set_name(name)
-
 
 #
 # class ModelProxy:

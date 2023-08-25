@@ -10,19 +10,6 @@ from simu.utilities.errors import DataFlowError, DimensionalityError
 # from simu.model import Augmentor, MaterialSpec
 
 
-class ParameterTestModel(Model):
-    """A simple model to test parameters"""
-
-    def interface(self):
-        pdef = self.parameters.define
-        pdef("length", 10, "m")
-        pdef("width", unit="m")
-
-    def define(self):
-        par = self.parameters
-        area = par["length"] * par["width"]
-        logging.debug(f"area = {area:~}")
-
 class SquareTestModel(Model):
     """A simple model that calculates the square of a parameter as a surface"""
 
@@ -109,6 +96,20 @@ class MaterialTestModel(Model):
         intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
 
 
+class ParameterTestModel(Model):
+    """A simple model to test parameters"""
+
+    def interface(self):
+        pdef = self.parameters.define
+        pdef("length", 10, "m")
+        pdef("width", unit="m")
+
+    def define(self):
+        par = self.parameters
+        area = par["length"] * par["width"]
+        logging.debug(f"area = {area:~}")
+
+
 def test_parameters_update(caplog):
     caplog.set_level(logging.DEBUG)
     with ParameterTestModel() as proxy:
@@ -162,6 +163,48 @@ def test_parameter_incompatible():
         proxy.parameters.update("width", 100, "cm")
 
 
+class PropertyTestModel(Model):
+    """A simple model to test properties"""
+
+    def interface(self) -> None:
+        self.parameters.define("length", 10, "m")
+        self.properties.declare("area", "m^2")
+
+    def define(self) -> None:
+        self.properties["area"] = self.parameters["length"] ** 2
+
+
+def test_parameters_access():
+    with PropertyTestModel() as proxy:
+        pass
+    area = proxy.properties["area"]
+    assert f"{area:~}" == "sq(length) m ** 2"
+
+
+def test_parameters_access_too_early():
+    with PropertyTestModel() as proxy:
+        with raises(DataFlowError) as err:
+            area = proxy.properties["area"]
+
+
+def test_parameters_dont_define():
+    model = PropertyTestModel()
+    model.define = lambda: None
+    with raises(DataFlowError) as err:
+        with model as proxy:
+            pass
+
+
+def test_parameters_define_other():
+    model = PropertyTestModel()
+
+    def mydef():
+        model.properties["area"] = model.parameters["length"]
+
+    model.define = mydef
+    with raises(DimensionalityError):
+        with model as proxy:
+            pass
 
 # def test_square():
 #     """Test to instantiate the square test model and check symbols"""
