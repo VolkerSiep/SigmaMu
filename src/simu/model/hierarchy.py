@@ -22,7 +22,7 @@ class HierarchyHandler:
         returned."""
         if name in self.__children:
             raise KeyError(f"Child model '{name}' already exists")
-        instance = model.create_proxy(name)
+        instance = model.proxy(name)
         self.__children[name] = instance
         return instance
 

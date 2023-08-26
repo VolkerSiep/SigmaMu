@@ -112,7 +112,7 @@ class ParameterTestModel(Model):
 
 def test_parameters_update(caplog):
     caplog.set_level(logging.DEBUG)
-    with ParameterTestModel() as proxy:
+    with ParameterTestModel.proxy() as proxy:
         proxy.parameters.update("width", 2, "m")
     assert "area = (length*width) m ** 2" in caplog.text
     assert "width" in proxy.parameters.free
@@ -121,7 +121,7 @@ def test_parameters_update(caplog):
 
 def test_parameters_provide():
     width = SymbolQuantity("width", "m")
-    with ParameterTestModel() as proxy:
+    with ParameterTestModel.proxy() as proxy:
         proxy.parameters.provide(width=width)
     assert "width" not in proxy.parameters.free
     assert "length" in proxy.parameters.free
@@ -129,33 +129,30 @@ def test_parameters_provide():
 
 def test_parameter_error():
     with raises(KeyError) as err:
-        with ParameterTestModel() as proxy:
-            proxy.set_name("Peter")
+        with ParameterTestModel.proxy("Peter") as proxy:
             proxy.parameters.update("Hansi", 2, "m")
     assert "Parameter 'Hansi' not defined in 'Peter'" in str(err)
 
 
 def test_parameter_missing():
     with raises(DataFlowError) as err:
-        with ParameterTestModel() as proxy:
-            proxy.set_name("Peter")
-    assert "Model 'Peter' has missing parameters: 'width'" in str(err)
+        with ParameterTestModel.proxy("Peter") as proxy:
+            pass
+    assert "Model 'Peter' has unresolved parameters: 'width'" in str(err.value)
 
 
 def test_parameter_double():
     width = SymbolQuantity("width", "m")
-    with ParameterTestModel() as proxy:
-        proxy.set_name("Peter")
+    with ParameterTestModel.proxy("Peter") as proxy:
         proxy.parameters.provide(width=width)
         with raises(KeyError) as err:
             proxy.parameters.update("width", 2, "m")
-    assert "Parameter 'width' already provided in 'Peter'" in str(err)
+    assert "Parameter 'width' already provided in 'Peter'" in str(err.value)
 
 
 def test_parameter_incompatible():
     temperature = SymbolQuantity("temperature", "K")
-    with ParameterTestModel() as proxy:
-        proxy.set_name("Peter")
+    with ParameterTestModel.proxy("Peter") as proxy:
         with raises(DimensionalityError) as err:
             proxy.parameters.provide(width=temperature)
         with raises(DimensionalityError) as err:
@@ -175,14 +172,14 @@ class PropertyTestModel(Model):
 
 
 def test_parameters_access():
-    with PropertyTestModel() as proxy:
+    with PropertyTestModel.proxy() as proxy:
         pass
     area = proxy.properties["area"]
     assert f"{area:~}" == "sq(length) m ** 2"
 
 
 def test_parameters_access_too_early():
-    with PropertyTestModel() as proxy:
+    with PropertyTestModel.proxy() as proxy:
         with raises(DataFlowError) as err:
             area = proxy.properties["area"]
 
@@ -191,7 +188,7 @@ def test_parameters_dont_define():
     model = PropertyTestModel()
     model.define = lambda: None
     with raises(DataFlowError) as err:
-        with model as proxy:
+        with model.create_proxy() as proxy:
             pass
 
 
@@ -203,7 +200,7 @@ def test_parameters_define_other():
 
     model.define = mydef
     with raises(DimensionalityError):
-        with model as proxy:
+        with model.create_proxy() as proxy:
             pass
 
 # def test_square():

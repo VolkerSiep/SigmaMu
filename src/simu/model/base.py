@@ -1,14 +1,12 @@
 """This module contains the base classes to represent (process) models."""
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Self, Optional
 
-from ..utilities import QFunction
+# from ..utilities import QFunction
 
 from .parameter import ParameterHandler, ParameterProxy
 # from .hierarchy import HierarchyHandler
 from .property import PropertyHandler, PropertyProxy
-
-
 # from .numeric import NumericHandler
 # from .material import MaterialHandler
 
@@ -28,15 +26,6 @@ class Model(ABC):
     # material: MaterialHandler
     """A handler object that takes care of materials"""
 
-    # @classmethod
-    # def as_top_model(cls,
-    #                  name: str = "model") -> tuple[Self, NumericHandler]:
-    #     """Define this model as top level model, hence instantiate and finalise
-    #     it.
-    #     """
-    #     model = cls().finalise()
-    #     return model, proxy.numeric
-
     def __init__(self):
         self.__proxy = None
         self.parameters = ParameterHandler(self.cls_name)
@@ -45,6 +34,18 @@ class Model(ABC):
 
         self.interface()
         # self.hierarchy = HierarchyHandler(self)
+
+    @classmethod
+    def top(cls, name: str = "model") -> "ModelProxy":
+        """Define this model as top level model, hence instantiate,
+        create proxy, and finalise it.
+        """
+        return cls.proxy(name).finalise()
+
+    @classmethod
+    def proxy(cls, name: str = "model") -> "ModelProxy":
+        """Instantiate and create proxy of this model."""
+        return cls().create_proxy(name)
 
     def interface(self) -> None:
         """This abstract method is to define all model parameters, material
@@ -85,31 +86,12 @@ class Model(ABC):
         calculate the property ``area``.
         """
 
-    def __enter__(self):
-        self.__proxy = self.create_proxy()
-        return self.__proxy
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is not None:
-            return
-        self.finalise()
-
     # following the two methods finalise and create_proxy for explicit use,
     # if the context manager is not used.
 
-    def create_proxy(self) -> "ModelProxy":
+    def create_proxy(self, name: Optional[str] = "model") -> "ModelProxy":
         """Create a proxy object for configuration in hierarchy context"""
-        return ModelProxy(self)
-
-    def finalise(self):
-        """After the parent model has connected parameters and materials,
-        this method is called to process its own modelling code"""
-        self.__proxy.parameters.finalise()  # parameters are final now
-        self.define()
-        self.__proxy.properties.finalise()  # properties can be queried now
-
-    # TODO: method that allows the numeric handler to collect the symbols
-    #       and values.
+        return ModelProxy(self, name)
 
     @classmethod
     @property
@@ -135,13 +117,34 @@ class ModelProxy:
     properties: PropertyProxy
     """The proxy of the property handler, making properties available"""
 
-    def __init__(self, model: Model):
+    def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
         self.properties = model.properties.create_proxy()
+        self.__model = model
+        self.__set_name(name)
 
-    def set_name(self, name):
+    def __set_name(self, name):
         """Set the name of the model for better error diagnostics"""
         self.parameters.set_name(name)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is not None:
+            return
+        self.finalise()
+
+    def finalise(self) -> Self:
+        """After the parent model has connected parameters and materials,
+        this method is called to process its own modelling code"""
+        self.parameters.finalise()  # parameters are final now
+        self.__model.define()
+        self.properties.finalise()  # properties can be queried now
+        return self
+
+    # TODO: method that allows the numeric handler to collect the symbols
+    #       and values.
 
 #
 # class ModelProxy:

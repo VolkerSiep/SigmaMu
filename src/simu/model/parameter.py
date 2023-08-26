@@ -174,7 +174,8 @@ class ParameterProxy:
         missing = all_param - (provided | values)
         if missing:
             lst = ", ".join(map(lambda m: f"'{m}'", missing))
-            msg = f"Model '{self.__model_name}' has missing parameters: {lst}"
+            name = self.__model_name
+            msg = f"Model '{name}' has unresolved parameters: {lst}"
             raise DataFlowError(msg)
 
         # clean values of provided parameters
