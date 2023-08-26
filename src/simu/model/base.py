@@ -5,7 +5,7 @@ from typing import Self, Optional
 # from ..utilities import QFunction
 
 from .parameter import ParameterHandler, ParameterProxy
-# from .hierarchy import HierarchyHandler
+from .hierarchy import HierarchyHandler
 from .property import PropertyHandler, PropertyProxy
 # from .numeric import NumericHandler
 # from .material import MaterialHandler
@@ -20,7 +20,7 @@ class Model(ABC):
     properties: PropertyHandler
     """A handler object that takes care of property configuration"""
 
-    # hierarchy: HierarchyHandler
+    hierarchy: HierarchyHandler
     """A handler object that takes care of defining sub models"""
 
     # material: MaterialHandler
@@ -33,7 +33,7 @@ class Model(ABC):
         # self.material = MaterialHandler()
 
         self.interface()
-        # self.hierarchy = HierarchyHandler(self)
+        self.hierarchy = HierarchyHandler(self)
 
     @classmethod
     def top(cls, name: str = "model") -> "ModelProxy":

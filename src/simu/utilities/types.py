@@ -1,7 +1,10 @@
 """This module defines types of complex data structures"""
 
-from typing import Union, TypeVar, Tuple, Type
+from typing import Union, TypeVar, Tuple, Type, TYPE_CHECKING
 from collections.abc import MutableMapping
+
+if TYPE_CHECKING:
+    from . import Quantity
 
 StringDict = MutableMapping[str, str]
 NestedStringDict = MutableMapping[str, Union[str, "NestedStringDict"]]

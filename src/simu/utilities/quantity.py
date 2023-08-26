@@ -12,11 +12,10 @@ from numpy import squeeze
 from pint import UnitRegistry, set_application_registry
 from pint.errors import DimensionalityError
 
-from . import flatten_dictionary, unflatten_dictionary
 # internal modules
+from . import flatten_dictionary, unflatten_dictionary
 from ..data import DATA_DIR
-from .types import (
-    NestedQuantityDict, NestedStringDict)
+from .types import NestedQuantityDict, NestedStringDict
 
 
 def _create_registry() -> UnitRegistry:
@@ -30,19 +29,20 @@ def _create_registry() -> UnitRegistry:
 
 unit_registry = _create_registry()
 _Q = unit_registry.Quantity
+del _create_registry
 
 
-class Quantity(_Q):  # type: ignore
+class Quantity(_Q):
     """Proper quantity base-class for sub-classing.
 
-    Being a sub-class of ``pint.Quantity``, this class only really adds the
+    Being a subclass of ``pint.Quantity``, this class only really adds the
     ``__json__`` method to return its json representation.
 
     The constructor is used as for ``pint.Quantity``.
     """
 
     def __new__(cls, *args, **kwargs):
-        obj = super().__new__(_Q, *args, **kwargs)
+        obj = _Q(*args, **kwargs)
         obj.__class__ = cls
         return obj
 
@@ -93,7 +93,7 @@ class SymbolQuantity(Quantity):
                 magnitude = cas.vertcat(*magnitude)
             return magnitude, units
 
-        return super().__new__(Quantity, *attributes(*args, **kwargs))
+        return Quantity(*attributes(*args, **kwargs))
 
     def __json__(self) -> str:
         """Custom method to export to json for testing"""
@@ -208,7 +208,7 @@ def base_magnitude(quantity: Quantity) -> float:
 
     >>> base_magnitude(Quantity("1 km"))
     1000.0
-    >>> base_magnitude(Quantity("20 celsius"))
+    >>> base_magnitude(Quantity("20 Celsius"))
     293.15
     >>> int(base_magnitude(Quantity("1 barg")))
     201325

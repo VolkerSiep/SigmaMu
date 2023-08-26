@@ -1,10 +1,10 @@
 """This module implements functionality related to parameter handling"""
 
-from typing import Optional, Self
+from typing import Optional
 from collections.abc import Iterable
 
+from ..utilities import Quantity, SymbolQuantity
 from ..utilities.types import QuantityDict
-from ..utilities.quantity import SymbolQuantity, Quantity
 from ..utilities.errors import DataFlowError
 
 

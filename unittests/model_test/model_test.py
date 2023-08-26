@@ -1,7 +1,6 @@
 """Unit tests related to the model class"""
 
-from typing import Type
-from pytest import mark, raises
+from pytest import raises
 import logging
 
 from simu import Model
@@ -10,90 +9,54 @@ from simu.utilities.errors import DataFlowError, DimensionalityError
 # from simu.model import Augmentor, MaterialSpec
 
 
-class SquareTestModel(Model):
-    """A simple model that calculates the square of a parameter as a surface"""
-
-    def interface(self):
-        """Here I can nicely document the inteface of the model"""
-        self.parameters.define("length", 10.0, "m")
-        self.properties.declare("area", unit="m**2")
-
-    def define(self):
-        """Here I can document the internal function of the model.
-        I can use this distinction to include this doc-string only for
-        detailed documenations."""
-        length = self.parameters["length"]
-        self.properties["area"] = length * length
-
-
-class HierarchyTestModel(Model):
-    """A simple hierarchical model, where the child module calculates the
-    square (surface) of a parameter, and the parent model calculates the
-    volume as function of the calculated surface and a depth parameter."""
-
-    def interface(self):
-        self.parameters.define("depth", 5.0, "cm")
-        self.properties.declare("volume", unit="m**3")
-
-    def define(self):
-        with self.hierarchy.add("square", SquareTestModel()) as child:
-            pass
-
-        volume = child.properties["area"] * self.parameters["depth"]
-        self.properties["volume"] = volume
+# class SquareTestModel(Model):
+#     """A simple model that calculates the square of a parameter as a surface"""
+#
+#     def interface(self):
+#         """Here I can nicely document the interface of the model"""
+#         self.parameters.define("length", 10.0, "m")
+#         self.properties.declare("area", unit="m**2")
+#
+#     def define(self):
+#         """Here I can document the internal function of the model.
+#         I can use this distinction to include this doc-string only for
+#         detailed documentations."""
+#         length = self.parameters["length"]
+#         self.properties["area"] = length * length
+#
 
 
-class HierarchyTestModel2(Model):
-    """A simple hierarchical model, where the parent model calculates the
-    length of a parameter, and the child model calculates the
-    surface as function of the calculated length."""
-
-    def interface(self):
-        self.parameters.define("radius", 5.0, "cm")
-        self.parameters.define("depth", 10, "cm")
-        self.properties.declare("volume", "m**3")
-
-    def define(self):
-        length = 2 * self.parameters["radius"]
-
-        # # later shortcut syntax proposal:
-        # with self.child("square", SquareTestModel()) as child:
-        with self.hierarchy.add("square", SquareTestModel()) as child:
-            child.parameters.provide(length=length)
-
-        volume = self.parameters["depth"] * child.properties["area"]
-        self.properties["volume"] = volume
-
-
-class NestedHierarchyTestModel(Model):
-    """A new model to test nested hierarchy. Just redefining one of the
-    parameters, leaving the other one free."""
-
-    def interface(self):
-        self.parameters.define("radius", 10.0, "cm")
-        self.properties.declare("volume", "m**3")
-
-    def define(self):
-        with self.hierarchy.add("volumator", HierarchyTestModel2()) as child:
-            child.parameters.provide(radius=self.parameters["radius"])
-        self.properties["volume"] = child.properties["volume"]
-
-
-class MaterialTestModel(Model):
-
-    def interface(self):
-        gas_spec = MaterialSpec(species=["NO", "NO2", "O2", "*"])
-        # gas_spec.require(FancyAugmentor)
-        self.material.require("inlet_1", gas_spec)
-        self.material.require("inlet_2", gas_spec)
-
-    def define(self):
-        inlet_1 = self.material["inlet_1"]
-        inlet_2 = self.material["inlet_2"]
-        # should be defined upfront for project
-        gas: MaterialDefinition = "This is used as a template"
-        intermediate_1 = self.material.create("intermediate_1", gas)
-        intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
+#
+#
+# class NestedHierarchyTestModel(Model):
+#     """A new model to test nested hierarchy. Just redefining one of the
+#     parameters, leaving the other one free."""
+#
+#     def interface(self):
+#         self.parameters.define("radius", 10.0, "cm")
+#         self.properties.declare("volume", "m**3")
+#
+#     def define(self):
+#         with self.hierarchy.add("volumator", HierarchyTestModel2()) as child:
+#             child.parameters.provide(radius=self.parameters["radius"])
+#         self.properties["volume"] = child.properties["volume"]
+#
+#
+# class MaterialTestModel(Model):
+#
+#     def interface(self):
+#         gas_spec = MaterialSpec(species=["NO", "NO2", "O2", "*"])
+#         # gas_spec.require(FancyAugmentor)
+#         self.material.require("inlet_1", gas_spec)
+#         self.material.require("inlet_2", gas_spec)
+#
+#     def define(self):
+#         inlet_1 = self.material["inlet_1"]
+#         inlet_2 = self.material["inlet_2"]
+#         # should be defined upfront for project
+#         gas: MaterialDefinition = "This is used as a template"
+#         intermediate_1 = self.material.create("intermediate_1", gas)
+#         intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
 
 
 class ParameterTestModel(Model):
@@ -136,7 +99,7 @@ def test_parameter_error():
 
 def test_parameter_missing():
     with raises(DataFlowError) as err:
-        with ParameterTestModel.proxy("Peter") as proxy:
+        with ParameterTestModel.proxy("Peter"):
             pass
     assert "Model 'Peter' has unresolved parameters: 'width'" in str(err.value)
 
@@ -153,9 +116,9 @@ def test_parameter_double():
 def test_parameter_incompatible():
     temperature = SymbolQuantity("temperature", "K")
     with ParameterTestModel.proxy("Peter") as proxy:
-        with raises(DimensionalityError) as err:
+        with raises(DimensionalityError):
             proxy.parameters.provide(width=temperature)
-        with raises(DimensionalityError) as err:
+        with raises(DimensionalityError):
             proxy.parameters.update("width", 100, "K")
         proxy.parameters.update("width", 100, "cm")
 
@@ -180,15 +143,15 @@ def test_parameters_access():
 
 def test_parameters_access_too_early():
     with PropertyTestModel.proxy() as proxy:
-        with raises(DataFlowError) as err:
+        with raises(DataFlowError):
             area = proxy.properties["area"]
 
 
 def test_parameters_dont_define():
     model = PropertyTestModel()
     model.define = lambda: None
-    with raises(DataFlowError) as err:
-        with model.create_proxy() as proxy:
+    with raises(DataFlowError):
+        with model.create_proxy():
             pass
 
 
@@ -200,8 +163,63 @@ def test_parameters_define_other():
 
     model.define = mydef
     with raises(DimensionalityError):
-        with model.create_proxy() as proxy:
+        with model.create_proxy():
             pass
+
+
+class HierarchyTestModel(Model):
+    """A simple hierarchical model, where the child module calculates the
+    square (surface) of a parameter, and the parent model calculates the
+    volume as function of the calculated surface and a depth parameter."""
+
+    def interface(self):
+        self.parameters.define("depth", 5.0, "cm")
+        self.properties.declare("volume", unit="m**3")
+
+    def define(self):
+        with self.hierarchy.add("square", PropertyTestModel) as child:
+            pass
+        volume = child.properties["area"] * self.parameters["depth"]
+        self.properties["volume"] = volume
+
+
+class HierarchyTestModel2(Model):
+    """A simple hierarchical model, where the parent model calculates the
+    length of a parameter, and the child model calculates the
+    surface as function of the calculated length."""
+
+    def interface(self):
+        self.parameters.define("radius", 5.0, "cm")
+        self.parameters.define("depth", 10, "cm")
+        self.properties.declare("volume", "m**3")
+
+    def define(self):
+        radius = self.parameters["radius"]
+        length = 2 * radius
+        # # later shortcut syntax proposal:
+        # with self.child("square", SquareTestModel) as child:
+        with self.hierarchy.add("square", PropertyTestModel) as child:
+            child.parameters.provide(length=length)  # TODO: Why type error?
+
+        volume = self.parameters["depth"] * child.properties["area"]
+        self.properties["volume"] = volume
+
+
+def test_hierarchy():
+    """Test evaluating a simple hierarchicals model with just parameters and
+    properties"""
+    proxy = HierarchyTestModel.top()
+    volume = proxy.properties["volume"]
+    assert f"{volume:~}" == "(sq(length)*depth) cm * m ** 2"
+
+
+def test_hierarchy2():
+    """Test evaluating a simple hierarchicals model with just parameters and
+    properties"""
+    proxy = HierarchyTestModel2.top()
+    volume = proxy.properties["volume"]
+    assert f"{volume:~}" == "(depth*sq((2*radius))) cm ** 3"
+
 
 # def test_square():
 #     """Test to instantiate the square test model and check symbols"""
@@ -214,7 +232,7 @@ def test_parameters_define_other():
 #
 #
 # def test_two_instances():
-#     """Check that two instances don't interfer"""
+#     """Check that two instances don't interfere"""
 #     model = SquareTestModel()
 #     num = 3
 #     instances = [model.create_proxy(f"m_{i}") for i in range(num)]
@@ -243,19 +261,7 @@ def test_parameters_define_other():
 #     assert_reproduction(props, suffix="props")
 #
 #
-# hierarchy_models = [
-#     HierarchyTestModel, HierarchyTestModel2, NestedHierarchyTestModel
-# ]
-#
-#
-# @mark.parametrize("model_cls", hierarchy_models)
-# def test_hierarchy(model_cls: Type[Model]):
-#     """Test evaluating a simple hierarchicals model with just parameters and
-#     properties"""
-#     name = model_cls.__name__
-#     func = model_cls.as_top_model()[0].model.function
-#     assert_reproduction(func.arg_structure, f"{name}_arguments")
-#     assert_reproduction(func.result_structure, f"{name}_result")
+
 #
 #
 # def test_hierarchy_property():
