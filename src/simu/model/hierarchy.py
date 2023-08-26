@@ -1,9 +1,10 @@
 """This module handles functionality concerning model hierarchy."""
-from typing import TYPE_CHECKING, Iterator, Type, Any
+from typing import TYPE_CHECKING, Iterator, Type, Any, NewType
 from collections.abc import Mapping
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import Model, ModelProxy
+    SubModel = Type[NewType("SubModel", Model)]
 
 ModelProxyDictionary = dict[str, "ModelProxy"]
 
@@ -22,7 +23,7 @@ class HierarchyHandler(Mapping):
     def __iter__(self) -> Iterator[str]:
         return iter(self.__children)
 
-    def add(self, name: str, model_cls: Type["Model"],
+    def add(self, name: str, model_cls: "SubModel",
             *args: Any, **kwargs: Any) -> "ModelProxy":
         """Add an instance of the class ``model_cls`` as child to the current
         (parent) context. A :class:`ModelProxy` object is created, registered,

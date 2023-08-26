@@ -1,14 +1,14 @@
 """This module implements functionality related to parameter handling"""
 
-from typing import Optional
-from collections.abc import Iterable
+from typing import Optional, Iterator
+from collections.abc import Mapping, Iterable
 
 from ..utilities import Quantity, SymbolQuantity
 from ..utilities.types import QuantityDict
 from ..utilities.errors import DataFlowError
 
 
-class ParameterHandler:
+class ParameterHandler(Mapping):
     """This class, being instantiated as the :attr:`Model.parameters`
     attribute, allows to define and access process parameters.
 
@@ -33,6 +33,12 @@ class ParameterHandler:
         self.__values: QuantityDict = {}
         self.__static_used_names: set[str] = set()
         self.__static_id = static_id
+
+    def __len__(self) -> int:
+        return len(self.__params)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.__params)
 
     def define(self,
                name: str,
@@ -78,10 +84,6 @@ class ParameterHandler:
         cls = ParameterHandler
         full_name = f"{self.__static_id}/{name}"
         return cls.static_parameters[full_name]
-
-    def names(self) -> Iterable[str]:
-        """An iterator over all names of defined parameters"""
-        return self.__params.keys()
 
     def static_names(self) -> Iterable[str]:
         """An iterator over all names of defined static parameters"""
