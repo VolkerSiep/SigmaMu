@@ -8,7 +8,7 @@ from ..utilities.types import QuantityDict
 from ..utilities.errors import DataFlowError
 
 
-class ParameterHandler(Mapping):
+class ParameterHandler(Mapping[str, Quantity]):
     """This class, being instantiated as the :attr:`Model.parameters`
     attribute, allows to define and access process parameters.
 
@@ -74,6 +74,12 @@ class ParameterHandler(Mapping):
         else:
             return cls.static_parameters[full_name]
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return
+
     def __getitem__(self, name: str) -> Quantity:
         """Return the symbol of a defined parameter. This is to be used within
         the :meth:`Model.define` method."""
@@ -106,7 +112,7 @@ class ParameterHandler(Mapping):
         return ParameterProxy(self, self.__params, self.__values)
 
 
-class ParameterProxy:
+class ParameterProxy(Mapping[str, Quantity]):
     """This class is instantiated by the parent's :class:`ParameterHandler`
     to configure the parameter connections from the parent context."""
 
@@ -120,6 +126,15 @@ class ParameterProxy:
         self.__free: QuantityDict = {}
 
         self.__provided: set[str] = set()
+
+    def __getitem__(self, name: str) -> Quantity:
+        return self.__handler[name]
+
+    def __len__(self) -> int:
+        return len(self.__handler)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.__handler)
 
     def set_name(self, name: str):
         """Set the name of the model for better error diagnostics"""

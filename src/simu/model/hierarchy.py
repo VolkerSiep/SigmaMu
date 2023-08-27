@@ -27,6 +27,12 @@ class HierarchyHandler(Mapping[str, "ModelProxy"]):
     def __iter__(self) -> Iterator[str]:
         return iter(self.__children)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return
+    
     def declare(self, name: str, model_cls: Type["Model"]):
         """Declare a sub-model in the interface, and by that
           a) Demand that it will be instantiated, and

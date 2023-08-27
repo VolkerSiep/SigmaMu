@@ -3,11 +3,11 @@
 from pytest import raises
 import logging
 
-from simu import Model
 from simu.utilities import assert_reproduction, SymbolQuantity
 from simu.utilities.errors import DataFlowError, DimensionalityError
 # from simu.model import Augmentor, MaterialSpec
 
+from .models import *
 
 # class SquareTestModel(Model):
 #     """A simple model that calculates the square of a parameter as a surface"""
@@ -57,20 +57,6 @@ from simu.utilities.errors import DataFlowError, DimensionalityError
 #         gas: MaterialDefinition = "This is used as a template"
 #         intermediate_1 = self.material.create("intermediate_1", gas)
 #         intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
-
-
-class ParameterTestModel(Model):
-    """A simple model to test parameters"""
-
-    def interface(self):
-        pdef = self.parameters.define
-        pdef("length", 10, "m")
-        pdef("width", unit="m")
-
-    def define(self):
-        par = self.parameters
-        area = par["length"] * par["width"]
-        logging.debug(f"area = {area:~}")
 
 
 def test_parameters_update(caplog):
@@ -123,17 +109,6 @@ def test_parameter_incompatible():
         proxy.parameters.update("width", 100, "cm")
 
 
-class PropertyTestModel(Model):
-    """A simple model to test properties"""
-
-    def interface(self) -> None:
-        self.parameters.define("length", 10, "m")
-        self.properties.declare("area", "m^2")
-
-    def define(self) -> None:
-        self.properties["area"] = self.parameters["length"] ** 2
-
-
 def test_parameters_access():
     with PropertyTestModel.proxy() as proxy:
         pass
@@ -165,48 +140,6 @@ def test_parameters_define_other():
     with raises(DimensionalityError):
         with model.create_proxy():
             pass
-
-
-class HierarchyTestModel(Model):
-    """A simple hierarchical model, where the child module calculates the
-    square (surface) of a parameter, and the parent model calculates the
-    volume as function of the calculated surface and a depth parameter."""
-
-    def interface(self):
-        self.parameters.define("depth", 5.0, "cm")
-        self.properties.declare("volume", unit="m**3")
-
-    def define(self):
-        with self.hierarchy.add("square", PropertyTestModel) as child:
-            pass
-        volume = child.properties["area"] * self.parameters["depth"]
-        self.properties["volume"] = volume
-
-
-class HierarchyTestModel2(Model):
-    """A simple hierarchical model, where the parent model calculates the
-    length of a parameter, and the child model calculates the
-    surface as function of the calculated length."""
-
-    def interface(self):
-        # make this one available via hierarchy proxy.
-        #  declared class can be that one or a subclass!?
-        self.hierarchy.declare("square", PropertyTestModel)
-
-        self.parameters.define("radius", 5.0, "cm")
-        self.parameters.define("depth", 10, "cm")
-        self.properties.declare("volume", "m**3")
-
-    def define(self):
-        radius = self.parameters["radius"]
-        length = 2 * radius
-        # # later shortcut syntax proposal:
-        # with self.child("square", SquareTestModel) as child:
-        with self.hierarchy.add("square", PropertyTestModel) as child:
-            child.parameters.provide(length=length)  # TODO: Why type error?
-
-        volume = self.parameters["depth"] * child.properties["area"]
-        self.properties["volume"] = volume
 
 
 def test_hierarchy():

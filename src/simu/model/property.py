@@ -45,6 +45,12 @@ class PropertyHandler(Mapping[str, Quantity]):
         operator (``[]``) before."""
         return self.__props[name]
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return
+
     def declare(self, name: str, unit: str):
         """This method declares a property to be provided by the model."""
         if name in self.__declared:
