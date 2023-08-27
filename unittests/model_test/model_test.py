@@ -189,6 +189,10 @@ class HierarchyTestModel2(Model):
     surface as function of the calculated length."""
 
     def interface(self):
+        # make this one available via hierarchy proxy.
+        #  declared class can be that one or a subclass!?
+        self.hierarchy.declare("square", PropertyTestModel)
+
         self.parameters.define("radius", 5.0, "cm")
         self.parameters.define("depth", 10, "cm")
         self.properties.declare("volume", "m**3")

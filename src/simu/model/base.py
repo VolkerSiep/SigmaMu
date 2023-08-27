@@ -5,7 +5,7 @@ from typing import Self, Optional
 # from ..utilities import QFunction
 
 from .parameter import ParameterHandler, ParameterProxy
-from .hierarchy import HierarchyHandler
+from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 # from .numeric import NumericHandler
 # from .material import MaterialHandler
@@ -31,9 +31,8 @@ class Model(ABC):
         self.parameters = ParameterHandler(self.cls_name)
         self.properties = PropertyHandler()
         # self.material = MaterialHandler()
-
-        self.interface()
         self.hierarchy = HierarchyHandler(self)
+        self.interface()
 
     @classmethod
     def top(cls, name: str = "model") -> "ModelProxy":
@@ -120,6 +119,7 @@ class ModelProxy:
     def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
         self.properties = model.properties.create_proxy()
+        self.hierarchy = model.hierarchy.create_proxy()
         self.__model = model
         self.__set_name(name)
 
@@ -141,6 +141,7 @@ class ModelProxy:
         self.parameters.finalise()  # parameters are final now
         self.__model.define()
         self.properties.finalise()  # properties can be queried now
+        self.hierarchy.finalise()
         return self
 
     # TODO: method that allows the numeric handler to collect the symbols

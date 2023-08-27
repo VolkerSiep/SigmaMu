@@ -62,6 +62,7 @@ class PropertyHandler(Mapping[str, Quantity]):
         """Create a proxy object for configuration in hierarchy context"""
         return PropertyProxy(self)
 
+
 class PropertyProxy(Mapping[str, Quantity]):
     """This class is instantiated by the parent's :class:`PropertyHanler`
     to handle the property availability to the parent context."""
