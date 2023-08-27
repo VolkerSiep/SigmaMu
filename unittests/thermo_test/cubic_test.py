@@ -245,10 +245,10 @@ def test_initialise_rk2(cls):
     # calculate contribution values with initial state to reproduce pressure
     args = {k: res[k] for k in res_num}
     args.update(ideal)
-    func = QFunction(args, {"p": res["p"]})
+    func = QFunction(args, {"p_res": res["p"]})
 
     args = {**res_num, **ideal_num}
-    p2 = func(args)["p"] + sum(n) * R_GAS * T / args["V"]
+    p2 = func(args)["p_res"] + sum(n) * R_GAS * T / args["V"]
     assert abs(p2 - p) < Q("1 Pa")
 
 

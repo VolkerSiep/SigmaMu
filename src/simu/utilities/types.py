@@ -3,6 +3,7 @@
 from typing import Union, TypeVar, Tuple, Type
 from collections.abc import MutableMapping
 
+
 StringDict = MutableMapping[str, str]
 NestedStringDict = MutableMapping[str, Union[str, "NestedStringDict"]]
 
