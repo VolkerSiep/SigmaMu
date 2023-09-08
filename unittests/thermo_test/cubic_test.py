@@ -109,6 +109,24 @@ def test_non_symmmetric_mixing_rule():
     assert_reproduction(res["a"])
 
 
+def test_non_symmmetric_mixing_rule_no_interaction():
+    """Test definition of NonSymmetricMixingRule contribution"""
+    res = {
+        "T": sym("T", "K"),
+        "n": vec("n", 3, "mol"),
+        "a_i": vec("a_i", 3, "Pa*m**6/mol")
+    }
+    options = {
+        "k_1": [],
+        "k_2": [],
+        "l_1": [],
+        "target": "a"
+    }
+    cont = NonSymmetricMixingRule(["A", "B", "C"], options)
+    par = ParameterDictionary()
+    cont.define(res, par)
+
+
 def test_redlich_kwong_a_function():
     """Test definition of RedlichKwongAFunction contribution"""
     res = {

@@ -14,8 +14,8 @@ from ..thermo import ThermoFrame
 class Augmentor(ABC):
     """An Augmentor is a specific class to extend the physical properties
     calculated on a material instance."""
-    def __init__(self, material_spec: "MaterialSpec"):
-        self.material_spec = material_spec
+    def __init__(self, material_def: "MaterialDefinition"):
+        self.species = material_def.frame.species
 
     @abstractmethod
     def define(self, material: "Material"):
@@ -29,9 +29,12 @@ class MaterialSpec:
     typically in a material port of a Model. It defines which species are
     required and whether additional species are allowed.
     """
-    def __init__(self, species: Optional[Iterable[str]] = None):
+
+    def __init__(self, species: Optional[Iterable[str]] = None,
+                 augmentors: Optional[Iterable[Type[Augmentor]]] = None):
         self.__locked = not (species is None or "*" in species)
         self.__species = set() if species is None else set(species) - set("*")
+        self.__augmentors = set() if augmentors is None else set(augmentors)
 
     @property
     def species(self) -> Set[str]:
@@ -52,10 +55,18 @@ class MaterialSpec:
             species are missing in the specification
           - none of the specified augmentors are missing in the material
         """
-        spe, mspe = self.species, set(material.species)
-        locked = self.locked
-        return not ((spe - mspe) or (locked and (mspe - spe)))
+        # TODO: it's ok that not all augmentors are applied. The spec can do
+        #  that on instantiation
 
+        spe, mspe = self.species, set(material.species)
+        aug, maug = self.augmentors, material.augmentors
+        locked = self.locked
+        return not ((spe - mspe) or (locked and (mspe - spe) or (aug - maug)))
+
+    @property
+    def augmentors(self) -> Set[Type[Augmentor]]:
+        """The set of required augmentor classes"""
+        return set(self.__augmentors)
 
 class MaterialDefinition:
     def __init__(self,
@@ -63,6 +74,7 @@ class MaterialDefinition:
                  parameter_set: NestedQuantityDict):
         self.__thermo_frame = thermo_frame
         self.__parameter_set = parameter_set  # numerical parameters??
+        # the entire parameter database?
 
     @property
     def frame(self) -> ThermoFrame:

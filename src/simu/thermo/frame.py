@@ -57,9 +57,11 @@ class ThermoFrame:
         result = {"_state": state}
         state_definition.prepare(result)
         for name, contribution in contributions.items():
-            parameters[name] = ParameterDictionary()
-            contribution.define(result, parameters[name])
+            params = ParameterDictionary()
+            contribution.define(result, params)
             logger.debug(f"Defining contribution '{name}'")
+            if params:
+                parameters[name] = params
 
         args = {"state": state, "parameters": parameters}
         self.__function = QFunction(args, result, "thermo_frame")

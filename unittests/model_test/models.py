@@ -69,18 +69,18 @@ class HierarchyTestModel2(Model):
         self.properties["volume"] = volume
 
 
-# class MaterialTestModel(Model):
-#
-#     def interface(self):
-#         gas_spec = MaterialSpec(species=["NO", "NO2", "O2", "*"])
-#         # gas_spec.require(FancyAugmentor)
-#         self.material.require("inlet_1", gas_spec)
-#         self.material.require("inlet_2", gas_spec)
-#
-#     def define(self):
-#         inlet_1 = self.material["inlet_1"]
-#         inlet_2 = self.material["inlet_2"]
-#         # should be defined upfront for project
-#         gas: MaterialDefinition = "This is used as a template"
-#         intermediate_1 = self.material.create("intermediate_1", gas)
-#         intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
+class MaterialTestModel(Model):
+
+    def interface(self):
+        gas_spec = MaterialSpec(["NO", "NO2", "O2", "*"])
+        gas_spec.require(FancyAugmentor)
+        self.material.require("inlet_1", gas_spec)
+        self.material.require("inlet_2", gas_spec)
+
+    def define(self):
+        inlet_1 = self.material["inlet_1"]
+        inlet_2 = self.material["inlet_2"]
+        # should be defined upfront for project
+        gas: MaterialDefinition = "This is used as a template"
+        intermediate_1 = self.material.create("intermediate_1", gas)
+        intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)

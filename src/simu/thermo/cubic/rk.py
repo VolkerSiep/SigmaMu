@@ -194,7 +194,7 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
     def initial_state(self, temperature, pressure, quantities, properties):
         V = min(self.find_zeros(temperature, pressure, quantities, properties))
         return [base_magnitude(temperature), base_magnitude(V)] + \
-            list(base_magnitude(quantities))
+            [base_magnitude(quantities)]
 
 
 class RedlichKwongEOSGas(RedlichKwongEOS):
@@ -210,7 +210,7 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
     def initial_state(self, temperature, pressure, quantities, properties):
         V = max(self.find_zeros(temperature, pressure, quantities, properties))
         return [base_magnitude(temperature), base_magnitude(V)] + \
-            list(base_magnitude(quantities))
+            [base_magnitude(quantities)]
 
 
 class RedlichKwongAFunction(ThermoContribution):

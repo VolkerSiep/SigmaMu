@@ -133,9 +133,10 @@ class NonSymmetricMixingRule(ThermoContribution):
                 except KeyError:
                     continue
                 coeff = par.register_sparse_matrix(name, pairs, "dimless")
-                term = sum(c_1(i, j) * c for i, j, c in coeff.pair_items())
-                contributions.append(factor * term)
-            return -2 * sum(contributions)
+                if coeff:
+                    term = sum(c_1(i, j) * c for i, j, c in coeff.pair_items())
+                    contributions.append(factor * term)
+            return -2 * sum(contributions) if contributions else None
 
         def asymmetric():
             contributions = []
@@ -145,11 +146,19 @@ class NonSymmetricMixingRule(ThermoContribution):
                 except KeyError:
                     continue
                 coeff = par.register_sparse_matrix(name, pairs, "dimless")
-                term = sum(c_2(i, j) * c for i, j, c in coeff.pair_items())
-                contributions.append(factor * term)
-            return -2 / N * sum(contributions)
+                if coeff:
+                    term = sum(c_2(i, j) * c for i, j, c in coeff.pair_items())
+                    contributions.append(factor * term)
+            return -2 / N * sum(contributions) if contributions else None
 
-        res[target] = sum1(a_n)**2 + symmetric() + asymmetric()
+        sym = symmetric()
+        asym = asymmetric()
+        res[target] = sum1(a_n) ** 2
+        if sym is not None:
+            print(sym)
+            res[target] += sym
+        if asym is not None:
+            res[target] += asym
 
 
 class CriticalParameters(ThermoContribution):

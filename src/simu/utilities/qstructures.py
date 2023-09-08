@@ -1,7 +1,7 @@
 """This module contains data structures that build on the quantity datatype"""
 
 # stdlibs
-from typing import Iterable, Tuple, Union
+from typing import Iterable, Tuple, Union, Mapping
 from collections.abc import Callable
 
 # external libs
@@ -334,7 +334,8 @@ arccosh = lambda x: unary_func(x, cas.arccosh)
 arctanh = lambda x: unary_func(x, cas.arctanh)
 
 
-def parse_quantities_in_struct(struct: Union[NestedStringDict, str]):
+def parse_quantities_in_struct(struct: Union[NestedStringDict, str])\
+        -> Union[Quantity, Mapping[str, Quantity]]:
     """Return a new struct that contains parsed quantities at the leaf
     values of the given input struct."""
     try:

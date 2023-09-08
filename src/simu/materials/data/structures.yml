@@ -52,7 +52,6 @@ Boston-Mathias-Redlich-Kwong-Gas:
         unit: "m ** 3 / mol"
     - RedlichKwongEOSGas
 
-
 Boston-Mathias-Redlich-Kwong-Liquid:
   state: HelmholtzState
   contributions:
