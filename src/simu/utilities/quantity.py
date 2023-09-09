@@ -42,7 +42,7 @@ class Quantity(_Q):
     """
 
     def __new__(cls, *args, **kwargs):
-        obj = _Q(*args, **kwargs)
+        obj = super().__new__(_Q, *args, **kwargs)
         obj.__class__ = cls
         return obj
 
@@ -93,7 +93,7 @@ class SymbolQuantity(Quantity):
                 magnitude = cas.vertcat(*magnitude)
             return magnitude, units
 
-        return Quantity(*attributes(*args, **kwargs))
+        return super().__new__(Quantity, *attributes(*args, **kwargs))
 
     def __json__(self) -> str:
         """Custom method to export to json for testing"""
@@ -208,7 +208,7 @@ def base_magnitude(quantity: Quantity) -> float:
 
     >>> base_magnitude(Quantity("1 km"))
     1000.0
-    >>> base_magnitude(Quantity("20 Celsius"))
+    >>> base_magnitude(Quantity("20 degC"))
     293.15
     >>> int(base_magnitude(Quantity("1 barg")))
     201325

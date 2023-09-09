@@ -321,5 +321,6 @@ class HelmholtzIdealGas(ThermoContribution):
 
     def initial_state(self, temperature, pressure, quantities, properties):
         volume = sum1(quantities) * R_GAS * temperature / pressure
-        return [base_magnitude(temperature), base_magnitude(volume)] + \
-            [base_magnitude(quantities)]
+        return [base_magnitude(temperature),
+                base_magnitude(volume),
+                base_magnitude(quantities)]

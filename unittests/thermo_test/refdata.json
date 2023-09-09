@@ -125,8 +125,6 @@
         "O2": "kg * m ** 2 / K / mol / s ** 2"
       }
     },
-    "HelmholtzIdealGas": {},
-    "IdealMix": {},
     "LinearHeatCapacity": {
       "cp_a": {
         "N2": "kg * m ** 2 / K / mol / s ** 2",
@@ -136,8 +134,7 @@
         "N2": "kg * m ** 2 / K ** 2 / mol / s ** 2",
         "O2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
       }
-    },
-    "StandardState": {}
+    }
   },
   "frame_test.py::test_property_names": [
     "S",

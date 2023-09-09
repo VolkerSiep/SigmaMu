@@ -158,6 +158,8 @@ class ThermoFrame:
             result = cont.initial_state(temperature, pressure, quantities,
                                         properties)
             if result:
+                result[0] = float(result[0])
+                result[1] = float(result[1])
                 return result
         msg = "No initialisation found despite of non-Gibbs surface"
         raise NotImplementedError(msg)
