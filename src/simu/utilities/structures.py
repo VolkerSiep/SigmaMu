@@ -3,12 +3,14 @@ This module contains general helper functions that are useful on several
 levels, while relying to maximal degree on standard python structures.
 """
 from re import escape, split
+from typing import TypeVar
 # stdlib modules
 from collections import Counter
 
 # internal modules
-from .types import NestedTDict, TDict
+from .types import NestedMap, MutMap, Map, NestedMutMap
 
+_V = TypeVar("_V")
 _SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 
@@ -36,19 +38,14 @@ class MCounter(Counter):
     def __pos__(self):
         return self
 
-    # I don't think I need this!?
-    # @classmethod
-    # def fromkeys(cls, iterable, v=None):
-    #     raise NotImplementedError()
 
-
-def flatten_dictionary(structure: NestedTDict, prefix: str = "") -> TDict:
+def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:
     r"""Convert the given structure into a flat list of key value pairs,
     where the keys are ``SEPARATOR``-separated concatonations of the paths,
     and values are the values of the leafs. Non-string keys are converted
     to strings. Occurances of ``SEPARATOR`` are escaped by ``\``.
 
-    >>> d = {"a": {"b": 1, "c": 2}, "d": {"e/f": 3}}
+    >>> d: NestedMap[int] = {"a": {"b": 1, "c": 2}, "d": {"e/f": 3}}
     >>> flatten_dictionary(d)
     {'a/b': 1, 'a/c': 2, 'd/e\\/f': 3}
     """
@@ -57,7 +54,7 @@ def flatten_dictionary(structure: NestedTDict, prefix: str = "") -> TDict:
     except AttributeError:  # doesn't seem so, this is just a value
         return {prefix: structure}  # type: ignore
 
-    result: TDict = {}
+    result: MutMap[_V] = {}
     # must sort to create the same sequence every time
     # (dictionary might have content permuted)
     for key, value in sorted(items):
@@ -67,7 +64,7 @@ def flatten_dictionary(structure: NestedTDict, prefix: str = "") -> TDict:
     return result
 
 
-def unflatten_dictionary(flat_structure: TDict) -> NestedTDict:
+def unflatten_dictionary(flat_structure: Map[_V]) -> NestedMap[_V]:
     r"""This is the reverse of :func:`flatten_dictionary`, inflating the
     given one-depth dictionary into a nested structure.
 
@@ -75,7 +72,7 @@ def unflatten_dictionary(flat_structure: TDict) -> NestedTDict:
     >>> unflatten_dictionary(d)
     {'a': {'b': 1, 'c': 2}, 'd': {'e/f': 3}}
     """
-    result = {}  # type: ignore
+    result: NestedMutMap[_V] = {}
 
     def insert(struct, sub_keys, sub_value):
         """insert one element into the nested structure"""

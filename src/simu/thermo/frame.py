@@ -8,17 +8,17 @@ objects, calculating thermochemical properties as function of their
 state and the model parameters.
 """
 # stdlib modules
-from copy import deepcopy
-from typing import Type, List, Collection
-from collections.abc import Mapping
+from typing import Type
+from collections.abc import Mapping, Collection
 from logging import getLogger
 
 # internal modules
+from .contribution import ThermoContribution, StateDefinition
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
                          SymbolQuantity, extract_units_dictionary)
-from ..utilities.types import (
-    NestedStringDict, ThermoContributionDict, NestedQuantityDict, QuantityDict)
-from .contribution import ThermoContribution, StateDefinition
+from ..utilities.types import NestedMap, Map
+
+ThermoContributionDict = Map[tuple[Type["Contribution"], Map]]
 
 logger = getLogger(__name__)
 
@@ -29,7 +29,8 @@ class ThermoFrame:
     vector, and calculates a set of thermodynamic properties.
     """
 
-    def __init__(self, species: List[str], state_definition: StateDefinition,
+    def __init__(self, species: Collection[str],
+                 state_definition: StateDefinition,
                  contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
         (casadi) with given species and contributions.
@@ -51,7 +52,7 @@ class ThermoFrame:
 
         # define thermodynamic state (th, mc, [ch])
         state = SymbolQuantity("x", "dimless", len(species) + 2)
-        self.__species = species
+        self.__species = list(species)
 
         # call the contributions
         result = {"_state": state}
@@ -71,7 +72,7 @@ class ThermoFrame:
         self.__default = None
         self.__param_struct = extract_units_dictionary(parameters)
 
-    def __call__(self, state: Quantity, parameters: NestedQuantityDict,
+    def __call__(self, state: Quantity, parameters: NestedMap[Quantity],
                  squeeze_results: bool = True):
         """Shortcut: Call to the function object :attr:`function`.
 
@@ -84,18 +85,18 @@ class ThermoFrame:
             }, squeeze_results)
 
     @property
-    def species(self) -> List[str]:
+    def species(self) -> Collection[str]:
         """Returns a list of species names"""
-        return deepcopy(self.__species)
+        return list(self.__species)
 
     @property
-    def property_structure(self) -> NestedStringDict:
+    def property_structure(self) -> NestedMap[str]:
         """Returns a recursive structure properties, defining the calculated
         properties from :meth:`__call__` """
         return self.__function.result_structure
 
     @property
-    def parameter_structure(self) -> NestedStringDict:
+    def parameter_structure(self) -> NestedMap[str]:
         """This property is to aid the process of parametrizing a model.
         It returns the structure of all required model parameters. Initially,
         the returned object contains units of measurements that must be
@@ -105,7 +106,7 @@ class ThermoFrame:
         """
         return self.__param_struct
 
-    def relax(self, current_result: QuantityDict,
+    def relax(self, current_result: NestedMap[Quantity],
               delta_state: Collection[float]) -> float:
         """As a thermodynamic function, this object's contributions hold
         information on the domain limits of the state variables. This is mostly
@@ -130,7 +131,7 @@ class ThermoFrame:
                 for cont in self.__contributions.values()))
 
     def initial_state(self, temperature: Quantity, pressure: Quantity,
-                      quantities: Quantity, parameters) -> List[float]:
+                      quantities: Quantity, parameters) -> list[float]:
         """Return a state estimate for given temperature, pressure and
         molar quantities - at given parameter set.
 
@@ -227,7 +228,7 @@ class ThermoFactory:
             self.__contributions[name] = class_
 
     @property
-    def contribution_names(self) -> List[str]:
+    def contribution_names(self) -> Collection[str]:
         """This property contains the full names of all so long registered
         properties"""
         return sorted(self.__contributions.keys())

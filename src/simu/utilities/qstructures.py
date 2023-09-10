@@ -1,8 +1,8 @@
 """This module contains data structures that build on the quantity datatype"""
 
 # stdlibs
-from typing import Iterable, Tuple, Union, Mapping
-from collections.abc import Callable
+from typing import Union, TypeVar, Self
+from collections.abc import Callable, Iterable, Mapping
 
 # external libs
 import casadi as cas
@@ -10,7 +10,7 @@ from pint.errors import DimensionalityError
 
 # internal libs
 from . import base_unit, Quantity, SymbolQuantity, qvertcat
-from .types import NestedStringDict
+from .types import NestedMap
 
 
 class ParameterDictionary(dict):
@@ -74,7 +74,7 @@ class ParameterDictionary(dict):
         return qvertcat(*self[key].values())
 
     def register_sparse_matrix(self, key: str,
-                               pairs: Iterable[Tuple[str, str]], unit: str):
+                               pairs: Iterable[tuple[str, str]], unit: str):
         """Create a sparse matrix quantity and add the structure to the
         dictionary. The given unit is converted to base units before being
         applied.
@@ -123,8 +123,8 @@ class ParameterDictionary(dict):
         return qvertcat(*entry.values())
 
 
-_OType = Union[float, Quantity, "QuantityDict"]
-_RType = Union[Quantity,"QuantityDict"]
+_OType = Union[float, Quantity, Mapping[str, Quantity]]
+_RType = Union[Quantity, Mapping[str, Quantity]]
 _SType = Union[float, cas.SX]
 
 
@@ -188,14 +188,15 @@ class QuantityDict(dict[str, Quantity]):
      """
     @classmethod
     def from_vector_quantity(cls, quantity: Quantity,
-                             keys: list[str]) -> "QuantityDict":
+                             keys: list[str]) -> Self:
         """As the magnitude of a ``Quantity`` can be a container itself,
         this convenience factory method combines such a vector quantity with
         a set of given keys into a ``QuantityDict`` object
 
-        >>> a = Quantity([1,2,3], "m")
-        >>> y = QuantityDict.from_vector_quantity(a, ["A", "B", "C"])
-        >>> for key, value in y.items(): print(f"{key}: {value:~}")
+        >>> raw = Quantity([1, 2, 3], "m")
+        >>> dic = QuantityDict.from_vector_quantity(raw, ["A", "B", "C"])
+        >>> for name, value in dic.items():
+        ...     print(f"{name}: {value:~}")
         A: 1 m
         B: 2 m
         C: 3 m
@@ -273,7 +274,7 @@ def unary_func(quantity: _OType, func: Callable[[_SType], _SType]) -> _RType:
     """Call a unary function that requires a dimensionless argument on the
     argument, accepting that argument to be a float, a scalar quantity,
     a symbolic quantity, or a QuantityDict object (well, any dictionary
-    of the above, actually."""
+    of the above, actually)."""
     def scalar_func(value):
         """Call the unary function on the value's magnitude"""
         try:
@@ -318,24 +319,27 @@ def log(quantity: _OType) -> _RType:
     return unary_func(quantity, cas.log)
 
 
-log10 = lambda x: unary_func(x, cas.log10)
-exp = lambda x: unary_func(x, cas.exp)
-sin = lambda x: unary_func(x, cas.sin)
-cos = lambda x: unary_func(x, cas.cos)
-tan = lambda x: unary_func(x, cas.tan)
-arcsin = lambda x: unary_func(x, cas.arcsin)
-arccos = lambda x: unary_func(x, cas.arccos)
-arctan = lambda x: unary_func(x, cas.arctan)
-sinh = lambda x: unary_func(x, cas.sinh)
-cosh = lambda x: unary_func(x, cas.cosh)
-tanh = lambda x: unary_func(x, cas.tanh)
-arcsinh = lambda x: unary_func(x, cas.arcsinh)
-arccosh = lambda x: unary_func(x, cas.arccosh)
-arctanh = lambda x: unary_func(x, cas.arctanh)
+V = TypeVar("V", float, Quantity, Mapping[str, Quantity])
+UNFUNC_TYPE = Callable[[V], V]
+
+log10: UNFUNC_TYPE = lambda x: unary_func(x, cas.log10)
+exp: UNFUNC_TYPE = lambda x: unary_func(x, cas.exp)
+sin: UNFUNC_TYPE = lambda x: unary_func(x, cas.sin)
+cos: UNFUNC_TYPE = lambda x: unary_func(x, cas.cos)
+tan: UNFUNC_TYPE = lambda x: unary_func(x, cas.tan)
+arcsin: UNFUNC_TYPE = lambda x: unary_func(x, cas.arcsin)
+arccos: UNFUNC_TYPE = lambda x: unary_func(x, cas.arccos)
+arctan: UNFUNC_TYPE = lambda x: unary_func(x, cas.arctan)
+sinh: UNFUNC_TYPE = lambda x: unary_func(x, cas.sinh)
+cosh: UNFUNC_TYPE = lambda x: unary_func(x, cas.cosh)
+tanh: UNFUNC_TYPE = lambda x: unary_func(x, cas.tanh)
+arcsinh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arcsinh)
+arccosh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arccosh)
+arctanh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arctanh)
 
 
-def parse_quantities_in_struct(struct: Union[NestedStringDict, str])\
-        -> Union[Quantity, Mapping[str, Quantity]]:
+def parse_quantities_in_struct(struct: Union[NestedMap[str], str])\
+        -> Union[Quantity, NestedMap[Quantity]]:
     """Return a new struct that contains parsed quantities at the leaf
     values of the given input struct."""
     try:

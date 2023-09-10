@@ -71,7 +71,7 @@ def test_thermo_source_try_non_quantity():
         _ = StringDictThermoSource(struct)
 
 
-def test_get_thermo_property_values():
+def test_get_thermo_property_values_sources():
     store = ThermoPropertyStore()
     struct = {"T": {"H2O": "K"}, "p": {"H2O": "bar"}}
     store.get_symbols(struct)
@@ -114,6 +114,22 @@ def test_get_thermo_property_values_two_sources():
     assert sources["T"]["H2O"] == "Dagbladet"
     assert sources["p"]["H2O"] == "VG"
 
+
+def test_get_same_thermo_property_values_two_sources():
+    store = ThermoPropertyStore()
+    struct = {"T": {"H2O": "K"}, "p": {"H2O": "bar"}}
+    store.get_symbols(struct)
+
+    struct = {"T": {"H2O": "100 K", "NH3": "200 K"},
+              "p": {"H2O": "10 bar", "NH3": "20 atm"}}
+    store.add_source("Dagbladet", StringDictThermoSource(struct))
+    struct = {"p": {"H2O": "10 bar", "NH3": "20 atm"}}
+    store.add_source("VG", StringDictThermoSource(struct))
+
+    _ = store.get_all_symbol_values()
+    sources = store.get_sources()
+    assert sources["T"]["H2O"] == "Dagbladet"
+    assert sources["p"]["H2O"] == "VG"
 
 
 # def test_create_material_definition():

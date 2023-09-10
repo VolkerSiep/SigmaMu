@@ -3,12 +3,13 @@ parameters"""
 
 # stdlib modules
 from pathlib import Path
-from typing import Iterable, Tuple, List, Union, Mapping
+from collections.abc import Collection, Iterable
 from abc import ABC, abstractmethod
 
 from ..utilities import SymbolQuantity, Quantity
 from ..utilities.qstructures import parse_quantities_in_struct
 from ..utilities.errors import DimensionalityError
+from ..utilities.types import NestedMap, NestedMutMap, MutMap
 
 # external modules
 from yaml import safe_load
@@ -17,12 +18,10 @@ from yaml import safe_load
 from ..thermo import ThermoFactory, all_states, all_contributions
 
 
-NestedQuantityMapping = Union[Quantity, Mapping[str, "NestedQuantityMapping"]]
-NestedStringMapping = Union[str, Mapping[str, "NestedStringMapping"]]
-
-_RT = Tuple[NestedQuantityMapping, NestedStringMapping, NestedStringMapping]
-
-DATA_DIR = Path(__file__).resolve().parent / "data"
+_RT = tuple[Quantity | NestedMap[Quantity],
+            str | NestedMap[str],
+            str | NestedMap[str]]
+_DATA_DIR = Path(__file__).resolve().parent / "data"
 
 
 class AbstractThermoSource(ABC):
@@ -37,7 +36,7 @@ class AbstractThermoSource(ABC):
 class NestedDictThermoSource(AbstractThermoSource):
     """A source of thermodynamic parameters defined by a nested dictionary
     of Quantities"""
-    def __init__(self, data: NestedQuantityMapping):
+    def __init__(self, data: NestedMap[Quantity]):
         self.__data = data
 
     def __getitem__(self, path: Iterable[str]) -> Quantity:
@@ -55,7 +54,7 @@ class StringDictThermoSource(NestedDictThermoSource):
     """Source of thermodynamic parameters defined by a nested dictionary.
     The leaf entries of the nested dictionary are strings representing
     the quantities, such as "120 K" or "32.1 kJ/(mol*K)"."""
-    def __init__(self, data: NestedStringMapping):
+    def __init__(self, data: NestedMap[str]):
         super().__init__(parse_quantities_in_struct(data))
 
 
@@ -65,11 +64,11 @@ class ThermoPropertyStore:
     providing the symbols and values of all used parameters, allowing those
     to be altered dynamically and optimised on."""
     def __init__(self):
-        self.__provided_parameters: NestedQuantityMapping = {}
-        self.__sources: Mapping[str, AbstractThermoSource] = {}
+        self.__provided_parameters: NestedMutMap[Quantity] = {}
+        self.__sources: MutMap[AbstractThermoSource] = {}
 
-    def get_symbols(self, parameter_struct: NestedStringMapping) \
-            -> NestedQuantityMapping:
+    def get_symbols(self, parameter_struct: NestedMap[str]) \
+            -> NestedMap[Quantity]:
         """Query the nested structure of parameter symbols from the store.
         The ``param_struct`` parameter is a nested dictionary with leaf entries
         being the unit of measurement of the thermodynamic parameters defined
@@ -84,8 +83,8 @@ class ThermoPropertyStore:
         is incompatible with respect to the physical dimension.
         """
 
-        def prepare(name: str, key: str, query: NestedStringMapping,
-                    stored: NestedQuantityMapping):
+        def prepare(name: str, key: str, query: NestedMap[str],
+                    stored: NestedMutMap[Quantity]):
             """Helper function to recursively retrieve and define symbols"""
             name = f"{name}.{key}" if name else key
             try:
@@ -112,17 +111,22 @@ class ThermoPropertyStore:
         return {k: prepare("", k, s, self.__provided_parameters)
                 for k, s in parameter_struct.items()}
 
-    def get_all_symbols(self) -> NestedQuantityMapping:
+    def get_all_symbols(self) -> NestedMap[Quantity]:
         """This method returns all previously prepared symbols, cf.
         :meth:`get_symbols`, as a nested dictionary of symbolic quantities"""
         return self.__provided_parameters
 
-    def get_all_symbol_values(self) -> NestedQuantityMapping:
+    def get_all_symbol_values(self) -> NestedMap[Quantity]:
         """This method seeks in connected data sources for all previously
         prepared symbols.
 
         A ``KeyError`` is thrown if not all required parameters are available.
-        Use
+        Use :meth:`get_missing_symbols` to get the structure of missing
+        parameters.
+
+        The sources are queried sequentially in the reverse sequence of them
+        being added, i.e. latest added Sources supersede previous values of
+        same parameters.
         """
         found, missing, sources = self.__get_values()
         if missing:
@@ -130,13 +134,13 @@ class ThermoPropertyStore:
                            "'get_missing_symbols' to find out which")
         return found
 
-    def get_missing_symbols(self) -> NestedStringMapping:
+    def get_missing_symbols(self) -> NestedMap[str]:
         """This method tries to collect values for all previously prepared
         symbols and returns a nested dictionary of quantities with those not
         found."""
         return self.__get_values()[1]
 
-    def get_sources(self) -> NestedStringMapping:
+    def get_sources(self) -> NestedMap[str]:
         """This method returns the name of the data source in which the
         individual values are found"""
         return self.__get_values()[2]
@@ -155,9 +159,10 @@ class ThermoPropertyStore:
           b. symbols for those entries where values are not found.
           c. names of the sources where the values are found
         """
-        def get_value(path: List[str], qty: Quantity) -> Tuple[Quantity, str]:
+        def get_value(path: Collection[str],
+                      qty: Quantity) -> tuple[Quantity, str]:
             """Query the sources for value"""
-            for source_name, source in self.__sources.items():
+            for source_name, source in reversed(self.__sources.items()):
                 try:
                     result = source[*path]
                 except KeyError:
@@ -174,7 +179,8 @@ class ThermoPropertyStore:
             else:
                 raise KeyError("Parameter not found")
 
-        def extract(path: List[str], struct: NestedQuantityMapping) -> _RT:
+        def extract(path: list[str],
+                    struct: Quantity | NestedMutMap[Quantity]) -> _RT:
             """Recursive helper function to extract values"""
             try:
                 items = struct.items()
@@ -186,11 +192,12 @@ class ThermoPropertyStore:
                     return {}, f"{struct.units:~}", {}
 
             # found a sub structure
-            found: NestedQuantityMapping = {}
-            missing: NestedStringMapping = {}
-            source: NestedStringMapping = {}
+            found: NestedMap[Quantity] = {}
+            missing: NestedMutMap[str] = {}
+            source: NestedMap[str] = {}
             for key, value in items:
-                found[key], miss, source[key] = extract(path + [key], value)
+                found_i, miss, source_i = extract(path + [key], value)
+                found[key], source[key] = found_i, source_i
                 if miss:
                     missing[key] = miss
 
@@ -210,9 +217,9 @@ class ExampleThermoFactory(ThermoFactory):
         for state in all_states:
             self.register_state_definition(state)
 
-        with open(DATA_DIR / "structures.yml", encoding='UTF-8') as file:
+        with open(_DATA_DIR / "structures.yml", encoding='UTF-8') as file:
             self.__structures = safe_load(file)
-        with open(DATA_DIR / "definitions.yml", encoding='UTF-8') as file:
+        with open(_DATA_DIR / "definitions.yml", encoding='UTF-8') as file:
             self.__configurations = safe_load(file)
 
     @property
