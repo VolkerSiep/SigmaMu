@@ -162,7 +162,7 @@ class RedlichKwongEOS(ThermoContribution):
         """For the Redlich Kwong equation of state, both phases are required
         to keep the EOS denominators positive and the volume derivative of
         pressure negative. More specific constraints are to be implemented
-        by the sub-classes to represent in particular the liquid phase"""
+        by the subclasses to represent in particular the liquid phase"""
 
     @staticmethod
     def find_zeros(T, p, n, properties):
@@ -179,7 +179,7 @@ class RedlichKwongEOS(ThermoContribution):
 
 
 class RedlichKwongEOSLiquid(RedlichKwongEOS):
-    """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
+    """As a subclass of :class:`RedlichKwongEOS`, this entity specialises
     on describing liquid (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""
@@ -198,7 +198,7 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
 
 
 class RedlichKwongEOSGas(RedlichKwongEOS):
-    """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
+    """As a subclass of :class:`RedlichKwongEOS`, this entity specialises
     on describing gas (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""

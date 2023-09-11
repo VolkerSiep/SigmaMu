@@ -14,8 +14,8 @@ from pint.errors import DimensionalityError
 
 # internal modules
 from . import flatten_dictionary, unflatten_dictionary
+from .types import NestedMap
 from ..data import DATA_DIR
-from .types import NestedQuantityDict, NestedStringDict
 
 
 def _create_registry() -> UnitRegistry:
@@ -202,7 +202,7 @@ def base_unit(unit: str) -> str:
     return f"{base:~}"
 
 
-def base_magnitude(quantity: Quantity) -> float:
+def base_magnitude(quantity: Quantity) -> Union[float, "cas.SX"]:
     """Return the magnitude of the quantity in base units. This works for
     symbolic and numeric quantities, and for scalars and vectors
 
@@ -225,7 +225,8 @@ def base_magnitude(quantity: Quantity) -> float:
     return quantity.to_base_units().magnitude
 
 
-def extract_units_dictionary(structure: Union[NestedQuantityDict, Quantity]):
+def extract_units_dictionary(structure: NestedMap[Quantity] | Quantity) \
+        -> NestedMap[str] | str:
     """Based on a nested dictionary of Quantities, create a new nested
     dictionaries with only the units of measurement
 
@@ -254,7 +255,7 @@ class QFunction:
     in the same units as initially defined.
     """
 
-    def __init__(self, args: NestedQuantityDict, results: NestedQuantityDict,
+    def __init__(self, args: NestedMap[Quantity], results: NestedMap[Quantity],
                  func_name: str = "f"):
         args_flat = flatten_dictionary(args)
         results_flat = flatten_dictionary(results)
@@ -267,8 +268,8 @@ class QFunction:
         self.func = cas.Function(func_name, arg_sym, res_sym, arg_names,
                                  res_names)
 
-    def __call__(self, args: NestedQuantityDict,
-                 squeeze_results: bool = True) -> NestedQuantityDict:
+    def __call__(self, args: NestedMap[Quantity],
+                 squeeze_results: bool = True) -> NestedMap[Quantity]:
         """Call operator for the function object, as described above."""
         args_flat = {
             key: value.to(self.arg_units[key]).magnitude
@@ -281,14 +282,14 @@ class QFunction:
         return unflatten_dictionary(result)
 
     @property
-    def result_structure(self) -> NestedStringDict:
+    def result_structure(self) -> NestedMap[str]:
         """Return the result structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
         units = {k: f"{v:~}" for k, v in self.res_units.items()}
         return unflatten_dictionary(units)
 
     @property
-    def arg_structure(self) -> NestedStringDict:
+    def arg_structure(self) -> NestedMap[str]:
         """Return the argument structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
         units = {k: f"{v:~}" for k, v in self.arg_units.items()}

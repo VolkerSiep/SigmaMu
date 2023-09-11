@@ -7,11 +7,11 @@ from copy import copy
 from casadi import vertcat, vertsplit
 
 # internal modules
-from ..utilities import (ParameterDictionary, Quantity, base_magnitude,
-                         base_unit, log, sum1)
-from ..utilities.constants import R_GAS
-from ..utilities.types import QuantityDict
 from .contribution import StateDefinition, ThermoContribution
+from ..utilities import (
+    ParameterDictionary, Quantity, base_magnitude, base_unit, log, sum1)
+from ..utilities.constants import R_GAS
+from ..utilities.types import MutMap
 
 
 class HelmholtzState(StateDefinition):
@@ -27,10 +27,10 @@ class HelmholtzState(StateDefinition):
     ======== ============================
     """
 
-    def prepare(self, result: QuantityDict):
+    def prepare(self, result: MutMap[Quantity]):
         state = result["_state"].magnitude
-        result["T"], result["V"], *result["n"] = vertsplit(state, 1)
-        result["n"] = vertcat(*result["n"])
+        result["T"], result["V"], *n_vec = vertsplit(state, 1)
+        result["n"] = vertcat(*n_vec)
         for name, unit in [("T", "K"), ("V", "m**3"), ("n", "mol")]:
             result[name] = Quantity(result[name], base_unit(unit))
 
@@ -53,10 +53,10 @@ class GibbsState(StateDefinition):
     ======== ============================
     """
 
-    def prepare(self, result: QuantityDict):
+    def prepare(self, result: MutMap[Quantity]):
         state = result["_state"].magnitude
-        result["T"], result["p"], *result["n"] = vertsplit(state, 1)
-        result["n"] = vertcat(*result["n"])
+        result["T"], result["p"], *n_vec = vertsplit(state, 1)
+        result["n"] = vertcat(*n_vec)
         for name, unit in [("T", "K"), ("p", "Pa"), ("n", "mol")]:
             result[name] = Quantity(result[name], base_unit(unit))
 

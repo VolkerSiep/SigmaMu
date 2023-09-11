@@ -1,25 +1,23 @@
 """This module handles functionality concerning model hierarchy."""
-from typing import TYPE_CHECKING, Iterator, Type, Any, NewType
-from collections.abc import Mapping
+from typing import TYPE_CHECKING, Type, Any, NewType
+from collections.abc import Mapping, Iterator
 
+from ..utilities.types import Map, MutMap
 from ..utilities.errors import DataFlowError
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import Model, ModelProxy
     SubModel = Type[NewType("SubModel", Model)]
 
-ModelProxyDictionary = dict[str, "ModelProxy"]
-ModelClsDictionary = dict[str, Type["Model"]]
 
-
-class HierarchyHandler(Mapping[str, "ModelProxy"]):
+class HierarchyHandler(Map["ModelProxy"]):
     """This class, being instantiated as the :attr:`Model.hierarchy` attribute,
     allows to define child models in a hierarchy context."""
 
     def __init__(self, model: "Model"):
         self.model = model
-        self.__children: ModelProxyDictionary = {}
-        self.__declared: ModelClsDictionary = {}
+        self.__children: MutMap["ModelProxy"] = {}
+        self.__declared: MutMap[Type["Model"]] = {}
 
     def __len__(self) -> int:
         return len(self.__children)
@@ -32,8 +30,8 @@ class HierarchyHandler(Mapping[str, "ModelProxy"]):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         return
-    
-    def declare(self, name: str, model_cls: Type["Model"]):
+
+    def declare(self, name: str, model_cls: Type["Model"]) -> None:
         """Declare a sub-model in the interface, and by that
           a) Demand that it will be instantiated, and
           b) Make it available in the hierarchy proxy for browsing from parent
@@ -61,7 +59,7 @@ class HierarchyHandler(Mapping[str, "ModelProxy"]):
         return instance
 
     @property
-    def declared(self) -> ModelClsDictionary:
+    def declared(self) -> Map[Type["Model"]]:
         """Dictionary of declared sub-models"""
         return self.__declared
 

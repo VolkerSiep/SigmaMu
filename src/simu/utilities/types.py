@@ -33,8 +33,8 @@ __NestedMutMap_9 = MutableMapping[str, Union[__V, __NestedMutMap_8]]
 NestedMutMap = MutableMapping[str, Union[__V, __NestedMutMap_9]]
 
 
-NestedStringDict = MutableMapping[str, Union[str, "NestedStringDict"]]
+# NestedStringDict = MutableMapping[str, Union[str, "NestedStringDict"]]
 
-QuantityDict = MutableMapping[str, "Quantity"]
-NestedQuantityDict = \
-    MutableMapping[str, Union["Quantity", "NestedQuantityDict"]]
+# QuantityDict = MutableMapping[str, "Quantity"]
+# NestedQuantityDict = \
+#     MutableMapping[str, Union["Quantity", "NestedQuantityDict"]]

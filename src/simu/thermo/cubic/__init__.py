@@ -28,7 +28,7 @@ class LinearMixingRule(ThermoContribution):
          parameter to the contribution.
     """
 
-    CHILD = "CHILD"  # canot be enum as I wish to serialise with primitives
+    CHILD = "CHILD"  # cannot be enum as I wish to serialise with primitives
     PARAMETER = "PARAMETER"
 
     def define(self, res, par):
@@ -58,7 +58,7 @@ class NonSymmetricMixingRule(ThermoContribution):
 
     Implemented with sparse binary interaction coefficient structure, the
     contribution includes a symmetric interaction (:math:`k`) and an
-    anti-symmetric contribution (:math:`l`).
+    antisymmetric contribution (:math:`l`).
 
     .. math::
 
@@ -79,9 +79,9 @@ class NonSymmetricMixingRule(ThermoContribution):
                      l_{1,ij}\,\left (1 - \frac{T}{T_\mathrm{ref}} \right ) +
                      l_{2,ij}\,\left (1 - \frac{T_\mathrm{ref}}{T} \right )
 
-    Each pair of species can only be define once. The pre-factor 2 is used to
+    Each pair of species can only be defined once. The pre-factor 2 is used to
     yield the same parameter values as if :math:`k` was a symmetric matrix and
-    :math:`l` was antdot(i-symmetric.
+    :math:`l` was antisymmetric.
 
     Despite what above equation suggests based on the double sum, the
     complexity of this contribution in terms of both memory and runtime is

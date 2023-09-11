@@ -4,7 +4,7 @@ the building blocks of a :class:`ThermoFrame` function object."""
 
 # stdlib modules
 from abc import ABC, abstractmethod
-from typing import Collection, Sequence
+from collections.abc import Sequence
 
 # internal modules
 from ..utilities import Quantity, ParameterDictionary

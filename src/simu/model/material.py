@@ -4,10 +4,11 @@ the modelling context."""
 # stdlib
 from typing import Optional, Type
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Set, Sequence
+from collections.abc import Iterable, Collection
 
 # internal
-from ..utilities.types import NestedQuantityDict
+from ..utilities import Quantity
+from ..utilities.types import NestedMap
 from ..thermo import ThermoFrame
 
 
@@ -37,7 +38,7 @@ class MaterialSpec:
         self.__augmentors = set() if augmentors is None else set(augmentors)
 
     @property
-    def species(self) -> Set[str]:
+    def species(self) -> set[str]:
         """The set of species that must be provided."""
         return set(self.__species)
 
@@ -64,14 +65,14 @@ class MaterialSpec:
         return not ((spe - mspe) or (locked and (mspe - spe) or (aug - maug)))
 
     @property
-    def augmentors(self) -> Set[Type[Augmentor]]:
+    def augmentors(self) -> set[Type[Augmentor]]:
         """The set of required augmentor classes"""
         return set(self.__augmentors)
 
 class MaterialDefinition:
     def __init__(self,
                  thermo_frame: ThermoFrame,
-                 parameter_set: NestedQuantityDict):
+                 parameter_set: NestedMap[Quantity]):
         self.__thermo_frame = thermo_frame
         self.__parameter_set = parameter_set  # numerical parameters??
         # the entire parameter database?
@@ -87,11 +88,11 @@ class Material:
 
 
     @property
-    def species(self) -> Sequence[str]:
+    def species(self) -> Collection[str]:
         return self.__definition.frame.species
 
     @property
-    def augmentors(self) -> Set[Type[Augmentor]]:
+    def augmentors(self) -> set[Type[Augmentor]]:
         pass
 
     @property

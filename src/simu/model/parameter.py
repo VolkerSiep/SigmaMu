@@ -1,14 +1,14 @@
 """This module implements functionality related to parameter handling"""
 
-from typing import Optional, Iterator
-from collections.abc import Mapping, Iterable
+from typing import Optional
+from collections.abc import Mapping, Iterable, Iterator
 
 from ..utilities import Quantity, SymbolQuantity
-from ..utilities.types import QuantityDict
+from ..utilities.types import Map, MutMap
 from ..utilities.errors import DataFlowError
 
 
-class ParameterHandler(Mapping[str, Quantity]):
+class ParameterHandler(Map[Quantity]):
     """This class, being instantiated as the :attr:`Model.parameters`
     attribute, allows to define and access process parameters.
 
@@ -25,12 +25,12 @@ class ParameterHandler(Mapping[str, Quantity]):
     overall model function.
     """
 
-    static_parameters: QuantityDict = {}
-    static_values: QuantityDict = {}
+    static_parameters: MutMap[Quantity] = {}
+    static_values: MutMap[Quantity] = {}
 
     def __init__(self, static_id: str):
-        self.__params: QuantityDict = {}
-        self.__values: QuantityDict = {}
+        self.__params: MutMap[Quantity] = {}
+        self.__values: MutMap[Quantity] = {}
         self.__static_used_names: set[str] = set()
         self.__static_id = static_id
 
@@ -97,16 +97,6 @@ class ParameterHandler(Mapping[str, Quantity]):
         prefix = f"{self.__static_id}/"
         return filter(lambda key: key.startswith(prefix), params.keys())
 
-    # @property
-    # def all(self) -> QuantityDict:
-    #     """Return a dictionary of all defined parameters on this level"""
-    #     return dict(self.__params)
-    #
-    # def values(self) -> QuantityDict:
-    #     """Return the (default) values for the defined parameters that have
-    #     such default value."""
-    #     return dict(self.__values)  # create copy to preserve own set
-
     def create_proxy(self) -> "ParameterProxy":
         """Create a proxy object for configuration in hierarchy context"""
         return ParameterProxy(self, self.__params, self.__values)
@@ -117,13 +107,13 @@ class ParameterProxy(Mapping[str, Quantity]):
     to configure the parameter connections from the parent context."""
 
     def __init__(self, handler: ParameterHandler,
-                 params: QuantityDict, values: QuantityDict):
+                 params: MutMap[Quantity], values: MutMap[Quantity]):
         self.__handler = handler
         self.__model_name = "N/A"
 
         self.__params = params  # reference to dicts in handler
         self.__values = values  # not a copy by design
-        self.__free: QuantityDict = {}
+        self.__free: Map[Quantity] = {}
 
         self.__provided: set[str] = set()
 
@@ -167,19 +157,19 @@ class ParameterProxy(Mapping[str, Quantity]):
         quantity.to(self.__params[name].units)
 
     @property
-    def free(self):
+    def free(self) -> Map[Quantity]:
         """Symbols representing the symbols of the parameters that have not
         been provided. These must be used to create an overall function, when
         parameter values are provided from the outside."""
         return dict(self.__free)
 
     @property
-    def values(self):
+    def values(self) -> Map[Quantity]:
         """Symbols representing the values of the parameters that have not
         been provided. These must be used to call the overall function."""
         return dict(self.__values)
 
-    def finalise(self):
+    def finalise(self) -> None:
         """Make sure there are values for all non-provided parameters with
         no value. Remove values of provided parameters"""
 

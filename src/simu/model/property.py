@@ -1,11 +1,11 @@
 """This module implements functionality related to property handling"""
 
-from collections.abc import Mapping
-from typing import Iterator
+from collections.abc import Mapping, Iterator
+from typing import Self
 
-from ..utilities.types import QuantityDict
 from ..utilities.quantity import Quantity
 from ..utilities.errors import DataFlowError
+from ..utilities.types import Map, MutMap
 
 
 class PropertyHandler(Mapping[str, Quantity]):
@@ -14,8 +14,8 @@ class PropertyHandler(Mapping[str, Quantity]):
 
     def __init__(self):
         self.__model_name = "N/A"
-        self.__props: QuantityDict = {}
-        self.__declared: QuantityDict = {}
+        self.__props: MutMap[Quantity] = {}
+        self.__declared: MutMap[Quantity] = {}
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.__props)
@@ -45,19 +45,19 @@ class PropertyHandler(Mapping[str, Quantity]):
         operator (``[]``) before."""
         return self.__props[name]
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        return
+        pass
 
-    def declare(self, name: str, unit: str):
+    def declare(self, name: str, unit: str) -> None:
         """This method declares a property to be provided by the model."""
         if name in self.__declared:
             self.__raise(name,  "is already declared")
         self.__declared[name] = Quantity(unit)  # also assure the unit is valid
 
-    def check_complete(self):
+    def check_complete(self) -> None:
         """Check that all declared properties are defined"""
         if missing := {n for n in self.__declared if n not in self.__props}:
             msg = "The following properties are not defined: " + \
@@ -69,7 +69,7 @@ class PropertyHandler(Mapping[str, Quantity]):
         return PropertyProxy(self)
 
 
-class PropertyProxy(Mapping[str, Quantity]):
+class PropertyProxy(Map[Quantity]):
     """This class is instantiated by the parent's :class:`PropertyHanler`
     to handle the property availability to the parent context."""
 
@@ -95,7 +95,7 @@ class PropertyProxy(Mapping[str, Quantity]):
         else:
             raise DataFlowError("Property access before model is finalised")
 
-    def finalise(self):
+    def finalise(self) -> None:
         """Signal that the model is done with its declaration, and properties
         are now available for the target context."""
         self.__handler.check_complete()
