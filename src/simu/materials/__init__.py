@@ -224,6 +224,7 @@ class ExampleThermoFactory(ThermoFactory):
 
     @property
     def configuration_names(self) -> Iterable[str]:
+        """The names of all configurations"""
         return self.__configurations.keys()
 
     def create_frame(self, configuration: str):

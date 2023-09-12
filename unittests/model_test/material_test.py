@@ -5,7 +5,6 @@ from pytest import raises
 from simu.materials import (
     ExampleThermoFactory, ThermoPropertyStore, StringDictThermoSource)
 from simu.utilities.errors import DimensionalityError, UndefinedUnitError
-from simu.model.material import MaterialDefinition
 
 
 # class BigNAugmentor(Augmentor):

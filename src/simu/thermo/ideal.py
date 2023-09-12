@@ -27,11 +27,12 @@ class HelmholtzState(StateDefinition):
     ======== ============================
     """
 
-    def prepare(self, result: MutMap[Quantity]):
+    def prepare(self, result: MutMap[Quantity], flow: bool = False):
         state = result["_state"].magnitude
         result["T"], result["V"], *n_vec = vertsplit(state, 1)
         result["n"] = vertcat(*n_vec)
-        for name, unit in [("T", "K"), ("V", "m**3"), ("n", "mol")]:
+        s = "/s" if flow else ""
+        for name, unit in [("T", "K"), ("V", f"m**3{s}"), ("n", f"mol{s}")]:
             result[name] = Quantity(result[name], base_unit(unit))
 
     def reverse(self, temperature: Quantity, pressure: Quantity,
@@ -53,11 +54,12 @@ class GibbsState(StateDefinition):
     ======== ============================
     """
 
-    def prepare(self, result: MutMap[Quantity]):
+    def prepare(self, result: MutMap[Quantity], flow: bool = False):
         state = result["_state"].magnitude
         result["T"], result["p"], *n_vec = vertsplit(state, 1)
         result["n"] = vertcat(*n_vec)
-        for name, unit in [("T", "K"), ("p", "Pa"), ("n", "mol")]:
+        q_unit = "mol/s" if flow else "mol"
+        for name, unit in [("T", "K"), ("p", "Pa"), ("n", q_unit)]:
             result[name] = Quantity(result[name], base_unit(unit))
 
     def reverse(self, temperature: Quantity, pressure: Quantity,

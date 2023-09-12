@@ -15,12 +15,13 @@ from ..thermo import ThermoFrame
 class Augmentor(ABC):
     """An Augmentor is a specific class to extend the physical properties
     calculated on a material instance."""
-    def __init__(self, material_def: "MaterialDefinition"):
-        self.species = material_def.frame.species
+    def __init__(self, frame: ThermoFrame):
+        self.species = frame.species
 
     @abstractmethod
     def define(self, material: "Material"):
         """Method to extend the properties of a material object"""
+        ...
 
 
 class MaterialSpec:
@@ -69,35 +70,21 @@ class MaterialSpec:
         """The set of required augmentor classes"""
         return set(self.__augmentors)
 
-class MaterialDefinition:
-    def __init__(self,
-                 thermo_frame: ThermoFrame,
-                 parameter_set: NestedMap[Quantity]):
-        self.__thermo_frame = thermo_frame
-        self.__parameter_set = parameter_set  # numerical parameters??
-        # the entire parameter database?
-
-    @property
-    def frame(self) -> ThermoFrame:
-        return self.__thermo_frame
-
 
 class Material:
-    def __init__(self, definition: MaterialDefinition):
-        self.__definition = definition
+    def __init__(self, frame: ThermoFrame):
+        self.__frame = frame
+        # TODO: also generate a state corresponding to the frame
 
 
     @property
     def species(self) -> Collection[str]:
-        return self.__definition.frame.species
+        """The species names"""
+        return self.__frame.species
 
     @property
     def augmentors(self) -> set[Type[Augmentor]]:
         pass
-
-    @property
-    def definition(self) -> MaterialDefinition:
-        return self.__definition
 
 
 class MaterialHandler:

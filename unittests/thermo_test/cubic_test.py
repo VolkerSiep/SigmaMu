@@ -329,7 +329,6 @@ def test_relax_rk_advanced():
     beta = cont.relax(res, [0.0, 4e-6, 0.0, 0.0])
     assert 0.7 < beta < 0.8  # from plot, this is where dp/dV turns positive
 
-
 # *** auxiliary routines
 
 def create_boston_mathias_alpha_function():
@@ -342,6 +341,7 @@ def create_boston_mathias_alpha_function():
     cont = BostonMathiasAlphaFunction(["A", "B"], {})
     cont.define(res, par)
     return res, par
+
 
 def plot_pv(res):
     """auxiliary method to plot pv-graph and linear/quadratic approximation"""

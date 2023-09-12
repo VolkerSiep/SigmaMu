@@ -9,16 +9,16 @@ state and the model parameters.
 """
 # stdlib modules
 from typing import Type
-from collections.abc import Mapping, Collection
+from collections.abc import Mapping, Sequence, Collection
 from logging import getLogger
 
 # internal modules
 from .contribution import ThermoContribution, StateDefinition
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
                          SymbolQuantity, extract_units_dictionary)
-from ..utilities.types import NestedMap, Map
+from ..utilities.types import NestedMap, Map, MutMap
 
-ThermoContributionDict = Map[tuple[Type["Contribution"], Map]]
+ThermoContributionDict = Map[tuple[Type["ThermoContribution"], Map]]
 
 logger = getLogger(__name__)
 
@@ -29,7 +29,7 @@ class ThermoFrame:
     vector, and calculates a set of thermodynamic properties.
     """
 
-    def __init__(self, species: Collection[str],
+    def __init__(self, species: Sequence[str],
                  state_definition: StateDefinition,
                  contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
@@ -43,49 +43,62 @@ class ThermoFrame:
             further documented here.
         """
         # need to instantiate the contributions
-        contributions = {
+        contribs: Map[ThermoContribution] = {
             name: cls_(species, options)
             for name, (cls_, options) in contributions.items()
         }
-
-        parameters = {}
-
-        # define thermodynamic state (th, mc, [ch])
-        state = SymbolQuantity("x", "dimless", len(species) + 2)
         self.__species = list(species)
 
-        # call the contributions
-        result = {"_state": state}
-        state_definition.prepare(result)
-        for name, contribution in contributions.items():
-            params = ParameterDictionary()
-            contribution.define(result, params)
-            logger.debug(f"Defining contribution '{name}'")
-            if params:
-                parameters[name] = params
+        def create_function(flow: bool = False):
+            """Build up the result dictionary and define function"""
+            params: MutMap[ParameterDictionary] = {}
+            # define thermodynamic state (th, mc, [ch])
+            state = SymbolQuantity("x", "dimless", len(species) + 2)
+            # call the contributions; build up result dictionary
+            result = {"_state": state}
+            state_definition.prepare(result, flow)
+            for name, contribution in contribs.items():
+                new_params = ParameterDictionary()
+                contribution.define(result, new_params)
+                logger.debug(f"Defining contribution '{name}'")
+                if new_params:
+                    params[name] = new_params
+            # create function
+            args = {"state": state, "parameters": params}
+            return QFunction(args, result, "thermo_frame"), params
 
-        args = {"state": state, "parameters": parameters}
-        self.__function = QFunction(args, result, "thermo_frame")
+        self.__function, parameters = create_function(flow=False)
+        function, _ = create_function(flow=True)
 
-        self.__contributions = contributions
+        self.__res_units = {
+            False: self.__function.res_units,
+            True: function.res_units
+        }
+
+        self.__contributions = contribs
         self.__state_definition = state_definition
         self.__default = None
         self.__param_struct = extract_units_dictionary(parameters)
 
-    def __call__(self, state: Quantity, parameters: NestedMap[Quantity],
-                 squeeze_results: bool = True):
+    def __call__(self, state: Sequence, parameters: NestedMap[Quantity],
+                 squeeze_results: bool = True, flow: bool = False):
         """Shortcut: Call to the function object :attr:`function`.
 
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.
+
+        Depending on the ``flow`` parameter, extensive properties will be
+        returned as flow quantities, such as ``W`` or ``mol/s`` or as stagnant
+        state properties, such as ``J`` or ``mol``.
         """
+        self.__function.res_units = self.__res_units[flow]
         return self.__function({
-                "state": state,
+                "state": Quantity(state),
                 "parameters": parameters
             }, squeeze_results)
 
     @property
-    def species(self) -> Collection[str]:
+    def species(self) -> Sequence[str]:
         """Returns a list of species names"""
         return list(self.__species)
 
@@ -106,8 +119,8 @@ class ThermoFrame:
         """
         return self.__param_struct
 
-    def relax(self, current_result: NestedMap[Quantity],
-              delta_state: Collection[float]) -> float:
+    def relax(self, current_result: Map[Quantity],
+              delta_state: Sequence[float]) -> float:
         """As a thermodynamic function, this object's contributions hold
         information on the domain limits of the state variables. This is mostly
         as trivial as demanding positive temperature, pressure, or quantities,
@@ -230,8 +243,8 @@ class ThermoFactory:
     @property
     def contribution_names(self) -> Collection[str]:
         """This property contains the full names of all so long registered
-        properties"""
-        return sorted(self.__contributions.keys())
+        contributions"""
+        return set(self.__contributions.keys())
 
     def create_frame(self, configuration: Mapping) -> ThermoFrame:
         """This factory method creates a :class:`ThermoFrame` object from the
