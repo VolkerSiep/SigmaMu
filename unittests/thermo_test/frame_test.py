@@ -62,9 +62,16 @@ def test_property_structure():
     assert_reproduction(frame.property_structure)
 
 
-def test_call_frame():
+def test_call_frame_flow():
     """Call a created frame with numerical values"""
-    result = call_frame()[2]
+    result = call_frame(flow=True)[2]
+    result = {k: v for k, v in result.items() if k in {"S", "mu"}}
+    assert_reproduction(result)
+
+
+def test_call_frame_state():
+    """Call a created frame with numerical values"""
+    result = call_frame(flow=False)[2]
     result = {k: v for k, v in result.items() if k in {"S", "mu"}}
     assert_reproduction(result)
 
@@ -88,11 +95,11 @@ def test_initial_state():
 
 # *** helper functions
 
-def call_frame():
+def call_frame(flow: bool = True):
     """Call a frame object with a state and return all with the result"""
     frame = create_simple_frame()
     state = Q([398.15, 0.0448, 1, 1])  # = T, V, *n
-    result = frame(state, example_parameters)
+    result = frame(state, example_parameters, flow=flow)
     return frame, state, result
 
 
