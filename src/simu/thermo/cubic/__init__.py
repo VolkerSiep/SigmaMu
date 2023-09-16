@@ -22,27 +22,17 @@ class LinearMixingRule(ThermoContribution):
       - ``target``: The name of the property :math:`x`.
       - ``source``: The name of the property :math:`x_i`. If omitted, it
         will be generated as the target name with ``_i`` appended.
-      - ``src_mode``: If set to ``child`` (default), the contribution aquires
-         the quantities :math:`x_i` as a result of previous calculations.
-         If set to ``parameter``, the quantity is required as a vector
-         parameter to the contribution.
     """
-
-    CHILD = "CHILD"  # cannot be enum as I wish to serialise with primitives
-    PARAMETER = "PARAMETER"
 
     def define(self, res, par):
         target = self.options["target"]
         source = self.options.get("source", target + "_i")
-        src_mode = self.options.get("src_mode", self.CHILD).upper()
-        assert src_mode in (self.CHILD, self.PARAMETER), \
-            f"Invalid src_mode: '{src_mode}'"
-        if src_mode == self.CHILD:
-            res[target] = res[source] @ res["n"]
-        else:
-            unit = self.options.get("unit", "")
-            param = par.register_vector(source, self.species, unit)
-            res[target] = param.T @ res["n"]
+        res[target] = res[source].T @ res["n"]
+
+        # else:
+        #     unit = self.options.get("unit", "")
+        #     param = par.register_vector(source, self.species, unit)
+        #     res[target] = param.T @ res["n"]
 
 
 class NonSymmetricMixingRule(ThermoContribution):
@@ -155,7 +145,6 @@ class NonSymmetricMixingRule(ThermoContribution):
         asym = asymmetric()
         res[target] = sum1(a_n) ** 2
         if sym is not None:
-            print(sym)
             res[target] += sym
         if asym is not None:
             res[target] += asym
@@ -186,6 +175,25 @@ class CriticalParameters(ThermoContribution):
         res["_T_c"] = par.register_vector("T_c", self.species, "K")
         res["_p_c"] = par.register_vector("p_c", self.species, "bar")
         res["_omega"] = par.register_vector("omega", self.species, "dimless")
+
+
+class VolumeShift(ThermoContribution):
+    r"""This class does not perform any calculations, but provides volume
+    shift parameters to be used via mixing rules as the C-parameter in
+    equations of state. The following parameter needs to be provided as a
+    species vector:
+
+    ======== ============== =================================
+    Property Symbol         Description
+    ======== ============== =================================
+    c_i      :math:`c_i`    Volume shift parameter [m**3/mol]
+    ======== ============== =================================
+    """
+
+    provides = ["_ceos_c_i"]
+
+    def define(self, res, par):
+        res["_ceos_c_i"] = par.register_vector("c_i", self.species, "m**3/mol")
 
 
 class BostonMathiasAlphaFunction(ThermoContribution):

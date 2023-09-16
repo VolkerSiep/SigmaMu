@@ -16,7 +16,7 @@ from simu.thermo import (CriticalParameters, LinearMixingRule,
                          RedlichKwongEOSLiquid, RedlichKwongEOSGas,
                          NonSymmetricMixingRule, RedlichKwongAFunction,
                          RedlichKwongBFunction, RedlichKwongMFactor,
-                         BostonMathiasAlphaFunction)
+                         BostonMathiasAlphaFunction, VolumeShift)
 from simu.thermo.cubic.rk import RedlichKwongEOS
 
 
@@ -40,19 +40,24 @@ def test_critical_parameters():
     assert_reproduction(res)
 
 
+def test_volume_shift():
+    """Test definition of VolumeShift contribution"""
+    res = {}
+    par = ParameterDictionary()
+    cont = VolumeShift(["A", "B"], {})
+    cont.define(res, par)
+    assert_reproduction([res, par])
+
+
 def test_linear_mixing_rule():
     """Test definition of LinearMixingRule contribution"""
-    res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
+    res = {"T": sym("T", "K"), "n": vec("n", 2, "mol"),
+           "c_i": vec("c_i", 2, "m**3/mol")}
     par = ParameterDictionary()
-    opt = {
-        "target": "c",
-        "src_mode": LinearMixingRule.PARAMETER,
-        "unit": "m**3/mol"
-    }
+    opt = {"target": "c"}
     cont = LinearMixingRule(["A", "B"], opt)
     cont.define(res, par)
-    result = [res["c"], par]
-    assert_reproduction(result)
+    assert_reproduction(res["c"])
 
 
 def test_redlich_kwong_eos():

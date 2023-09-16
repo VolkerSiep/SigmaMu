@@ -43,13 +43,11 @@ Boston-Mathias-Redlich-Kwong-Gas:
       name: MixingRule_B
       options:
         target: _ceos_b
+    - VolumeShift
     - cls: LinearMixingRule
       name: MixingRule_C
       options:
-        source: _c_i
-        src_mode: parameter
         target: _ceos_c
-        unit: "m ** 3 / mol"
     - RedlichKwongEOSGas
 
 Boston-Mathias-Redlich-Kwong-Liquid:
@@ -73,11 +71,9 @@ Boston-Mathias-Redlich-Kwong-Liquid:
       name: MixingRule_B
       options:
         target: _ceos_b
+    - VolumeShift
     - cls: LinearMixingRule
       name: MixingRule_C
       options:
-        source: _c_i
-        src_mode: parameter
         target: _ceos_c
-        unit: "m**3 / mol"
     - RedlichKwongEOSLiquid

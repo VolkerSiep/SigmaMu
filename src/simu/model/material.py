@@ -72,9 +72,12 @@ class MaterialSpec:
 
 
 class Material:
-    def __init__(self, frame: ThermoFrame):
-        self.__frame = frame
-        # TODO: also generate a state corresponding to the frame
+    def __init__(self, frame: ThermoFrame, flow: bool = False):
+        self.__frame = frame  # Frame is the new MaterialDefinition
+        # TODO:
+        #  also generate a state corresponding to the frame
+        #  ask frame for parameters and ask ThermoParameterStore for symbols.
+
 
 
     @property
