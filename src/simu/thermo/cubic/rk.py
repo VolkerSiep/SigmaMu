@@ -8,6 +8,7 @@ from casadi import SX
 from numpy import dot, ravel, roots
 
 # internal modules
+from ..state import DefaultState
 from ...utilities import base_magnitude, jacobian, log, sum1
 from ...utilities.constants import R_GAS
 from ..contribution import ThermoContribution
@@ -165,12 +166,13 @@ class RedlichKwongEOS(ThermoContribution):
         by the subclasses to represent in particular the liquid phase"""
 
     @staticmethod
-    def find_zeros(T, p, n, properties):
+    def find_zeros(state: DefaultState, properties):
         """Given conditions and properties (A, B, C contribution of RK-EOS),
         calculate the compressibility factor roots analytically and return
         the vector quantity of volumes based on these"""
+        T, p, n = state.temperature, state.pressure, state.mol_vector
         A, B, C = [properties[f"_ceos_{i}"] for i in "abc"]
-        NRT = sum(n) * R_GAS * T
+        NRT = sum1(n) * R_GAS * T
         alpha = float(A * p / (NRT * NRT))  # must be dimensionless
         beta = float(B * p / NRT)  # dito
         zeros = roots([1, -1, alpha - beta * (1 + beta), -alpha * beta])
@@ -191,10 +193,10 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
         d_y = dot(ravel(current_result["_dp_dx"]), delta_state)
         return -y / d_y if d_y < 0 else None
 
-    def initial_state(self, temperature, pressure, quantities, properties):
-        V = min(self.find_zeros(temperature, pressure, quantities, properties))
-        return [base_magnitude(temperature), base_magnitude(V)] + \
-            [base_magnitude(quantities)]
+    def initial_state(self, state, properties):
+        volume = min(self.find_zeros(state, properties))
+        return [base_magnitude(state.temperature), base_magnitude(volume)] + \
+            [base_magnitude(state.mol_vector)]
 
 
 class RedlichKwongEOSGas(RedlichKwongEOS):
@@ -207,10 +209,10 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
         """For the gas phase, no more constraints apply then the ones that
         apply for both phases."""
 
-    def initial_state(self, temperature, pressure, quantities, properties):
-        V = max(self.find_zeros(temperature, pressure, quantities, properties))
-        return [base_magnitude(temperature), base_magnitude(V)] + \
-            [base_magnitude(quantities)]
+    def initial_state(self, state, properties):
+        volume = max(self.find_zeros(state, properties))
+        return [base_magnitude(state.temperature), base_magnitude(volume)] + \
+            [base_magnitude(state.mol_vector)]
 
 
 class RedlichKwongAFunction(ThermoContribution):

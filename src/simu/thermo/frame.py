@@ -8,12 +8,13 @@ objects, calculating thermochemical properties as function of their
 state and the model parameters.
 """
 # stdlib modules
-from typing import Type
+from typing import Type, Optional
 from collections.abc import Mapping, Sequence, Collection
 from logging import getLogger
 
 # internal modules
-from .contribution import ThermoContribution, StateDefinition
+from .contribution import ThermoContribution
+from .state import StateDefinition, DefaultState
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
                          SymbolQuantity, extract_units_dictionary)
 from ..utilities.types import NestedMap, Map, MutMap
@@ -47,7 +48,7 @@ class ThermoFrame:
             name: cls_(species, options)
             for name, (cls_, options) in contributions.items()
         }
-        self.__species = list(species)
+        self.__species: Sequence[str] = list(species)
 
         def create_function(flow: bool = False):
             """Build up the result dictionary and define function"""
@@ -75,12 +76,13 @@ class ThermoFrame:
             True: function.res_units
         }
 
-        self.__contributions = contribs
-        self.__state_definition = state_definition
-        self.__default = None
-        self.__param_struct = extract_units_dictionary(parameters)
+        self.__contributions: Map[ThermoContribution] = contribs
+        self.__state_definition: StateDefinition = state_definition
+        self.__default: Optional[DefaultState] = None
+        self.__param_struct: NestedMap[str] = \
+            extract_units_dictionary(parameters)
 
-    def __call__(self, state: Sequence, parameters: NestedMap[Quantity],
+    def __call__(self, state: Sequence[float], parameters: NestedMap[Quantity],
                  squeeze_results: bool = True, flow: bool = False):
         """Shortcut: Call to the function object :attr:`function`.
 
@@ -143,8 +145,8 @@ class ThermoFrame:
                 cont.relax(current_result, delta_state)
                 for cont in self.__contributions.values()))
 
-    def initial_state(self, temperature: Quantity, pressure: Quantity,
-                      quantities: Quantity, parameters) -> list[float]:
+    def initial_state(self, state: DefaultState,
+                      parameters: NestedMap[Quantity]) -> Sequence[float]:
         """Return a state estimate for given temperature, pressure and
         molar quantities - at given parameter set.
 
@@ -160,45 +162,40 @@ class ThermoFrame:
         # then start from top and call contributions to try to initialise,
         #  based on results that might contain NaNs (if they depend on volume).
         st_def = self.__state_definition
-        state = st_def.reverse(temperature, pressure, quantities)
-        if None not in state:
-            return state
+        state_flat: Sequence[float] = st_def.reverse(state)
+        if None not in state_flat:
+            return state_flat
 
-        state = Quantity([float("NaN") if x is None else x for x in state])
+        state_flat = [float("NaN") if x is None else x for x in state_flat]
         # calculate all properties ... accept NaNs
-        properties = self(state, parameters)
+        properties = self(state_flat, parameters)
 
         for cont in reversed(self.__contributions.values()):
-            result = cont.initial_state(temperature, pressure, quantities,
-                                        properties)
+            result = cont.initial_state(state, properties)
             if result:
                 result[0] = float(result[0])
                 result[1] = float(result[1])
                 return result
-        msg = "No initialisation found despite of non-Gibbs surface"
+        msg = "No initialisation found for non-Gibbs surface"
         raise NotImplementedError(msg)
 
     # TODO: Should default state be better in terms of quantities? This
     #  because its in the interpretation of T, p, n.
 
     @property
-    def default(self):
+    def default(self) -> DefaultState | None:
         """The definition of the object can optionally contain a default state.
         If this is applied, the given default state is stored in this
         property. Its interpretation is always in ``T, p, n`` coordinates."""
         return self.__default
 
     @default.setter
-    def default(self, state):
-        if state is not None:
-            num_species = len(self.species)
-            if len(state) != 3:
-                raise ValueError(
-                    "Default state must contain three elements, " +
-                    f"found {len(state)} instead.")
-            if len(state[2]) != num_species:
-                raise ValueError(f"Default state must cover {num_species} " +
-                                 f"species, found {len(state[2])} instead.")
+    def default(self, state: DefaultState):
+        num_species = len(self.species)
+        num_species_found = len(state.mol_vector.magnitude)
+        if num_species_found != num_species:
+            raise ValueError(f"Default state must cover {num_species} " +
+                             f"species, found {num_species_found} instead.")
         self.__default = state
 
 

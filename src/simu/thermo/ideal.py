@@ -3,69 +3,10 @@
 # stdlib modules
 from copy import copy
 
-# external modules
-from casadi import vertcat, vertsplit
-
 # internal modules
-from .contribution import StateDefinition, ThermoContribution
-from ..utilities import (
-    ParameterDictionary, Quantity, base_magnitude, base_unit, log, sum1)
+from .contribution import ThermoContribution
+from ..utilities import ParameterDictionary, base_magnitude, log, sum1
 from ..utilities.constants import R_GAS
-from ..utilities.types import MutMap
-
-
-class HelmholtzState(StateDefinition):
-    """This definition interprets the state as being temperature, volume,
-    and mole numbers. Accordingly, it defines:
-
-    ======== ============================
-    Property Description
-    ======== ============================
-    ``T``    Temperature
-    ``V``    Volume
-    ``n``    Mole vector
-    ======== ============================
-    """
-
-    def prepare(self, result: MutMap[Quantity], flow: bool = False):
-        state = result["_state"].magnitude
-        result["T"], result["V"], *n_vec = vertsplit(state, 1)
-        result["n"] = vertcat(*n_vec)
-        s = "/s" if flow else ""
-        for name, unit in [("T", "K"), ("V", f"m**3{s}"), ("n", f"mol{s}")]:
-            result[name] = Quantity(result[name], base_unit(unit))
-
-    def reverse(self, temperature: Quantity, pressure: Quantity,
-                quantities: Quantity) -> list:
-        return [base_magnitude(temperature), None] + \
-            list(base_magnitude(quantities))
-
-
-class GibbsState(StateDefinition):
-    """This definition interprets the state as being temperature, pressure,
-    and mole numbers. Accordingly, it defines:
-
-    ======== ============================
-    Property Description
-    ======== ============================
-    ``T``    Temperature
-    ``p``    Pressure
-    ``n``    Mole vector
-    ======== ============================
-    """
-
-    def prepare(self, result: MutMap[Quantity], flow: bool = False):
-        state = result["_state"].magnitude
-        result["T"], result["p"], *n_vec = vertsplit(state, 1)
-        result["n"] = vertcat(*n_vec)
-        q_unit = "mol/s" if flow else "mol"
-        for name, unit in [("T", "K"), ("p", "Pa"), ("n", q_unit)]:
-            result[name] = Quantity(result[name], base_unit(unit))
-
-    def reverse(self, temperature: Quantity, pressure: Quantity,
-                quantities: Quantity) -> list:
-        return [base_magnitude(temperature), base_magnitude(pressure)] + \
-            list(base_magnitude(quantities))
 
 
 class H0S0ReferenceState(ThermoContribution):
@@ -321,8 +262,9 @@ class HelmholtzIdealGas(ThermoContribution):
         V, d_V = current_result["_state"][1], delta_state[1]
         return -V / d_V if d_V < 0 else 100
 
-    def initial_state(self, temperature, pressure, quantities, properties):
-        volume = sum1(quantities) * R_GAS * temperature / pressure
-        return [base_magnitude(temperature),
+    def initial_state(self, state, properties):
+        volume = sum1(state.mol_vector) * R_GAS * \
+                 state.temperature / state.pressure
+        return [base_magnitude(state.temperature),
                 base_magnitude(volume),
-                base_magnitude(quantities)]
+                base_magnitude(state.mol_vector)]

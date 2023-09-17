@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
 # internal modules
+from .state import DefaultState
 from ..utilities import Quantity, ParameterDictionary
 from ..utilities.types import Map, MutMap
 
@@ -71,9 +72,8 @@ class ThermoContribution(ABC):
         del current_result, delta_state  # unused
         return 999  # a number greater than 1 / gamma for practical gamma
 
-    def initial_state(self, temperature: Quantity, pressure: Quantity,
-                      quantities: Quantity,
-                      properties: Map[Quantity]) -> Quantity | None:
+    def initial_state(self, state: DefaultState,
+                      properties: Map[Quantity]) -> Sequence[float] | None:
         """When the :class:`ThermoFrame` object is queried for an initial state
         representation and deviates from Gibbs coordinates, The uppermost
         contribution that implements this method and does not return ``None``
@@ -84,45 +84,11 @@ class ThermoContribution(ABC):
         such that it is solely up to the contributions, how to obtain the
         initial state.
 
-        :param temperature: Temperature [K]
-        :param pressure: Pressure [Pa]
-        :param quantities: Quantities [mol]
+        :param state: The default state
         :param properties: The property structure, mapping strings to floats
           or list of floats.
         :return: The initial state or ``None``
 
         .. seealso:: :meth:`ThermoFrame.initial_state`
-        """
-        ...
-
-
-class StateDefinition(ABC):
-    """This class defines the interpretation of the state vector in terms of
-    physical properties. This interpretation is then consumed by the
-    contributions as input for their calculations towards the complete
-    thermodynamic model."""
-
-    @abstractmethod
-    def prepare(self, result: dict, flow: bool = False):
-        """This method can assume to find the state vector ``x`` in the
-        ``result`` dictionary, and is expected to add the physical
-        interpretation of its elements to the same dictionary. It is entirely
-        up to the contributions that rely on this state.
-
-        For the Gibbs state, the new elements would be ``T``, ``p``, and ``n``,
-        denoting temperature, pressure and quantities respectively.
-
-        The parameter ``flow`` impacts the definition of units of measurement.
-        When ``True``, all extensive variables are divided by time.
-        """
-        ...
-
-    @abstractmethod
-    def reverse(self, temperature: Quantity, pressure: Quantity,
-                quantities: Quantity) -> list[float]:
-        """Return the state vector as complete as possible with given
-        temperature, pressure and quantities. The task of the contributions'
-        :meth:`ThermoContribution.initial_state` method is it then to
-        complete it. Missing elements shall be filled with None.
         """
         ...

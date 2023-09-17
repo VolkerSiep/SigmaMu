@@ -2,10 +2,11 @@
 
 # internal modules
 from .frame import ThermoFactory, ThermoFrame
-from .contribution import ThermoContribution, StateDefinition
+from .contribution import ThermoContribution
 from .ideal import (
-    HelmholtzState, GibbsState, H0S0ReferenceState, LinearHeatCapacity,
+    H0S0ReferenceState, LinearHeatCapacity,
     StandardState, IdealMix, GibbsIdealGas, HelmholtzIdealGas)
+from .state import HelmholtzState, GibbsState, StateDefinition
 from .cubic import (
     NonSymmetricMixingRule, LinearMixingRule, BostonMathiasAlphaFunction,
     CriticalParameters, RedlichKwongEOSLiquid, RedlichKwongEOSGas,
