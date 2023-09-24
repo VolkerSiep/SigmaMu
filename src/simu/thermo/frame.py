@@ -12,6 +12,9 @@ from typing import Type, Optional
 from collections.abc import Mapping, Sequence, Collection
 from logging import getLogger
 
+# external modules
+from casadi import SX
+
 # internal modules
 from .contribution import ThermoContribution
 from .state import StateDefinition, InitialState
@@ -82,7 +85,8 @@ class ThermoFrame:
         self.__param_struct: NestedMap[str] = \
             extract_units_dictionary(parameters)
 
-    def __call__(self, state: Sequence[float], parameters: NestedMap[Quantity],
+    def __call__(self, state: SX | Sequence[float],
+                 parameters: NestedMap[Quantity],
                  squeeze_results: bool = True, flow: bool = False):
         """Shortcut: Call to the function object :attr:`function`.
 
@@ -120,6 +124,11 @@ class ThermoFrame:
         float quantities have to be provided to the parameter object.
         """
         return self.__param_struct
+
+    def create_symbol_state(self) -> SX:
+        """Create a symbol state that can be used to call the object functional
+        symbolically."""
+        return SX.sym("x", len(self.__species) + 2)
 
     def relax(self, current_result: Map[Quantity],
               delta_state: Sequence[float]) -> float:
@@ -178,24 +187,6 @@ class ThermoFrame:
                 return result
         msg = "No initialisation found for non-Gibbs surface"
         raise NotImplementedError(msg)
-
-    # TODO: Move storage of initial state (don't call it default) to Material
-
-    # @property
-    # def default(self) -> InitialState | None:
-    #     """The definition of the object can optionally contain a default state.
-    #     If this is applied, the given default state is stored in this
-    #     property. Its interpretation is always in ``T, p, n`` coordinates."""
-    #     return self.__default
-    #
-    # @default.setter
-    # def default(self, state: InitialState):
-    #     num_species = len(self.species)
-    #     num_species_found = len(state.mol_vector.magnitude)
-    #     if num_species_found != num_species:
-    #         raise ValueError(f"Default state must cover {num_species} " +
-    #                          f"species, found {num_species_found} instead.")
-    #     self.__default = state
 
 
 class ThermoFactory:

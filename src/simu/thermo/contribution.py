@@ -4,7 +4,7 @@ the building blocks of a :class:`ThermoFrame` function object."""
 
 # stdlib modules
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Sequence, MutableSequence
 
 # internal modules
 from .state import InitialState
@@ -72,8 +72,8 @@ class ThermoContribution(ABC):
         del current_result, delta_state  # unused
         return 999  # a number greater than 1 / gamma for practical gamma
 
-    def initial_state(self, state: InitialState,
-                      properties: Map[Quantity]) -> Sequence[float] | None:
+    def initial_state(self, state: InitialState, properties: Map[Quantity]) \
+            -> MutableSequence[float] | None:
         """When the :class:`ThermoFrame` object is queried for an initial state
         representation and deviates from Gibbs coordinates, The uppermost
         contribution that implements this method and does not return ``None``

@@ -2,7 +2,7 @@
 the modelling context."""
 
 # stdlib
-from typing import Optional, Type
+from typing import Optional
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Collection
 from dataclasses import dataclass
@@ -22,11 +22,11 @@ class MaterialSpec:
     required and whether additional species are allowed.
     """
 
-    def __init__(self, species: Optional[Iterable[str]] = None,
-                 augmentors: Optional[Iterable[Type[Augmentor]]] = None):
+    def __init__(self, species: Optional[Iterable[str]] = None):
+        #        augmenters: Optional[Iterable[Type[Augmenter]]] = None):
         self.__locked = not (species is None or "*" in species)
         self.__species = set() if species is None else set(species) - set("*")
-        self.__augmentors = set() if augmentors is None else set(augmentors)
+        # self.__augmenters = set() if augmenters is None else set(augmenters)
 
     @property
     def species(self) -> set[str]:
@@ -45,20 +45,17 @@ class MaterialSpec:
           - none of the specified species are missing in the material
           - if specification locks species set, none of the material
             species are missing in the specification
-          - none of the specified augmentors are missing in the material
         """
-        # TODO: it's ok that not all augmentors are applied. The spec can do
-        #  that on instantiation
-
         spe, mspe = self.species, set(material.species)
-        aug, maug = self.augmentors, material.augmentors
+        # aug, maug = self.augmenters, material.augmenters
         locked = self.locked
-        return not ((spe - mspe) or (locked and (mspe - spe) or (aug - maug)))
+        # return not ((spe - mspe) or (locked and (mspe - spe) or (aug - maug)))
+        return not ((spe - mspe) or (locked and (mspe - spe)))
 
-    @property
-    def augmentors(self) -> set[Type[Augmentor]]:
-        """The set of required augmentor classes"""
-        return set(self.__augmentors)
+    # @property
+    # def augmenters(self) -> set[Type[Augmenter]]:
+    #     """The set of required augmentor classes"""
+    #     return set(self.__augmenters)
 
 
 class Material:
@@ -68,13 +65,14 @@ class Material:
         self.definition = definition
         self.initial_state = definition.initial_state
 
-        param_structure = definition.frame.parameter_structure
-        params = definition.store.get_symbols(param_structure)
+        frame = definition.frame
+        params = definition.store.get_symbols(frame.parameter_structure)
+        state = frame.create_symbol_state()
+        # TODO: Do I need to use squeeze_result?
+        self.__properties = frame(state, params,
+                                  squeeze_results=False, flow=flow)
 
-        # create symbol states
-        # call function and expose calculated symbols
-        self.__properties = {}
-        # apply augmentors
+        # apply augmenters as required in definition
 
     @property
     def species(self) -> Collection[str]:
@@ -90,7 +88,7 @@ class Material:
         self.__properties[key] = value
 
     # @property
-    # def augmentors(self) -> set[Type[Augmentor]]:
+    # def augmenters(self) -> set[Type[Augmenter]]:
     #     pass
 
 
@@ -119,8 +117,8 @@ class MaterialDefinition:
         return Material(self, False)
 
 
-class Augmentor(ABC):
-    """An Augmentor is a specific class to extend the physical properties
+class Augmenter(ABC):
+    """An Augmenter is a specific class to extend the physical properties
     calculated on a material instance."""
     def __init__(self, frame: ThermoFrame):
         self.species = frame.species
