@@ -2,12 +2,13 @@
 
 from pytest import raises
 
-from simu.materials import (
-    ExampleThermoFactory)
+from simu.thermo import InitialState
+from simu.materials import ExampleThermoFactory
 from simu.materials.parameters import StringDictThermoSource, \
     ThermoParameterStore
+from simu.model.material import MaterialDefinition
 from simu.utilities.errors import DimensionalityError, UndefinedUnitError
-
+from simu.utilities import Quantity, assert_reproduction
 
 # class BigNAugmentor(Augmentor):
 #     def define(self, material):
@@ -18,7 +19,7 @@ def test_create_frame():
     factory = ExampleThermoFactory()
     assert "Water-RK-Liquid" in factory.configuration_names
     frame = factory.create_frame("Water-RK-Liquid")
-    print(frame.parameter_structure)
+    assert_reproduction(frame.parameter_structure)
 
 
 def test_get_thermo_properties():
@@ -133,6 +134,33 @@ def test_get_same_thermo_property_values_two_sources():
     assert sources["p"]["H2O"] == "VG"
 
 
-# def test_create_material_definition():
-#     factory = ExampleThermoFactory()
-#     mat_def = MaterialDefinition()
+def test_create_material_definition():
+    factory = ExampleThermoFactory()
+    frame = factory.create_frame("Water-RK-Liquid")
+    store = ThermoParameterStore()
+    initial_state = InitialState(Quantity("25 degC"), Quantity("1 bar"),
+                                 Quantity([1], "mol"))
+    _ = MaterialDefinition(frame, initial_state, store)
+
+
+def test_create_material_definition_wrong_init():
+    factory = ExampleThermoFactory()
+    frame = factory.create_frame("Water-RK-Liquid")
+    store = ThermoParameterStore()
+    initial_state = InitialState(Quantity("25 degC"), Quantity("1 bar"),
+                                 Quantity([1, 1], "mol"))
+    with raises(ValueError) as err:
+        _ = MaterialDefinition(frame, initial_state, store)
+    assert "Incompatible initial state" in str(err.value)
+
+
+def test_create_material():
+    factory = ExampleThermoFactory()
+    frame = factory.create_frame("Water-RK-Liquid")
+    store = ThermoParameterStore()
+    initial_state = InitialState(Quantity("25 degC"), Quantity("1 bar"),
+                                 Quantity([1], "mol"))
+    material_def = MaterialDefinition(frame, initial_state, store)
+    material = material_def.create_state()
+    res = {name: f"{value.units:~}" for name, value in material.items()}
+    assert_reproduction(res)

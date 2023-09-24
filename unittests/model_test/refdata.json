@@ -1,4 +1,61 @@
 {
+  "material_test.py::test_create_frame": {
+    "BostonMathiasAlphaFunction": {
+      "eta": {
+        "H2O": ""
+      }
+    },
+    "CriticalParameters": {
+      "T_c": {
+        "H2O": "K"
+      },
+      "omega": {
+        "H2O": ""
+      },
+      "p_c": {
+        "H2O": "kg / m / s ** 2"
+      }
+    },
+    "H0S0ReferenceState": {
+      "T_ref": "K",
+      "dh_form": {
+        "H2O": "kg * m ** 2 / mol / s ** 2"
+      },
+      "p_ref": "kg / m / s ** 2",
+      "s_0": {
+        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+      }
+    },
+    "LinearHeatCapacity": {
+      "cp_a": {
+        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+      },
+      "cp_b": {
+        "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+      }
+    },
+    "MixingRule_A": {
+      "T_ref": "K"
+    },
+    "VolumeShift": {
+      "c_i": {
+        "H2O": "m ** 3 / mol"
+      }
+    }
+  },
+  "material_test.py::test_create_material": {
+    "S": "kg * m ** 2 / K / s ** 2",
+    "S_std": "kg * m ** 2 / K / s ** 2",
+    "T": "K",
+    "T_ref": "K",
+    "V": "m ** 3",
+    "mu": "kg * m ** 2 / mol / s ** 2",
+    "mu_std": "kg * m ** 2 / mol / s ** 2",
+    "n": "mol",
+    "p": "J / m ** 3",
+    "p_ref": "kg / m / s ** 2",
+    "p_std": "kg / m / s ** 2"
+  },
   "model_test.py::test_hierarchy_HierarchyTestModel2_arguments": {
     "parameters": {
       "depth": "cm",

@@ -12,7 +12,7 @@ from ..thermo.state import InitialState
 from ..thermo import ThermoFrame
 from ..materials.parameters import ThermoParameterStore
 from ..utilities.quantity import Quantity
-
+from ..utilities.types import MutMap
 
 class MaterialSpec:
     """Representation of a requirement to a material object.
@@ -58,7 +58,8 @@ class MaterialSpec:
     #     return set(self.__augmenters)
 
 
-class Material:
+class Material(MutMap[Quantity]):
+    """This class represents a material"""
     def __init__(self,
                  definition: "MaterialDefinition",
                  flow: bool):
@@ -69,8 +70,9 @@ class Material:
         params = definition.store.get_symbols(frame.parameter_structure)
         state = frame.create_symbol_state()
         # TODO: Do I need to use squeeze_result?
-        self.__properties = frame(state, params,
-                                  squeeze_results=False, flow=flow)
+        props = frame(state, params, squeeze_results=False, flow=flow)
+        self.__properties = {n: p for n, p in props.items()
+                             if not n.startswith("_")}
 
         # apply augmenters as required in definition
 
@@ -86,6 +88,15 @@ class Material:
         if key in self.__properties:
             raise KeyError(f"Property '{key}' already exists in material")
         self.__properties[key] = value
+
+    def __delitem__(self, key):
+        raise TypeError("Property deletion is not permitted!")
+
+    def __iter__(self):
+        return iter(self.__properties)
+
+    def __len__(self):
+        return len(self.__properties)
 
     # @property
     # def augmenters(self) -> set[Type[Augmenter]]:
@@ -103,6 +114,15 @@ class MaterialDefinition:
     frame: ThermoFrame
     initial_state: InitialState
     store: ThermoParameterStore
+
+    def __post_init__(self):
+        num_species = len(self.frame.species)
+        num_init_species = len(self.initial_state.mol_vector.magnitude)
+        if num_init_species != num_species:
+            raise ValueError(
+                f"Incompatible initial state with {num_init_species} "
+                f"species, while {num_species} is/are expected"
+            )
 
     @property
     def spec(self) -> MaterialSpec:
