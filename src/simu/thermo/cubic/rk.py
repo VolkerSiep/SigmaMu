@@ -8,7 +8,7 @@ from casadi import SX
 from numpy import dot, ravel, roots
 
 # internal modules
-from ..state import DefaultState
+from ..state import InitialState
 from ...utilities import base_magnitude, jacobian, log, sum1
 from ...utilities.constants import R_GAS
 from ..contribution import ThermoContribution
@@ -166,13 +166,13 @@ class RedlichKwongEOS(ThermoContribution):
         by the subclasses to represent in particular the liquid phase"""
 
     @staticmethod
-    def find_zeros(state: DefaultState, properties):
+    def find_zeros(state: InitialState, properties):
         """Given conditions and properties (A, B, C contribution of RK-EOS),
         calculate the compressibility factor roots analytically and return
         the vector quantity of volumes based on these"""
         T, p, n = state.temperature, state.pressure, state.mol_vector
         A, B, C = [properties[f"_ceos_{i}"] for i in "abc"]
-        NRT = sum1(n) * R_GAS * T
+        NRT = sum(n) * R_GAS * T
         alpha = float(A * p / (NRT * NRT))  # must be dimensionless
         beta = float(B * p / NRT)  # dito
         zeros = roots([1, -1, alpha - beta * (1 + beta), -alpha * beta])
@@ -210,7 +210,8 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
         apply for both phases."""
 
     def initial_state(self, state, properties):
-        volume = max(self.find_zeros(state, properties))
+        zeros = self.find_zeros(state, properties)
+        volume = max(zeros)
         return [base_magnitude(state.temperature), base_magnitude(volume)] + \
             [base_magnitude(state.mol_vector)]
 

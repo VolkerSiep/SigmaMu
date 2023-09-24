@@ -13,8 +13,8 @@ from ..utilities.types import MutMap
 
 
 @dataclass
-class DefaultState:
-    """Dataclass describing a default state, which is always defined in terms
+class InitialState:
+    """Dataclass describing an initial state, which is always defined in terms
     of temperature, pressure, and molar quantities.
 
     Temperature and pressure are scalar quantities of respective physical
@@ -48,7 +48,7 @@ class StateDefinition(ABC):
         ...
 
     @abstractmethod
-    def reverse(self, state: DefaultState) -> Sequence[float]:
+    def reverse(self, state: InitialState) -> Sequence[float]:
         """Return the state vector as complete as possible with given
         temperature, pressure and quantities. The task of the contributions'
         :meth:`ThermoContribution.initial_state` method is it then to

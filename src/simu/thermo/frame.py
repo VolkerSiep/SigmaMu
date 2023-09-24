@@ -14,7 +14,7 @@ from logging import getLogger
 
 # internal modules
 from .contribution import ThermoContribution
-from .state import StateDefinition, DefaultState
+from .state import StateDefinition, InitialState
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
                          SymbolQuantity, extract_units_dictionary)
 from ..utilities.types import NestedMap, Map, MutMap
@@ -78,7 +78,7 @@ class ThermoFrame:
 
         self.__contributions: Map[ThermoContribution] = contribs
         self.__state_definition: StateDefinition = state_definition
-        self.__default: Optional[DefaultState] = None
+        self.__default: Optional[InitialState] = None
         self.__param_struct: NestedMap[str] = \
             extract_units_dictionary(parameters)
 
@@ -145,7 +145,7 @@ class ThermoFrame:
                 cont.relax(current_result, delta_state)
                 for cont in self.__contributions.values()))
 
-    def initial_state(self, state: DefaultState,
+    def initial_state(self, state: InitialState,
                       parameters: NestedMap[Quantity]) -> Sequence[float]:
         """Return a state estimate for given temperature, pressure and
         molar quantities - at given parameter set.
@@ -179,24 +179,23 @@ class ThermoFrame:
         msg = "No initialisation found for non-Gibbs surface"
         raise NotImplementedError(msg)
 
-    # TODO: Should default state be better in terms of quantities? This
-    #  because its in the interpretation of T, p, n.
+    # TODO: Move storage of initial state (don't call it default) to Material
 
-    @property
-    def default(self) -> DefaultState | None:
-        """The definition of the object can optionally contain a default state.
-        If this is applied, the given default state is stored in this
-        property. Its interpretation is always in ``T, p, n`` coordinates."""
-        return self.__default
-
-    @default.setter
-    def default(self, state: DefaultState):
-        num_species = len(self.species)
-        num_species_found = len(state.mol_vector.magnitude)
-        if num_species_found != num_species:
-            raise ValueError(f"Default state must cover {num_species} " +
-                             f"species, found {num_species_found} instead.")
-        self.__default = state
+    # @property
+    # def default(self) -> InitialState | None:
+    #     """The definition of the object can optionally contain a default state.
+    #     If this is applied, the given default state is stored in this
+    #     property. Its interpretation is always in ``T, p, n`` coordinates."""
+    #     return self.__default
+    #
+    # @default.setter
+    # def default(self, state: InitialState):
+    #     num_species = len(self.species)
+    #     num_species_found = len(state.mol_vector.magnitude)
+    #     if num_species_found != num_species:
+    #         raise ValueError(f"Default state must cover {num_species} " +
+    #                          f"species, found {num_species_found} instead.")
+    #     self.__default = state
 
 
 class ThermoFactory:

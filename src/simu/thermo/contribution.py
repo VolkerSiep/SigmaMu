@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
 # internal modules
-from .state import DefaultState
+from .state import InitialState
 from ..utilities import Quantity, ParameterDictionary
 from ..utilities.types import Map, MutMap
 
@@ -72,7 +72,7 @@ class ThermoContribution(ABC):
         del current_result, delta_state  # unused
         return 999  # a number greater than 1 / gamma for practical gamma
 
-    def initial_state(self, state: DefaultState,
+    def initial_state(self, state: InitialState,
                       properties: Map[Quantity]) -> Sequence[float] | None:
         """When the :class:`ThermoFrame` object is queried for an initial state
         representation and deviates from Gibbs coordinates, The uppermost

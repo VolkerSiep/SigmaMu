@@ -11,11 +11,12 @@ from logging import DEBUG
 from yaml import safe_load
 
 # internal modules
-from simu.thermo import (H0S0ReferenceState, HelmholtzState, ThermoFactory,
+from simu.thermo import (H0S0ReferenceState, ThermoFactory,
                          LinearHeatCapacity, StandardState, IdealMix,
                          HelmholtzIdealGas)
+from simu.thermo.state import HelmholtzState, InitialState
 from simu.utilities import (
-    assert_reproduction, parse_quantities_in_struct, Quantity as Q)
+    assert_reproduction, parse_quantities_in_struct, Quantity as Qty)
 
 
 filename = Path(__file__).resolve().parent / "example_parameters.yml"
@@ -88,8 +89,10 @@ def test_initial_state():
     """Test whether initialisation of a Helmholtz ideal gas contributioon
     gives the correct volume"""
     frame = create_simple_frame()
-    T, p, n = Q("25 degC"), Q("1 bar"), Q([1, 1], "mol")
-    x = frame.initial_state(T, p, n, example_parameters)
+    initial_state = InitialState(temperature=Qty("25 degC"),
+                                 pressure=Qty("1 bar"),
+                                 mol_vector=Qty([1, 1], "mol"))
+    x = frame.initial_state(initial_state, example_parameters)
     assert_reproduction(x[1])
 
 
@@ -98,7 +101,7 @@ def test_initial_state():
 def call_frame(flow: bool = True):
     """Call a frame object with a state and return all with the result"""
     frame = create_simple_frame()
-    state = Q([398.15, 0.0448, 1, 1])  # = T, V, *n
+    state = Qty([398.15, 0.0448, 1, 1])  # = T, V, *n
     result = frame(state, example_parameters, flow=flow)
     return frame, state, result
 

@@ -17,6 +17,7 @@ from simu.thermo import (CriticalParameters, LinearMixingRule,
                          NonSymmetricMixingRule, RedlichKwongAFunction,
                          RedlichKwongBFunction, RedlichKwongMFactor,
                          BostonMathiasAlphaFunction, VolumeShift)
+from simu.thermo.state import InitialState
 from simu.thermo.cubic.rk import RedlichKwongEOS
 
 
@@ -216,8 +217,9 @@ def test_initialise_rk():
     }
     liq = RedlichKwongEOSLiquid(["A", "B"], {})
     gas = RedlichKwongEOSGas(["A", "B"], {})
-    v_liq = liq.initial_state(T, p, n, res)[1]
-    v_gas = gas.initial_state(T, p, n, res)[1]
+    ini_state = InitialState(temperature=T, pressure=p, mol_vector=n)
+    v_liq = liq.initial_state(ini_state, res)[1]
+    v_gas = gas.initial_state(ini_state, res)[1]
     assert abs(v_liq - 1.526e-5) < 1e-8  # value 1.5... is validated
     assert 0.02 < v_gas < 0.03
 
@@ -257,8 +259,8 @@ def test_initialise_rk2(cls):
         "_ceos_c": Q("10 ml"),
     }
     ideal_num = {"S": Q("0 J/K"), "p": Q("0 Pa"), "mu": Q([0, 0], "J/mol")}
-
-    state = cont.initial_state(T, p, n, res_num)
+    ini_state = InitialState(temperature=T, pressure=p, mol_vector=n)
+    state = cont.initial_state(ini_state, res_num)
 
     # is the rest of the state (except volume) reproduced?
     assert base_magnitude(T) == state[0]
