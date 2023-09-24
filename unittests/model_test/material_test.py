@@ -4,7 +4,7 @@ from pytest import raises
 
 from simu.materials import (
     ExampleThermoFactory)
-from simu.materials.properties import StringDictThermoSource, \
+from simu.materials.parameters import StringDictThermoSource, \
     ThermoPropertyStore
 from simu.utilities.errors import DimensionalityError, UndefinedUnitError
 

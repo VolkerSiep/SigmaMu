@@ -1,4 +1,4 @@
-"""module containing classes to obtain thermodynamic properties from various
+"""module containing classes to obtain thermodynamic parameters from various
 sources."""
 
 from abc import ABC, abstractmethod

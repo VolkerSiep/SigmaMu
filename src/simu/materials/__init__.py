@@ -5,7 +5,7 @@ parameters"""
 from pathlib import Path
 from collections.abc import Iterable
 
-from .properties import AbstractThermoSource
+from .parameters import AbstractThermoSource
 
 # external modules
 from yaml import safe_load
