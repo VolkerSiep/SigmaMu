@@ -5,23 +5,13 @@ the modelling context."""
 from typing import Optional, Type
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Collection
+from dataclasses import dataclass
 
 # internal
-from ..utilities import Quantity
-from ..utilities.types import NestedMap
+from ..thermo.state import InitialState
 from ..thermo import ThermoFrame
-
-
-class Augmentor(ABC):
-    """An Augmentor is a specific class to extend the physical properties
-    calculated on a material instance."""
-    def __init__(self, frame: ThermoFrame):
-        self.species = frame.species
-
-    @abstractmethod
-    def define(self, material: "Material"):
-        """Method to extend the properties of a material object"""
-        ...
+from ..materials.parameters import ThermoParameterStore
+from ..utilities.quantity import Quantity
 
 
 class MaterialSpec:
@@ -72,22 +62,73 @@ class MaterialSpec:
 
 
 class Material:
-    def __init__(self, frame: ThermoFrame, flow: bool = False):
-        self.__frame = frame  # Frame is the new MaterialDefinition
-        # TODO:
-        #  also generate a state corresponding to the frame
-        #  ask frame for parameters and ask ThermoParameterStore for symbols.
+    def __init__(self,
+                 definition: "MaterialDefinition",
+                 flow: bool):
+        self.definition = definition
+        self.initial_state = definition.initial_state
 
+        param_structure = definition.frame.parameter_structure
+        params = definition.store.get_symbols(param_structure)
 
+        # create symbol states
+        # call function and expose calculated symbols
+        self.__properties = {}
+        # apply augmentors
 
     @property
     def species(self) -> Collection[str]:
         """The species names"""
-        return self.__frame.species
+        return self.definition.frame.species
+
+    def __getitem__(self, key: str) -> Quantity:
+        return self.__properties[key]
+
+    def __setitem__(self, key: str, value: Quantity):
+        if key in self.__properties:
+            raise KeyError(f"Property '{key}' already exists in material")
+        self.__properties[key] = value
+
+    # @property
+    # def augmentors(self) -> set[Type[Augmentor]]:
+    #     pass
+
+
+@dataclass
+class MaterialDefinition:
+    """A ``MaterialDefinition`` object defines a material type by its
+
+      - frame of thermodynamic contributions,
+      - initial state
+      - source of thermodynamic parameters
+    """
+    frame: ThermoFrame
+    initial_state: InitialState
+    store: ThermoParameterStore
 
     @property
-    def augmentors(self) -> set[Type[Augmentor]]:
-        pass
+    def spec(self) -> MaterialSpec:
+        """Return a material spec object that is implemented by this
+        definition"""
+        return MaterialSpec(self.frame.species)
+
+    def create_flow(self) -> Material:
+        return Material(self, True)
+
+    def create_state(self) -> Material:
+        return Material(self, False)
+
+
+class Augmentor(ABC):
+    """An Augmentor is a specific class to extend the physical properties
+    calculated on a material instance."""
+    def __init__(self, frame: ThermoFrame):
+        self.species = frame.species
+
+    @abstractmethod
+    def define(self, material: "Material"):
+        """Method to extend the properties of a material object"""
+        ...
 
 
 class MaterialHandler:

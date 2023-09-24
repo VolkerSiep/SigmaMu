@@ -6,7 +6,7 @@ from .contribution import ThermoContribution
 from simu.thermo.contributions.ideal import (
     H0S0ReferenceState, LinearHeatCapacity,
     StandardState, IdealMix, GibbsIdealGas, HelmholtzIdealGas)
-from .state import HelmholtzState, GibbsState, StateDefinition
+from .state import HelmholtzState, GibbsState, StateDefinition, InitialState
 from simu.thermo.contributions.cubic import (
     NonSymmetricMixingRule, LinearMixingRule, BostonMathiasAlphaFunction,
     CriticalParameters, RedlichKwongEOSLiquid, RedlichKwongEOSGas,

@@ -5,7 +5,7 @@ from pytest import raises
 from simu.materials import (
     ExampleThermoFactory)
 from simu.materials.parameters import StringDictThermoSource, \
-    ThermoPropertyStore
+    ThermoParameterStore
 from simu.utilities.errors import DimensionalityError, UndefinedUnitError
 
 
@@ -24,7 +24,7 @@ def test_create_frame():
 def test_get_thermo_properties():
     factory = ExampleThermoFactory()
     frame = factory.create_frame("Water-RK-Liquid")
-    store = ThermoPropertyStore()
+    store = ThermoParameterStore()
     symbols = store.get_symbols(frame.parameter_structure)
     assert symbols["CriticalParameters"]["T_c"]["H2O"].units == "kelvin"
 
@@ -32,7 +32,7 @@ def test_get_thermo_properties():
 def test_get_thermo_properties_twice():
     factory = ExampleThermoFactory()
     frame = factory.create_frame("Water-RK-Liquid")
-    store = ThermoPropertyStore()
+    store = ThermoParameterStore()
     symbols1 = store.get_symbols(frame.parameter_structure)
     symbols2 = store.get_symbols(frame.parameter_structure)
     qty1 = symbols1["CriticalParameters"]["T_c"]["H2O"]
@@ -41,7 +41,7 @@ def test_get_thermo_properties_twice():
 
 
 def test_get_thermo_properties_twice_wrong():
-    store = ThermoPropertyStore()
+    store = ThermoParameterStore()
     struct_1 = {"A": {"B": "K"}}
     struct_2 = {"A": {"B": "m"}}
     store.get_symbols(struct_1)
@@ -73,7 +73,7 @@ def test_thermo_source_try_non_quantity():
 
 
 def test_get_thermo_property_values_sources():
-    store = ThermoPropertyStore()
+    store = ThermoParameterStore()
     struct = {"T": {"H2O": "K"}, "p": {"H2O": "bar"}}
     store.get_symbols(struct)
 
@@ -88,7 +88,7 @@ def test_get_thermo_property_values_sources():
 
 
 def test_get_thermo_missing():
-    store = ThermoPropertyStore()
+    store = ThermoParameterStore()
     struct = {"T": {"CH4": "K", "H2O": "K"}}
     store.get_symbols(struct)
 
@@ -101,7 +101,7 @@ def test_get_thermo_missing():
 
 
 def test_get_thermo_property_values_two_sources():
-    store = ThermoPropertyStore()
+    store = ThermoParameterStore()
     struct = {"T": {"H2O": "K"}, "p": {"H2O": "bar"}}
     store.get_symbols(struct)
 
@@ -117,7 +117,7 @@ def test_get_thermo_property_values_two_sources():
 
 
 def test_get_same_thermo_property_values_two_sources():
-    store = ThermoPropertyStore()
+    store = ThermoParameterStore()
     struct = {"T": {"H2O": "K"}, "p": {"H2O": "bar"}}
     store.get_symbols(struct)
 

@@ -48,7 +48,7 @@ class StringDictThermoSource(NestedDictThermoSource):
         super().__init__(parse_quantities_in_struct(data))
 
 
-class ThermoPropertyStore:
+class ThermoParameterStore:
     """This class connects both to the thermodynamic model instances by
     providing the parameters, and to the model's numerical interface by
     providing the symbols and values of all used parameters, allowing those
