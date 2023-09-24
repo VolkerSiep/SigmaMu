@@ -107,5 +107,5 @@ class MaterialHandler:
     def __getitem__(self, name: str):
         return self.__materials[name]
 
-    def create(self, name: str, definition: MaterialDefinition):
-        pass
+#     def create(self, name: str, definition: MaterialDefinition):
+#         pass

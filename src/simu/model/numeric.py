@@ -4,7 +4,8 @@ of the top model instance."""
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable
 
-from ..utilities.quantity import NestedQuantityDict
+from ..utilities.types import NestedMap, NestedMutMap
+from ..utilities.quantity import Quantity
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import ModelProxy
@@ -38,9 +39,9 @@ class NumericHandler:
 
         def fetch_in_hierarchy(
                 root: "ModelProxy",
-                func: Callable[["ModelProxy"], NestedQuantityDict],
+                func: Callable[["ModelProxy"], NestedMutMap[Quantity]],
                 typ: str,
-                path: Optional[list[str]] = None) -> NestedQuantityDict:
+                path: Optional[list[str]] = None) -> NestedMutMap[Quantity]:
             """Drill recursively into child models to collect all free
             parameters. The result is a nested dictionary, such that name
             clashes between child models and parameters are not permitted
@@ -48,7 +49,7 @@ class NumericHandler:
             """
             if path is None:
                 path = []
-            result: NestedQuantityDict = func(root)
+            result: NestedMutMap[Quantity] = func(root)
             for name, proxy in root.hierarchy.items():
                 if name in result:
                     context = ".".join(path)
