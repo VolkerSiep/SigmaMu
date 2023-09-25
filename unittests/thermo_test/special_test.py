@@ -2,7 +2,7 @@
 
 # internal modules
 from simu.utilities import assert_reproduction, SymbolQuantity, base_unit
-from simu.thermo import Derivative
+from simu.thermo.contributions import Derivative
 
 
 # auxiliary functions

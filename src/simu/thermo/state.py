@@ -1,5 +1,6 @@
 """Module defining classes related to thermodynamic state representation"""
 # stdlib modules
+from typing import Self
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -24,6 +25,30 @@ class InitialState:
     temperature: Quantity
     pressure: Quantity
     mol_vector: Quantity
+
+    @classmethod
+    def from_si(cls, temperature: float, pressure: float,
+                mol_vector: Sequence[float]) -> Self:
+        """Construct an initial state based on SI units, i.e. K, Pa and mol."""
+        return cls(temperature=Quantity(temperature, "K"),
+                   pressure=Quantity(pressure, "Pa"),
+                   mol_vector=Quantity(mol_vector, "mol"))
+
+    @classmethod
+    def from_cbar(cls, temperature: float, pressure: float,
+                  mol_vector: Sequence[float]) -> Self:
+        """Construct an initial state based on degC, bar and mol as units."""
+        return cls(temperature=Quantity(temperature, "degC"),
+                   pressure=Quantity(pressure, "bar"),
+                   mol_vector=Quantity(mol_vector, "mol"))
+
+    @classmethod
+    def from_std(cls, num_species: int):
+        """Construct an initial state at 25 degC, 1 bar and one mol for each
+        species."""
+        return cls(temperature=Quantity(25, "degC"),
+                   pressure=Quantity(1, "atm"),
+                   mol_vector=Quantity([1.0] * num_species, "mol"))
 
 
 class StateDefinition(ABC):
@@ -108,3 +133,6 @@ class GibbsState(StateDefinition):
         return [base_magnitude(state.temperature),
                 base_magnitude(state.pressure)] + \
                 list(base_magnitude(state.mol_vector))
+
+
+all_states = [GibbsState, HelmholtzState]
