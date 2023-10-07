@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Iterable, Collection
 
-from . import ThermoFrame, InitialState, ThermoParameterStore
+from . import ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB
 
 from ..utilities import Quantity
 from ..utilities.types import MutMap
@@ -129,6 +129,22 @@ class MaterialDefinition:
 
     def create_state(self) -> Material:
         return Material(self, False)
+
+
+from .factory import ThermoFactory
+
+class MaterialLab:
+    """A MaterialLab is an object to help design and define material
+    definitions. It aggregates one or more ThermoParameterStore, the global
+    SpeciesDefinition, and the ThermoFactory.
+
+    A new material can be defined based on a species set, an initial state,
+    and the contribution list.
+    """
+    def __init__(self, factory: ThermoFactory, species_db: SpeciesDB,
+                 param_store: ThermoParameterStore):
+        pass
+
 
 
 class Augmenter(ABC):

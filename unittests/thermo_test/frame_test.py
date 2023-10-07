@@ -16,6 +16,7 @@ from simu.thermo.contributions import (
     H0S0ReferenceState, LinearHeatCapacity, StandardState, IdealMix,
     HelmholtzIdealGas)
 from simu.thermo.state import HelmholtzState, InitialState
+from simu.thermo.species import SpeciesDefinition
 from simu.utilities import (
     assert_reproduction, parse_quantities_in_struct, Quantity as Qty)
 
@@ -45,8 +46,9 @@ def test_create_frame(caplog):
             "H0S0ReferenceState", "LinearHeatCapacity", "StandardState"
         ],
     }
+    species = {f: SpeciesDefinition(f) for f in "N2 O2 Ar CO2 H2O".split()}
     with caplog.at_level(DEBUG, logger="simu"):
-        fac.create_frame(config)
+        fac.create_frame(species, config)
     msg = "\n".join([r.message for r in caplog.records])
     for contrib in config["contributions"]:
         assert contrib in msg
@@ -127,7 +129,8 @@ def create_simple_frame():
             "IdealMix", "HelmholtzIdealGas"
         ],
     }
-    return fac.create_frame(config)
+    species = {"N2": SpeciesDefinition("N2"), "O2": SpeciesDefinition("O2")}
+    return fac.create_frame(species, config)
 
 
 if __name__ == "__main__":

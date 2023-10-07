@@ -9,7 +9,7 @@ state and the model parameters.
 """
 # stdlib modules
 from typing import Type, Optional
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from logging import getLogger
 
 # external modules
@@ -18,6 +18,7 @@ from casadi import SX
 # internal modules
 from .contribution import ThermoContribution
 from .state import StateDefinition, InitialState
+from .species import SpeciesDefinition
 from ..utilities import (Quantity, ParameterDictionary, QFunction,
                          SymbolQuantity, extract_units_dictionary)
 from ..utilities.types import NestedMap, Map, MutMap
@@ -33,7 +34,7 @@ class ThermoFrame:
     vector, and calculates a set of thermodynamic properties.
     """
 
-    def __init__(self, species: Sequence[str],
+    def __init__(self, species: Mapping[str, SpeciesDefinition],
                  state_definition: StateDefinition,
                  contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
@@ -47,11 +48,12 @@ class ThermoFrame:
             further documented here.
         """
         # need to instantiate the contributions
+        species_list = list(species.keys())
         contribs: Map[ThermoContribution] = {
-            name: cls_(species, options)
+            name: cls_(species_list, options)
             for name, (cls_, options) in contributions.items()
         }
-        self.__species: Sequence[str] = list(species)
+        self.__species: Mapping[str, SpeciesDefinition] = species
 
         def create_function(flow: bool = False):
             """Build up the result dictionary and define function"""
@@ -106,7 +108,7 @@ class ThermoFrame:
     @property
     def species(self) -> Sequence[str]:
         """Returns a list of species names"""
-        return list(self.__species)
+        return list(self.__species.keys())
 
     @property
     def property_structure(self) -> NestedMap[str]:

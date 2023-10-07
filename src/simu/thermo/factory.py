@@ -1,8 +1,10 @@
-from typing import Type, Collection, Mapping, Iterable
+from typing import Type
+from collections.abc import Mapping, Collection, Iterable
 from pathlib import Path
 from yaml import safe_load
 
 from .state import StateDefinition, all_states
+from .species import SpeciesDefinition
 from .frame import ThermoFrame
 from .contribution import ThermoContribution
 from .contributions import all_contributions
@@ -53,17 +55,15 @@ class ThermoFactory:
         contributions"""
         return set(self.__contributions.keys())
 
-    def create_frame(self, configuration: Mapping) -> ThermoFrame:
+    def create_frame(self, species: Mapping[str, SpeciesDefinition],
+                     configuration: Mapping) -> ThermoFrame:
         """This factory method creates a :class:`ThermoFrame` object from the
         given ``configuration``.
 
+        :param species: A dictionary mapping names to species definitions
         :param configuration: A nested dictionary with the
           following root entries:
 
-            - ``species``: A list of strings, representing the names of the
-              chemical species. These names are used as identifiers in later
-              use of the model, and they define the names of thermodynamic
-              parameters required by the model.
             - ``state``: An identifier that represents the type of state as
               defined by :meth:`register_state_definition`.
             - ``contributions``: A list of strings, representing the names
@@ -101,7 +101,6 @@ class ThermoFactory:
                 raise ValueError(f"Duplicate contribution name '{name}'")
             contributions[name] = class_, options
 
-        species = configuration["species"]
         state_def_cls = self.__state_definitions[configuration["state"]]
         result = ThermoFrame(species, state_def_cls(), contributions)
 
@@ -131,14 +130,11 @@ class ExampleThermoFactory(ThermoFactory):
 
         with open(DATA_DIR / "structures.yml", encoding='UTF-8') as file:
             self.__structures = safe_load(file)
-        with open(DATA_DIR / "definitions.yml", encoding='UTF-8') as file:
-            self.__configurations = safe_load(file)
 
     @property
-    def configuration_names(self) -> Iterable[str]:
+    def structure_names(self) -> Iterable[str]:
         """The names of all configurations"""
-        return self.__configurations.keys()
+        return self.__structures.keys()
 
-    def create_frame(self, configuration: str):
-        cfg = self.__configurations[configuration]
-        return super().create_frame(cfg | self.__structures[cfg["structure"]])
+    def create_frame(self, species, structure: str):
+        return super().create_frame(species, self.__structures[structure])

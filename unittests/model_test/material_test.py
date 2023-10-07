@@ -3,6 +3,7 @@
 from pytest import raises
 
 from simu.thermo import InitialState
+from simu.thermo.species import SpeciesDefinition
 from simu.thermo.factory import ExampleThermoFactory
 from simu.thermo.parameters import StringDictThermoSource, \
     ThermoParameterStore
@@ -14,17 +15,21 @@ from simu.utilities import assert_reproduction
 #     def define(self, material):
 #         material["N"] = sum(material["n"])
 
+RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
+
 
 def test_create_frame():
     factory = ExampleThermoFactory()
-    assert "Water-RK-Liquid" in factory.configuration_names
-    frame = factory.create_frame("Water-RK-Liquid")
+    assert RK_LIQ in factory.structure_names
+    species = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species, RK_LIQ)
     assert_reproduction(frame.parameter_structure)
 
 
 def test_get_thermo_properties():
     factory = ExampleThermoFactory()
-    frame = factory.create_frame("Water-RK-Liquid")
+    species = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species, RK_LIQ)
     store = ThermoParameterStore()
     symbols = store.get_symbols(frame.parameter_structure)
     assert symbols["CriticalParameters"]["T_c"]["H2O"].units == "kelvin"
@@ -32,7 +37,8 @@ def test_get_thermo_properties():
 
 def test_get_thermo_properties_twice():
     factory = ExampleThermoFactory()
-    frame = factory.create_frame("Water-RK-Liquid")
+    species = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species, RK_LIQ)
     store = ThermoParameterStore()
     symbols1 = store.get_symbols(frame.parameter_structure)
     symbols2 = store.get_symbols(frame.parameter_structure)
@@ -136,7 +142,8 @@ def test_get_same_thermo_property_values_two_sources():
 
 def test_create_material_definition():
     factory = ExampleThermoFactory()
-    frame = factory.create_frame("Water-RK-Liquid")
+    species = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species, RK_LIQ)
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(1)
     _ = MaterialDefinition(frame, initial_state, store)
@@ -144,7 +151,8 @@ def test_create_material_definition():
 
 def test_create_material_definition_wrong_init():
     factory = ExampleThermoFactory()
-    frame = factory.create_frame("Water-RK-Liquid")
+    species = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species, RK_LIQ)
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(2)
     with raises(ValueError) as err:
@@ -154,7 +162,8 @@ def test_create_material_definition_wrong_init():
 
 def test_create_material():
     factory = ExampleThermoFactory()
-    frame = factory.create_frame("Water-RK-Liquid")
+    species = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species, RK_LIQ)
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(1)
     material_def = MaterialDefinition(frame, initial_state, store)
