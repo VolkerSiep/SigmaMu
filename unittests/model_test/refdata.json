@@ -11,5 +11,18 @@
     "p": "J / m ** 3",
     "p_ref": "kg / m / s ** 2",
     "p_std": "kg / m / s ** 2"
-  }
+  },
+  "material_test.py::test_material_lab": [
+    "S",
+    "S_std",
+    "T",
+    "T_ref",
+    "V",
+    "mu",
+    "mu_std",
+    "n",
+    "p",
+    "p_ref",
+    "p_std"
+  ]
 }

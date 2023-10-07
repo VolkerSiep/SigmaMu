@@ -3,10 +3,12 @@
 from pytest import raises
 
 from simu.thermo import InitialState
-from simu.thermo.species import SpeciesDefinition
-from simu.thermo.factory import ExampleThermoFactory
+from simu.thermo.factory import ThermoFactory, ExampleThermoFactory
 from simu.thermo.parameters import ThermoParameterStore
-from simu.thermo.material import MaterialDefinition
+from simu.thermo.material import MaterialDefinition, MaterialLab
+from simu.thermo.species import SpeciesDefinition, SpeciesDB
+from simu.thermo.contributions import all_contributions
+from simu.thermo.state import GibbsState
 from simu.utilities import assert_reproduction
 
 # class BigNAugmentor(Augmentor):
@@ -46,3 +48,30 @@ def test_create_material():
     material = material_def.create_state()
     res = {name: f"{value.units:~}" for name, value in material.items()}
     assert_reproduction(res)
+
+
+def test_species_db():
+    _ = SpeciesDB({"Water": "H2O", "Ethanol": "C2H5OH"})
+
+
+def test_material_lab():
+    species= SpeciesDB({"Water": "H2O", "Ethanol": "C2H5OH"})
+    store = ThermoParameterStore()
+    factory = ThermoFactory()
+    factory.register_state_definition(GibbsState)
+    factory.register(*all_contributions)
+    lab = MaterialLab(factory, species, store)
+
+    structure = {
+        "state": "GibbsState",
+        "contributions": [
+            "H0S0ReferenceState",
+            "LinearHeatCapacity",
+            "StandardState",
+            "IdealMix",
+            "GibbsIdealGas"]
+    }
+    initial_state = InitialState.from_std(2)
+    definition = lab.define_material(species, initial_state, structure)
+    material = definition.create_flow()
+    assert_reproduction(list(material.keys()))

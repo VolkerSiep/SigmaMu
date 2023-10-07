@@ -1,7 +1,8 @@
 """This module defines data structures to host the global species list"""
 
+from typing import Self
 from dataclasses import dataclass, field
-from collections.abc import Mapping, Iterator
+from collections.abc import Mapping, Iterator, Sequence
 
 from ..utilities import Quantity
 from ..utilities.molecules import FormulaParser
@@ -40,8 +41,7 @@ class SpeciesDB(Mapping[str, SpeciesDefinition]):
     represents a dictionary of the species names to species definitions.
 
     .. note::
-        That meeting could have been an email, and this class could have
-        been a function!?
+        Could this just be a function?
     """
     def __init__(self, formulae: Mapping[str, str]):
         self.__species = {n: SpeciesDefinition(f) for n, f in formulae.items()}
@@ -54,3 +54,8 @@ class SpeciesDB(Mapping[str, SpeciesDefinition]):
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.__species)
+
+
+    def get_sub_db(self, keys: Sequence[str]) -> Self:
+        """Get a subset of species definitions as a new SpeciesDB object."""
+        return {n: self[n] for n in keys}
