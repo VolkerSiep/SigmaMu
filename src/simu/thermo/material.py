@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Iterable, Collection
+from typing import Optional
+from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from . import ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB
-
+from . import (
+    ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
+from .species import SpeciesDefinition
 from ..utilities import Quantity
 from ..utilities.types import MutMap
 
@@ -131,8 +133,6 @@ class MaterialDefinition:
         return Material(self, False)
 
 
-from .factory import ThermoFactory
-
 class MaterialLab:
     """A MaterialLab is an object to help design and define material
     definitions. It aggregates one or more ThermoParameterStore, the global
@@ -143,7 +143,17 @@ class MaterialLab:
     """
     def __init__(self, factory: ThermoFactory, species_db: SpeciesDB,
                  param_store: ThermoParameterStore):
-        pass
+        self.__factory = factory
+        self.__species_db = species_db
+        self.__param_store = param_store
+
+    def define_material(self, species: Sequence[str],
+                        initial_state: InitialState,
+                        structure: Mapping) -> MaterialDefinition:
+        """This method creates a material definition."""
+        species_map = {s: self.__species_db[s] for s in species}
+        frame = self.__factory.create_frame(species_map, structure)
+        return MaterialDefinition(frame, initial_state, self.__param_store)
 
 
 

@@ -1,48 +1,4 @@
 {
-  "material_test.py::test_create_frame": {
-    "BostonMathiasAlphaFunction": {
-      "eta": {
-        "H2O": ""
-      }
-    },
-    "CriticalParameters": {
-      "T_c": {
-        "H2O": "K"
-      },
-      "omega": {
-        "H2O": ""
-      },
-      "p_c": {
-        "H2O": "kg / m / s ** 2"
-      }
-    },
-    "H0S0ReferenceState": {
-      "T_ref": "K",
-      "dh_form": {
-        "H2O": "kg * m ** 2 / mol / s ** 2"
-      },
-      "p_ref": "kg / m / s ** 2",
-      "s_0": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2"
-      }
-    },
-    "LinearHeatCapacity": {
-      "cp_a": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2"
-      },
-      "cp_b": {
-        "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2"
-      }
-    },
-    "MixingRule_A": {
-      "T_ref": "K"
-    },
-    "VolumeShift": {
-      "c_i": {
-        "H2O": "m ** 3 / mol"
-      }
-    }
-  },
   "material_test.py::test_create_material": {
     "S": "kg * m ** 2 / K / s ** 2",
     "S_std": "kg * m ** 2 / K / s ** 2",
@@ -55,49 +11,5 @@
     "p": "J / m ** 3",
     "p_ref": "kg / m / s ** 2",
     "p_std": "kg / m / s ** 2"
-  },
-  "model_test.py::test_hierarchy_HierarchyTestModel2_arguments": {
-    "parameters": {
-      "depth": "cm",
-      "radius": "cm"
-    }
-  },
-  "model_test.py::test_hierarchy_HierarchyTestModel2_result": {
-    "properties": {
-      "volume": "cm * m ** 2"
-    }
-  },
-  "model_test.py::test_hierarchy_HierarchyTestModel_arguments": {
-    "parameters": {
-      "depth": "cm"
-    }
-  },
-  "model_test.py::test_hierarchy_HierarchyTestModel_result": {
-    "properties": {
-      "volume": "cm * m ** 2"
-    }
-  },
-  "model_test.py::test_hierarchy_NestedHierarchyTestModel_arguments": {
-    "parameters": {
-      "radius": "cm"
-    }
-  },
-  "model_test.py::test_hierarchy_NestedHierarchyTestModel_result": {
-    "properties": {
-      "volume": "cm * m ** 2"
-    }
-  },
-  "model_test.py::test_hierarchy_property": [
-    "sq((0.01*(2*radius)))",
-    "(depth*sq((0.01*(2*radius))))"
-  ],
-  "model_test.py::test_square": {
-    "area": "sq(length) m ** 2",
-    "length": "length m"
-  },
-  "model_test.py::test_two_instances": [
-    "sq(l_0)",
-    "sq(l_1)",
-    "sq(l_2)"
-  ]
+  }
 }

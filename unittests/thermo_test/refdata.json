@@ -98,10 +98,6 @@
       }
     }
   ],
-  "frame_test.py::test_call_frame": {
-    "S": "19.69280941623939 kg * m ** 2 / K / s ** 2",
-    "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
-  },
   "frame_test.py::test_call_frame_flow": {
     "S": "19.69280941623939 kg * m ** 2 / K / s ** 3",
     "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
@@ -111,18 +107,6 @@
     "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
   },
   "frame_test.py::test_initial_state": 0.049579140592047766,
-  "frame_test.py::test_parameter_names": [
-    "H0S0ReferenceState.T_ref",
-    "H0S0ReferenceState.dh_form.N2",
-    "H0S0ReferenceState.dh_form.O2",
-    "H0S0ReferenceState.p_ref",
-    "H0S0ReferenceState.s_0.N2",
-    "H0S0ReferenceState.s_0.O2",
-    "LinearHeatCapacity.cp_a.N2",
-    "LinearHeatCapacity.cp_a.O2",
-    "LinearHeatCapacity.cp_b.N2",
-    "LinearHeatCapacity.cp_b.O2"
-  ],
   "frame_test.py::test_parameter_structure": {
     "H0S0ReferenceState": {
       "T_ref": "K",
@@ -147,19 +131,6 @@
       }
     }
   },
-  "frame_test.py::test_property_names": [
-    "S",
-    "S_std",
-    "T",
-    "T_ref",
-    "V",
-    "mu",
-    "mu_std",
-    "n",
-    "p_ref",
-    "p_std",
-    "state"
-  ],
   "frame_test.py::test_property_structure": {
     "S": "kg * m ** 2 / K / s ** 2",
     "S_std": "kg * m ** 2 / K / s ** 2",
@@ -174,5 +145,49 @@
     "p_ref": "kg / m / s ** 2",
     "p_std": "kg / m / s ** 2"
   },
-  "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless"
+  "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless",
+  "store_test.py::test_create_frame": {
+    "BostonMathiasAlphaFunction": {
+      "eta": {
+        "H2O": ""
+      }
+    },
+    "CriticalParameters": {
+      "T_c": {
+        "H2O": "K"
+      },
+      "omega": {
+        "H2O": ""
+      },
+      "p_c": {
+        "H2O": "kg / m / s ** 2"
+      }
+    },
+    "H0S0ReferenceState": {
+      "T_ref": "K",
+      "dh_form": {
+        "H2O": "kg * m ** 2 / mol / s ** 2"
+      },
+      "p_ref": "kg / m / s ** 2",
+      "s_0": {
+        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+      }
+    },
+    "LinearHeatCapacity": {
+      "cp_a": {
+        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+      },
+      "cp_b": {
+        "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+      }
+    },
+    "MixingRule_A": {
+      "T_ref": "K"
+    },
+    "VolumeShift": {
+      "c_i": {
+        "H2O": "m ** 3 / mol"
+      }
+    }
+  }
 }
