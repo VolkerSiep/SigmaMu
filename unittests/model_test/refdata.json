@@ -1,46 +1,28 @@
 {
-  "model_test.py::test_hierarchy_HierarchyTestModel2_arguments": {
-    "parameters": {
-      "depth": "cm",
-      "radius": "cm"
-    }
+  "material_test.py::test_create_material": {
+    "S": "kg * m ** 2 / K / s ** 2",
+    "S_std": "kg * m ** 2 / K / s ** 2",
+    "T": "K",
+    "T_ref": "K",
+    "V": "m ** 3",
+    "mu": "kg * m ** 2 / mol / s ** 2",
+    "mu_std": "kg * m ** 2 / mol / s ** 2",
+    "n": "mol",
+    "p": "J / m ** 3",
+    "p_ref": "kg / m / s ** 2",
+    "p_std": "kg / m / s ** 2"
   },
-  "model_test.py::test_hierarchy_HierarchyTestModel2_result": {
-    "properties": {
-      "volume": "cm * m ** 2"
-    }
-  },
-  "model_test.py::test_hierarchy_HierarchyTestModel_arguments": {
-    "parameters": {
-      "depth": "cm"
-    }
-  },
-  "model_test.py::test_hierarchy_HierarchyTestModel_result": {
-    "properties": {
-      "volume": "cm * m ** 2"
-    }
-  },
-  "model_test.py::test_hierarchy_NestedHierarchyTestModel_arguments": {
-    "parameters": {
-      "radius": "cm"
-    }
-  },
-  "model_test.py::test_hierarchy_NestedHierarchyTestModel_result": {
-    "properties": {
-      "volume": "cm * m ** 2"
-    }
-  },
-  "model_test.py::test_hierarchy_property": [
-    "sq((0.01*(2*radius)))",
-    "(depth*sq((0.01*(2*radius))))"
-  ],
-  "model_test.py::test_square": {
-    "area": "sq(length) m ** 2",
-    "length": "length m"
-  },
-  "model_test.py::test_two_instances": [
-    "sq(l_0)",
-    "sq(l_1)",
-    "sq(l_2)"
+  "material_test.py::test_material_lab": [
+    "S",
+    "S_std",
+    "T",
+    "T_ref",
+    "V",
+    "mu",
+    "mu_std",
+    "n",
+    "p",
+    "p_ref",
+    "p_std"
   ]
 }

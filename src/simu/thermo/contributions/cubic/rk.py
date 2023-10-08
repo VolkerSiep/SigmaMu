@@ -8,9 +8,10 @@ from casadi import SX
 from numpy import dot, ravel, roots
 
 # internal modules
-from ...utilities import base_magnitude, jacobian, log, sum1
-from ...utilities.constants import R_GAS
-from ..contribution import ThermoContribution
+from simu.thermo.state import InitialState
+from simu.utilities import base_magnitude, jacobian, log, sum1
+from simu.utilities.constants import R_GAS
+from simu.thermo.contribution import ThermoContribution
 
 
 class RedlichKwongEOS(ThermoContribution):
@@ -162,13 +163,14 @@ class RedlichKwongEOS(ThermoContribution):
         """For the Redlich Kwong equation of state, both phases are required
         to keep the EOS denominators positive and the volume derivative of
         pressure negative. More specific constraints are to be implemented
-        by the sub-classes to represent in particular the liquid phase"""
+        by the subclasses to represent in particular the liquid phase"""
 
     @staticmethod
-    def find_zeros(T, p, n, properties):
+    def find_zeros(state: InitialState, properties):
         """Given conditions and properties (A, B, C contribution of RK-EOS),
         calculate the compressibility factor roots analytically and return
         the vector quantity of volumes based on these"""
+        T, p, n = state.temperature, state.pressure, state.mol_vector
         A, B, C = [properties[f"_ceos_{i}"] for i in "abc"]
         NRT = sum(n) * R_GAS * T
         alpha = float(A * p / (NRT * NRT))  # must be dimensionless
@@ -179,7 +181,7 @@ class RedlichKwongEOS(ThermoContribution):
 
 
 class RedlichKwongEOSLiquid(RedlichKwongEOS):
-    """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
+    """As a subclass of :class:`RedlichKwongEOS`, this entity specialises
     on describing liquid (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""
@@ -191,14 +193,14 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
         d_y = dot(ravel(current_result["_dp_dx"]), delta_state)
         return -y / d_y if d_y < 0 else None
 
-    def initial_state(self, temperature, pressure, quantities, properties):
-        V = min(self.find_zeros(temperature, pressure, quantities, properties))
-        return [base_magnitude(temperature), base_magnitude(V)] + \
-            list(base_magnitude(quantities))
+    def initial_state(self, state, properties):
+        volume = min(self.find_zeros(state, properties))
+        return [base_magnitude(state.temperature), base_magnitude(volume)] + \
+            [base_magnitude(state.mol_vector)]
 
 
 class RedlichKwongEOSGas(RedlichKwongEOS):
-    """As a sub-class of :class:`RedlichKwongEOS`, this entity specialises
+    """As a subclass of :class:`RedlichKwongEOS`, this entity specialises
     on describing gas (and super-critical) phases. The distinct elements
     are the initialisation and the relaxation, ensuring the state to be within
     the correct domain with respect to volume."""
@@ -207,10 +209,11 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
         """For the gas phase, no more constraints apply then the ones that
         apply for both phases."""
 
-    def initial_state(self, temperature, pressure, quantities, properties):
-        V = max(self.find_zeros(temperature, pressure, quantities, properties))
-        return [base_magnitude(temperature), base_magnitude(V)] + \
-            list(base_magnitude(quantities))
+    def initial_state(self, state, properties):
+        zeros = self.find_zeros(state, properties)
+        volume = max(zeros)
+        return [base_magnitude(state.temperature), base_magnitude(volume)] + \
+            [base_magnitude(state.mol_vector)]
 
 
 class RedlichKwongAFunction(ThermoContribution):

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # internal modules
-from ...utilities import exp, conditional, sqrt, qpow, sum1, SymbolQuantity
-from ..contribution import ThermoContribution
+from simu.utilities import exp, conditional, sqrt, qpow, sum1, SymbolQuantity
+from simu.thermo.contribution import ThermoContribution
 from .rk import (RedlichKwongEOSLiquid, RedlichKwongEOSGas,
                  RedlichKwongAFunction, RedlichKwongBFunction,
                  RedlichKwongMFactor)
@@ -22,27 +22,17 @@ class LinearMixingRule(ThermoContribution):
       - ``target``: The name of the property :math:`x`.
       - ``source``: The name of the property :math:`x_i`. If omitted, it
         will be generated as the target name with ``_i`` appended.
-      - ``src_mode``: If set to ``child`` (default), the contribution aquires
-         the quantities :math:`x_i` as a result of previous calculations.
-         If set to ``parameter``, the quantity is required as a vector
-         parameter to the contribution.
     """
-
-    CHILD = "CHILD"  # canot be enum as I wish to serialise with primitives
-    PARAMETER = "PARAMETER"
 
     def define(self, res, par):
         target = self.options["target"]
         source = self.options.get("source", target + "_i")
-        src_mode = self.options.get("src_mode", self.CHILD).upper()
-        assert src_mode in (self.CHILD, self.PARAMETER), \
-            f"Invalid src_mode: '{src_mode}'"
-        if src_mode == self.CHILD:
-            res[target] = res[source] @ res["n"]
-        else:
-            unit = self.options.get("unit", "")
-            param = par.register_vector(source, self.species, unit)
-            res[target] = param.T @ res["n"]
+        res[target] = res[source].T @ res["n"]
+
+        # else:
+        #     unit = self.options.get("unit", "")
+        #     param = par.register_vector(source, self.species, unit)
+        #     res[target] = param.T @ res["n"]
 
 
 class NonSymmetricMixingRule(ThermoContribution):
@@ -58,7 +48,7 @@ class NonSymmetricMixingRule(ThermoContribution):
 
     Implemented with sparse binary interaction coefficient structure, the
     contribution includes a symmetric interaction (:math:`k`) and an
-    anti-symmetric contribution (:math:`l`).
+    antisymmetric contribution (:math:`l`).
 
     .. math::
 
@@ -79,9 +69,9 @@ class NonSymmetricMixingRule(ThermoContribution):
                      l_{1,ij}\,\left (1 - \frac{T}{T_\mathrm{ref}} \right ) +
                      l_{2,ij}\,\left (1 - \frac{T_\mathrm{ref}}{T} \right )
 
-    Each pair of species can only be define once. The pre-factor 2 is used to
+    Each pair of species can only be defined once. The pre-factor 2 is used to
     yield the same parameter values as if :math:`k` was a symmetric matrix and
-    :math:`l` was antdot(i-symmetric.
+    :math:`l` was antisymmetric.
 
     Despite what above equation suggests based on the double sum, the
     complexity of this contribution in terms of both memory and runtime is
@@ -133,9 +123,10 @@ class NonSymmetricMixingRule(ThermoContribution):
                 except KeyError:
                     continue
                 coeff = par.register_sparse_matrix(name, pairs, "dimless")
-                term = sum(c_1(i, j) * c for i, j, c in coeff.pair_items())
-                contributions.append(factor * term)
-            return -2 * sum(contributions)
+                if coeff:
+                    term = sum(c_1(i, j) * c for i, j, c in coeff.pair_items())
+                    contributions.append(factor * term)
+            return -2 * sum(contributions) if contributions else None
 
         def asymmetric():
             contributions = []
@@ -145,11 +136,18 @@ class NonSymmetricMixingRule(ThermoContribution):
                 except KeyError:
                     continue
                 coeff = par.register_sparse_matrix(name, pairs, "dimless")
-                term = sum(c_2(i, j) * c for i, j, c in coeff.pair_items())
-                contributions.append(factor * term)
-            return -2 / N * sum(contributions)
+                if coeff:
+                    term = sum(c_2(i, j) * c for i, j, c in coeff.pair_items())
+                    contributions.append(factor * term)
+            return -2 / N * sum(contributions) if contributions else None
 
-        res[target] = sum1(a_n)**2 + symmetric() + asymmetric()
+        sym = symmetric()
+        asym = asymmetric()
+        res[target] = sum1(a_n) ** 2
+        if sym is not None:
+            res[target] += sym
+        if asym is not None:
+            res[target] += asym
 
 
 class CriticalParameters(ThermoContribution):
@@ -177,6 +175,25 @@ class CriticalParameters(ThermoContribution):
         res["_T_c"] = par.register_vector("T_c", self.species, "K")
         res["_p_c"] = par.register_vector("p_c", self.species, "bar")
         res["_omega"] = par.register_vector("omega", self.species, "dimless")
+
+
+class VolumeShift(ThermoContribution):
+    r"""This class does not perform any calculations, but provides volume
+    shift parameters to be used via mixing rules as the C-parameter in
+    equations of state. The following parameter needs to be provided as a
+    species vector:
+
+    ======== ============== =================================
+    Property Symbol         Description
+    ======== ============== =================================
+    c_i      :math:`c_i`    Volume shift parameter [m**3/mol]
+    ======== ============== =================================
+    """
+
+    provides = ["_ceos_c_i"]
+
+    def define(self, res, par):
+        res["_ceos_c_i"] = par.register_vector("c_i", self.species, "m**3/mol")
 
 
 class BostonMathiasAlphaFunction(ThermoContribution):

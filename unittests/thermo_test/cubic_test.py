@@ -7,17 +7,17 @@ from pytest import mark, raises
 import pylab
 
 # internal modules
-from simu.utilities import (assert_reproduction, user_agree, base_unit,
-                            ParameterDictionary, SymbolQuantity, jacobian,
-                            QFunction, Quantity as Q, base_magnitude, sum1,
-                            unit_registry)
+from simu.utilities import (
+    assert_reproduction, base_unit, ParameterDictionary, SymbolQuantity,
+    jacobian, QFunction, Quantity as Q, base_magnitude, sum1, unit_registry)
 from simu.utilities.constants import R_GAS
-from simu.thermo import (CriticalParameters, LinearMixingRule,
-                         RedlichKwongEOSLiquid, RedlichKwongEOSGas,
-                         NonSymmetricMixingRule, RedlichKwongAFunction,
-                         RedlichKwongBFunction, RedlichKwongMFactor,
-                         BostonMathiasAlphaFunction)
-from simu.thermo.cubic.rk import RedlichKwongEOS
+from simu.thermo import InitialState
+from simu.thermo.contributions import (
+    CriticalParameters, LinearMixingRule, RedlichKwongEOSLiquid,
+    RedlichKwongEOSGas, NonSymmetricMixingRule, RedlichKwongAFunction,
+    RedlichKwongBFunction, RedlichKwongMFactor, BostonMathiasAlphaFunction,
+    VolumeShift)
+from simu.thermo.contributions.cubic.rk import RedlichKwongEOS
 
 
 # auxiliary functions
@@ -40,19 +40,24 @@ def test_critical_parameters():
     assert_reproduction(res)
 
 
+def test_volume_shift():
+    """Test definition of VolumeShift contribution"""
+    res = {}
+    par = ParameterDictionary()
+    cont = VolumeShift(["A", "B"], {})
+    cont.define(res, par)
+    assert_reproduction([res, par])
+
+
 def test_linear_mixing_rule():
     """Test definition of LinearMixingRule contribution"""
-    res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
+    res = {"T": sym("T", "K"), "n": vec("n", 2, "mol"),
+           "c_i": vec("c_i", 2, "m**3/mol")}
     par = ParameterDictionary()
-    opt = {
-        "target": "c",
-        "src_mode": LinearMixingRule.PARAMETER,
-        "unit": "m**3/mol"
-    }
+    opt = {"target": "c"}
     cont = LinearMixingRule(["A", "B"], opt)
     cont.define(res, par)
-    result = [res["c"], par]
-    assert_reproduction(result)
+    assert_reproduction(res["c"])
 
 
 def test_redlich_kwong_eos():
@@ -107,6 +112,24 @@ def test_non_symmmetric_mixing_rule():
     par = ParameterDictionary()
     cont.define(res, par)
     assert_reproduction(res["a"])
+
+
+def test_non_symmmetric_mixing_rule_no_interaction():
+    """Test definition of NonSymmetricMixingRule contribution"""
+    res = {
+        "T": sym("T", "K"),
+        "n": vec("n", 3, "mol"),
+        "a_i": vec("a_i", 3, "Pa*m**6/mol")
+    }
+    options = {
+        "k_1": [],
+        "k_2": [],
+        "l_1": [],
+        "target": "a"
+    }
+    cont = NonSymmetricMixingRule(["A", "B", "C"], options)
+    par = ParameterDictionary()
+    cont.define(res, par)
 
 
 def test_redlich_kwong_a_function():
@@ -193,8 +216,9 @@ def test_initialise_rk():
     }
     liq = RedlichKwongEOSLiquid(["A", "B"], {})
     gas = RedlichKwongEOSGas(["A", "B"], {})
-    v_liq = liq.initial_state(T, p, n, res)[1]
-    v_gas = gas.initial_state(T, p, n, res)[1]
+    ini_state = InitialState(temperature=T, pressure=p, mol_vector=n)
+    v_liq = liq.initial_state(ini_state, res)[1]
+    v_gas = gas.initial_state(ini_state, res)[1]
     assert abs(v_liq - 1.526e-5) < 1e-8  # value 1.5... is validated
     assert 0.02 < v_gas < 0.03
 
@@ -234,21 +258,21 @@ def test_initialise_rk2(cls):
         "_ceos_c": Q("10 ml"),
     }
     ideal_num = {"S": Q("0 J/K"), "p": Q("0 Pa"), "mu": Q([0, 0], "J/mol")}
-
-    state = cont.initial_state(T, p, n, res_num)
+    ini_state = InitialState(temperature=T, pressure=p, mol_vector=n)
+    state = cont.initial_state(ini_state, res_num)
 
     # is the rest of the state (except volume) reproduced?
     assert base_magnitude(T) == state[0]
-    assert base_magnitude(n).tolist() == state[2:]
+    assert base_magnitude(n).tolist() == state[2].tolist()
     res_num["V"] = Q(state[1], "m**3")
 
     # calculate contribution values with initial state to reproduce pressure
     args = {k: res[k] for k in res_num}
     args.update(ideal)
-    func = QFunction(args, {"p": res["p"]})
+    func = QFunction(args, {"p_res": res["p"]})
 
     args = {**res_num, **ideal_num}
-    p2 = func(args)["p"] + sum(n) * R_GAS * T / args["V"]
+    p2 = func(args)["p_res"] + sum(n) * R_GAS * T / args["V"]
     assert abs(p2 - p) < Q("1 Pa")
 
 
@@ -311,7 +335,6 @@ def test_relax_rk_advanced():
     beta = cont.relax(res, [0.0, 4e-6, 0.0, 0.0])
     assert 0.7 < beta < 0.8  # from plot, this is where dp/dV turns positive
 
-
 # *** auxiliary routines
 
 def create_boston_mathias_alpha_function():
@@ -324,6 +347,7 @@ def create_boston_mathias_alpha_function():
     cont = BostonMathiasAlphaFunction(["A", "B"], {})
     cont.define(res, par)
     return res, par
+
 
 def plot_pv(res):
     """auxiliary method to plot pv-graph and linear/quadratic approximation"""

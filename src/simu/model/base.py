@@ -1,12 +1,14 @@
 """This module contains the base classes to represent (process) models."""
 from abc import ABC, abstractmethod
+from typing import Self, Optional
 
-from ..utilities import QFunction
+# from ..utilities import QFunction
 
-from .parameter import ParameterHandler
-from .hierarchy import HierarchyHandler
-from .property import PropertyHandler
-from .numeric import NumericHandler
+from .parameter import ParameterHandler, ParameterProxy
+from .hierarchy import HierarchyHandler, HierarchyProxy
+from .property import PropertyHandler, PropertyProxy
+# from .numeric import NumericHandler
+# from .material import MaterialHandler
 
 
 class Model(ABC):
@@ -21,24 +23,28 @@ class Model(ABC):
     hierarchy: HierarchyHandler
     """A handler object that takes care of defining sub models"""
 
-    @classmethod
-    def as_top_model(cls,
-                     name: str = "model"
-                     ) -> tuple["ModelProxy", NumericHandler]:
-        """Define this model as top level model, hence instantiate and finalise
-        it.
-        """
-        proxy = cls().create_proxy(name).finalise()
-        return proxy, proxy.numeric
+    # material: MaterialHandler
+    """A handler object that takes care of materials"""
 
     def __init__(self):
-        self.parameters = ParameterHandler()
+        self.__proxy = None
+        self.parameters = ParameterHandler(self.cls_name)
         self.properties = PropertyHandler()
-
-        self.interface()
+        # self.material = MaterialHandler()
         self.hierarchy = HierarchyHandler(self)
-        self.define()
-        self.__func = self.__make_function()
+        self.interface()
+
+    @classmethod
+    def top(cls, name: str = "model") -> "ModelProxy":
+        """Define this model as top level model, hence instantiate,
+        create proxy, and finalise it.
+        """
+        return cls.proxy(name).finalise()
+
+    @classmethod
+    def proxy(cls, name: str = "model") -> "ModelProxy":
+        """Instantiate and create proxy of this model."""
+        return cls().create_proxy(name)
 
     def interface(self) -> None:
         """This abstract method is to define all model parameters, material
@@ -79,26 +85,24 @@ class Model(ABC):
         calculate the property ``area``.
         """
 
-    def create_proxy(self, name: str) -> "ModelProxy":
+    # following the two methods finalise and create_proxy for explicit use,
+    # if the context manager is not used.
+
+    def create_proxy(self, name: Optional[str] = "model") -> "ModelProxy":
         """Create a proxy object for configuration in hierarchy context"""
+        return ModelProxy(self, name)
 
-        return ModelProxy(name, self)
-
-    def __make_function(self) -> QFunction:
-        """This method creates a function object that also includes the child
-        models.
-        """
-        name = self.__class__.__name__
-        args = {"parameters": self.parameters.all}
-        props = {n: self.properties[n] for n in self.properties.names()}
-
-        res = {"properties": props}
-        return QFunction(args, res, name)
-
+    @classmethod
     @property
-    def function(self) -> QFunction:
-        """Return the complete function object of this module."""
-        return self.__func
+    def cls_name(cls) -> str:
+        """The name of the derived class with module path for hopefully
+        unique identification"""
+        module_name = cls.__module__
+        cls_name = cls.__name__
+        if module_name == "__main__":
+            return f"{cls_name}"
+        else:
+            return f"{module_name}.{cls_name}"
 
 
 class ModelProxy:
@@ -106,14 +110,22 @@ class ModelProxy:
     a child model during definition of the parent model.
     """
 
-    def __init__(self, name: str, model: Model):
-        """Constructor creating proxy objects for the handlers of the model,
-        such that a sub-model can be configured in the parent context."""
+    parameters: ParameterProxy
+    """The proxy of the parameter handler, to connect and update parameters"""
 
-        self.model = model
-        self.parameters = model.parameters.create_proxy(name)
-        self.properties = model.properties.create_proxy(name)
-        self.hierarchy = model.hierarchy  # they are already proxies.
+    properties: PropertyProxy
+    """The proxy of the property handler, making properties available"""
+
+    def __init__(self, model: Model, name: str):
+        self.parameters = model.parameters.create_proxy()
+        self.properties = model.properties.create_proxy()
+        self.hierarchy = model.hierarchy.create_proxy()
+        self.__model = model
+        self.__set_name(name)
+
+    def __set_name(self, name):
+        """Set the name of the model for better error diagnostics"""
+        self.parameters.set_name(name)
 
     def __enter__(self):
         return self
@@ -123,23 +135,58 @@ class ModelProxy:
             return
         self.finalise()
 
-    def finalise(self) -> "ModelProxy":
-        """This method is typically called when the object leaves the context
-        manager. It calls the child model's function to wire up the calculated
-        properties and residuals."""
-        # call model function on not provided parameters,
-        # and calculate properties
-        self.parameters.finalise()
-
-        args = {"parameters": self.parameters.arg}
-        result = self.model.function(args, squeeze_results=False)
-
-        # There might be no properties, e.g. if model only makes residuals
-        self.properties.finalise(result.get("properties", {}))
-
+    def finalise(self) -> Self:
+        """After the parent model has connected parameters and materials,
+        this method is called to process its own modelling code"""
+        self.parameters.finalise()  # parameters are final now
+        self.__model.define()
+        self.properties.finalise()  # properties can be queried now
+        self.hierarchy.finalise()
         return self
 
-    @property
-    def numeric(self) -> NumericHandler:
-        """Create and return a numeric handler"""
-        return NumericHandler(self)
+    # TODO: method that allows the numeric handler to collect the symbols
+    #       and values.
+
+#
+# class ModelProxy:
+#     """Proxy class for models, being main object to relate to when accessing
+#     a child model during definition of the parent model.
+#     """
+#
+#     def __init__(self, name: str, model: Model):
+#         """Constructor creating proxy objects for the handlers of the model,
+#         such that a sub-model can be configured in the parent context."""
+#
+#         self.model = model
+#         self.parameters = model.parameters.create_proxy(name)
+#         self.properties = model.properties.create_proxy(name)
+#         self.hierarchy = model.hierarchy  # they are already proxies.
+#
+#     def __enter__(self):
+#         return self
+#
+#     def __exit__(self, exc_type, exc_value, traceback):
+#         if exc_type is not None:
+#             return
+#         self.finalise()
+#
+#     def finalise(self) -> "ModelProxy":
+#         """This method is typically called when the object leaves the context
+#         manager. It calls the child model's function to wire up the calculated
+#         properties and residuals."""
+#         # call model function on not provided parameters,
+#         # and calculate properties
+#         self.parameters.finalise()
+#
+#         args = {"parameters": self.parameters.arg}
+#         result = self.model.function(args, squeeze_results=False)
+#
+#         # There might be no properties, e.g. if model only makes residuals
+#         self.properties.finalise(result.get("properties", {}))
+#
+#         return self
+#
+#     @property
+#     def numeric(self) -> NumericHandler:
+#         """Create and return a numeric handler"""
+#         return NumericHandler(self)

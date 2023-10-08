@@ -4,12 +4,12 @@ the building blocks of a :class:`ThermoFrame` function object."""
 
 # stdlib modules
 from abc import ABC, abstractmethod
-from typing import Collection, Sequence
+from collections.abc import Sequence, MutableSequence
 
 # internal modules
+from .state import InitialState
 from ..utilities import Quantity, ParameterDictionary
-
-QuantityDict = dict[str, Quantity]
+from ..utilities.types import Map, MutMap
 
 
 class ThermoContribution(ABC):
@@ -41,7 +41,7 @@ class ThermoContribution(ABC):
         self.options = options
 
     @abstractmethod
-    def define(self, res: QuantityDict, par: ParameterDictionary):
+    def define(self, res: MutMap[Quantity], par: ParameterDictionary):
         """Abstract method to implement the ``casadi`` expressions
         that make up this contribution.
 
@@ -58,7 +58,7 @@ class ThermoContribution(ABC):
 
         """
 
-    def relax(self, current_result: QuantityDict,
+    def relax(self, current_result: Map[Quantity],
               delta_state: Sequence[float]) -> float:
         """Virtual function to report the maximal allowable step size in
         the state variables.
@@ -72,9 +72,8 @@ class ThermoContribution(ABC):
         del current_result, delta_state  # unused
         return 999  # a number greater than 1 / gamma for practical gamma
 
-    def initial_state(self, temperature: Quantity, pressure: Quantity,
-                      quantities: Quantity,
-                      properties: dict[str, Quantity]) -> Quantity | None:
+    def initial_state(self, state: InitialState, properties: Map[Quantity]) \
+            -> MutableSequence[float] | None:
         """When the :class:`ThermoFrame` object is queried for an initial state
         representation and deviates from Gibbs coordinates, The uppermost
         contribution that implements this method and does not return ``None``
@@ -85,41 +84,11 @@ class ThermoContribution(ABC):
         such that it is solely up to the contributions, how to obtain the
         initial state.
 
-        :param temperature: Temperature [K]
-        :param pressure: Pressure [Pa]
-        :param quantities: Quantities [mol]
+        :param state: The default state
         :param properties: The property structure, mapping strings to floats
           or list of floats.
         :return: The initial state or ``None``
 
         .. seealso:: :meth:`ThermoFrame.initial_state`
         """
-        del temperature, pressure, quantities, properties  # unused
-        return None
-
-
-class StateDefinition(ABC):
-    """This class defines the interpretation of the state vector in terms of
-    physical properties. This interpretation is then consumed by the
-    contributions as input for their calculations towards the complete
-    thermodynamic model."""
-
-    @abstractmethod
-    def prepare(self, result: dict):
-        """This method can assume to find the state vector ``x`` in the
-        ``result`` dictionary, and is expected to add the physical
-        interpretation of its elements to the same dictionary. It is entirely
-        up to the contributions that rely on this state.
-
-        For the Gibbs state, the new elements would be ``T``, ``p``, and ``n``,
-        denoting temperature, pressure and quantities respectively.
-        """
-
-    @abstractmethod
-    def reverse(self, temperature: Quantity, pressure: Quantity,
-                quantities: Quantity) -> list[float]:
-        """Return the state vector as complete as possible with given
-        temperature, pressure and quantities. The task of the contributions'
-        :meth:`ThermoContribution.initial_state` method is it then to
-        complete it. Missing elements shall be filled with None.
-        """
+        ...

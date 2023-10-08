@@ -1,0 +1,16 @@
+H0S0ReferenceState:
+  dh_form:
+    'N2': 0 J/mol
+    'O2': 0 J/mol
+  s_0:
+    'N2': 0 J/mol/K
+    'O2': 0 J/mol/K
+  T_ref: 25 degC
+  p_ref: 1 atm
+LinearHeatCapacity:
+  cp_a:
+    'N2': 29.12379083 J/mol/K
+    'O2': 20.786 J/mol/K
+  cp_b:
+    'N2': 5.28694e-4 J/mol/K**2
+    'O2': 0.0 J/mol/K**2

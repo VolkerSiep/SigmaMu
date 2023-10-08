@@ -3,15 +3,27 @@
 
 # stdlib modules
 from sys import argv
+from pathlib import Path
 
 # external modules
 from pytest import main
+from logging import DEBUG
+from yaml import safe_load
 
 # internal modules
-from simu.thermo import (H0S0ReferenceState, HelmholtzState, ThermoFactory,
-                         LinearHeatCapacity, StandardState, IdealMix,
-                         HelmholtzIdealGas)
-from simu.utilities import assert_reproduction, Quantity as Q
+from simu.thermo import ThermoFactory
+from simu.thermo.contributions import (
+    H0S0ReferenceState, LinearHeatCapacity, StandardState, IdealMix,
+    HelmholtzIdealGas)
+from simu.thermo.state import HelmholtzState, InitialState
+from simu.thermo.species import SpeciesDefinition
+from simu.utilities import (
+    assert_reproduction, parse_quantities_in_struct, Quantity as Qty)
+
+
+filename = Path(__file__).resolve().parent / "example_parameters.yml"
+with open(filename, encoding="utf-8") as file:
+    example_parameters = parse_quantities_in_struct(safe_load(file))
 
 
 def test_create_thermo_factory():
@@ -24,7 +36,7 @@ def test_register_contributions():
     create_frame_factory()
 
 
-def test_create_frame():
+def test_create_frame(caplog):
     """create a ThermoFrame object"""
     fac = create_frame_factory()
     config = {
@@ -34,7 +46,12 @@ def test_create_frame():
             "H0S0ReferenceState", "LinearHeatCapacity", "StandardState"
         ],
     }
-    fac.create_frame(config)
+    species = {f: SpeciesDefinition(f) for f in "N2 O2 Ar CO2 H2O".split()}
+    with caplog.at_level(DEBUG, logger="simu"):
+        fac.create_frame(species, config)
+    msg = "\n".join([r.message for r in caplog.records])
+    for contrib in config["contributions"]:
+        assert contrib in msg
 
 
 def test_parameter_structure():
@@ -49,9 +66,16 @@ def test_property_structure():
     assert_reproduction(frame.property_structure)
 
 
-def test_call_frame():
+def test_call_frame_flow():
     """Call a created frame with numerical values"""
-    result = call_frame()[2]
+    result = call_frame(flow=True)[2]
+    result = {k: v for k, v in result.items() if k in {"S", "mu"}}
+    assert_reproduction(result)
+
+
+def test_call_frame_state():
+    """Call a created frame with numerical values"""
+    result = call_frame(flow=False)[2]
     result = {k: v for k, v in result.items() if k in {"S", "mu"}}
     assert_reproduction(result)
 
@@ -68,44 +92,20 @@ def test_initial_state():
     """Test whether initialisation of a Helmholtz ideal gas contributioon
     gives the correct volume"""
     frame = create_simple_frame()
-    T, p, n = Q("25 degC"), Q("1 bar"), Q([1, 1], "mol")
-    x = frame.initial_state(T, p, n, example_parameters)
+    initial_state = InitialState(temperature=Qty("25 degC"),
+                                 pressure=Qty("1 bar"),
+                                 mol_vector=Qty([1, 1], "mol"))
+    x = frame.initial_state(initial_state, example_parameters)
     assert_reproduction(x[1])
 
 
-# helper functions / data
+# *** helper functions
 
-example_parameters = {
-    'H0S0ReferenceState': {
-        'dh_form': {
-            'N2': Q("0 J/mol"),
-            'O2': Q("0 J/mol")
-        },
-        's_0': {
-            'N2': Q("0 J/mol/K"),
-            'O2': Q("0 J/mol/K")
-        },
-        'T_ref': Q("25 degC"),
-        'p_ref': Q("1 atm")
-    },
-    'LinearHeatCapacity': {
-        'cp_a': {
-            'N2': Q("29.12379083 J/mol/K"),
-            'O2': Q("20.786 J/mol/K")
-        },
-        'cp_b': {
-            'N2': Q("5.28694e-4 J/mol/K**2"),
-            'O2': Q("0.0 J/mol/K**2")
-        }
-    }
-}
-
-
-def call_frame():
+def call_frame(flow: bool = True):
     """Call a frame object with a state and return all with the result"""
     frame = create_simple_frame()
-    state = Q([398.15, 0.0448, 1, 1])  # = T, V, *n
-    result = frame(state, example_parameters)
+    state = Qty([398.15, 0.0448, 1, 1])  # = T, V, *n
+    result = frame(state, example_parameters, flow=flow)
     return frame, state, result
 
 
@@ -129,7 +129,8 @@ def create_simple_frame():
             "IdealMix", "HelmholtzIdealGas"
         ],
     }
-    return fac.create_frame(config)
+    species = {"N2": SpeciesDefinition("N2"), "O2": SpeciesDefinition("O2")}
+    return fac.create_frame(species, config)
 
 
 if __name__ == "__main__":

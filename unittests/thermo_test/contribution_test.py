@@ -2,18 +2,23 @@
 """Test module for ideal contributions"""
 
 # internal modules
-from simu.thermo import (GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas,
-                         IdealMix, LinearHeatCapacity)
-from simu.utilities import (ParameterDictionary, Quantity, SymbolQuantity,
-                            assert_reproduction, base_unit)
+from simu.thermo import InitialState
+from simu.thermo.contributions import (
+    GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
+    LinearHeatCapacity)
+from simu.utilities import (
+    ParameterDictionary, Quantity, SymbolQuantity, assert_reproduction,
+    base_unit)
 
 
 # auxiliary functions
 def sym(name, units):
+    """Return a scalar symbol of given name and units"""
     return SymbolQuantity(name, base_unit(units))
 
 
 def vec(name, size, units):
+    """Return a vector symbol of given name, units, and size"""
     return SymbolQuantity(name, base_unit(units), size)
 
 
@@ -57,7 +62,7 @@ def test_ideal_mix():
         "mu": vec("mu_std", 2, "J/mol")
     }
     cont = IdealMix(["A", "B"], {})
-    cont.define(res, {})
+    cont.define(res, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
@@ -73,7 +78,7 @@ def test_gibbs_ideal_gas():
         "mu": vec("mu_im", 2, "J/mol")
     }
     cont = GibbsIdealGas(["A", "B"], {})
-    cont.define(res, {})
+    cont.define(res, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
     assert_reproduction(result)
 
@@ -94,7 +99,7 @@ def test_helmholtz_ideal_gas():
         "mu": vec("mu_im", 2, "J/mol")
     }
     cont = HelmholtzIdealGas(["A", "B"], {})
-    cont.define(res, {})
+    cont.define(res, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S p mu".split()}
     assert_reproduction(result)
 
@@ -104,7 +109,10 @@ def test_helmholtz_ideal_gas_initialise():
     cont = HelmholtzIdealGas(["A", "B"], {})
     # normally, we would need to provide numeric quantities as results,
     #  but these are not used for ideal gas initialisation.
-    state = cont.initial_state(Quantity("25 degC"), Quantity("1 bar"),
-                               Quantity([1, 1], "mol"), {})
-    V_ref = 2 * 8.31446261815324 * (273.15 + 25) / 1e5
-    assert abs(state[1] / V_ref - 1) < 1e-7
+    initial_state = InitialState(temperature=Quantity("25 degC"),
+                                 pressure=Quantity("1 bar"),
+                                 mol_vector=Quantity([1, 1], "mol"))
+
+    state = cont.initial_state(initial_state, {})
+    ref_volume = 2 * 8.31446261815324 * (273.15 + 25) / 1e5
+    assert abs(state[1] / ref_volume - 1) < 1e-7

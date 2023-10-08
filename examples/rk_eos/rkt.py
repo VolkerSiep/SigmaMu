@@ -5,8 +5,8 @@ from yaml import load, SafeLoader
 from casadi import SX
 
 # internal modules
-from simu.thermo import ThermoFactory, ThermoFrame
-from simu.thermo import HelmholtzState, all_contributions
+from simu.thermo import ThermoFactory, ThermoFrame, HelmholtzState
+from simu.thermo import all_contributions
 
 
 class ThermoNode(dict):
