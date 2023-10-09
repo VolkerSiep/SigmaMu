@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
@@ -99,7 +98,6 @@ class Material(MutMap[Quantity]):
     #     pass
 
 
-@dataclass
 class MaterialDefinition:
     """A ``MaterialDefinition`` object defines a material type by its
 
@@ -107,24 +105,45 @@ class MaterialDefinition:
       - initial state
       - source of thermodynamic parameters
     """
-    frame: ThermoFrame
-    initial_state: InitialState
-    store: ThermoParameterStore
 
-    def __post_init__(self):
-        num_species = len(self.frame.species)
-        num_init_species = len(self.initial_state.mol_vector.magnitude)
-        if num_init_species != num_species:
-            raise ValueError(
-                f"Incompatible initial state with {num_init_species} "
-                f"species, while {num_species} is/are expected"
-            )
+    __frame: ThermoFrame
+    __initial_state: InitialState
+    __store: ThermoParameterStore
+
+    def __init__(self, frame: ThermoFrame, initial_state: InitialState,
+                 store: ThermoParameterStore):
+        self.__frame  = frame
+        self.initial_state = initial_state
+        self.__store = store
 
     @property
     def spec(self) -> MaterialSpec:
         """Return a material spec object that is implemented by this
         definition"""
         return MaterialSpec(self.frame.species)
+
+    @property
+    def frame(self) -> ThermoFrame:
+        return self.__frame
+
+    @property
+    def store(self) -> ThermoParameterStore:
+        return self.__store
+
+    @property
+    def initial_state(self):
+        return self.__initial_state
+
+    @initial_state.setter
+    def initial_state(self, new_state: InitialState):
+        num_species = len(self.__frame.species)
+        num_init_species = len(new_state.mol_vector.magnitude)
+        if num_init_species != num_species:
+            raise ValueError(
+                f"Incompatible initial state with {num_init_species} "
+                f"species, while {num_species} is/are expected"
+            )
+        self.__initial_state = new_state
 
     def create_flow(self) -> Material:
         return Material(self, True)
@@ -154,7 +173,6 @@ class MaterialLab:
         species_map = {s: self.__species_db[s] for s in species}
         frame = self.__factory.create_frame(species_map, structure)
         return MaterialDefinition(frame, initial_state, self.__param_store)
-
 
 
 class Augmenter(ABC):
