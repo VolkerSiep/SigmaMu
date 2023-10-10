@@ -17,8 +17,9 @@ class MaterialSpec:
     required and whether additional species are allowed.
     """
 
-    def __init__(self, species: Optional[Iterable[str]] = None):
+    def __init__(self, species: Optional[Iterable[str]] = None, flow: bool = True):
         #        augmenters: Optional[Iterable[Type[Augmenter]]] = None):
+        self.__flow = flow
         self.__locked = not (species is None or "*" in species)
         self.__species = set() if species is None else set(species) - set("*")
         # self.__augmenters = set() if augmenters is None else set(augmenters)
@@ -34,12 +35,18 @@ class MaterialSpec:
         listed as :attr:`species`."""
         return self.__locked
 
+    def flow(self) -> bool:
+        """Whether the specification is a flow (``True``) or a state (``False``)"""
+        return self.__flow
+
     def is_compatible(self, material: "Material") -> bool:
         """Return true if the given material is compatible with this one.
         That is:
           - none of the specified species are missing in the material
           - if specification locks species set, none of the material
             species are missing in the specification
+          - flows are only compatible with flows, states are only compatible
+            with states.
         """
         spe, mspe = self.species, set(material.species)
         # aug, maug = self.augmenters, material.augmenters
