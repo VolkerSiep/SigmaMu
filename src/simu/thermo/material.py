@@ -24,6 +24,16 @@ class MaterialSpec:
         self.__species = set() if species is None else set(species) - set("*")
         # self.__augmenters = set() if augmenters is None else set(augmenters)
 
+    @classmethod
+    @property
+    def flow(cls):
+        return cls()
+
+    @classmethod
+    @property
+    def state(cls):
+        return cls(flow=False)
+
     @property
     def species(self) -> set[str]:
         """The set of species that must be provided."""
