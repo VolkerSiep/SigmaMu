@@ -61,8 +61,9 @@ class MaterialSpec:
         spe, mspe = self.species, set(material.species)
         # aug, maug = self.augmenters, material.augmenters
         locked = self.locked
+        flow_comp = self.__flow == material.is_flow()
         # return not ((spe - mspe) or (locked and (mspe - spe) or (aug - maug)))
-        return not ((spe - mspe) or (locked and (mspe - spe)))
+        return flow_comp and not ((spe - mspe) or (locked and (mspe - spe)))
 
     # @property
     # def augmenters(self) -> set[Type[Augmenter]]:
@@ -84,6 +85,7 @@ class Material(MutMap[Quantity]):
         props = frame(state, params, squeeze_results=False, flow=flow)
         self.__properties = {n: p for n, p in props.items()
                              if not n.startswith("_")}
+        self.__flow = flow
 
         # apply augmenters as required in definition
 
@@ -109,6 +111,11 @@ class Material(MutMap[Quantity]):
 
     def __len__(self):
         return len(self.__properties)
+
+    def is_flow(self):
+        """Return if the material represents a flow (``True``) or not
+        (``False``)"""
+        return self.__flow
 
     # @property
     # def augmenters(self) -> set[Type[Augmenter]]:

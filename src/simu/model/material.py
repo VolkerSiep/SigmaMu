@@ -12,20 +12,25 @@ from ..utilities.errors import DataFlowError
 
 
 class MaterialHandler(Map[MaterialSpec]):
-    """
+    """The material handler maintains the thermodynamic states represented as
+    flows and states. When a model is created, the ``interface`` method can be
+    used to define material ports. In the ``with`` context, invoked by the
+    parent model, defined ports are to be connected to ``Material`` instances
+    in the parent context.
+    Finally, the model can create further (local) material instances.
     """
     def __init__(self):
         self.__materials: MutMap[Material] = {}
         self.__ports: MutMap[MaterialSpec] = {}
 
-    def port(self, name: str, spec: Optional[MaterialSpec] = None):
+    def define_port(self, name: str, spec: Optional[MaterialSpec] = None):
         """Define a material port of the given name and specification.
         The name must be unique in this context. If no ``spec`` is given,
         any material is accepted.
         """
         if name in self.__ports:
             raise KeyError(f"Material port '{name}' already defined")
-        self.__required[name] = MaterialSpec() if spec is None else spec
+        self.__ports[name] = MaterialSpec() if spec is None else spec
 
     def __getitem__(self, name: str):
         """Re-obtain the material specification, avoiding the need to keep a

@@ -126,7 +126,7 @@ class ModelProxy:
         self.parameters = model.parameters.create_proxy()
         self.properties = model.properties.create_proxy()
         self.hierarchy = model.hierarchy.create_proxy()
-        self.material = model.materials.create_proxy()
+        self.materials = model.materials.create_proxy()
         self.__model = model
         self.__set_name(name)
 
@@ -148,8 +148,8 @@ class ModelProxy:
         self.parameters.finalise()  # parameters are final now
         self.__model.define()
         self.properties.finalise()  # properties can be queried now
-        self.hierarchy.finalise()
-        self.materials.finalise()
+        self.hierarchy.finalise()  # all declared sub-models are provided
+        self.materials.finalise()  # all ports are connected
         return self
 
     # TODO: method that allows the numeric handler to collect the symbols

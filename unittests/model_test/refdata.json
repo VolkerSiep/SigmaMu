@@ -1,13 +1,13 @@
 {
   "material_test.py::test_create_material": {
-    "S": "kg * m ** 2 / K / s ** 2",
-    "S_std": "kg * m ** 2 / K / s ** 2",
+    "S": "kg * m ** 2 / K / s ** 3",
+    "S_std": "kg * m ** 2 / K / s ** 3",
     "T": "K",
     "T_ref": "K",
-    "V": "m ** 3",
+    "V": "m ** 3 / s",
     "mu": "kg * m ** 2 / mol / s ** 2",
     "mu_std": "kg * m ** 2 / mol / s ** 2",
-    "n": "mol",
+    "n": "mol / s",
     "p": "J / m ** 3",
     "p_ref": "kg / m / s ** 2",
     "p_std": "kg / m / s ** 2"
