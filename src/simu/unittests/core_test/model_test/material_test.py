@@ -2,15 +2,15 @@
 
 from pytest import raises
 
-from simu.model.material import MaterialHandler
-from simu.thermo import InitialState
-from simu.thermo.factory import ThermoFactory, ExampleThermoFactory
-from simu.thermo.parameters import ThermoParameterStore
-from simu.thermo.material import MaterialDefinition, MaterialLab, MaterialSpec
-from simu.thermo.species import SpeciesDefinition, SpeciesDB
-from simu.thermo.contributions import all_contributions
-from simu.thermo.state import GibbsState
-from simu.utilities import assert_reproduction
+from simu.core.model.material import MaterialHandler
+from simu.core.thermo import InitialState
+from simu.core.thermo.factory import ThermoFactory, ExampleThermoFactory
+from simu.core.thermo import ThermoParameterStore
+from simu.core.thermo.material import MaterialDefinition, MaterialLab, MaterialSpec
+from simu.core.thermo.species import SpeciesDefinition, SpeciesDB
+from simu.core.thermo import all_contributions
+from simu.core.thermo.state import GibbsState
+from simu.core.utilities import assert_reproduction
 
 # class BigNAugmentor(Augmentor):
 #     def define(self, material):

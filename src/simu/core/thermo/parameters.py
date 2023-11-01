@@ -6,8 +6,8 @@ from typing import Iterable, Collection
 
 from pint import DimensionalityError
 
-from simu.utilities import Quantity, parse_quantities_in_struct, SymbolQuantity
-from simu.utilities.types import NestedMap, NestedMutMap, MutMap
+from simu.core.utilities import Quantity, parse_quantities_in_struct, SymbolQuantity
+from simu.core.utilities.types import NestedMap, NestedMutMap, MutMap
 
 _RT = tuple[Quantity | NestedMap[Quantity],
             str | NestedMap[str],

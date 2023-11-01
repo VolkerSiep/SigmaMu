@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # internal modules
-from simu.utilities import assert_reproduction, SymbolQuantity, base_unit
-from simu.thermo.contributions import Derivative
+from simu.core.utilities import assert_reproduction, SymbolQuantity, base_unit
+from simu.core.thermo.contributions.special import Derivative
 
 
 # auxiliary functions

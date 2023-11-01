@@ -7,17 +7,17 @@ from pytest import mark, raises
 import pylab
 
 # internal modules
-from simu.utilities import (
+from simu.core.utilities import (
     assert_reproduction, base_unit, ParameterDictionary, SymbolQuantity,
     jacobian, QFunction, Quantity as Q, base_magnitude, sum1, unit_registry)
-from simu.utilities.constants import R_GAS
-from simu.thermo import InitialState
-from simu.thermo.contributions import (
+from simu.core.utilities.constants import R_GAS
+from simu.core.thermo import InitialState
+from simu.core.thermo.contributions import (
     CriticalParameters, LinearMixingRule, RedlichKwongEOSLiquid,
     RedlichKwongEOSGas, NonSymmetricMixingRule, RedlichKwongAFunction,
     RedlichKwongBFunction, RedlichKwongMFactor, BostonMathiasAlphaFunction,
     VolumeShift)
-from simu.thermo.contributions.cubic.rk import RedlichKwongEOS
+from simu.core.thermo.contributions.cubic.rk import RedlichKwongEOS
 
 
 # auxiliary functions

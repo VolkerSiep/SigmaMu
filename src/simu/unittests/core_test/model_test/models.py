@@ -2,11 +2,11 @@
 
 import logging
 from simu import Model
-from simu.thermo import InitialState
-from simu.thermo.material import MaterialSpec, MaterialDefinition
-from simu.thermo.species import SpeciesDefinition
-from simu.thermo.factory import ExampleThermoFactory
-from simu.thermo.parameters import ThermoParameterStore
+from simu.core.thermo import InitialState
+from simu.core.thermo.material import MaterialSpec, MaterialDefinition
+from simu.core.thermo.species import SpeciesDefinition
+from simu.core.thermo.factory import ExampleThermoFactory
+from simu.core.thermo import ThermoParameterStore
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 

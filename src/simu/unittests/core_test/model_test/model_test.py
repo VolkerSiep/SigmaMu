@@ -2,8 +2,8 @@
 
 from pytest import raises
 
-from simu.utilities import SymbolQuantity
-from simu.utilities.errors import DataFlowError, DimensionalityError
+from simu.core.utilities import SymbolQuantity
+from simu.core.utilities.errors import DataFlowError, DimensionalityError
 # from simu.model import Augmentor, MaterialSpec
 
 from .models import *

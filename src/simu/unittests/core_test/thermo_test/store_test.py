@@ -1,11 +1,11 @@
 from _pytest.python_api import raises
 from pint import DimensionalityError, UndefinedUnitError
 
-from simu.thermo import ThermoParameterStore
-from simu.thermo.factory import ExampleThermoFactory
-from simu.thermo.parameters import StringDictThermoSource
-from simu.thermo.species import SpeciesDefinition
-from simu.utilities import assert_reproduction
+from simu.core.thermo import ThermoParameterStore
+from simu.core.thermo.factory import ExampleThermoFactory
+from simu.core.thermo.parameters import StringDictThermoSource
+from simu.core.thermo.species import SpeciesDefinition
+from simu.core.utilities import assert_reproduction
 
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"

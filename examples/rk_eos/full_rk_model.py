@@ -8,7 +8,7 @@ from numpy.linalg import solve
 from casadi import sum1, Function, jacobian, vertcat
 
 # internal modules
-from simu.utilities import flatten_dictionary, unflatten_dictionary
+from simu.core.utilities import flatten_dictionary, unflatten_dictionary
 
 from examples.rk_eos.rkt import ThermoNode, MyThermoFactory, relax
 

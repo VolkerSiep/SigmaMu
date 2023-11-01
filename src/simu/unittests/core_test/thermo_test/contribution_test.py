@@ -2,11 +2,11 @@
 """Test module for ideal contributions"""
 
 # internal modules
-from simu.thermo import InitialState
-from simu.thermo.contributions import (
+from simu.core.thermo import InitialState
+from simu.core.thermo.contributions import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
     LinearHeatCapacity)
-from simu.utilities import (
+from simu.core.utilities import (
     ParameterDictionary, Quantity, SymbolQuantity, assert_reproduction,
     base_unit)
 

@@ -1,10 +1,10 @@
 from pytest import raises as pt_raises
 from casadi import SX
 
-from simu.utilities import (Quantity, SymbolQuantity, assert_reproduction,
-                            jacobian, sum1, log, exp, sqrt, qpow, conditional,
-                            base_unit, QFunction, flatten_dictionary,
-                            unflatten_dictionary, extract_units_dictionary)
+from simu.core.utilities import (Quantity, SymbolQuantity, assert_reproduction,
+                                 jacobian, sum1, log, exp, sqrt, qpow, conditional,
+                                 base_unit, QFunction, flatten_dictionary,
+                                 unflatten_dictionary, extract_units_dictionary)
 
 
 def test_symbol_quantity():

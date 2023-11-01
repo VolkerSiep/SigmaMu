@@ -2,7 +2,7 @@
 from logging import getLogger, NullHandler
 
 from ._version import VERSION as __version__
-from .model import Model
+from simu.core.model import Model
 
 logger = getLogger(__name__)
 logger.addHandler(NullHandler())
