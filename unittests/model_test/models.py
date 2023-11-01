@@ -86,6 +86,16 @@ class MaterialTestModel(Model):
         local = self.materials.create_flow("local", TEST_MATERIAL)
 
 
+class MaterialTestModel2(Model):
+    def interface(self):
+        spec = MaterialSpec(["H2O", "*"])
+        self.materials.define_port("inlet", spec)
+
+    def define(self):
+        inlet = self.materials["inlet"]
+        local = self.materials.create_state("local", inlet.definition)
+
+
 def define_a_material(species):
     """Defines a material to use. Normally, this would not be in a class
     method, but a singelton somewhere in the project."""

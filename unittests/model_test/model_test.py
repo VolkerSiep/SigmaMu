@@ -123,3 +123,11 @@ def test_wrong_material():
         with MaterialTestModel().create_proxy() as model:
             model.materials.connect("inlet", material)
     assert "incompatible" in str(err)
+
+
+def test_material_reuse_def():
+    material = TEST_MATERIAL.create_flow()
+
+    with MaterialTestModel2().create_proxy() as model:
+        assert "inlet" in model.materials
+        model.materials.connect("inlet", material)
