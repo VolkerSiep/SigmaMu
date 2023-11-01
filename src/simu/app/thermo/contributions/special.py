@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # internal modules
-from simu.core.utilities import jacobian
-from simu.core.thermo.contribution import ThermoContribution
+from simu import jacobian, ThermoContribution
 
 
 class Derivative(ThermoContribution):

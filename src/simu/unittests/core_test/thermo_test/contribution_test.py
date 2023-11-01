@@ -3,7 +3,7 @@
 
 # internal modules
 from simu.core.thermo import InitialState
-from simu.core.thermo.contributions import (
+from simu.app.thermo.contributions import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
     LinearHeatCapacity)
 from simu.core.utilities import (

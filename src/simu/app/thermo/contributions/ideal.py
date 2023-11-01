@@ -4,9 +4,9 @@
 from copy import copy
 
 # internal modules
-from simu.core.thermo.contribution import ThermoContribution
-from simu.core.utilities import ParameterDictionary, base_magnitude, log, sum1
-from simu.core.utilities.constants import R_GAS
+from simu import (
+    ThermoContribution, R_GAS, log, sum1, ParameterDictionary, base_magnitude
+)
 
 
 class H0S0ReferenceState(ThermoContribution):

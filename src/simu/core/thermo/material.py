@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from . import (
-    ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
-from .species import SpeciesDefinition
 from ..utilities import Quantity
 from ..utilities.types import MutMap
+
+from . import (
+    ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
 
 
 class MaterialSpec:

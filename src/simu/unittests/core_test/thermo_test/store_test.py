@@ -2,7 +2,7 @@ from _pytest.python_api import raises
 from pint import DimensionalityError, UndefinedUnitError
 
 from simu.core.thermo import ThermoParameterStore
-from simu.core.thermo.factory import ExampleThermoFactory
+from simu.app.thermo.factories import ExampleThermoFactory
 from simu.core.thermo.parameters import StringDictThermoSource
 from simu.core.thermo.species import SpeciesDefinition
 from simu.core.utilities import assert_reproduction

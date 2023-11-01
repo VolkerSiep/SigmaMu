@@ -12,7 +12,7 @@ from yaml import safe_load
 
 # internal modules
 from simu.core.thermo import ThermoFactory
-from simu.core.thermo.contributions import (
+from simu.app.thermo.contributions import (
     H0S0ReferenceState, LinearHeatCapacity, StandardState, IdealMix,
     HelmholtzIdealGas)
 from simu.core.thermo.state import HelmholtzState, InitialState

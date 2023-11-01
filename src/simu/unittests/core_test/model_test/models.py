@@ -5,7 +5,7 @@ from simu import Model
 from simu.core.thermo import InitialState
 from simu.core.thermo.material import MaterialSpec, MaterialDefinition
 from simu.core.thermo.species import SpeciesDefinition
-from simu.core.thermo.factory import ExampleThermoFactory
+from simu.app.thermo.factories import ExampleThermoFactory
 from simu.core.thermo import ThermoParameterStore
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 # internal modules
-from simu.core.utilities import exp, conditional, sqrt, qpow, sum1, SymbolQuantity
-from simu.core.thermo.contribution import ThermoContribution
+from simu import ThermoContribution, exp, conditional, sqrt, qpow, sum1
+from simu.core.utilities import SymbolQuantity
+
 from .rk import (RedlichKwongEOSLiquid, RedlichKwongEOSGas,
                  RedlichKwongAFunction, RedlichKwongBFunction,
                  RedlichKwongMFactor)

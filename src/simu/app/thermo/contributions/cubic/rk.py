@@ -8,10 +8,10 @@ from casadi import SX
 from numpy import dot, ravel, roots
 
 # internal modules
-from simu.core.thermo.state import InitialState
-from simu.core.utilities import base_magnitude, jacobian, log, sum1
-from simu.core.utilities.constants import R_GAS
-from simu.core.thermo.contribution import ThermoContribution
+from simu import (
+    InitialState, base_magnitude, jacobian, log, sum1, R_GAS,
+    ThermoContribution
+)
 
 
 class RedlichKwongEOS(ThermoContribution):

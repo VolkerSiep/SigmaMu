@@ -12,12 +12,12 @@ from simu.core.utilities import (
     jacobian, QFunction, Quantity as Q, base_magnitude, sum1, unit_registry)
 from simu.core.utilities.constants import R_GAS
 from simu.core.thermo import InitialState
-from simu.core.thermo.contributions import (
+from simu.app.thermo.contributions import (
     CriticalParameters, LinearMixingRule, RedlichKwongEOSLiquid,
     RedlichKwongEOSGas, NonSymmetricMixingRule, RedlichKwongAFunction,
     RedlichKwongBFunction, RedlichKwongMFactor, BostonMathiasAlphaFunction,
     VolumeShift)
-from simu.core.thermo.contributions.cubic.rk import RedlichKwongEOS
+from simu.app.thermo.contributions.cubic.rk import RedlichKwongEOS
 
 
 # auxiliary functions
