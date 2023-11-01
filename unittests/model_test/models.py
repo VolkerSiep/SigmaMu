@@ -2,6 +2,13 @@
 
 import logging
 from simu import Model
+from simu.thermo import InitialState
+from simu.thermo.material import MaterialSpec, MaterialDefinition
+from simu.thermo.species import SpeciesDefinition
+from simu.thermo.factory import ExampleThermoFactory
+from simu.thermo.parameters import ThermoParameterStore
+
+RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
 
 class ParameterTestModel(Model):
@@ -70,17 +77,24 @@ class HierarchyTestModel2(Model):
 
 
 class MaterialTestModel(Model):
-
     def interface(self):
-        gas_spec = MaterialSpec(["NO", "NO2", "O2", "*"])
-        gas_spec.require(FancyAugmentor)
-        self.material.require("inlet_1", gas_spec)
-        self.material.require("inlet_2", gas_spec)
+        spec = MaterialSpec(["H2O", "*"])
+        self.materials.define_port("inlet", spec)
 
     def define(self):
-        inlet_1 = self.material["inlet_1"]
-        inlet_2 = self.material["inlet_2"]
-        # should be defined upfront for project
-        gas: MaterialDefinition = "This is used as a template"
-        intermediate_1 = self.material.create("intermediate_1", gas)
-        intermediate_2 = self.material.create("intermediate_2", inlet_1.definition)
+        inlet = self.materials["inlet"]
+        local = self.materials.create_flow("local", TEST_MATERIAL)
+
+
+def define_a_material(species):
+    """Defines a material to use. Normally, this would not be in a class
+    method, but a singelton somewhere in the project."""
+    factory = ExampleThermoFactory()
+    speciesdb = {s: SpeciesDefinition(s) for s in species}
+    frame = factory.create_frame(speciesdb, RK_LIQ)
+    store = ThermoParameterStore()
+    initial_state = InitialState.from_std(len(species))
+    return MaterialDefinition(frame, initial_state, store)
+
+
+TEST_MATERIAL = define_a_material({"H2O", "NO2"})

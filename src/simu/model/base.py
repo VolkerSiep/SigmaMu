@@ -146,10 +146,10 @@ class ModelProxy:
         """After the parent model has connected parameters and materials,
         this method is called to process its own modelling code"""
         self.parameters.finalise()  # parameters are final now
+        self.materials.finalise()  # all ports are connected
         self.__model.define()
         self.properties.finalise()  # properties can be queried now
         self.hierarchy.finalise()  # all declared sub-models are provided
-        self.materials.finalise()  # all ports are connected
         return self
 
     # TODO: method that allows the numeric handler to collect the symbols
