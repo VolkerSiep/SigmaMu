@@ -7,8 +7,8 @@ from typing import Self, Optional
 from .parameter import ParameterHandler, ParameterProxy
 from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
+from .material import MaterialHandler, MaterialProxy
 # from .numeric import NumericHandler
-# from .material import MaterialHandler
 
 
 class Model(ABC):
@@ -23,14 +23,14 @@ class Model(ABC):
     hierarchy: HierarchyHandler
     """A handler object that takes care of defining sub models"""
 
-    # material: MaterialHandler
+    materials: MaterialHandler
     """A handler object that takes care of materials"""
 
     def __init__(self):
         self.__proxy = None
         self.parameters = ParameterHandler(self.cls_name)
         self.properties = PropertyHandler()
-        # self.material = MaterialHandler()
+        self.materials = MaterialHandler()
         self.hierarchy = HierarchyHandler(self)
         self.interface()
 
@@ -116,10 +116,17 @@ class ModelProxy:
     properties: PropertyProxy
     """The proxy of the property handler, making properties available"""
 
+    hierarchy: HierarchyProxy
+    """The proxy of the hierarchy handler, to parametrise child models"""
+
+    materials: MaterialProxy
+    """The proxy of the material handler, to connect material ports"""
+
     def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
         self.properties = model.properties.create_proxy()
         self.hierarchy = model.hierarchy.create_proxy()
+        self.materials = model.materials.create_proxy()
         self.__model = model
         self.__set_name(name)
 
@@ -139,54 +146,11 @@ class ModelProxy:
         """After the parent model has connected parameters and materials,
         this method is called to process its own modelling code"""
         self.parameters.finalise()  # parameters are final now
+        self.materials.finalise()  # all ports are connected
         self.__model.define()
         self.properties.finalise()  # properties can be queried now
-        self.hierarchy.finalise()
+        self.hierarchy.finalise()  # all declared sub-models are provided
         return self
 
     # TODO: method that allows the numeric handler to collect the symbols
     #       and values.
-
-#
-# class ModelProxy:
-#     """Proxy class for models, being main object to relate to when accessing
-#     a child model during definition of the parent model.
-#     """
-#
-#     def __init__(self, name: str, model: Model):
-#         """Constructor creating proxy objects for the handlers of the model,
-#         such that a sub-model can be configured in the parent context."""
-#
-#         self.model = model
-#         self.parameters = model.parameters.create_proxy(name)
-#         self.properties = model.properties.create_proxy(name)
-#         self.hierarchy = model.hierarchy  # they are already proxies.
-#
-#     def __enter__(self):
-#         return self
-#
-#     def __exit__(self, exc_type, exc_value, traceback):
-#         if exc_type is not None:
-#             return
-#         self.finalise()
-#
-#     def finalise(self) -> "ModelProxy":
-#         """This method is typically called when the object leaves the context
-#         manager. It calls the child model's function to wire up the calculated
-#         properties and residuals."""
-#         # call model function on not provided parameters,
-#         # and calculate properties
-#         self.parameters.finalise()
-#
-#         args = {"parameters": self.parameters.arg}
-#         result = self.model.function(args, squeeze_results=False)
-#
-#         # There might be no properties, e.g. if model only makes residuals
-#         self.properties.finalise(result.get("properties", {}))
-#
-#         return self
-#
-#     @property
-#     def numeric(self) -> NumericHandler:
-#         """Create and return a numeric handler"""
-#         return NumericHandler(self)

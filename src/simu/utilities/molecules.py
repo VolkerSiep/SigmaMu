@@ -53,6 +53,8 @@ class FormulaParser:
             MCounter({'H': 10, 'C': 5, 'O': 1})
             >>> parser.parse("SO4:2-")
             MCounter({'O': 4, 'S': 1})
+            >>> parser.parse("KMnO4")
+            MCounter({'O': 4, 'K': 1, 'Mn': 1})
 
         .. warning::
 

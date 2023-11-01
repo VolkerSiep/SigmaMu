@@ -2,10 +2,11 @@
 
 from pytest import raises
 
+from simu.model.material import MaterialHandler
 from simu.thermo import InitialState
 from simu.thermo.factory import ThermoFactory, ExampleThermoFactory
 from simu.thermo.parameters import ThermoParameterStore
-from simu.thermo.material import MaterialDefinition, MaterialLab
+from simu.thermo.material import MaterialDefinition, MaterialLab, MaterialSpec
 from simu.thermo.species import SpeciesDefinition, SpeciesDB
 from simu.thermo.contributions import all_contributions
 from simu.thermo.state import GibbsState
@@ -39,13 +40,7 @@ def test_create_material_definition_wrong_init():
 
 
 def test_create_material():
-    factory = ExampleThermoFactory()
-    species = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species, RK_LIQ)
-    store = ThermoParameterStore()
-    initial_state = InitialState.from_std(1)
-    material_def = MaterialDefinition(frame, initial_state, store)
-    material = material_def.create_state()
+    material = create_material()
     res = {name: f"{value.units:~}" for name, value in material.items()}
     assert_reproduction(res)
 
@@ -75,3 +70,51 @@ def test_material_lab():
     definition = lab.define_material(species, initial_state, structure)
     material = definition.create_flow()
     assert_reproduction(list(material.keys()))
+
+
+def test_handler_def_port():
+    handler = MaterialHandler()
+    handler.define_port("inlet")
+
+
+def test_handler_create_proxy():
+    handler = MaterialHandler()
+    handler.define_port("inlet")
+    proxy = handler.create_proxy()
+    assert "inlet" in proxy.free_ports()
+
+
+def test_handler_connect_port():
+    handler = MaterialHandler()
+    handler.define_port("inlet")
+    proxy = handler.create_proxy()
+    material = create_material()
+    proxy.connect("inlet", material)
+
+
+def test_handler_connect_no_port():
+    handler = MaterialHandler()
+    proxy = handler.create_proxy()
+    material = create_material()
+    with raises(KeyError):
+        proxy.connect("inlet", material)
+
+
+def test_handler_connect_incompatible_port():
+    handler = MaterialHandler()
+    handler.define_port("inlet", MaterialSpec(flow=False))
+    proxy = handler.create_proxy()
+    material = create_material()
+    with raises(ValueError):
+        proxy.connect("inlet", material)
+
+
+def create_material():
+    factory = ExampleThermoFactory()
+    species = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species, RK_LIQ)
+    store = ThermoParameterStore()
+    initial_state = InitialState.from_std(1)
+    material_def = MaterialDefinition(frame, initial_state, store)
+    material = material_def.create_flow()
+    return material

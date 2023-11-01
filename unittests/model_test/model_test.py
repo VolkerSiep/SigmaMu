@@ -107,3 +107,27 @@ def test_hierarchy2():
     proxy = HierarchyTestModel2.top()
     volume = proxy.properties["volume"]
     assert f"{volume:~}" == "(depth*sq((2*radius))) cm ** 3"
+
+
+def test_material():
+    material = TEST_MATERIAL.create_flow()
+
+    with MaterialTestModel().create_proxy() as model:
+        assert "inlet" in model.materials
+        model.materials.connect("inlet", material)
+
+
+def test_wrong_material():
+    material = define_a_material({"KMnO4"}).create_flow()
+    with raises(ValueError) as err:
+        with MaterialTestModel().create_proxy() as model:
+            model.materials.connect("inlet", material)
+    assert "incompatible" in str(err)
+
+
+def test_material_reuse_def():
+    material = TEST_MATERIAL.create_flow()
+
+    with MaterialTestModel2().create_proxy() as model:
+        assert "inlet" in model.materials
+        model.materials.connect("inlet", material)

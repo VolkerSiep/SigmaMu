@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
@@ -18,11 +17,23 @@ class MaterialSpec:
     required and whether additional species are allowed.
     """
 
-    def __init__(self, species: Optional[Iterable[str]] = None):
+    def __init__(self, species: Optional[Iterable[str]] = None,
+                 flow: bool = True):
         #        augmenters: Optional[Iterable[Type[Augmenter]]] = None):
+        self.__flow = flow
         self.__locked = not (species is None or "*" in species)
         self.__species = set() if species is None else set(species) - set("*")
         # self.__augmenters = set() if augmenters is None else set(augmenters)
+
+    @classmethod
+    @property
+    def flow(cls):
+        return cls()
+
+    @classmethod
+    @property
+    def state(cls):
+        return cls(flow=False)
 
     @property
     def species(self) -> set[str]:
@@ -35,18 +46,24 @@ class MaterialSpec:
         listed as :attr:`species`."""
         return self.__locked
 
+    def flow(self) -> bool:
+        """Whether the specification is a flow (``True``) or
+        a state (``False``)"""
+        return self.__flow
+
     def is_compatible(self, material: "Material") -> bool:
         """Return true if the given material is compatible with this one.
         That is:
           - none of the specified species are missing in the material
           - if specification locks species set, none of the material
             species are missing in the specification
+          - flows are only compatible with flows, states are only compatible
+            with states.
         """
         spe, mspe = self.species, set(material.species)
-        # aug, maug = self.augmenters, material.augmenters
         locked = self.locked
-        # return not ((spe - mspe) or (locked and (mspe - spe) or (aug - maug)))
-        return not ((spe - mspe) or (locked and (mspe - spe)))
+        flow_comp = self.__flow == material.is_flow()
+        return flow_comp and not ((spe - mspe) or (locked and (mspe - spe)))
 
     # @property
     # def augmenters(self) -> set[Type[Augmenter]]:
@@ -68,6 +85,7 @@ class Material(MutMap[Quantity]):
         props = frame(state, params, squeeze_results=False, flow=flow)
         self.__properties = {n: p for n, p in props.items()
                              if not n.startswith("_")}
+        self.__flow = flow
 
         # apply augmenters as required in definition
 
@@ -94,12 +112,16 @@ class Material(MutMap[Quantity]):
     def __len__(self):
         return len(self.__properties)
 
+    def is_flow(self):
+        """Return if the material represents a flow (``True``) or not
+        (``False``)"""
+        return self.__flow
+
     # @property
     # def augmenters(self) -> set[Type[Augmenter]]:
     #     pass
 
 
-@dataclass
 class MaterialDefinition:
     """A ``MaterialDefinition`` object defines a material type by its
 
@@ -107,24 +129,45 @@ class MaterialDefinition:
       - initial state
       - source of thermodynamic parameters
     """
-    frame: ThermoFrame
-    initial_state: InitialState
-    store: ThermoParameterStore
 
-    def __post_init__(self):
-        num_species = len(self.frame.species)
-        num_init_species = len(self.initial_state.mol_vector.magnitude)
-        if num_init_species != num_species:
-            raise ValueError(
-                f"Incompatible initial state with {num_init_species} "
-                f"species, while {num_species} is/are expected"
-            )
+    __frame: ThermoFrame
+    __initial_state: InitialState
+    __store: ThermoParameterStore
+
+    def __init__(self, frame: ThermoFrame, initial_state: InitialState,
+                 store: ThermoParameterStore):
+        self.__frame = frame
+        self.initial_state = initial_state
+        self.__store = store
 
     @property
     def spec(self) -> MaterialSpec:
         """Return a material spec object that is implemented by this
         definition"""
         return MaterialSpec(self.frame.species)
+
+    @property
+    def frame(self) -> ThermoFrame:
+        return self.__frame
+
+    @property
+    def store(self) -> ThermoParameterStore:
+        return self.__store
+
+    @property
+    def initial_state(self):
+        return self.__initial_state
+
+    @initial_state.setter
+    def initial_state(self, new_state: InitialState):
+        num_species = len(self.__frame.species)
+        num_init_species = len(new_state.mol_vector.magnitude)
+        if num_init_species != num_species:
+            raise ValueError(
+                f"Incompatible initial state with {num_init_species} "
+                f"species, while {num_species} is/are expected"
+            )
+        self.__initial_state = new_state
 
     def create_flow(self) -> Material:
         return Material(self, True)
@@ -154,7 +197,6 @@ class MaterialLab:
         species_map = {s: self.__species_db[s] for s in species}
         frame = self.__factory.create_frame(species_map, structure)
         return MaterialDefinition(frame, initial_state, self.__param_store)
-
 
 
 class Augmenter(ABC):
