@@ -6,8 +6,8 @@ from numpy.linalg import solve, LinAlgError
 from casadi import Function, jacobian, SX, vertcat
 import pylab
 
-from simu.utilities import (FlexiDict, flatten_dictionary,
-                            unflatten_dictionary)
+from simu.core.utilities import (FlexiDict, flatten_dictionary,
+                                 unflatten_dictionary)
 from examples.rk_eos.rkt import MyThermoFactory, relax
 
 

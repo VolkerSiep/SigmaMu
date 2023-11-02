@@ -1,0 +1,10 @@
+# File containing names of species and their formula.
+# This serves two purposes:
+#  1. The species names within a project are unique
+#  2. The formulae can be read by the ThermoFrame, parsed, and their information
+#     stored in the frame object (molecular weight and atomic composition).
+#     This can be used by the Material to provide functionality regarding this.
+
+H2O: H2O
+C3: CH3-CH2-CH3
+nC4: CH3-(CH2)2-CH3
