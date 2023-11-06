@@ -8,6 +8,7 @@ from .parameter import ParameterHandler, ParameterProxy
 from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 from .material import MaterialHandler, MaterialProxy
+from .residual import ResidualHandler
 # from .numeric import NumericHandler
 
 
@@ -26,6 +27,9 @@ class Model(ABC):
     materials: MaterialHandler
     """A handler object that takes care of materials"""
 
+    residuals: ResidualHandler = None
+    """A handler object that takes care of residuals"""
+
     def __init__(self):
         self.__proxy = None
         self.parameters = ParameterHandler(self.cls_name)
@@ -33,6 +37,7 @@ class Model(ABC):
         self.materials = MaterialHandler()
         self.hierarchy = HierarchyHandler(self)
         self.interface()
+        self.residuals = ResidualHandler()
 
     @classmethod
     def top(cls, name: str = "model") -> "ModelProxy":
