@@ -75,6 +75,8 @@ class MaterialHandler(Map[Material]):
 
 
 class MaterialProxy(Map[MaterialSpec]):
+    handler: MaterialHandler
+
     def __init__(self, handler: MaterialHandler):
         self.handler = handler
         self.__ports: MutMap[MaterialSpec] = dict(handler.ports)

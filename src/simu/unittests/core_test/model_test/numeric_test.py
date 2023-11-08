@@ -1,4 +1,4 @@
-from simu.core.model.numeric import NumericHandler
+from simu.core.model import NumericHandler
 from .models import *
 
 

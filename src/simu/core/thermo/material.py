@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
+from casadi import SX
+
 from ..utilities import Quantity
 from ..utilities.types import MutMap
 
@@ -73,6 +75,11 @@ class MaterialSpec:
 
 class Material(MutMap[Quantity]):
     """This class represents a material"""
+
+    definition: "MaterialDefinition"
+    initial_state: InitialState
+    state: SX
+
     def __init__(self,
                  definition: "MaterialDefinition",
                  flow: bool):
@@ -86,6 +93,7 @@ class Material(MutMap[Quantity]):
         self.__properties = {n: p for n, p in props.items()
                              if not n.startswith("_")}
         self.__flow = flow
+        self.state = state
 
         # apply augmenters as required in definition
 

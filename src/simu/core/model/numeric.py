@@ -4,19 +4,18 @@ of the top model instance."""
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable, Sequence
 
-from ..utilities.types import NestedMutMap, Map
+from ..utilities.types import NestedMutMap, MutMap
 from ..utilities.quantity import Quantity, QFunction
 from ..utilities import flatten_dictionary
 
-if TYPE_CHECKING:  # avoid circular dependencies just for typing
-    from .base import ModelProxy
+from .base import ModelProxy
 
 
 class NumericHandler:
     """This class implements the function object describing the top level
     model."""
 
-    def __init__(self, model: "ModelProxy"):
+    def __init__(self, model: ModelProxy):
         self.model = model
         self.function = self.__make_function()
         self.arguments = self.__fetch_arguments()
@@ -43,8 +42,8 @@ class NumericHandler:
         """
 
         def fetch_in_hierarchy(
-                root: "ModelProxy",
-                func: Callable[["ModelProxy"], NestedMutMap[Quantity]],
+                root: ModelProxy,
+                func: Callable[[ModelProxy], NestedMutMap[Quantity]],
                 typ: str,
                 path: Optional[Sequence[str]] = None) -> NestedMutMap[Quantity]:
             """Drill recursively into child models to collect all free
@@ -65,12 +64,18 @@ class NumericHandler:
                     proxy, func, typ, path + [name])
             return result
 
-        def fetch_residuals(model: "ModelProxy") -> Map[Quantity]:
+        def fetch_residuals(model: ModelProxy) -> MutMap[Quantity]:
             return {k: r.value for k, r in model.residuals.items()}
+
+        def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
+            # TODO: need to make dictionary out of state?
+            return {k: m.state for k, m in model.materials.handler.items()}
 
         parameters = fetch_in_hierarchy(
             self.model, lambda m: m.parameters.free, "parameter")
-        args = {"parameters": parameters}
+        states = fetch_in_hierarchy(self.model, fetch_material_states, "state")
+        args = {"parameters": parameters,
+                "states": states}
 
         properties = fetch_in_hierarchy(
             self.model, lambda m: m.properties, "property")
