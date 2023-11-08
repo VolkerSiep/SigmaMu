@@ -70,7 +70,7 @@ class PropertyHandler(Mapping[str, Quantity]):
 
 
 class PropertyProxy(Map[Quantity]):
-    """This class is instantiated by the parent's :class:`PropertyHanler`
+    """This class is instantiated by the parent's :class:`PropertyHandler`
     to handle the property availability to the parent context."""
 
     def __init__(self, handler: PropertyHandler):

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from collections.abc import Iterator
 
 from ..utilities.quantity import Quantity
 from ..utilities.types import Map
@@ -10,6 +11,9 @@ class Residual:
     """Class representing a single residual"""
     value: Quantity
     tolerance: Quantity
+
+
+ResidualProxy = Map[Residual]
 
 
 class ResidualHandler(Map[Residual]):
@@ -36,10 +40,13 @@ class ResidualHandler(Map[Residual]):
     def __getitem__(self, key: str) -> Residual:
         return self.__residuals[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__residuals)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self.__residuals)
+
+    def create_proxy(self) -> ResidualProxy:
+        return self
 
 

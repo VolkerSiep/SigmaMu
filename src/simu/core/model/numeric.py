@@ -2,10 +2,11 @@
 of the top model instance."""
 
 from typing import TYPE_CHECKING, Optional
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
-from ..utilities.types import NestedMap, NestedMutMap
-from ..utilities.quantity import Quantity
+from ..utilities.types import NestedMutMap, Map
+from ..utilities.quantity import Quantity, QFunction
+from ..utilities import flatten_dictionary
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import ModelProxy
@@ -17,7 +18,11 @@ class NumericHandler:
 
     def __init__(self, model: "ModelProxy"):
         self.model = model
-        self.__make_function()
+        self.function = self.__make_function()
+        self.arguments = self.__fetch_arguments()
+
+    def __fetch_arguments(self):
+        pass
 
     def __make_function(self):
         """Create a function that has the following arguments, each of them as
@@ -41,7 +46,7 @@ class NumericHandler:
                 root: "ModelProxy",
                 func: Callable[["ModelProxy"], NestedMutMap[Quantity]],
                 typ: str,
-                path: Optional[list[str]] = None) -> NestedMutMap[Quantity]:
+                path: Optional[Sequence[str]] = None) -> NestedMutMap[Quantity]:
             """Drill recursively into child models to collect all free
             parameters. The result is a nested dictionary, such that name
             clashes between child models and parameters are not permitted
@@ -60,22 +65,21 @@ class NumericHandler:
                     proxy, func, typ, path + [name])
             return result
 
+        def fetch_residuals(model: "ModelProxy") -> Map[Quantity]:
+            return {k: r.value for k, r in model.residuals.items()}
+
         parameters = fetch_in_hierarchy(
             self.model, lambda m: m.parameters.free, "parameter")
         args = {"parameters": parameters}
 
         properties = fetch_in_hierarchy(
-            self.model, lambda m: m.properties.all, "property")
-        results = {"properties": properties}
+            self.model, lambda m: m.properties, "property")
+        residuals = fetch_in_hierarchy(
+            self.model, fetch_residuals, "residual")
+        results = {"properties": properties,
+                   "residuals": residuals}
 
-        # TODO:
-        # make function, include also state, thermo param, residuals
+        results = flatten_dictionary(results)
+        args = flatten_dictionary(args)
 
-        # query interface for all data:
-        # all the following as quantity dictionaries:
-        #   - export / import current states and parameters (thermo & model)
-        #   - export current properties
-
-        # in utilities, provide easy functions to serialise quantities or
-        # dictionaries of them, e.g. "1.3 cm**2/s" should be parsed nicely for
-        # yaml or json. Format with f"{a:~.16g}" to serialise.
+        return QFunction(args, results, "model")

@@ -4,7 +4,6 @@ from pytest import raises
 
 from simu.core.utilities import SymbolQuantity
 from simu.core.utilities.errors import DataFlowError, DimensionalityError
-# from simu.model import Augmentor, MaterialSpec
 
 from .models import *
 
@@ -131,3 +130,7 @@ def test_material_reuse_def():
     with MaterialTestModel2().create_proxy() as model:
         assert "inlet" in model.materials
         model.materials.connect("inlet", material)
+
+
+def test_residual_def():
+    proxy = ResidualTestModel().top()

@@ -2,13 +2,11 @@
 from abc import ABC, abstractmethod
 from typing import Self, Optional
 
-# from ..utilities import QFunction
-
 from .parameter import ParameterHandler, ParameterProxy
 from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 from .material import MaterialHandler, MaterialProxy
-from .residual import ResidualHandler
+from .residual import ResidualHandler, ResidualProxy
 # from .numeric import NumericHandler
 
 
@@ -127,11 +125,15 @@ class ModelProxy:
     materials: MaterialProxy
     """The proxy of the material handler, to connect material ports"""
 
+    residuals: ResidualProxy
+    """A handler object that takes care of residuals"""
+
     def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
         self.properties = model.properties.create_proxy()
         self.hierarchy = model.hierarchy.create_proxy()
         self.materials = model.materials.create_proxy()
+        self.residuals = model.residuals.create_proxy()
         self.__model = model
         self.__set_name(name)
 
@@ -156,6 +158,3 @@ class ModelProxy:
         self.properties.finalise()  # properties can be queried now
         self.hierarchy.finalise()  # all declared sub-models are provided
         return self
-
-    # TODO: method that allows the numeric handler to collect the symbols
-    #       and values.

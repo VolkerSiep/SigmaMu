@@ -11,6 +11,17 @@ from simu.core.thermo import ThermoParameterStore
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
 
+class SimpleParameterTestModel(Model):
+    """A simple model to test parameters"""
+
+    def interface(self):
+        with self.parameters as p:
+            p.define("length", 10, "m")
+
+    def define(self):
+        pass
+
+
 class ParameterTestModel(Model):
     """A simple model to test parameters"""
 
@@ -94,6 +105,18 @@ class MaterialTestModel2(Model):
     def define(self):
         inlet = self.materials["inlet"]
         local = self.materials.create_state("local", inlet.definition)
+
+
+class ResidualTestModel(Model):
+    """A simple model to test residuals"""
+
+    def interface(self):
+        self.parameters.define("length", 10, "m")
+        self.parameters.define("area_spec", 50, "m**2")
+
+    def define(self):
+        res = self.parameters["length"] ** 2 - self.parameters["area_spec"]
+        self.residuals.add("area", res, "m**2")
 
 
 def define_a_material(species):
