@@ -13,8 +13,9 @@ class Residual:
 
 
 class ResidualHandler(Map[Residual]):
-    """This class, being instanciated as the :attr:`Model.residuals` attribute,
+    """This class, being instantiated as the :attr:`Model.residuals` attribute,
     allows to define residuals, i.e. process constraints."""
+
     def __init__(self):
         self.__residuals = {}
 
@@ -31,3 +32,14 @@ class ResidualHandler(Map[Residual]):
 
         tolerance = Quantity(tol, tol_unit)
         self.__residuals[name] = Residual(residual, tolerance)
+
+    def __getitem__(self, key: str) -> Residual:
+        return self.__residuals[key]
+
+    def __len__(self):
+        return len(self.__residuals)
+
+    def __iter__(self):
+        return iter(self.__residuals)
+
+
