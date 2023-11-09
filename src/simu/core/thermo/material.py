@@ -2,10 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from casadi import SX
-
 from ..utilities import Quantity
-from ..utilities.types import MutMap
+from ..utilities.types import Map, MutMap
 
 from . import (
     ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
@@ -78,7 +76,6 @@ class Material(MutMap[Quantity]):
 
     definition: "MaterialDefinition"
     initial_state: InitialState
-    state: SX
 
     def __init__(self,
                  definition: "MaterialDefinition",
@@ -88,12 +85,11 @@ class Material(MutMap[Quantity]):
 
         frame = definition.frame
         params = definition.store.get_symbols(frame.parameter_structure)
-        state = frame.create_symbol_state()
-        props = frame(state, params, squeeze_results=False, flow=flow)
+        self.__state = frame.create_symbol_state()
+        props = frame(self.__state, params, squeeze_results=False, flow=flow)
         self.__properties = {n: p for n, p in props.items()
                              if not n.startswith("_")}
         self.__flow = flow
-        self.state = state
 
         # apply augmenters as required in definition
 
@@ -101,6 +97,12 @@ class Material(MutMap[Quantity]):
     def species(self) -> Collection[str]:
         """The species names"""
         return self.definition.frame.species
+
+    @property
+    def sym_state(self) -> Map[Quantity]:
+        """Return a dictionary of quantities representing the state"""
+        state = self.__state.nonzeros()
+        return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
 
     def __getitem__(self, key: str) -> Quantity:
         return self.__properties[key]

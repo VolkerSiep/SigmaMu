@@ -107,6 +107,14 @@ class MaterialTestModel2(Model):
         local = self.materials.create_state("local", inlet.definition)
 
 
+class MaterialTestModel3(Model):
+    def interface(self):
+        pass
+
+    def define(self):
+        self.materials.create_flow("local", TEST_MATERIAL)
+
+
 class ResidualTestModel(Model):
     """A simple model to test residuals"""
 

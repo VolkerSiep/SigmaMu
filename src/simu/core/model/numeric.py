@@ -40,8 +40,7 @@ class NumericHandler:
         proxies. For child models, only the free parameters are to be
         collected.
         """
-
-        def fetch_in_hierarchy(
+        def fetch(
                 root: ModelProxy,
                 func: Callable[[ModelProxy], NestedMutMap[Quantity]],
                 typ: str,
@@ -60,7 +59,7 @@ class NumericHandler:
                     msg = f"Child model / {typ} name clash:" \
                         f"'{name}' in {context}"
                     raise KeyError(msg)
-                result[name] = fetch_in_hierarchy(
+                result[name] = fetch(
                     proxy, func, typ, path + [name])
             return result
 
@@ -68,21 +67,28 @@ class NumericHandler:
             return {k: r.value for k, r in model.residuals.items()}
 
         def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
-            # TODO: need to make dictionary out of state?
-            return {k: m.state for k, m in model.materials.handler.items()}
+            return {k: m.sym_state for k, m in model.materials.handler.items()}
 
-        parameters = fetch_in_hierarchy(
-            self.model, lambda m: m.parameters.free, "parameter")
-        states = fetch_in_hierarchy(self.model, fetch_material_states, "state")
-        args = {"parameters": parameters,
-                "states": states}
+        def fetch_parameters(model: ModelProxy) -> MutMap[Quantity]:
+            return dict(model.parameters.free)
 
-        properties = fetch_in_hierarchy(
-            self.model, lambda m: m.properties, "property")
-        residuals = fetch_in_hierarchy(
-            self.model, fetch_residuals, "residual")
-        results = {"properties": properties,
-                   "residuals": residuals}
+        def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
+            return model.properties
+
+        def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
+            return model.materials.handler
+
+        mod = self.model
+        args = {
+            "model_params": fetch(mod, fetch_parameters, "parameter"),
+            "states": fetch(mod, fetch_material_states, "state"),
+        }
+
+        results = {
+            "model_props": fetch(mod, fetch_mod_props, "model property"),
+            "thermo_props": fetch(mod, fetch_thermo_props, "thermo property"),
+            "residuals": fetch(mod, fetch_residuals, "residual")
+        }
 
         results = flatten_dictionary(results)
         args = flatten_dictionary(args)
