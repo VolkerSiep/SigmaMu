@@ -1,8 +1,8 @@
 """module containing classes to obtain thermodynamic parameters from various
 sources."""
 
-from abc import ABC, abstractmethod
 from typing import Iterable, Collection
+from abc import ABC, abstractmethod
 
 from pint import DimensionalityError
 
@@ -53,9 +53,13 @@ class ThermoParameterStore:
     providing the parameters, and to the model's numerical interface by
     providing the symbols and values of all used parameters, allowing those
     to be altered dynamically and optimised on."""
+
+    name: str
+
     def __init__(self):
         self.__provided_parameters: NestedMutMap[Quantity] = {}
         self.__sources: MutMap[AbstractThermoSource] = {}
+        self.name = "default"
 
     def get_symbols(self, parameter_struct: NestedMap[str]) \
             -> NestedMap[Quantity]:

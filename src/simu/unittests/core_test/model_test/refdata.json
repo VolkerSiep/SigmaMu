@@ -24,5 +24,41 @@
     "p",
     "p_ref",
     "p_std"
+  ],
+  "numeric_test.py::test_material_collect_props": [
+    "S",
+    "S_std",
+    "T",
+    "T_ref",
+    "V",
+    "mu",
+    "mu_std",
+    "n",
+    "p",
+    "p_ref",
+    "p_std"
+  ],
+  "numeric_test.py::test_material_collect_thermo_param": [
+    "BostonMathiasAlphaFunction/eta/H2O",
+    "BostonMathiasAlphaFunction/eta/NO2",
+    "CriticalParameters/T_c/H2O",
+    "CriticalParameters/T_c/NO2",
+    "CriticalParameters/omega/H2O",
+    "CriticalParameters/omega/NO2",
+    "CriticalParameters/p_c/H2O",
+    "CriticalParameters/p_c/NO2",
+    "H0S0ReferenceState/T_ref",
+    "H0S0ReferenceState/dh_form/H2O",
+    "H0S0ReferenceState/dh_form/NO2",
+    "H0S0ReferenceState/p_ref",
+    "H0S0ReferenceState/s_0/H2O",
+    "H0S0ReferenceState/s_0/NO2",
+    "LinearHeatCapacity/cp_a/H2O",
+    "LinearHeatCapacity/cp_a/NO2",
+    "LinearHeatCapacity/cp_b/H2O",
+    "LinearHeatCapacity/cp_b/NO2",
+    "MixingRule_A/T_ref",
+    "VolumeShift/c_i/H2O",
+    "VolumeShift/c_i/NO2"
   ]
 }

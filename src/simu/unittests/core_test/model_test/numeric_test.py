@@ -1,4 +1,5 @@
 from simu.core.model import NumericHandler
+from simu.core.utilities import assert_reproduction
 from .models import *
 
 
@@ -6,7 +7,7 @@ def test_parameters():
     proxy = SimpleParameterTestModel.top()
     numeric = NumericHandler(proxy)
     args = numeric.function.arg_structure
-    assert args['parameters/length'] == 'm'
+    assert args['model_params/length'] == 'm'
 
 
 def test_properties():
@@ -31,15 +32,15 @@ def test_material_collect_states():
 
 def test_material_collect_props():
     _, results = create_material_functions()
-    print(results)
-    # TODO: make assert statement
-
+    start = "thermo_props/local/"
+    results = [res[len(start):] for res in results if res.startswith(start)]
+    assert_reproduction(results)
 
 def test_material_collect_thermo_param():
     args, _ = create_material_functions()
-    print(args)
-    # TODO: make assert statement
-
+    start = "thermo_params/default/"
+    args = [arg[len(start):] for arg in args if arg.startswith(start)]
+    assert_reproduction(args)
 
 def create_material_functions():
     proxy = MaterialTestModel3.top()

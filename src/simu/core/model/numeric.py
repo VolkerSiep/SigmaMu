@@ -2,13 +2,14 @@
 of the top model instance."""
 
 from typing import TYPE_CHECKING, Optional
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Collection
 
 from ..utilities.types import NestedMutMap, MutMap
 from ..utilities.quantity import Quantity, QFunction
 from ..utilities import flatten_dictionary
 
 from .base import ModelProxy
+from ..thermo import ThermoParameterStore
 
 
 class NumericHandler:
@@ -21,19 +22,20 @@ class NumericHandler:
         self.arguments = self.__fetch_arguments()
 
     def __fetch_arguments(self):
-        pass
+        return -1  # TODO: implement
 
     def __make_function(self):
         """Create a function that has the following arguments, each of them as
         a flat dictionary:
 
-            - Model Parameters
             - Material States
+            - Model Parameters
             - Thermodynamic Parameters
 
         The result of the function consists likewise of
 
-            - Properties
+            - Model Properties
+            - Thermodynamic (state) properties
             - Residuals
 
         All the data is to be collected from the model and all child model
@@ -59,8 +61,15 @@ class NumericHandler:
                     msg = f"Child model / {typ} name clash:" \
                         f"'{name}' in {context}"
                     raise KeyError(msg)
-                result[name] = fetch(
-                    proxy, func, typ, path + [name])
+                result[name] = fetch(proxy, func, typ, path + [name])
+            return result
+
+        def fetch_thermo_stores(model: ModelProxy) \
+                -> Collection[ThermoParameterStore]:
+            result = {m.definition.store
+                      for m in model.materials.handler.values()}
+            for proxy in model.hierarchy.values():
+                result |= fetch_thermo_stores(proxy)
             return result
 
         def fetch_residuals(model: ModelProxy) -> MutMap[Quantity]:
@@ -78,8 +87,17 @@ class NumericHandler:
         def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
             return model.materials.handler
 
+        def fetch_store_props(model: ModelProxy) -> NestedMutMap[Quantity]:
+            stores = fetch_thermo_stores(model)
+            names = {store.name for store in stores}
+            if len(names) < len(stores):
+                raise ValueError("When using multiple ThermoPropertyStores, "
+                                 "they have to have unique names")
+            return {store.name: store.get_all_symbols() for store in stores}
+
         mod = self.model
         args = {
+            "thermo_params": fetch_store_props(mod),
             "model_params": fetch(mod, fetch_parameters, "parameter"),
             "states": fetch(mod, fetch_material_states, "state"),
         }
