@@ -131,3 +131,10 @@ def test_material_reuse_def():
     with MaterialTestModel2().create_proxy() as model:
         assert "inlet" in model.materials
         model.materials.connect("inlet", material)
+
+
+def test_residual():
+    with ResidualTestModel().create_proxy() as model:
+        pass
+    res = model.residuals["Hubert"]
+    assert f"{res.value:~}" == "Hubert K"

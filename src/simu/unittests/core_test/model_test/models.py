@@ -7,6 +7,8 @@ from simu.core.thermo.material import MaterialSpec, MaterialDefinition
 from simu.core.thermo.species import SpeciesDefinition
 from simu.app.thermo.factories import ExampleThermoFactory
 from simu.core.thermo import ThermoParameterStore
+from simu.core.utilities import SymbolQuantity
+
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
@@ -94,6 +96,16 @@ class MaterialTestModel2(Model):
     def define(self):
         inlet = self.materials["inlet"]
         local = self.materials.create_state("local", inlet.definition)
+
+
+class ResidualTestModel(Model):
+    def interface(self):
+        pass
+
+    def define(self):
+        res = SymbolQuantity("Hubert", "K")
+        self.residuals.add("Hubert", res, "degC")
+
 
 
 def define_a_material(species):
