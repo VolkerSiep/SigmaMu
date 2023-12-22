@@ -8,7 +8,7 @@ from .parameter import ParameterHandler, ParameterProxy
 from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 from .material import MaterialHandler, MaterialProxy
-from .residual import ResidualHandler
+from .residual import ResidualHandler, ResidualProxy
 # from .numeric import NumericHandler
 
 
@@ -127,11 +127,15 @@ class ModelProxy:
     materials: MaterialProxy
     """The proxy of the material handler, to connect material ports"""
 
+    residuals: ResidualProxy
+    """The proxy of the residual handler, an unmutable dictionary"""
+
     def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
         self.properties = model.properties.create_proxy()
         self.hierarchy = model.hierarchy.create_proxy()
         self.materials = model.materials.create_proxy()
+        self.residuals = model.residuals.create_proxy()
         self.__model = model
         self.__set_name(name)
 
