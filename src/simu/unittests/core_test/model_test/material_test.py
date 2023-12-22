@@ -110,6 +110,20 @@ def test_handler_connect_incompatible_port():
         proxy.connect("inlet", material)
 
 
+def test_handler_create_material():
+    handler = MaterialHandler()
+    material = create_material()
+    handler.create_flow("inlet", material.definition)
+
+
+def test_handler_create_material_despite_port():
+    handler = MaterialHandler()
+    handler.define_port("inlet")
+    material = create_material()
+    with raises(KeyError):
+        handler.create_flow("inlet", material.definition)
+
+
 def create_material():
     factory = ExampleThermoFactory()
     species = {"H2O": SpeciesDefinition("H2O")}

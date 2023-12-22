@@ -5,6 +5,7 @@ from ..utilities.quantity import Quantity
 from ..utilities.types import Map
 from ..utilities.errors import DimensionalityError
 
+
 @dataclass
 class Residual:
     """Class representing a single residual"""
@@ -18,6 +19,7 @@ ResidualProxy = Map[Residual]
 class ResidualHandler(ResidualProxy):
     """This class, being instanciated as the :attr:`Model.residuals` attribute,
     allows to define residuals, i.e. process constraints."""
+
     def __init__(self):
         self.__residuals = {}
 
