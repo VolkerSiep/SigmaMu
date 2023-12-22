@@ -7,6 +7,8 @@ from simu.core.thermo.material import MaterialSpec, MaterialDefinition
 from simu.core.thermo.species import SpeciesDefinition
 from simu.app.thermo.factories import ExampleThermoFactory
 from simu.core.thermo import ThermoParameterStore
+from simu.core.utilities import SymbolQuantity
+
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
@@ -125,6 +127,15 @@ class ResidualTestModel(Model):
     def define(self):
         res = self.parameters["length"] ** 2 - self.parameters["area_spec"]
         self.residuals.add("area", res, "m**2")
+
+
+class ResidualTestModel2(Model):
+    def interface(self):
+        pass
+
+    def define(self):
+        res = SymbolQuantity("Hubert", "K")
+        self.residuals.add("Hubert", res, "degC")
 
 
 def define_a_material(species):

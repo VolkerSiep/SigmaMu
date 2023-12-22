@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from collections.abc import Callable, Sequence, Collection
 
 from ..utilities import flatten_dictionary
-from ..utilities.types import NestedMutMap, MutMap, MutMap
+from ..utilities.types import NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction
 from ..utilities.errors import DataFlowError
 
@@ -18,15 +18,12 @@ class NumericHandler:
     model."""
 
     function: QFunction
-    arguments: MutMap[Quantity]
 
     def __init__(self, model: ModelProxy):
         self.model = model
         self.function = self.__make_function()
 
-        # TODO: maybe do not do this under construction, but let user check
-        #  first whether and which parameters are missing.
-        self.arguments = self.__fetch_arguments()
+        self.__arguments: Optional[MutMap[Quantity]] = None
 
     def __fetch_arguments(self) -> NestedMutMap[Quantity]:
         """Fetch initial states from materials, parameter values from
@@ -53,6 +50,13 @@ class NumericHandler:
             "model_params": {},  # TODO: implement
             "thermo_params": {}  # TODO: implement
         }
+
+    def arguments(self) -> Map[Quantity]:
+        """The function arguments as numerical values. A DataFlowError is
+        thrown, if not all numerical values are known."""
+        if self.__arguments is None:
+            self.__arguments = self.__fetch_arguments()
+        return self.__arguments
 
     def __make_function(self):
         """Create a function that has the following arguments, each of them as

@@ -36,13 +36,16 @@ def test_material_collect_props():
     results = [res[len(start):] for res in results if res.startswith(start)]
     assert_reproduction(results)
 
+
 def test_material_collect_thermo_param():
     args, _ = create_material_functions()
     start = "thermo_params/default/"
     args = [arg[len(start):] for arg in args if arg.startswith(start)]
     assert_reproduction(args)
 
+
 def create_material_functions():
+    """Make a function out of a model defining materials"""
     proxy = MaterialTestModel3.top()
     numeric = NumericHandler(proxy)
     args = numeric.function.arg_structure

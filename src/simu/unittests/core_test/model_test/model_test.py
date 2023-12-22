@@ -134,3 +134,10 @@ def test_material_reuse_def():
 
 def test_residual_def():
     proxy = ResidualTestModel().top()
+
+
+def test_residual():
+    with ResidualTestModel2().create_proxy() as model:
+        pass
+    res = model.residuals["Hubert"]
+    assert f"{res.value:~}" == "Hubert K"
