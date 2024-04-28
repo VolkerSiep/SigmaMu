@@ -44,6 +44,12 @@ def test_material_collect_thermo_param():
     assert_reproduction(args)
 
 
+def test_hierarchy_collect_numerics():
+    numeric = NumericHandler(HierarchyTestModel2.top())
+    results = numeric.function.result_structure
+    assert "model_props/square/area" in results
+
+
 def create_material_functions():
     """Make a function out of a model defining materials"""
     proxy = MaterialTestModel3.top()

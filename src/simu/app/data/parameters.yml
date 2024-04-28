@@ -1,5 +1,5 @@
 meta:
-  source: https://janaf.nist.gov
+  source: misc. sources in open internet
 
 data:
   formulae:
@@ -13,17 +13,17 @@ data:
       C3: -104.7 kJ/mol
       nC4: -125.6 kJ/mol
     p_ref: 1.0 bar
-    s_0:
-      H2O: 0.0 J/(mol*K)  # missing
-      C3: 0.0 J/(mol*K)  # missing
-      nC4: 0.0 J/(mol*K)  # missing
+    s_0:  # standard entropy
+      H2O: 188.835 J/(mol*K)
+      C3: 270.203 J/(mol*K)
+      nC4: 310.23 J/(mol*K)
   LinearHeatCapacity:
     cp_a:
-      H2O: 0.0 J/(mol*K)  # missing
-      C3: 0.0 J/(mol*K)  # missing
-      nC4: 0.0 J/(mol*K)  # missing
+      H2O: 33.590 J/(mol*K)
+      C3: 74.922 J/(mol*K)
+      nC4: 98.49 J/(mol*K)
     cp_b:
-      H2O: 0.0 J/(mol*K**2)
+      H2O: 0.0 J/(mol*K**2)  # missing
       C3: 0.0 J/(mol*K**2)  # missing
       nC4: 0.0 J/(mol*K**2)  # missing
   CriticalParameters:
@@ -41,9 +41,9 @@ data:
       nC4: 38.0 bar
   BostonMathiasAlphaFunction:
     eta:
-      H2O: 0
-      C3: 0
-      nC4: 0
+      H2O: 0  # missing
+      C3: 0  # missing
+      nC4: 0  # missing
   MixingRule_A:
     T_ref: 25 degC
   MixingRule_C:

@@ -95,8 +95,8 @@ class MaterialTestModel(Model):
         self.materials.define_port("inlet", spec)
 
     def define(self):
-        inlet = self.materials["inlet"]
-        local = self.materials.create_flow("local", TEST_MATERIAL)
+        _ = self.materials["inlet"]
+        _ = self.materials.create_flow("local", TEST_MATERIAL)
 
 
 class MaterialTestModel2(Model):
@@ -106,7 +106,7 @@ class MaterialTestModel2(Model):
 
     def define(self):
         inlet = self.materials["inlet"]
-        local = self.materials.create_state("local", inlet.definition)
+        _ = self.materials.create_state("local", inlet.definition)
 
 
 class MaterialTestModel3(Model):
@@ -139,12 +139,14 @@ class ResidualTestModel2(Model):
 
 
 def define_a_material(species):
-    """Defines a material to use. Normally, this would not be in a class
-    method, but a singelton somewhere in the project."""
+    """Defines a material to use. Normally, this would be a singelton somewhere
+    in the project."""
+
     factory = ExampleThermoFactory()
     speciesdb = {s: SpeciesDefinition(s) for s in species}
     frame = factory.create_frame(speciesdb, RK_LIQ)
     store = ThermoParameterStore()
+    # store.add_source("name", source)
     initial_state = InitialState.from_std(len(species))
     return MaterialDefinition(frame, initial_state, store)
 

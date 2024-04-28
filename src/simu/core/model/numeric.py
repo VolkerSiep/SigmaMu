@@ -1,11 +1,11 @@
 """This module implements functionality concerning the numerical handling
 of the top model instance."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from collections.abc import Callable, Sequence, Collection
 
 from ..utilities import flatten_dictionary
-from ..utilities.types import NestedMutMap, Map, MutMap
+from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction
 from ..utilities.errors import DataFlowError
 
@@ -31,6 +31,8 @@ class NumericHandler:
 
         """
         def fetch_states(model: ModelProxy) -> MutMap[Quantity]:
+            """Fetch the initial state variables from the materials of a
+            specific model"""
             result = {}
             for k, m in model.materials.handler.items():
                 init = m.initial_state
@@ -78,22 +80,29 @@ class NumericHandler:
         """
 
         def fetch_residuals(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch residuals from a specific model"""
             return {k: r.value for k, r in model.residuals.items()}
 
         def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch material states from a specific model"""
             # TODO: Are some materials now double (if connected to child model)
             return {k: m.sym_state for k, m in model.materials.handler.items()}
 
         def fetch_parameters(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch model parameters from a specific model"""
             return dict(model.parameters.free)
 
         def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
-            return model.properties
+            """fetch model properties from a specific model"""
+            return dict(model.properties)
 
         def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
-            return model.materials.handler
+            """fetch properties of materials in a specific model"""
+            return dict(model.materials.handler)
 
-        def fetch_store_props(model: ModelProxy) -> NestedMutMap[Quantity]:
+        def fetch_store_param(model: ModelProxy) -> NestedMap[Quantity]:
+            """fetch thermodynamic parameters from the stores of a specific
+            model"""
             stores = NumericHandler.__fetch_thermo_stores(model)
             names = {store.name for store in stores}
             if len(names) < len(stores):
@@ -104,7 +113,7 @@ class NumericHandler:
         mod = self.model
         fetch = NumericHandler.__fetch
         args = {
-            "thermo_params": fetch_store_props(mod),
+            "thermo_params": fetch_store_param(mod),
             "model_params": fetch(mod, fetch_parameters, "parameter"),
             "states": fetch(mod, fetch_material_states, "state"),
         }
@@ -126,10 +135,9 @@ class NumericHandler:
             func: Callable[[ModelProxy], NestedMutMap[Quantity]],
             typ: str,
             path: Optional[Sequence[str]] = None) -> NestedMutMap[Quantity]:
-        """Drill recursively into child models to collect all free
-        parameters. The result is a nested dictionary, such that name
-        clashes between child models and parameters are not permitted
-        and will raise a ``KeyError``.
+        """Drill recursively into child models to collect all data. The result
+        is a nested dictionary, such that name clashes between child models and
+        parameters are not permitted and will raise a ``KeyError``.
         """
         call_self = NumericHandler.__fetch
         if path is None:
