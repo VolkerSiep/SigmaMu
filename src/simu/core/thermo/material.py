@@ -46,7 +46,7 @@ class MaterialSpec:
         listed as :attr:`species`."""
         return self.__locked
 
-    def flow(self) -> bool:
+    def is_flow(self) -> bool:
         """Whether the specification is a flow (``True``) or
         a state (``False``)"""
         return self.__flow
@@ -62,7 +62,7 @@ class MaterialSpec:
         """
         spe, mspe = self.species, set(material.species)
         locked = self.locked
-        flow_comp = self.__flow == material.is_flow()
+        flow_comp = self.is_flow() == material.is_flow()
         return flow_comp and not ((spe - mspe) or (locked and (mspe - spe)))
 
     # @property
@@ -87,6 +87,10 @@ class Material(MutMap[Quantity]):
         params = definition.store.get_symbols(frame.parameter_structure)
         self.__state = frame.create_symbol_state()
         props = frame(self.__state, params, squeeze_results=False, flow=flow)
+
+        # TODO: convert vector properties to species maps
+        #   but maybe I need to define the keys earlier on in the frame?
+        #   ... as these might not always be species.
         self.__properties = {n: p for n, p in props.items()
                              if not n.startswith("_")}
         self.__flow = flow

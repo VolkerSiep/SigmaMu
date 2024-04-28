@@ -203,7 +203,7 @@ class QuantityDict(dict[str, Quantity]):
         """
         return cls({key: quantity[k] for k, key in enumerate(keys)})
 
-    def __add__(self, other: _OType) -> "QuantityDict":
+    def __add__(self, other: _OType) -> Self:
         try:
             items = other.items()
         except AttributeError:
@@ -214,10 +214,10 @@ class QuantityDict(dict[str, Quantity]):
             result[key] = (result[key] + value) if key in self else value
         return QuantityDict(result)
 
-    def __radd__(self, other: _OType) -> "QuantityDict":
+    def __radd__(self, other: _OType) -> Self:
         return self + other
 
-    def __mul__(self, other: _OType) -> "QuantityDict":
+    def __mul__(self, other: _OType) -> Self:
         try:
             other.items()
         except AttributeError:
@@ -226,22 +226,22 @@ class QuantityDict(dict[str, Quantity]):
         result = {k: v * other[k] for k, v in self.items() if k in other}
         return QuantityDict(result)
 
-    def __rmul__(self, other: _OType) -> "QuantityDict":
+    def __rmul__(self, other: _OType) -> Self:
         return self * other
 
-    def __pos__(self) -> "QuantityDict":
+    def __pos__(self) -> Self:
         return self
 
-    def __neg__(self) -> "QuantityDict":
+    def __neg__(self) -> Self:
         return QuantityDict({k: -v for k, v in self.items()})
 
-    def __sub__(self, other: _OType) -> "QuantityDict":
+    def __sub__(self, other: _OType) -> Self:
         return self + (-other)
 
-    def __rsub__(self, other: _OType) -> "QuantityDict":
+    def __rsub__(self, other: _OType) -> Self:
         return (-self) + other
 
-    def __truediv__(self, other: _OType) -> "QuantityDict":
+    def __truediv__(self, other: _OType) -> Self:
         try:
             other.items()
         except AttributeError:
@@ -254,7 +254,7 @@ class QuantityDict(dict[str, Quantity]):
             raise ZeroDivisionError(msg) from None
         return QuantityDict(result)
 
-    def __rtruediv__(self, other: _OType) -> "QuantityDict":
+    def __rtruediv__(self, other: _OType) -> Self:
         try:
             items = other.items()
         except AttributeError:
@@ -267,7 +267,7 @@ class QuantityDict(dict[str, Quantity]):
             raise ZeroDivisionError(msg) from None
         return QuantityDict(result)
 
-# TODO: exponential operator, dot product @
+# TODO: exponential operator, dot product @, outer product as well?
 
 
 def unary_func(quantity: _OType, func: Callable[[_SType], _SType]) -> _RType:

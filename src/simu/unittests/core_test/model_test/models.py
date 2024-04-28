@@ -138,7 +138,20 @@ class ResidualTestModel2(Model):
         self.residuals.add("Hubert", res, "degC")
 
 
-def define_a_material(species):
+class SquareTestModel(Model):
+    def interface(self):
+        with self.parameters as p:
+            p.define("T", 10, "degC")
+            p.define("p", 10, "bar")
+            p.define("N", 1, "mol")
+            p.define("x_NO2", 0.1, "%")
+
+    def define(self):
+        flow = self.materials.create_flow("local", TEST_MATERIAL)  # 4 DOF
+        x = 0
+
+
+def define_a_material(species) -> MaterialDefinition:
     """Defines a material to use. Normally, this would be a singelton somewhere
     in the project."""
 
