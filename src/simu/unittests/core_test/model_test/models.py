@@ -95,8 +95,9 @@ class MaterialTestModel(Model):
         self.materials.define_port("inlet", spec)
 
     def define(self):
+        test_material = define_a_material({"H2O", "NO2"})
         _ = self.materials["inlet"]
-        _ = self.materials.create_flow("local", TEST_MATERIAL)
+        _ = self.materials.create_flow("local", test_material)
 
 
 class MaterialTestModel2(Model):
@@ -114,7 +115,8 @@ class MaterialTestModel3(Model):
         pass
 
     def define(self):
-        self.materials.create_flow("local", TEST_MATERIAL)
+        test_material = define_a_material({"H2O", "NO2"})
+        self.materials.create_flow("local", test_material)
 
 
 class ResidualTestModel(Model):
@@ -147,7 +149,8 @@ class SquareTestModel(Model):
             p.define("x_NO2", 0.1, "%")
 
     def define(self):
-        flow = self.materials.create_flow("local", TEST_MATERIAL)  # 4 DOF
+        test_material = define_a_material({"H2O", "NO2"})
+        flow = self.materials.create_flow("local", test_material)  # 4 DOF
         x = 0
 
 
@@ -162,6 +165,3 @@ def define_a_material(species) -> MaterialDefinition:
     # store.add_source("name", source)
     initial_state = InitialState.from_std(len(species))
     return MaterialDefinition(frame, initial_state, store)
-
-
-TEST_MATERIAL = define_a_material({"H2O", "NO2"})

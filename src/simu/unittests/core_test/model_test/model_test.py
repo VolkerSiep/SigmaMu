@@ -109,7 +109,7 @@ def test_hierarchy2():
 
 
 def test_material():
-    material = TEST_MATERIAL.create_flow()
+    material = define_a_material({"H2O", "NO2"}).create_flow()
 
     with MaterialTestModel().create_proxy() as model:
         assert "inlet" in model.materials
@@ -125,7 +125,7 @@ def test_wrong_material():
 
 
 def test_material_reuse_def():
-    material = TEST_MATERIAL.create_flow()
+    material = define_a_material({"H2O", "NO2"}).create_flow()
 
     with MaterialTestModel2().create_proxy() as model:
         assert "inlet" in model.materials
