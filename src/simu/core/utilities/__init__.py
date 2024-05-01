@@ -9,6 +9,7 @@ from .quantity import (
     conditional, jacobian, qpow, qvertcat, sqrt, sum1, unit_registry,
     extract_units_dictionary)
 from .qstructures import (
-    ParameterDictionary, parse_quantities_in_struct, exp, log, log10, sin, cos,
-    tan, arcsin, arccos, arctan, sinh, cosh, tanh, arcsinh, arccosh, arctanh)
+    ParameterDictionary, QuantityDict, parse_quantities_in_struct, exp, log,
+    log10, sin, cos, tan, arcsin, arccos, arctan, sinh, cosh, tanh, arcsinh,
+    arccosh, arctanh)
 from .testing import assert_reproduction, user_agree

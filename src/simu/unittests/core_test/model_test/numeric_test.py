@@ -54,7 +54,6 @@ def test_suare_model():
     numeric = NumericHandler(SquareTestModel.top())
 
 
-
 def create_material_functions():
     """Make a function out of a model defining materials"""
     proxy = MaterialTestModel3.top()

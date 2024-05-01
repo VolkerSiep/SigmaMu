@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from ..utilities import Quantity
+from ..utilities import Quantity, SymbolQuantity, QuantityDict
 from ..utilities.types import Map, MutMap
 
 from . import (
@@ -87,11 +87,22 @@ class Material(MutMap[Quantity]):
         params = definition.store.get_symbols(frame.parameter_structure)
         self.__state = frame.create_symbol_state()
         props = frame(self.__state, params, squeeze_results=False, flow=flow)
+        species = frame.species
 
-        # TODO: convert vector properties to species maps
-        #   but maybe I need to define the keys earlier on in the frame?
-        #   ... as these might not always be species.
-        self.__properties = {n: p for n, p in props.items()
+        def convert(n: str, prop: SymbolQuantity) -> Quantity | QuantityDict:
+            """If property is a vector, convert it to a QuantityDict, otherwise
+            just return the quantity itself."""
+            mag, unit = prop.magnitude, prop.units
+            if mag.is_scalar():
+                return prop
+            if mag.size() != (len(species), 1):
+                msg = f"Property {n} has inproper shape: {mag.size()}, " \
+                      f"should be scalar or ({len(species)}, 1)"
+                raise ValueError(msg)
+            result = {s: Quantity(mag[i], unit) for i, s in enumerate(species)}
+            return QuantityDict(result)
+
+        self.__properties = {n: convert(n, p) for n, p in props.items()
                              if not n.startswith("_")}
         self.__flow = flow
 
