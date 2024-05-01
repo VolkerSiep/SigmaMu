@@ -115,7 +115,7 @@ def jacobian(dependent: Quantity, independent: Quantity) -> Quantity:
                     dependent.units / independent.units)
 
 
-def sum1(quantity: Quantity) -> Quantity:
+def qsum(quantity: Quantity) -> Quantity:
     """Sum a symbol vector quantity same was a ``casadi.sum1``, considering
     units of measurements. This function only applies to quantity objects with
     ``casadi.SX`` objects as magnitudes.
@@ -129,7 +129,7 @@ def sum1(quantity: Quantity) -> Quantity:
     return Quantity(cas.sum1(quantity.magnitude), quantity.units)
 
 
-def sqrt(quantity: Quantity) -> Quantity:
+def qsqrt(quantity: Quantity) -> Quantity:
     """Determine square root of symbolic quantity, considering units of
     measurement"""
     return Quantity(cas.sqrt(quantity.magnitude), quantity.units**0.5)

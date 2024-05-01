@@ -5,7 +5,7 @@ from copy import copy
 
 # internal modules
 from simu import (
-    ThermoContribution, R_GAS, log, sum1, ParameterDictionary, base_magnitude
+    ThermoContribution, R_GAS, log, qsum, ParameterDictionary, base_magnitude
 )
 
 
@@ -168,7 +168,7 @@ class IdealMix(ThermoContribution):
 
     def define(self, res, par):
         T, n = res["T"], res["n"]
-        N = sum1(n)
+        N = qsum(n)
         x = n / N
         gtn = R_GAS * log(x)
         res["S"] -= n.T @ gtn
@@ -209,7 +209,7 @@ class GibbsIdealGas(ThermoContribution):
 
     def define(self, res, par):
         T, p, n, p_ref = res["T"], res["p"], res["n"], res["p_ref"]
-        N = sum1(n)
+        N = qsum(n)
         gtn = R_GAS * log(p / p_ref)
 
         res["S"] -= N * gtn
@@ -250,7 +250,7 @@ class HelmholtzIdealGas(ThermoContribution):
 
     def define(self, res, par):
         T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]
-        N = sum1(n)
+        N = qsum(n)
         p = N * R_GAS * T / V
         gtn = R_GAS * log(p / p_ref)
 
@@ -263,7 +263,7 @@ class HelmholtzIdealGas(ThermoContribution):
         return -V / d_V if d_V < 0 else 100
 
     def initial_state(self, state, properties):
-        volume = sum1(state.mol_vector) * R_GAS * \
+        volume = qsum(state.mol_vector) * R_GAS * \
                  state.temperature / state.pressure
         return [base_magnitude(state.temperature),
                 base_magnitude(volume),

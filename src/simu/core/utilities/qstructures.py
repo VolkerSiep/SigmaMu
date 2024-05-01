@@ -9,7 +9,7 @@ import casadi as cas
 from pint.errors import DimensionalityError
 
 # internal libs
-from . import base_unit, Quantity, SymbolQuantity, qvertcat
+from . import base_unit, Quantity, SymbolQuantity, qvertcat, qpow, qsqrt
 from .types import NestedMap
 
 
@@ -124,7 +124,6 @@ class ParameterDictionary(dict):
 
 
 _OType = Union[float, Quantity, Mapping[str, Quantity]]
-_RType = Union[Quantity, Mapping[str, Quantity]]
 _SType = Union[float, cas.SX]
 
 
@@ -267,10 +266,57 @@ class QuantityDict(dict[str, Quantity]):
             raise ZeroDivisionError(msg) from None
         return QuantityDict(result)
 
-# TODO: exponential operator, dot product @, outer product as well?
+    def __matmul__(self, other: Self) -> Quantity:
+        """Can assume other to be QuantityDict, otherwise use
+        *-operator instead."""
+        return (self * other).sum()
+
+    def __rmatmul__(self, other) -> Quantity:
+        """For 2 vectors, scalar product is commutative"""
+        return other @ self
+
+    def __pow__(self, other: _OType) -> Self:
+        try:
+            items = other.items()
+        except AttributeError:
+            result = {k: qpow(v, other) for k, v in self.items()}
+        else:
+            result = {k: qpow(v, other.get(k, 0)) for k, v in self.items()}
+            for k, v in items:
+                if k not in self:
+                    result[k] = qpow(0.0, v)
+        return QuantityDict(result)
+
+    def __rpow__(self, other: _OType) -> Self:
+        try:
+            items = other.items()
+        except AttributeError:
+            result = {k: qpow(other, v) for k, v in self.items()}
+        else:
+            result = {k: qpow(other.get(k, 0) , v) for k, v in self.items()}
+            for k, v in items:
+                if k not in self:
+                    result[k] = qpow(v, 0.0)
+        return QuantityDict(result)
+
+    def sum(self) -> Quantity:
+        """Sum all elements of the QuantityDict object. Naturally, all
+        elements must have equal physical dimensions
+
+        >>> a = QuantityDict({
+        ...         "B": Quantity("1 m"),
+        ...         "C": Quantity("50 cm")})
+        >>> print(f"{a.sum():~}")
+        1.5 m
+        """
+        return sum(self.values())  # type: ignore[type-error]
 
 
-def unary_func(quantity: _OType, func: Callable[[_SType], _SType]) -> _RType:
+_V = TypeVar("_V", float, Quantity, Mapping[str, Quantity])
+UNFUNC_TYPE = Callable[[_V], _V]
+
+
+def unary_func(quantity: _V, func: UNFUNC_TYPE) -> _V:
     """Call a unary function that requires a dimensionless argument on the
     argument, accepting that argument to be a float, a scalar quantity,
     a symbolic quantity, or a QuantityDict object (well, any dictionary
@@ -291,11 +337,27 @@ def unary_func(quantity: _OType, func: Callable[[_SType], _SType]) -> _RType:
         items = quantity.items()
     except AttributeError:
         return scalar_func(quantity)
-
     return QuantityDict({k: unary_func(v, func) for k, v in items})
 
 
-def log(quantity: _OType) -> _RType:
+def sqrt(quantity: _V) -> _V:
+    """The square root function is a special case of a unary function in that
+    the argument is not required to be dimensionless.
+
+    >>> a = QuantityDict({
+    ...         "B": Quantity("1 m**2"),
+    ...         "C": Quantity("2500 cm**2")})
+    >>> print(sqrt(a))
+    {'B': <Quantity(1.0, 'meter')>, 'C': <Quantity(50.0, 'centimeter')>}
+    """
+    try:
+        items = quantity.items()
+    except AttributeError:
+        return qsqrt(quantity)
+    return QuantityDict({k: qsqrt(v) for k, v in items})
+
+
+def log(quantity: _V) -> _V:
     """Determine natural logarithms, considering units of
     measurements. The main intent is to use this version for symbolic
     quantities and QuantityDict objects, but it also works on floats.
@@ -318,9 +380,6 @@ def log(quantity: _OType) -> _RType:
     """
     return unary_func(quantity, cas.log)
 
-
-V = TypeVar("V", float, Quantity, Mapping[str, Quantity])
-UNFUNC_TYPE = Callable[[V], V]
 
 log10: UNFUNC_TYPE = lambda x: unary_func(x, cas.log10)
 exp: UNFUNC_TYPE = lambda x: unary_func(x, cas.exp)

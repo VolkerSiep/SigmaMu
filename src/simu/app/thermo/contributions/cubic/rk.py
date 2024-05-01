@@ -9,7 +9,7 @@ from numpy import dot, ravel, roots
 
 # internal modules
 from simu import (
-    InitialState, base_magnitude, jacobian, log, sum1, R_GAS,
+    InitialState, base_magnitude, jacobian, log, qsum, R_GAS,
     ThermoContribution
 )
 
@@ -108,7 +108,7 @@ class RedlichKwongEOS(ThermoContribution):
         A_n, B_n, C_n = [res[f"{i}_n"] for i in abc_names]
 
         # common terms
-        N = sum1(n)
+        N = qsum(n)
         NR, RT = N * R_GAS, T * R_GAS
         VC = V + C
         VmBC, VpBC = VC - B, VC + B
