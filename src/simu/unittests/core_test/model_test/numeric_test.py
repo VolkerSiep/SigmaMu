@@ -8,47 +8,43 @@ def test_parameters():
     proxy = SimpleParameterTestModel.top()
     numeric = NumericHandler(proxy)
     args = numeric.function.arg_structure
-    assert args['model_params/length'] == 'm'
+    assert args['model_params']['length'] == 'm'
 
 
 def test_properties():
     proxy = PropertyTestModel.top()
     numeric = NumericHandler(proxy)
     results = numeric.function.result_structure
-    assert results['model_props/area'] == 'm ** 2'
+    assert results['model_props']['area'] == 'm ** 2'
 
 
 def test_residuals():
     proxy = ResidualTestModel.top()
     numeric = NumericHandler(proxy)
     results = numeric.function.result_structure
-    assert results['residuals/area'] == "m ** 2"
+    assert results['residuals']['area'] == "m ** 2"
 
 
 def test_material_collect_states():
     args, _ = create_material_functions()
     for k in range(4):
-        assert f"states/local/x_{k:03d}" in args
+        assert f"x_{k:03d}" in args["states"]["local"]
 
 
 def test_material_collect_props():
     _, results = create_material_functions()
-    start = "thermo_props/local/"
-    results = [res[len(start):] for res in results if res.startswith(start)]
-    assert_reproduction(results)
+    assert_reproduction(results["thermo_props"]["local"])
 
 
 def test_material_collect_thermo_param():
     args, _ = create_material_functions()
-    start = "thermo_params/default/"
-    args = [arg[len(start):] for arg in args if arg.startswith(start)]
-    assert_reproduction(args)
+    assert_reproduction(args["thermo_params"]["default"])
 
 
 def test_hierarchy_collect_numerics():
     numeric = NumericHandler(HierarchyTestModel2.top())
     results = numeric.function.result_structure
-    assert "model_props/square/area" in results
+    assert "area" in results["model_props"]["square"]
 
 
 def test_square_model():
@@ -85,6 +81,7 @@ def test_square_model_args():
                     'CH3-CH2-CH3': '0 m ** 3 / mol'}}
     }
     material.store.add_source("default", StringDictThermoSource(data))
+    print(numeric.function.arg_structure)
 
     args = numeric.arguments
     print(args)

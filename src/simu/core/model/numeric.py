@@ -42,11 +42,13 @@ class NumericHandler:
                     msg = "Missing values for thermodynamic parameters"
                     raise DataFlowError(msg)
                 state = m.definition.frame.initial_state(init, params)
-                result[k] = Quantity(state)
+                dic = {f"x_{i:03d}": Quantity(x) for i, x in enumerate(state)}
+                result[k] = dic
             return result
 
         mod = self.model
         fetch = NumericHandler.__fetch
+        # TODO: do I need to flatten this?
         return {
             "states": fetch(mod, fetch_states, "state"),
             "model_params": {},  # TODO: implement
@@ -124,9 +126,6 @@ class NumericHandler:
             "thermo_props": fetch(mod, fetch_thermo_props, "thermo property"),
             "residuals": fetch(mod, fetch_residuals, "residual")
         }
-
-        results = flatten_dictionary(results)
-        args = flatten_dictionary(args)
 
         return QFunction(args, results, "model")
 

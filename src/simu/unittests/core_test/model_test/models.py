@@ -7,7 +7,7 @@ from simu.core.thermo.material import MaterialSpec, MaterialDefinition
 from simu.core.thermo.species import SpeciesDefinition
 from simu.app.thermo.factories import ExampleThermoFactory
 from simu.core.thermo import ThermoParameterStore
-from simu.core.utilities import SymbolQuantity
+from simu.core.utilities import SymbolQuantity, Quantity
 
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
@@ -175,4 +175,5 @@ def define_a_material(species) -> MaterialDefinition:
     store = ThermoParameterStore()
     # store.add_source("name", source)
     initial_state = InitialState.from_std(len(species))
+    initial_state.pressure = Quantity("10 bar")
     return MaterialDefinition(frame, initial_state, store)
