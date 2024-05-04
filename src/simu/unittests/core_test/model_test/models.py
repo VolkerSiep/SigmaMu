@@ -141,17 +141,28 @@ class ResidualTestModel2(Model):
 
 
 class SquareTestModel(Model):
+    def __init__(self):
+        super().__init__()
+        self.no2sol = define_a_material({"CH3-CH2-CH3", "CH3-(CH2)2-CH3"})
+
     def interface(self):
         with self.parameters as p:
             p.define("T", 10, "degC")
             p.define("p", 10, "bar")
-            p.define("N", 1, "mol")
-            p.define("x_NO2", 0.1, "%")
+            p.define("N", 1, "mol/s")
+            p.define("x_c3", 0.1, "%")
 
     def define(self):
-        test_material = define_a_material({"H2O", "NO2"})
-        flow = self.materials.create_flow("local", test_material)  # 4 DOF
-        x = 0
+        flow = self.materials.create_flow("local", self.no2sol)  # 4 DOF
+        flow["N"] = flow["n"].sum()
+        flow["x"] = flow["n"] / flow["N"]
+
+        param, radd = self.parameters, self.residuals.add
+        radd("N", flow["N"] - param["N"], "mol/s")
+        res = flow["N"] * param["x_c3"] - flow["n"]["CH3-CH2-CH3"]
+        radd("x", res, "mol/s")
+        radd("T", flow["T"] - param["T"], "K")
+        radd("p", flow["p"] - param["p"], "bar")
 
 
 def define_a_material(species) -> MaterialDefinition:

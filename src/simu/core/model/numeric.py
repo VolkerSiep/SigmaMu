@@ -37,7 +37,7 @@ class NumericHandler:
             for k, m in model.materials.handler.items():
                 init = m.initial_state
                 try:
-                    params = m.definition.store.get_all_symbol_values()
+                    params = m.definition.store.get_all_values()
                 except KeyError:
                     msg = "Missing values for thermodynamic parameters"
                     raise DataFlowError(msg)
@@ -53,6 +53,7 @@ class NumericHandler:
             "thermo_params": {}  # TODO: implement
         }
 
+    @property
     def arguments(self) -> Map[Quantity]:
         """The function arguments as numerical values. A DataFlowError is
         thrown, if not all numerical values are known."""
@@ -75,7 +76,7 @@ class NumericHandler:
             - Residuals
 
         All the data is to be collected from the model and all child model
-        proxies. For child models, only the free parameters are to be
+        proxies. For child models, only the free parameters are
         collected.
         """
 

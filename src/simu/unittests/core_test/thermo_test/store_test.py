@@ -81,7 +81,7 @@ def test_get_thermo_property_values_sources():
               "p": {"H2O": "10 bar", "NH3": "20 atm"}}
     store.add_source("Dagbladet", StringDictThermoSource(struct))
 
-    values = store.get_all_symbol_values()
+    values = store.get_all_values()
     assert f"{values['T']['H2O']:~}" == "100 K"
     sources = store.get_sources()
     assert sources["T"]["H2O"] == "Dagbladet"
@@ -110,7 +110,7 @@ def test_get_thermo_property_values_two_sources():
     struct = {"p": {"H2O": "10 bar", "NH3": "20 atm"}}
     store.add_source("VG", StringDictThermoSource(struct))
 
-    _ = store.get_all_symbol_values()
+    _ = store.get_all_values()
     sources = store.get_sources()
     assert sources["T"]["H2O"] == "Dagbladet"
     assert sources["p"]["H2O"] == "VG"
@@ -127,7 +127,7 @@ def test_get_same_thermo_property_values_two_sources():
     struct = {"p": {"H2O": "10 bar", "NH3": "20 atm"}}
     store.add_source("VG", StringDictThermoSource(struct))
 
-    _ = store.get_all_symbol_values()
+    _ = store.get_all_values()
     sources = store.get_sources()
     assert sources["T"]["H2O"] == "Dagbladet"
     assert sources["p"]["H2O"] == "VG"

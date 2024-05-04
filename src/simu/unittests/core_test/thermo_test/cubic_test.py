@@ -263,7 +263,7 @@ def test_initialise_rk2(cls):
 
     # is the rest of the state (except volume) reproduced?
     assert base_magnitude(T) == state[0]
-    assert base_magnitude(n).tolist() == state[2].tolist()
+    assert base_magnitude(n).tolist() == state[2:]
     res_num["V"] = Q(state[1], "m**3")
 
     # calculate contribution values with initial state to reproduce pressure

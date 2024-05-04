@@ -110,7 +110,7 @@ class ThermoParameterStore:
         :meth:`get_symbols`, as a nested dictionary of symbolic quantities"""
         return self.__provided_parameters
 
-    def get_all_symbol_values(self) -> NestedMap[Quantity]:
+    def get_all_values(self) -> NestedMap[Quantity]:
         """This method seeks in connected data sources for all previously
         prepared symbols.
 
