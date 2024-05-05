@@ -30,7 +30,7 @@ class NumericHandler:
         thermo parameter stores, and parameter values from parameter handlers.
 
         """
-        def fetch_states(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_states(model: ModelProxy) -> NestedMutMap[Quantity]:
             """Fetch the initial state variables from the materials of a
             specific model"""
             result = {}
@@ -46,13 +46,21 @@ class NumericHandler:
                 result[k] = dic
             return result
 
-        mod = self.model
+        def fetch_store_param() -> NestedMap[Quantity]:
+            """fetch thermodynamic parameter values from the stores"""
+            stores = NumericHandler.__fetch_thermo_stores(self.model)
+            names = {store.name for store in stores}
+            if len(names) < len(stores):
+                raise ValueError("When using multiple ThermoPropertyStores, "
+                                 "they have to have unique names")
+            return {store.name: store.get_all_values() for store in stores}
+
         fetch = NumericHandler.__fetch
-        # TODO: do I need to flatten this?
         return {
-            "states": fetch(mod, fetch_states, "state"),
-            "model_params": {},  # TODO: implement
-            "thermo_params": {}  # TODO: implement
+            "states": fetch(self.model, fetch_states, "state"),
+            "model_params": fetch(self.model, lambda m: m.parameters.values,
+                                  "parameter"),
+            "thermo_params": fetch_store_param()
         }
 
     @property
@@ -104,8 +112,7 @@ class NumericHandler:
             return dict(model.materials.handler)
 
         def fetch_store_param(model: ModelProxy) -> NestedMap[Quantity]:
-            """fetch thermodynamic parameters from the stores of a specific
-            model"""
+            """fetch thermodynamic parameters from the stores"""
             stores = NumericHandler.__fetch_thermo_stores(model)
             names = {store.name for store in stores}
             if len(names) < len(stores):

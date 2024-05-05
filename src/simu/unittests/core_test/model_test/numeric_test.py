@@ -74,18 +74,20 @@ def test_square_model_args():
                      'CH3-CH2-CH3': '0 J/(mol*K*K)'}},
         'CriticalParameters': {
             'T_c': {'CH3-(CH2)2-CH3': '425 K', 'CH3-CH2-CH3': '370 K'},
-            'p_c': {'CH3-(CH2)2-CH3': '38 bar', 'CH3-CH2-CH3': '42.5 bar'}},
+            'p_c': {'CH3-(CH2)2-CH3': '38 bar', 'CH3-CH2-CH3': '42.5 bar'},
+            'omega': {'CH3-CH2-CH3': 0.199, 'CH3-(CH2)2-CH3': 0.153}},
         'MixingRule_A': {'T_ref': '25 degC'},
         'VolumeShift': {
             'c_i': {'CH3-(CH2)2-CH3': '0 m ** 3 / mol',
-                    'CH3-CH2-CH3': '0 m ** 3 / mol'}}
+                    'CH3-CH2-CH3': '0 m ** 3 / mol'}},
+        'BostonMathiasAlphaFunction': {
+            'eta': {'CH3-CH2-CH3': 0, 'CH3-(CH2)2-CH3': 0}}
     }
+
     material.store.add_source("default", StringDictThermoSource(data))
-    print(numeric.function.arg_structure)
-
+    struct = numeric.function.arg_structure
     args = numeric.arguments
-    print(args)
-
+    check_same_keys(struct, args)
 
 def create_material_functions():
     """Make a function out of a model defining materials"""
@@ -94,3 +96,19 @@ def create_material_functions():
     args = numeric.function.arg_structure
     results = numeric.function.result_structure
     return args, results
+
+
+def check_same_keys(dic1, dic2):
+    def is_it(d):
+        try:
+            d.items()
+        except AttributeError:
+            return False
+        return True
+
+    assert is_it(dic1) == is_it(dic2)
+    if not is_it(dic1):
+        return
+    assert set(dic1.keys()) == set(dic2.keys())
+    for key, child in dic1.items():
+        check_same_keys(child, dic2[key])

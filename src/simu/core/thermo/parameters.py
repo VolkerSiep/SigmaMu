@@ -183,7 +183,10 @@ class ThermoParameterStore:
                     value, source = get_value(path, struct)
                     return value, {}, source
                 except KeyError:
-                    return {}, f"{struct.units:~}", {}
+                    # the space after the unit is important here, for the
+                    # string not to evaluate to false in case of dimensionless
+                    # parameters!
+                    return {}, f"{struct.units:~} ", {}
 
             # found a sub structure
             found: NestedMap[Quantity] = {}
