@@ -96,8 +96,11 @@ class NumericHandler:
 
         def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
             """fetch material states from a specific model"""
-            # TODO: Are some materials now double (if connected to child model)
-            return {k: m.sym_state for k, m in model.materials.handler.items()}
+            # TODO: must skip ports
+
+            mat_proxy = model.materials
+            return {k: m.sym_state for k, m in mat_proxy.handler.items()
+                    if k not in mat_proxy}
 
         def fetch_parameters(model: ModelProxy) -> MutMap[Quantity]:
             """fetch model parameters from a specific model"""
@@ -122,10 +125,13 @@ class NumericHandler:
 
         mod = self.model
         fetch = NumericHandler.__fetch
+
+        states = fetch(mod, fetch_material_states, "state")
+
         args = {
             "thermo_params": fetch_store_param(mod),
             "model_params": fetch(mod, fetch_parameters, "parameter"),
-            "states": fetch(mod, fetch_material_states, "state"),
+            "states": states,
         }
 
         results = {
@@ -150,7 +156,7 @@ class NumericHandler:
         if path is None:
             path = []
         result: NestedMutMap[Quantity] = func(root)
-        for name, proxy in root.hierarchy.items():
+        for name, proxy in root.hierarchy.handler.items():
             if name in result:
                 context = ".".join(path)
                 msg = f"Child model / {typ} name clash:" \
@@ -165,6 +171,6 @@ class NumericHandler:
         call_self = NumericHandler.__fetch_thermo_stores
         result = {m.definition.store
                   for m in model.materials.handler.values()}
-        for proxy in model.hierarchy.values():
+        for proxy in model.hierarchy.handler.values():
             result |= call_self(proxy)
         return result

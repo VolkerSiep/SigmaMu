@@ -165,6 +165,26 @@ class SquareTestModel(Model):
         radd("p", flow["p"] - param["p"], "bar")
 
 
+class MaterialParentTestModel(Model):
+
+    class Child(Model):
+        def __init__(self, mat_def):
+            super().__init__()
+            self.mat_def = mat_def
+
+        def interface(self):
+            self.materials.define_port("port")
+
+        def define(self):
+            flow = self.materials.create_flow("m_child", self.mat_def)
+
+    def define(self):
+        mat_def = define_a_material({"H2O", "NO2"})
+        flow = self.materials.create_flow("m_parent", mat_def)
+        with self.hierarchy.add("child", self.Child, mat_def) as child:
+            child.materials.connect("port", flow)
+
+
 def define_a_material(species) -> MaterialDefinition:
     """Defines a material to use. Normally, this would be a singelton somewhere
     in the project."""

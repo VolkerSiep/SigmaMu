@@ -50,7 +50,7 @@ class Model(ABC):
         return cls().create_proxy(name)
 
     def interface(self) -> None:
-        """This abstract method is to define all model parameters, material
+        """This virtual method is to define all model parameters, material
         ports, and properties provided by this model. This makes the interface
         of the model in the hierarchical context nearly self-documenting.
         A trivial example implementation could be
