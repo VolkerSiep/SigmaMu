@@ -150,7 +150,7 @@ class SquareTestModel(Model):
             p.define("T", 10, "degC")
             p.define("p", 10, "bar")
             p.define("N", 1, "mol/s")
-            p.define("x_c3", 0.1, "%")
+            p.define("x_c3", 10, "%")
 
     def define(self):
         flow = self.materials.create_flow("local", self.no2sol)  # 4 DOF
@@ -175,5 +175,6 @@ def define_a_material(species) -> MaterialDefinition:
     store = ThermoParameterStore()
     # store.add_source("name", source)
     initial_state = InitialState.from_std(len(species))
+    initial_state.temperature = Quantity("10 degC")
     initial_state.pressure = Quantity("10 bar")
     return MaterialDefinition(frame, initial_state, store)

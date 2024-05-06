@@ -209,5 +209,28 @@
         }
       }
     }
+  },
+  "numeric_test.py::test_square_model_call": {
+    "residuals/N": "1.000000 mol / s",
+    "residuals/T": "0.000000 K",
+    "residuals/p": "0.000000 J / m ** 3",
+    "residuals/x": "-80.000000 % * mol / s",
+    "thermo_props/local/N": "2.000000 mol / s",
+    "thermo_props/local/S": "-154.465034 kg * m ** 2 / K / s ** 3",
+    "thermo_props/local/S_std": "-8.930247 kg * m ** 2 / K / s ** 3",
+    "thermo_props/local/T": "283.150000 K",
+    "thermo_props/local/T_ref": "298.150000 K",
+    "thermo_props/local/V": "0.000197 m ** 3 / s",
+    "thermo_props/local/mu/CH3-(CH2)2-CH3": "-497.918361 kg * m ** 2 / mol / s ** 2",
+    "thermo_props/local/mu/CH3-CH2-CH3": "2275.958715 kg * m ** 2 / mol / s ** 2",
+    "thermo_props/local/mu_std/CH3-(CH2)2-CH3": "-37.614242 kg * m ** 2 / mol / s ** 2",
+    "thermo_props/local/mu_std/CH3-CH2-CH3": "-28.786410 kg * m ** 2 / mol / s ** 2",
+    "thermo_props/local/n/CH3-(CH2)2-CH3": "1.000000 mol / s",
+    "thermo_props/local/n/CH3-CH2-CH3": "1.000000 mol / s",
+    "thermo_props/local/p": "1000000.000000 J / m ** 3",
+    "thermo_props/local/p_ref": "101325.000000 kg / m / s ** 2",
+    "thermo_props/local/p_std": "101325.000000 kg / m / s ** 2",
+    "thermo_props/local/x/CH3-(CH2)2-CH3": "0.500000",
+    "thermo_props/local/x/CH3-CH2-CH3": "0.500000"
   }
 }
