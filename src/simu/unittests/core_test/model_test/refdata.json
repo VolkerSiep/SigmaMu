@@ -25,6 +25,278 @@
     "p_ref",
     "p_std"
   ],
+  "numeric_test.py::test_collect_hierarchy_material_false": {
+    "args": {
+      "states": {
+        "child": {
+          "m_child": {
+            "x_000": "",
+            "x_001": "",
+            "x_002": "",
+            "x_003": ""
+          }
+        },
+        "m_parent": {
+          "x_000": "",
+          "x_001": "",
+          "x_002": "",
+          "x_003": ""
+        }
+      },
+      "thermo_params": {
+        "default": {
+          "BostonMathiasAlphaFunction": {
+            "eta": {
+              "H2O": "",
+              "NO2": ""
+            }
+          },
+          "CriticalParameters": {
+            "T_c": {
+              "H2O": "K",
+              "NO2": "K"
+            },
+            "omega": {
+              "H2O": "",
+              "NO2": ""
+            },
+            "p_c": {
+              "H2O": "kg / m / s ** 2",
+              "NO2": "kg / m / s ** 2"
+            }
+          },
+          "H0S0ReferenceState": {
+            "T_ref": "K",
+            "dh_form": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "p_ref": "kg / m / s ** 2",
+            "s_0": {
+              "H2O": "kg * m ** 2 / K / mol / s ** 2",
+              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+            }
+          },
+          "LinearHeatCapacity": {
+            "cp_a": {
+              "H2O": "kg * m ** 2 / K / mol / s ** 2",
+              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+            },
+            "cp_b": {
+              "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+            }
+          },
+          "MixingRule_A": {
+            "T_ref": "K"
+          },
+          "VolumeShift": {
+            "c_i": {
+              "H2O": "m ** 3 / mol",
+              "NO2": "m ** 3 / mol"
+            }
+          }
+        }
+      }
+    },
+    "res": {
+      "thermo_props": {
+        "child": {
+          "m_child": {
+            "S": "kg * m ** 2 / K / s ** 3",
+            "S_std": "kg * m ** 2 / K / s ** 3",
+            "T": "K",
+            "T_ref": "K",
+            "V": "m ** 3 / s",
+            "mu": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "mu_std": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "n": {
+              "H2O": "mol / s",
+              "NO2": "mol / s"
+            },
+            "p": "J / m ** 3",
+            "p_ref": "kg / m / s ** 2",
+            "p_std": "kg / m / s ** 2"
+          }
+        },
+        "m_parent": {
+          "S": "kg * m ** 2 / K / s ** 3",
+          "S_std": "kg * m ** 2 / K / s ** 3",
+          "T": "K",
+          "T_ref": "K",
+          "V": "m ** 3 / s",
+          "mu": {
+            "H2O": "kg * m ** 2 / mol / s ** 2",
+            "NO2": "kg * m ** 2 / mol / s ** 2"
+          },
+          "mu_std": {
+            "H2O": "kg * m ** 2 / mol / s ** 2",
+            "NO2": "kg * m ** 2 / mol / s ** 2"
+          },
+          "n": {
+            "H2O": "mol / s",
+            "NO2": "mol / s"
+          },
+          "p": "J / m ** 3",
+          "p_ref": "kg / m / s ** 2",
+          "p_std": "kg / m / s ** 2"
+        }
+      }
+    }
+  },
+  "numeric_test.py::test_collect_hierarchy_material_true": {
+    "args": {
+      "states": {
+        "child": {
+          "m_child": {
+            "x_000": "",
+            "x_001": "",
+            "x_002": "",
+            "x_003": ""
+          }
+        },
+        "m_parent": {
+          "x_000": "",
+          "x_001": "",
+          "x_002": "",
+          "x_003": ""
+        }
+      },
+      "thermo_params": {
+        "default": {
+          "BostonMathiasAlphaFunction": {
+            "eta": {
+              "H2O": "",
+              "NO2": ""
+            }
+          },
+          "CriticalParameters": {
+            "T_c": {
+              "H2O": "K",
+              "NO2": "K"
+            },
+            "omega": {
+              "H2O": "",
+              "NO2": ""
+            },
+            "p_c": {
+              "H2O": "kg / m / s ** 2",
+              "NO2": "kg / m / s ** 2"
+            }
+          },
+          "H0S0ReferenceState": {
+            "T_ref": "K",
+            "dh_form": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "p_ref": "kg / m / s ** 2",
+            "s_0": {
+              "H2O": "kg * m ** 2 / K / mol / s ** 2",
+              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+            }
+          },
+          "LinearHeatCapacity": {
+            "cp_a": {
+              "H2O": "kg * m ** 2 / K / mol / s ** 2",
+              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+            },
+            "cp_b": {
+              "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+            }
+          },
+          "MixingRule_A": {
+            "T_ref": "K"
+          },
+          "VolumeShift": {
+            "c_i": {
+              "H2O": "m ** 3 / mol",
+              "NO2": "m ** 3 / mol"
+            }
+          }
+        }
+      }
+    },
+    "res": {
+      "thermo_props": {
+        "child": {
+          "m_child": {
+            "S": "kg * m ** 2 / K / s ** 3",
+            "S_std": "kg * m ** 2 / K / s ** 3",
+            "T": "K",
+            "T_ref": "K",
+            "V": "m ** 3 / s",
+            "mu": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "mu_std": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "n": {
+              "H2O": "mol / s",
+              "NO2": "mol / s"
+            },
+            "p": "J / m ** 3",
+            "p_ref": "kg / m / s ** 2",
+            "p_std": "kg / m / s ** 2"
+          },
+          "port": {
+            "S": "kg * m ** 2 / K / s ** 3",
+            "S_std": "kg * m ** 2 / K / s ** 3",
+            "T": "K",
+            "T_ref": "K",
+            "V": "m ** 3 / s",
+            "mu": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "mu_std": {
+              "H2O": "kg * m ** 2 / mol / s ** 2",
+              "NO2": "kg * m ** 2 / mol / s ** 2"
+            },
+            "n": {
+              "H2O": "mol / s",
+              "NO2": "mol / s"
+            },
+            "p": "J / m ** 3",
+            "p_ref": "kg / m / s ** 2",
+            "p_std": "kg / m / s ** 2"
+          }
+        },
+        "m_parent": {
+          "S": "kg * m ** 2 / K / s ** 3",
+          "S_std": "kg * m ** 2 / K / s ** 3",
+          "T": "K",
+          "T_ref": "K",
+          "V": "m ** 3 / s",
+          "mu": {
+            "H2O": "kg * m ** 2 / mol / s ** 2",
+            "NO2": "kg * m ** 2 / mol / s ** 2"
+          },
+          "mu_std": {
+            "H2O": "kg * m ** 2 / mol / s ** 2",
+            "NO2": "kg * m ** 2 / mol / s ** 2"
+          },
+          "n": {
+            "H2O": "mol / s",
+            "NO2": "mol / s"
+          },
+          "p": "J / m ** 3",
+          "p_ref": "kg / m / s ** 2",
+          "p_std": "kg / m / s ** 2"
+        }
+      }
+    }
+  },
   "numeric_test.py::test_material_collect_props": {
     "S": "kg * m ** 2 / K / s ** 3",
     "S_std": "kg * m ** 2 / K / s ** 3",

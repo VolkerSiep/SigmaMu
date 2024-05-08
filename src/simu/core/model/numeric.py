@@ -19,10 +19,13 @@ class NumericHandler:
 
     function: QFunction
 
-    def __init__(self, model: ModelProxy):
+    def __init__(self, model: ModelProxy, port_properties=True):
+        self.options = {
+            "port_properties": port_properties
+        }
+
         self.model = model
         self.function = self.__make_function()
-
         self.__arguments: Optional[MutMap[Quantity]] = None
 
     def __fetch_arguments(self) -> NestedMutMap[Quantity]:
@@ -96,8 +99,6 @@ class NumericHandler:
 
         def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
             """fetch material states from a specific model"""
-            # TODO: must skip ports
-
             mat_proxy = model.materials
             return {k: m.sym_state for k, m in mat_proxy.handler.items()
                     if k not in mat_proxy}
@@ -112,7 +113,10 @@ class NumericHandler:
 
         def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
             """fetch properties of materials in a specific model"""
-            return dict(model.materials.handler)
+            ports = self.options["port_properties"]
+            mat_proxy = model.materials
+            return {k: v for k, v in mat_proxy.handler.items()
+                    if ports or k not in mat_proxy}
 
         def fetch_store_param(model: ModelProxy) -> NestedMap[Quantity]:
             """fetch thermodynamic parameters from the stores"""

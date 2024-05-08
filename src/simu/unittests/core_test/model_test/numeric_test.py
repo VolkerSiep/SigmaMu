@@ -111,17 +111,11 @@ def create_material_functions():
 
 def test_collect_hierarchy_material():
     proxy = MaterialParentTestModel.top()
-    numeric = NumericHandler(proxy)
-    args = numeric.function.arg_structure
-    res = numeric.function.result_structure
-    from json import dumps
-    print(dumps(res, indent=2))
-
-# TODO:
-#   for now, the properties are fetched both for the ports in the child model
-#   and for the locally defined material in the parent model.
-#   I sometimes missed this in pyasim, but it is also redundant.
-#   Maybe it can be an option to have this or not.
+    for port_props in (True, False):
+        numeric = NumericHandler(proxy, port_properties=port_props)
+        ref = {"args": numeric.function.arg_structure,
+               "res": numeric.function.result_structure}
+        assert_reproduction(ref, suffix=f"{port_props}".lower())
 
 
 def check_same_keys(dic1, dic2):
