@@ -445,6 +445,12 @@
       }
     },
     "res": {
+      "residual_vector": {
+        "N": "",
+        "T": "",
+        "p": "",
+        "x": ""
+      },
       "residuals": {
         "N": "mol / s",
         "T": "K",
@@ -483,6 +489,10 @@
     }
   },
   "numeric_test.py::test_square_model_call": {
+    "residual_vector/N": "10000000.000000",
+    "residual_vector/T": "0.000000",
+    "residual_vector/p": "0.000003",
+    "residual_vector/x": "-8000000.000000",
     "residuals/N": "1.000000 mol / s",
     "residuals/T": "0.000000 K",
     "residuals/p": "0.000000 J / m ** 3",

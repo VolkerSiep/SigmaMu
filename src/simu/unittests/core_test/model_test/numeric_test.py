@@ -100,13 +100,19 @@ def test_square_model_call():
     assert_reproduction(res)
 
 
-def create_material_functions():
-    """Make a function out of a model defining materials"""
-    proxy = MaterialTestModel3.top()
-    numeric = NumericHandler(proxy)
-    args = numeric.function.arg_structure
-    results = numeric.function.result_structure
-    return args, results
+def test_jacobian():
+    model = SquareTestModel()
+    material = model.no2sol
+    numeric = NumericHandler(model.create_proxy().finalise())
+    material.store.add_source("default", StringDictThermoSource(DATA))
+    args = numeric.arguments
+    ref = {"args": numeric.function.arg_structure,
+           "res": numeric.function.result_structure}
+    print(ref)
+    # try to make d(res)/d(state) at constant parameters
+    # maybe use arguments, but replace all states with symbols
+    # then create Jacobian of all residual symbols w.r.t. states
+    print(args)
 
 
 def test_collect_hierarchy_material():
@@ -116,6 +122,15 @@ def test_collect_hierarchy_material():
         ref = {"args": numeric.function.arg_structure,
                "res": numeric.function.result_structure}
         assert_reproduction(ref, suffix=f"{port_props}".lower())
+
+
+def create_material_functions():
+    """Make a function out of a model defining materials"""
+    proxy = MaterialTestModel3.top()
+    numeric = NumericHandler(proxy)
+    args = numeric.function.arg_structure
+    results = numeric.function.result_structure
+    return args, results
 
 
 def check_same_keys(dic1, dic2):

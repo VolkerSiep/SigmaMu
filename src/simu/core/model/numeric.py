@@ -16,6 +16,13 @@ from ..thermo import ThermoParameterStore
 class NumericHandler:
     """This class implements the function object describing the top level
     model."""
+    THERMO_PARAMS: str = "thermo_params"
+    MODEL_PARAMS: str = "model_params"
+    STATES: str = "states"
+    MODEL_PROPS: str = "model_props"
+    THERMO_PROPS: str = "thermo_props"
+    RESIDUALS: str = "residuals"
+    RES_VEC: str = "residual_vector"
 
     function: QFunction
 
@@ -27,6 +34,8 @@ class NumericHandler:
         self.model = model
         self.function = self.__make_function()
         self.__arguments: Optional[MutMap[Quantity]] = None
+        self.__symargs: Optional[NestedMap[Quantity]] = None
+        self.__symres: Optional[NestedMap[Quantity]] = None
 
     def __fetch_arguments(self) -> NestedMutMap[Quantity]:
         """Fetch initial states from materials, parameter values from
@@ -97,6 +106,11 @@ class NumericHandler:
             """fetch residuals from a specific model"""
             return {k: r.value for k, r in model.residuals.items()}
 
+        def fetch_normed_residuals(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch normed residuals from a specific model"""
+            return {k: (r.value / r.tolerance).to("")
+                    for k, r in model.residuals.items()}
+
         def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
             """fetch material states from a specific model"""
             mat_proxy = model.materials
@@ -120,7 +134,7 @@ class NumericHandler:
 
         def fetch_store_param(model: ModelProxy) -> NestedMap[Quantity]:
             """fetch thermodynamic parameters from the stores"""
-            stores = NumericHandler.__fetch_thermo_stores(model)
+            stores = cls.__fetch_thermo_stores(model)
             names = {store.name for store in stores}
             if len(names) < len(stores):
                 raise ValueError("When using multiple ThermoPropertyStores, "
@@ -128,23 +142,33 @@ class NumericHandler:
             return {store.name: store.get_all_symbols() for store in stores}
 
         mod = self.model
-        fetch = NumericHandler.__fetch
+        cls = NumericHandler
+        fetch = cls.__fetch
 
         states = fetch(mod, fetch_material_states, "state")
-
-        args = {
-            "thermo_params": fetch_store_param(mod),
-            "model_params": fetch(mod, fetch_parameters, "parameter"),
-            "states": states,
+        self.__symargs = {
+            cls.THERMO_PARAMS: fetch_store_param(mod),
+            cls.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
+            cls.STATES: states,
         }
 
-        results = {
-            "model_props": fetch(mod, fetch_mod_props, "model property"),
-            "thermo_props": fetch(mod, fetch_thermo_props, "thermo property"),
-            "residuals": fetch(mod, fetch_residuals, "residual")
+        self.__symres = {
+            cls.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
+            cls.THERMO_PROPS:
+                fetch(mod, fetch_thermo_props, "thermo property"),
+            cls.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
+            cls.RES_VEC:
+                flatten_dictionary(fetch(mod, fetch_normed_residuals,
+                                         "normed residual"))
         }
+        return QFunction(self.__symargs, self.__symres, "model")
 
-        return QFunction(args, results, "model")
+    # TODO: implement modifying function to also deliver Jacobians
+    #  Easy: dr/dx, as we always need all of both groups
+    #  Challenge: How to address single thermodynamic or model parameters
+    #   or properties
+    #  maybe give as argument the entire structures, which then are
+    #  sub-structures of the argument and result structures.
 
     @staticmethod
     def __fetch(
