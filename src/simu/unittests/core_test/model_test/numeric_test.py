@@ -52,8 +52,7 @@ def test_residuals():
 
 def test_material_collect_states():
     args, _ = create_material_functions()
-    for k in range(4):
-        assert f"x_{k:03d}" in args["states"]["local"]
+    assert args[NumericHandler.STATE_VEC] == ""
 
 
 def test_material_collect_props():
@@ -106,13 +105,8 @@ def test_jacobian():
     numeric = NumericHandler(model.create_proxy().finalise())
     material.store.add_source("default", StringDictThermoSource(DATA))
     args = numeric.arguments
-    ref = {"args": numeric.function.arg_structure,
-           "res": numeric.function.result_structure}
-    print(ref)
-    # try to make d(res)/d(state) at constant parameters
-    # maybe use arguments, but replace all states with symbols
-    # then create Jacobian of all residual symbols w.r.t. states
-    print(args)
+    dr_dx = numeric.function(args)[NumericHandler.DR_DX].magnitude
+    assert_reproduction(dr_dx.tolist())
 
 
 def test_collect_hierarchy_material():

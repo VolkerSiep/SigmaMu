@@ -3,10 +3,11 @@ of the top model instance."""
 
 from typing import Optional
 from collections.abc import Callable, Sequence, Collection
+from casadi import vertcat, SX
 
 from ..utilities import flatten_dictionary
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
-from ..utilities.quantity import Quantity, QFunction
+from ..utilities.quantity import Quantity, QFunction, jacobian
 from ..utilities.errors import DataFlowError
 
 from .base import ModelProxy
@@ -18,11 +19,12 @@ class NumericHandler:
     model."""
     THERMO_PARAMS: str = "thermo_params"
     MODEL_PARAMS: str = "model_params"
-    STATES: str = "states"
+    STATE_VEC: str = "state_vector"
     MODEL_PROPS: str = "model_props"
     THERMO_PROPS: str = "thermo_props"
     RESIDUALS: str = "residuals"
     RES_VEC: str = "residual_vector"
+    DR_DX: str = "dr_dx"
 
     function: QFunction
 
@@ -67,12 +69,14 @@ class NumericHandler:
                                  "they have to have unique names")
             return {store.name: store.get_all_values() for store in stores}
 
-        fetch = NumericHandler.__fetch
+        cls = NumericHandler
+        fetch = cls.__fetch
+        to_vector = cls.__to_vector
         return {
-            "states": fetch(self.model, fetch_states, "state"),
-            "model_params": fetch(self.model, lambda m: m.parameters.values,
-                                  "parameter"),
-            "thermo_params": fetch_store_param()
+            cls.STATE_VEC: to_vector(fetch(self.model, fetch_states, "state")),
+            cls.MODEL_PARAMS: fetch(self.model, lambda m: m.parameters.values,
+                                    "parameter"),
+            cls.THERMO_PARAMS: fetch_store_param()
         }
 
     @property
@@ -144,23 +148,30 @@ class NumericHandler:
         mod = self.model
         cls = NumericHandler
         fetch = cls.__fetch
+        to_vector = cls.__to_vector
 
-        states = fetch(mod, fetch_material_states, "state")
+        states = to_vector(fetch(mod, fetch_material_states, "state"))
         self.__symargs = {
             cls.THERMO_PARAMS: fetch_store_param(mod),
             cls.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
-            cls.STATES: states,
+            cls.STATE_VEC: states,
         }
 
+        residuals = to_vector(fetch(mod, fetch_normed_residuals,
+                                    "normalised residual"))
         self.__symres = {
             cls.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
             cls.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
             cls.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
-            cls.RES_VEC:
-                flatten_dictionary(fetch(mod, fetch_normed_residuals,
-                                         "normed residual"))
+            cls.RES_VEC: residuals
         }
+        # The following jacobian is always needed
+        if residuals.magnitude.rows() and states.magnitude.rows():
+            self.__symres[cls.DR_DX] = jacobian(residuals, states)
+        else:
+            self.__symres[cls.DR_DX] = Quantity(SX.sym("dr_dx", 0))
+
         return QFunction(self.__symargs, self.__symres, "model")
 
     # TODO: implement modifying function to also deliver Jacobians
@@ -169,6 +180,11 @@ class NumericHandler:
     #   or properties
     #  maybe give as argument the entire structures, which then are
     #  sub-structures of the argument and result structures.
+
+    @staticmethod
+    def __to_vector(struct: NestedMap[Quantity]) -> Quantity:
+        raw = [v.magnitude for v in flatten_dictionary(struct).values()]
+        return Quantity(vertcat(*raw))
 
     @staticmethod
     def __fetch(
