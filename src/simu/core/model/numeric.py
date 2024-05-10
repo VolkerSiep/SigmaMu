@@ -19,12 +19,13 @@ class NumericHandler:
     model."""
     THERMO_PARAMS: str = "thermo_params"
     MODEL_PARAMS: str = "model_params"
-    STATE_VEC: str = "state_vector"
     MODEL_PROPS: str = "model_props"
     THERMO_PROPS: str = "thermo_props"
     RESIDUALS: str = "residuals"
-    RES_VEC: str = "residual_vector"
-    DR_DX: str = "dr_dx"
+    STATE_VEC: str = "x"
+    RES_VEC: str = "r"
+    DR_DX: str = "dr/dx"
+    CUSTOM: str = "custom"
 
     function: QFunction
 
@@ -34,6 +35,10 @@ class NumericHandler:
         }
 
         self.model = model
+        # TODO: make "function" a property, and maintain a dirty flag,
+        #   so the function is only (re-)created, if something has changed
+        #   (new results added). The dirty flag can simply be to set the
+        #  __function attribute to None
         self.function = self.__make_function()
         self.__arguments: Optional[MutMap[Quantity]] = None
         self.__symargs: Optional[NestedMap[Quantity]] = None
@@ -86,6 +91,30 @@ class NumericHandler:
         if self.__arguments is None:
             self.__arguments = self.__fetch_arguments()
         return self.__arguments
+
+    def parameter_collection(self, definition: NestedMap[str]) -> Quantity:
+        """collect the parameter symbols addressed by the ``definition``
+        argument, which defines the unit of measurement for each parameter
+        to be scaled with - as the numerical parameter vector elements
+        must be dimensionless."""
+        ...
+
+    def property_collection(self, definition: NestedMap[str]) -> Quantity:
+        """Collect the property symbols addressed by the ``definition``
+        argument, which defines the unit of measurement for each property
+        to be scaled with - as the numerical property vector elements must
+        be dimensionless."""
+        ...
+
+    def register_result(self, key, symbols: Quantity):
+        """Add the given symbols to the result structure. These symbols must
+        be a function of the arguments, or else the function cannot be
+        created. The key must be unique.
+
+        A typical structure to store here is a jacobian matrix.
+        """
+        # maybe store in a dedicated section of the result structure, not to
+        # clash with the already existing entities.
 
     def __make_function(self):
         """Create a function that has the following arguments, each of them as
@@ -173,6 +202,12 @@ class NumericHandler:
             self.__symres[cls.DR_DX] = Quantity(SX.sym("dr_dx", 0))
 
         return QFunction(self.__symargs, self.__symres, "model")
+
+    # TODO: don't really make the function here, it's not necessary.
+    # instead, make the function a property that lazy creates the function
+    # object. Before it is used, allow to add parameter and property
+    # collections, and allow to derive the hell out of whatever the user wants.
+
 
     # TODO: implement modifying function to also deliver Jacobians
     #  Easy: dr/dx, as we always need all of both groups
