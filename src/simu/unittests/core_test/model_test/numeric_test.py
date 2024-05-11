@@ -33,26 +33,26 @@ def test_parameters():
     proxy = SimpleParameterTestModel.top()
     numeric = NumericHandler(proxy)
     args = numeric.function.arg_structure
-    assert args['model_params']['length'] == 'm'
+    assert args[NumericHandler.MODEL_PARAMS]['length'] == 'm'
 
 
 def test_properties():
     proxy = PropertyTestModel.top()
     numeric = NumericHandler(proxy)
     results = numeric.function.result_structure
-    assert results['model_props']['area'] == 'm ** 2'
+    assert results[NumericHandler.MODEL_PROPS]['area'] == 'm ** 2'
 
 
 def test_residuals():
     proxy = ResidualTestModel.top()
     numeric = NumericHandler(proxy)
     results = numeric.function.result_structure
-    assert results['residuals']['area'] == "m ** 2"
+    assert results[NumericHandler.RESIDUALS]['area'] == "m ** 2"
 
 
 def test_material_collect_states():
     args, _ = create_material_functions()
-    assert args[NumericHandler.STATE_VEC] == ""
+    assert args["vectors"][NumericHandler.STATE_VEC] == ""
 
 
 def test_material_collect_props():
@@ -104,8 +104,10 @@ def test_jacobian():
     material = model.no2sol
     numeric = NumericHandler(model.create_proxy().finalise())
     material.store.add_source("default", StringDictThermoSource(DATA))
+    jac_id = numeric.register_jacobian(NumericHandler.RES_VEC,
+                                       NumericHandler.STATE_VEC)
     args = numeric.arguments
-    dr_dx = numeric.function(args)[NumericHandler.DR_DX].magnitude
+    dr_dx = numeric.function(args)[jac_id].magnitude
     assert_reproduction(dr_dx.tolist())
 
 

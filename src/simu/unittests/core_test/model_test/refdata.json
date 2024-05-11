@@ -27,7 +27,6 @@
   ],
   "numeric_test.py::test_collect_hierarchy_material_false": {
     "args": {
-      "state_vector": "",
       "thermo_params": {
         "default": {
           "BostonMathiasAlphaFunction": {
@@ -82,11 +81,12 @@
             }
           }
         }
+      },
+      "vectors": {
+        "states": ""
       }
     },
     "res": {
-      "dr_dx": "",
-      "residual_vector": "",
       "thermo_props": {
         "child": {
           "m_child": {
@@ -134,12 +134,14 @@
           "p_ref": "kg / m / s ** 2",
           "p_std": "kg / m / s ** 2"
         }
+      },
+      "vectors": {
+        "residuals": ""
       }
     }
   },
   "numeric_test.py::test_collect_hierarchy_material_true": {
     "args": {
-      "state_vector": "",
       "thermo_params": {
         "default": {
           "BostonMathiasAlphaFunction": {
@@ -194,11 +196,12 @@
             }
           }
         }
+      },
+      "vectors": {
+        "states": ""
       }
     },
     "res": {
-      "dr_dx": "",
-      "residual_vector": "",
       "thermo_props": {
         "child": {
           "m_child": {
@@ -268,6 +271,9 @@
           "p_ref": "kg / m / s ** 2",
           "p_std": "kg / m / s ** 2"
         }
+      },
+      "vectors": {
+        "residuals": ""
       }
     }
   },
@@ -285,16 +291,16 @@
       0.0
     ],
     [
-      48540038.91016429,
-      -94926376868053.11,
-      10063570928.778292,
-      8611496251.551085
+      NaN,
+      NaN,
+      NaN,
+      NaN
     ],
     [
       0.0,
       0.0,
-      1000000.0,
-      -9000000.0
+      0.0,
+      -10000000.0
     ]
   ],
   "numeric_test.py::test_material_collect_props": {
@@ -380,7 +386,6 @@
         "p": "bar",
         "x_c3": "%"
       },
-      "state_vector": "",
       "thermo_params": {
         "default": {
           "BostonMathiasAlphaFunction": {
@@ -435,11 +440,12 @@
             }
           }
         }
+      },
+      "vectors": {
+        "states": ""
       }
     },
     "res": {
-      "dr_dx": "",
-      "residual_vector": "",
       "residuals": {
         "N": "mol / s",
         "T": "K",
@@ -474,12 +480,13 @@
             "CH3-CH2-CH3": ""
           }
         }
+      },
+      "vectors": {
+        "residuals": ""
       }
     }
   },
   "numeric_test.py::test_square_model_call": {
-    "dr_dx": "[[0.000000 0.000000 10000000.000000 10000000.000000] [10000000.000000 0.000000 0.000000 0.000000] [48540038.910164 -94926376868053.109375 10063570928.778292  8611496251.551085] [0.000000 0.000000 1000000.000000 -9000000.000000]]",
-    "residual_vector": "[10000000.000000 0.000000 0.000003 -8000000.000000]",
     "residuals/N": "1.000000 mol / s",
     "residuals/T": "0.000000 K",
     "residuals/p": "0.000000 J / m ** 3",
@@ -500,6 +507,7 @@
     "thermo_props/local/p_ref": "101325.000000 kg / m / s ** 2",
     "thermo_props/local/p_std": "101325.000000 kg / m / s ** 2",
     "thermo_props/local/x/CH3-(CH2)2-CH3": "0.500000",
-    "thermo_props/local/x/CH3-CH2-CH3": "0.500000"
+    "thermo_props/local/x/CH3-CH2-CH3": "0.500000",
+    "vectors/residuals": "[10000000.000000 0.000000 0.000003 -8000000.000000]"
   }
 }

@@ -22,29 +22,231 @@ class NumericHandler:
     MODEL_PROPS: str = "model_props"
     THERMO_PROPS: str = "thermo_props"
     RESIDUALS: str = "residuals"
-    STATE_VEC: str = "x"
-    RES_VEC: str = "r"
-    DR_DX: str = "dr/dx"
-    CUSTOM: str = "custom"
-
-    function: QFunction
+    STATE_VEC: str = "states"
+    RES_VEC: str = "residuals"
+    VECTORS: str = "vectors"
+    JACOBIANS: str = "jacobians"
 
     def __init__(self, model: ModelProxy, port_properties=True):
+        """The option ``port_properties`` determines whether the properties
+        of connected materials are also reported from a child model's
+        perspective by the name of their ports."""
         self.options = {
             "port_properties": port_properties
         }
 
         self.model = model
-        # TODO: make "function" a property, and maintain a dirty flag,
-        #   so the function is only (re-)created, if something has changed
-        #   (new results added). The dirty flag can simply be to set the
-        #  __function attribute to None
-        self.function = self.__make_function()
-        self.__arguments: Optional[MutMap[Quantity]] = None
-        self.__symargs: Optional[NestedMap[Quantity]] = None
-        self.__symres: Optional[NestedMap[Quantity]] = None
+        # the name vectors of vector arguments
+        self.__vec_arg_names: MutMap[Sequence[str]] = {}
+        self.__vec_res_names: MutMap[Sequence[str]] = {}
 
-    def __fetch_arguments(self) -> NestedMutMap[Quantity]:
+        # the symbolic argument structure
+        self.__symargs: NestedMutMap[Quantity] = self.__collect_arguments()
+        # the symbolic result structure
+        self.__symres: NestedMutMap[Quantity] = self.__collect_results()
+        # the numerical argument structure with initial values
+        self.__arguments: MutMap[Quantity] = {}
+
+    @property
+    def function(self) -> QFunction:
+        """Create a Function object based on currently available argument
+        and result structures."""
+        return QFunction(self.__symargs, self.__symres, "model")
+
+    def vector_arg_names(self, key: str) -> Sequence[str]:
+        """Return the names for the argument vector of given ``key``"""
+        return self.__vec_arg_names[key]
+
+    def vector_res_names(self, key: str) -> Sequence[str]:
+        """Return the names for the result vector of given ``key``"""
+        return self.__vec_res_names[key]
+
+    @property
+    def arguments(self) -> Map[Quantity]:
+        """The function arguments as numerical values. A DataFlowError is
+        thrown, if not all numerical values are known."""
+        if not self.__arguments:
+            self.__arguments = self.__collect_argument_values()
+        return self.__arguments
+
+    def extract_parameters(self, key: str,
+                           definition: NestedMap[str]) -> Quantity:
+        """collect the parameter symbols addressed by the ``definition``
+        argument, which defines the unit of measurement for each parameter
+        to be scaled with - as the numerical parameter vector elements
+        must be dimensionless.
+
+        These parameter symbols and values are then removed from the original
+        argument structure and instead added to the vector entry as
+        dimensionless entities.
+
+        """
+        def traverse(parameters: NestedMap[str],
+                     symbols: NestedMutMap[Quantity],
+                     arguments: NestedMutMap[Quantity]) -> \
+                (Sequence[str], Sequence[SX], Sequence[float]):
+            """recursively go through struct, extract and remove both values
+            and symbols."""
+            try:
+                items = parameters.items()
+            except AttributeError:
+                return None, None, None
+
+            nams, syms, args = [], [], []
+            for k, value in items:
+                n, s, v = traverse(value, symbols[k], arguments[k])
+                if s is None:
+                    nams.append(k)
+                    syms.append(symbols[k])
+                    args.append(arguments[k])
+                    del symbols[k]
+                    del arguments[k]
+                else:
+                    nams.extend([f"{k}/{n_i}" for n_i in n])
+                    syms.extend(s)
+                    args.extend(s)
+            return nams, syms, args
+
+        if key in self.__symargs[NumericHandler.VECTORS]:
+            msg = f"A parameter vector of name '{key}' is already used."
+            raise KeyError(msg)
+
+        if not self.__arguments:
+            self.__arguments = self.__collect_argument_values()
+        names, sym, arg = traverse(definition, self.__symargs, self.__arguments)
+        result = Quantity(vertcat(*sym))
+        self.__symargs[NumericHandler.VECTORS][key] = result
+        values = Quantity(arg)
+        self.__arguments[NumericHandler.VECTORS][key] = values
+        return result
+
+    def collect_properties(self, key: str,
+                           definition: NestedMap[str]) -> Quantity:
+        """Collect the property symbols addressed by the ``definition``
+        argument, which defines the unit of measurement for each property
+        to be scaled with - as the numerical property vector elements must
+        be dimensionless."""
+        ...  # TODO: implement
+
+    def register_jacobian(self, dependent: str, independent: str):
+        """Add the given symbols to the jacobian structure. These symbols must
+        be a function of the arguments, or else the function cannot be
+        created. The key must be unique.
+        """
+        # TODO: implement
+
+    def __collect_arguments(self) -> NestedMutMap[Quantity]:
+        """Create a function that has the following arguments, each of them as
+        a flat dictionary:
+
+            - Material States
+            - Model Parameters
+            - Thermodynamic Parameters
+
+        For child models, only the free parameters are collected.
+        """
+        mod = self.model
+        cls = NumericHandler
+        fetch = cls.__fetch
+        to_vector = cls.__to_vector
+
+        def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch material states from a specific model"""
+            mat_proxy = model.materials
+            return {k: m.sym_state for k, m in mat_proxy.handler.items()
+                    if k not in mat_proxy}
+
+        def fetch_parameters(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch model parameters from a specific model"""
+            return dict(model.parameters.free)
+
+        def fetch_store_param(model: ModelProxy) -> NestedMap[Quantity]:
+            """fetch thermodynamic parameters from the stores"""
+            stores = cls.__fetch_thermo_stores(model)
+            names = {store.name for store in stores}
+            if len(names) < len(stores):
+                raise ValueError("When using multiple ThermoPropertyStores, "
+                                 "they have to have unique names")
+            return {store.name: store.get_all_symbols() for store in stores}
+
+        states_struct = fetch(mod, fetch_material_states, "state")
+        states, state_names = to_vector(states_struct)
+        self.__vec_arg_names[cls.STATE_VEC] = state_names
+
+        return {
+            cls.THERMO_PARAMS: fetch_store_param(mod),
+            cls.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
+            cls.VECTORS: {
+                cls.STATE_VEC: states,
+            }
+        }
+
+    def __collect_results(self) -> NestedMutMap[Quantity]:
+        """The result of the function consists of
+
+            - Model Properties
+            - Thermodynamic (state) properties
+            - Residuals
+
+        All the data is to be collected from the model and all child model
+        proxies.
+        """
+        def fetch_residuals(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch residuals from a specific model"""
+            return {k: r.value for k, r in model.residuals.items()}
+
+        def fetch_normed_residuals(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch normed residuals from a specific model"""
+            return {k: (r.value / r.tolerance).to("")
+                    for k, r in model.residuals.items()}
+
+        def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch model properties from a specific model"""
+            return dict(model.properties)
+
+        def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch properties of materials in a specific model"""
+            ports = self.options["port_properties"]
+            mat_proxy = model.materials
+            return {k: v for k, v in mat_proxy.handler.items()
+                    if ports or k not in mat_proxy}
+
+        mod = self.model
+        cls = NumericHandler
+        fetch = cls.__fetch
+        to_vector = cls.__to_vector
+
+        residual_structure = fetch(mod, fetch_normed_residuals,
+                                   "normalised residual")
+        residuals, residual_names = to_vector(residual_structure)
+        self.__vec_res_names[cls.RES_VEC] = residual_names
+        return {
+            cls.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
+            cls.THERMO_PROPS:
+                fetch(mod, fetch_thermo_props, "thermo property"),
+            cls.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
+            cls.VECTORS: {
+                cls.RES_VEC: residuals
+            },
+            cls.JACOBIANS: {
+
+            }
+        }
+
+        # The following jacobian is always needed
+        # TODO: no it isn't!
+        #   I might create 2 functions, one for a Newton step and one
+        #   much cheaper to evaluate for line search.
+
+        # TODO: also might add one entry which is the mean square residual
+
+        # if residuals.magnitude.rows() and states.magnitude.rows():
+        #     self.__symres[cls.DR_DX] = jacobian(residuals, states)
+        # else:
+        #     self.__symres[cls.DR_DX] = Quantity(SX.sym("dr_dx", 0))
+        #
+
+    def __collect_argument_values(self) -> NestedMutMap[Quantity]:
         """Fetch initial states from materials, parameter values from
         thermo parameter stores, and parameter values from parameter handlers.
 
@@ -77,149 +279,23 @@ class NumericHandler:
         cls = NumericHandler
         fetch = cls.__fetch
         to_vector = cls.__to_vector
+
+        states = to_vector(fetch(self.model, fetch_states, "state"))[0]
+        model_param = fetch(self.model, lambda m: m.parameters.values,
+                            "parameter")
         return {
-            cls.STATE_VEC: to_vector(fetch(self.model, fetch_states, "state")),
-            cls.MODEL_PARAMS: fetch(self.model, lambda m: m.parameters.values,
-                                    "parameter"),
+            cls.VECTORS: {
+                cls.STATE_VEC: states,
+            },
+            cls.MODEL_PARAMS: model_param,
             cls.THERMO_PARAMS: fetch_store_param()
         }
 
-    @property
-    def arguments(self) -> Map[Quantity]:
-        """The function arguments as numerical values. A DataFlowError is
-        thrown, if not all numerical values are known."""
-        if self.__arguments is None:
-            self.__arguments = self.__fetch_arguments()
-        return self.__arguments
-
-    def parameter_collection(self, definition: NestedMap[str]) -> Quantity:
-        """collect the parameter symbols addressed by the ``definition``
-        argument, which defines the unit of measurement for each parameter
-        to be scaled with - as the numerical parameter vector elements
-        must be dimensionless."""
-        ...
-
-    def property_collection(self, definition: NestedMap[str]) -> Quantity:
-        """Collect the property symbols addressed by the ``definition``
-        argument, which defines the unit of measurement for each property
-        to be scaled with - as the numerical property vector elements must
-        be dimensionless."""
-        ...
-
-    def register_result(self, key, symbols: Quantity):
-        """Add the given symbols to the result structure. These symbols must
-        be a function of the arguments, or else the function cannot be
-        created. The key must be unique.
-
-        A typical structure to store here is a jacobian matrix.
-        """
-        # maybe store in a dedicated section of the result structure, not to
-        # clash with the already existing entities.
-
-    def __make_function(self):
-        """Create a function that has the following arguments, each of them as
-        a flat dictionary:
-
-            - Material States
-            - Model Parameters
-            - Thermodynamic Parameters
-
-        The result of the function consists likewise of
-
-            - Model Properties
-            - Thermodynamic (state) properties
-            - Residuals
-
-        All the data is to be collected from the model and all child model
-        proxies. For child models, only the free parameters are
-        collected.
-        """
-
-        def fetch_residuals(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch residuals from a specific model"""
-            return {k: r.value for k, r in model.residuals.items()}
-
-        def fetch_normed_residuals(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch normed residuals from a specific model"""
-            return {k: (r.value / r.tolerance).to("")
-                    for k, r in model.residuals.items()}
-
-        def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch material states from a specific model"""
-            mat_proxy = model.materials
-            return {k: m.sym_state for k, m in mat_proxy.handler.items()
-                    if k not in mat_proxy}
-
-        def fetch_parameters(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch model parameters from a specific model"""
-            return dict(model.parameters.free)
-
-        def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch model properties from a specific model"""
-            return dict(model.properties)
-
-        def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch properties of materials in a specific model"""
-            ports = self.options["port_properties"]
-            mat_proxy = model.materials
-            return {k: v for k, v in mat_proxy.handler.items()
-                    if ports or k not in mat_proxy}
-
-        def fetch_store_param(model: ModelProxy) -> NestedMap[Quantity]:
-            """fetch thermodynamic parameters from the stores"""
-            stores = cls.__fetch_thermo_stores(model)
-            names = {store.name for store in stores}
-            if len(names) < len(stores):
-                raise ValueError("When using multiple ThermoPropertyStores, "
-                                 "they have to have unique names")
-            return {store.name: store.get_all_symbols() for store in stores}
-
-        mod = self.model
-        cls = NumericHandler
-        fetch = cls.__fetch
-        to_vector = cls.__to_vector
-
-        states = to_vector(fetch(mod, fetch_material_states, "state"))
-        self.__symargs = {
-            cls.THERMO_PARAMS: fetch_store_param(mod),
-            cls.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
-            cls.STATE_VEC: states,
-        }
-
-        residuals = to_vector(fetch(mod, fetch_normed_residuals,
-                                    "normalised residual"))
-        self.__symres = {
-            cls.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
-            cls.THERMO_PROPS:
-                fetch(mod, fetch_thermo_props, "thermo property"),
-            cls.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
-            cls.RES_VEC: residuals
-        }
-        # The following jacobian is always needed
-        if residuals.magnitude.rows() and states.magnitude.rows():
-            self.__symres[cls.DR_DX] = jacobian(residuals, states)
-        else:
-            self.__symres[cls.DR_DX] = Quantity(SX.sym("dr_dx", 0))
-
-        return QFunction(self.__symargs, self.__symres, "model")
-
-    # TODO: don't really make the function here, it's not necessary.
-    # instead, make the function a property that lazy creates the function
-    # object. Before it is used, allow to add parameter and property
-    # collections, and allow to derive the hell out of whatever the user wants.
-
-
-    # TODO: implement modifying function to also deliver Jacobians
-    #  Easy: dr/dx, as we always need all of both groups
-    #  Challenge: How to address single thermodynamic or model parameters
-    #   or properties
-    #  maybe give as argument the entire structures, which then are
-    #  sub-structures of the argument and result structures.
-
     @staticmethod
-    def __to_vector(struct: NestedMap[Quantity]) -> Quantity:
+    def __to_vector(struct: NestedMap[Quantity]) -> (Quantity, Sequence[str]):
         raw = [v.magnitude for v in flatten_dictionary(struct).values()]
-        return Quantity(vertcat(*raw))
+        names = list(flatten_dictionary(struct).keys())
+        return Quantity(vertcat(*raw)), names
 
     @staticmethod
     def __fetch(
