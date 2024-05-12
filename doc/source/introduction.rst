@@ -54,4 +54,4 @@ Equation-oriented process modeling software brings the challenge of **good fault
 
 ``SiMu`` is developed for industrial use-cases. As such, **proprietary data is to be handled and encapsulated**. ``SiMu`` is designed to be slim by nature, but new python packages can be built on top to extend the basic functionality for instance with custom thermodynamic models - or just model parameters, reaction chemistry data, and in-house process models.
 
-``SiMu`` is originally designed for lumped process modeling (flow-sheet modeling). Distributed systems must be discretized manually by the developer. However, 2D distributed systems have been successfully modeled, such as reactive absorption of gas into a falling laminar film, based on a Gibbs excess model to describe the liquid phase properties.
+``SiMu`` is originally designed for lumped process modeling (flow-sheet modeling). Distributed systems must be discretized manually by the developer. However, 2D distributed systems have been successfully modeled already with the predecessor, such as reactive absorption of gas into a falling laminar film, based on a Gibbs excess model to describe the liquid phase properties.

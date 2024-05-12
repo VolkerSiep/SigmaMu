@@ -7,6 +7,10 @@ SiMu Documentation
    :caption: Contents:
 
    introduction
+   getting_started
+
+.. comment::
+
    api/api
 
 .. toctree::
