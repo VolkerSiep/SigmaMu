@@ -129,11 +129,13 @@ def test_extract_parameters():
     params = {'model_params': {'N': 'mol / s', 'T': '°C',
                                'p': 'bar', 'x_c3': '%'}}
     numeric.extract_parameters("param", params)
+    names = numeric.vector_arg_names("param")
     jac_id = numeric.register_jacobian(NumericHandler.RES_VEC, "param")
     args = numeric.arguments
     result = numeric.function(args)
     dr_dp = result[NumericHandler.JACOBIANS][jac_id].magnitude
-    assert_reproduction(dr_dp.tolist())
+    ref = {"names": names, "J": dr_dp.tolist()}
+    assert_reproduction(ref)
 
 
 def test_collect_properties():
@@ -144,12 +146,13 @@ def test_collect_properties():
     props = {'thermo_props': {'local': {'mu': {
         'CH3-(CH2)2-CH3': 'kJ/mol', 'CH3-CH2-CH3': 'kJ/mol'}}}}
     numeric.collect_properties("mu", props)
+    names = numeric.vector_res_names("mu")
     jac_id = numeric.register_jacobian("mu", NumericHandler.STATE_VEC)
     args = numeric.arguments
     result = numeric.function(args)
     dmu_dx = result[NumericHandler.JACOBIANS][jac_id].magnitude
-    assert_reproduction(dmu_dx.tolist())
-
+    ref = {"names": names, "J": dmu_dx.tolist()}
+    assert_reproduction(ref)
 
 
 def create_material_functions():
