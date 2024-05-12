@@ -259,8 +259,6 @@ class QFunction:
                  func_name: str = "f"):
         args_flat = flatten_dictionary(args)
         results_flat = flatten_dictionary(results)
-        # arg_names = list(args_flat.keys())
-        # res_names = list(results_flat.keys())
         arg_sym = cas.vertcat(*[v.magnitude for v in args_flat.values()])
 
         self.__res_shapes = {}
@@ -280,10 +278,6 @@ class QFunction:
     def __call__(self, args: NestedMap[Quantity],
                  squeeze_results: bool = True) -> NestedMap[Quantity]:
         """Call operator for the function object, as described above."""
-        # args_flat = {
-        #     key: value.to(self.arg_units[key]).magnitude
-        #     for key, value in flatten_dictionary(args).items()
-        # }
         args_flat = cas.vertcat(*[
             value.to(self.arg_units[key]).magnitude
             for key, value in flatten_dictionary(args).items()

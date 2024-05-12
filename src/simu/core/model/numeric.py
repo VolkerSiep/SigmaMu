@@ -4,6 +4,7 @@ of the top model instance."""
 from typing import Optional
 from collections.abc import Callable, Sequence, Collection
 from casadi import vertcat, SX
+from pint import Unit
 
 from ..utilities import flatten_dictionary
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
@@ -72,9 +73,18 @@ class NumericHandler:
     def extract_parameters(self, key: str,
                            definition: NestedMap[str]) -> Quantity:
         """collect the parameter symbols addressed by the ``definition``
-        argument, which defines the unit of measurement for each parameter
-        to be scaled with - as the numerical parameter vector elements
-        must be dimensionless.
+        argument, which defines the unit of measurement for each parameter -
+        as the numerical parameter vector elements must be considered
+        dimensionless.
+
+        .. note::
+
+            Unfortunately, we cannot easily allow unit conversion (even
+            compatible units) at this point, as the parameters are already
+            independent variables used to build up the symbolic graph.
+            Well, it can be done by first building the original function,
+            and then call the function as f(c(x)), where c(x) is the unit
+            conversion.
 
         These parameter symbols and values are then removed from the original
         argument structure and instead added to the vector entry as
@@ -96,15 +106,19 @@ class NumericHandler:
             for k, value in items:
                 n, s, v = traverse(value, symbols[k], arguments[k])
                 if s is None:
+                    if symbols[k].units != Unit(value):
+                        msg = "No unit conversion possible for parameter " \
+                            f"{k}: from {symbols[k].units:~} to {value}."
+                        raise ValueError(msg)
                     nams.append(k)
-                    syms.append(symbols[k])
-                    args.append(arguments[k])
+                    syms.append(symbols[k].magnitude)
+                    args.append(arguments[k].magnitude)
                     del symbols[k]
                     del arguments[k]
                 else:
                     nams.extend([f"{k}/{n_i}" for n_i in n])
                     syms.extend(s)
-                    args.extend(s)
+                    args.extend(v)
             return nams, syms, args
 
         if key in self.__symargs[NumericHandler.VECTORS]:
@@ -113,11 +127,13 @@ class NumericHandler:
 
         if not self.__arguments:
             self.__arguments = self.__collect_argument_values()
-        names, sym, arg = traverse(definition, self.__symargs, self.__arguments)
+        nam, sym, arg = traverse(definition, self.__symargs, self.__arguments)
+
         result = Quantity(vertcat(*sym))
         self.__symargs[NumericHandler.VECTORS][key] = result
         values = Quantity(arg)
         self.__arguments[NumericHandler.VECTORS][key] = values
+        self.__vec_arg_names[key] = nam
         return result
 
     def collect_properties(self, key: str,
@@ -126,14 +142,19 @@ class NumericHandler:
         argument, which defines the unit of measurement for each property
         to be scaled with - as the numerical property vector elements must
         be dimensionless."""
-        ...  # TODO: implement
+        # def traverse(properties: NestedMap[])
 
-    def register_jacobian(self, dependent: str, independent: str):
+    def register_jacobian(self, dependent: str, independent: str) -> str:
         """Add the given symbols to the jacobian structure. These symbols must
         be a function of the arguments, or else the function cannot be
         created. The key must be unique.
         """
-        # TODO: implement
+        dep = self.__symres[self.VECTORS][dependent]
+        ind = self.__symargs[self.VECTORS][independent]
+        jac = jacobian(dep, ind)
+        key = f"d_({dependent})/d_({independent})"
+        self.__symres[self.JACOBIANS][key] = jac
+        return key
 
     def __collect_arguments(self) -> NestedMutMap[Quantity]:
         """Create a function that has the following arguments, each of them as
@@ -146,9 +167,8 @@ class NumericHandler:
         For child models, only the free parameters are collected.
         """
         mod = self.model
-        cls = NumericHandler
-        fetch = cls.__fetch
-        to_vector = cls.__to_vector
+        fetch = self.__fetch
+        to_vector = self.__to_vector
 
         def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
             """fetch material states from a specific model"""
@@ -162,7 +182,7 @@ class NumericHandler:
 
         def fetch_store_param(model: ModelProxy) -> NestedMap[Quantity]:
             """fetch thermodynamic parameters from the stores"""
-            stores = cls.__fetch_thermo_stores(model)
+            stores = self.__fetch_thermo_stores(model)
             names = {store.name for store in stores}
             if len(names) < len(stores):
                 raise ValueError("When using multiple ThermoPropertyStores, "
@@ -171,13 +191,13 @@ class NumericHandler:
 
         states_struct = fetch(mod, fetch_material_states, "state")
         states, state_names = to_vector(states_struct)
-        self.__vec_arg_names[cls.STATE_VEC] = state_names
+        self.__vec_arg_names[self.STATE_VEC] = state_names
 
         return {
-            cls.THERMO_PARAMS: fetch_store_param(mod),
-            cls.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
-            cls.VECTORS: {
-                cls.STATE_VEC: states,
+            self.THERMO_PARAMS: fetch_store_param(mod),
+            self.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
+            self.VECTORS: {
+                self.STATE_VEC: states,
             }
         }
 
@@ -212,31 +232,30 @@ class NumericHandler:
                     if ports or k not in mat_proxy}
 
         mod = self.model
-        cls = NumericHandler
-        fetch = cls.__fetch
-        to_vector = cls.__to_vector
+        fetch = self.__fetch
+        to_vector = self.__to_vector
 
         residual_structure = fetch(mod, fetch_normed_residuals,
                                    "normalised residual")
         residuals, residual_names = to_vector(residual_structure)
-        self.__vec_res_names[cls.RES_VEC] = residual_names
+        self.__vec_res_names[self.RES_VEC] = residual_names
         return {
-            cls.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
-            cls.THERMO_PROPS:
+            self.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
+            self.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
-            cls.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
-            cls.VECTORS: {
-                cls.RES_VEC: residuals
+            self.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
+            self.VECTORS: {
+                self.RES_VEC: residuals
             },
-            cls.JACOBIANS: {
-
-            }
+            self.JACOBIANS: {}
         }
 
         # The following jacobian is always needed
         # TODO: no it isn't!
         #   I might create 2 functions, one for a Newton step and one
         #   much cheaper to evaluate for line search.
+        # maybe define flag in constructor whether to create this one right
+        # away.
 
         # TODO: also might add one entry which is the mean square residual
 
@@ -249,7 +268,6 @@ class NumericHandler:
     def __collect_argument_values(self) -> NestedMutMap[Quantity]:
         """Fetch initial states from materials, parameter values from
         thermo parameter stores, and parameter values from parameter handlers.
-
         """
         def fetch_states(model: ModelProxy) -> NestedMutMap[Quantity]:
             """Fetch the initial state variables from the materials of a
@@ -276,19 +294,18 @@ class NumericHandler:
                                  "they have to have unique names")
             return {store.name: store.get_all_values() for store in stores}
 
-        cls = NumericHandler
-        fetch = cls.__fetch
-        to_vector = cls.__to_vector
+        fetch = self.__fetch
+        to_vector = self.__to_vector
 
         states = to_vector(fetch(self.model, fetch_states, "state"))[0]
         model_param = fetch(self.model, lambda m: m.parameters.values,
                             "parameter")
         return {
-            cls.VECTORS: {
-                cls.STATE_VEC: states,
+            self.VECTORS: {
+                self.STATE_VEC: states,
             },
-            cls.MODEL_PARAMS: model_param,
-            cls.THERMO_PARAMS: fetch_store_param()
+            self.MODEL_PARAMS: model_param,
+            self.THERMO_PARAMS: fetch_store_param()
         }
 
     @staticmethod

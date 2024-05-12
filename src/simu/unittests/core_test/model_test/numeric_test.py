@@ -107,7 +107,8 @@ def test_jacobian():
     jac_id = numeric.register_jacobian(NumericHandler.RES_VEC,
                                        NumericHandler.STATE_VEC)
     args = numeric.arguments
-    dr_dx = numeric.function(args)[jac_id].magnitude
+    result = numeric.function(args)
+    dr_dx = result[NumericHandler.JACOBIANS][jac_id].magnitude
     assert_reproduction(dr_dx.tolist())
 
 
@@ -118,6 +119,21 @@ def test_collect_hierarchy_material():
         ref = {"args": numeric.function.arg_structure,
                "res": numeric.function.result_structure}
         assert_reproduction(ref, suffix=f"{port_props}".lower())
+
+
+def test_extract_parameters():
+    model = SquareTestModel()
+    store = model.no2sol.store
+    numeric = NumericHandler(model.create_proxy().finalise())
+    store.add_source("default", StringDictThermoSource(DATA))
+    params = {'model_params': {'N': 'mol / s', 'T': '°C',
+                               'p': 'bar', 'x_c3': '%'}}
+    numeric.extract_parameters("param", params)
+    jac_id = numeric.register_jacobian(NumericHandler.RES_VEC, "param")
+    args = numeric.arguments
+    result = numeric.function(args)
+    dp_dx = result[NumericHandler.JACOBIANS][jac_id].magnitude
+    assert_reproduction(dp_dx.tolist())
 
 
 def create_material_functions():
