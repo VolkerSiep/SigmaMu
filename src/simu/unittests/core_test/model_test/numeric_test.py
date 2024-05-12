@@ -132,8 +132,24 @@ def test_extract_parameters():
     jac_id = numeric.register_jacobian(NumericHandler.RES_VEC, "param")
     args = numeric.arguments
     result = numeric.function(args)
-    dp_dx = result[NumericHandler.JACOBIANS][jac_id].magnitude
-    assert_reproduction(dp_dx.tolist())
+    dr_dp = result[NumericHandler.JACOBIANS][jac_id].magnitude
+    assert_reproduction(dr_dp.tolist())
+
+
+def test_collect_properties():
+    model = SquareTestModel()
+    store = model.no2sol.store
+    numeric = NumericHandler(model.create_proxy().finalise())
+    store.add_source("default", StringDictThermoSource(DATA))
+    props = {'thermo_props': {'local': {'mu': {
+        'CH3-(CH2)2-CH3': 'kJ/mol', 'CH3-CH2-CH3': 'kJ/mol'}}}}
+    numeric.collect_properties("mu", props)
+    jac_id = numeric.register_jacobian("mu", NumericHandler.STATE_VEC)
+    args = numeric.arguments
+    result = numeric.function(args)
+    dmu_dx = result[NumericHandler.JACOBIANS][jac_id].magnitude
+    assert_reproduction(dmu_dx.tolist())
+
 
 
 def create_material_functions():

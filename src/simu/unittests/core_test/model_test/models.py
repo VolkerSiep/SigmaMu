@@ -95,7 +95,7 @@ class MaterialTestModel(Model):
         self.materials.define_port("inlet", spec)
 
     def define(self):
-        test_material = define_a_material({"H2O", "NO2"})
+        test_material = define_a_material(["H2O", "NO2"])
         _ = self.materials["inlet"]
         _ = self.materials.create_flow("local", test_material)
 
@@ -115,7 +115,7 @@ class MaterialTestModel3(Model):
         pass
 
     def define(self):
-        test_material = define_a_material({"H2O", "NO2"})
+        test_material = define_a_material(["H2O", "NO2"])
         self.materials.create_flow("local", test_material)
 
 
@@ -143,7 +143,7 @@ class ResidualTestModel2(Model):
 class SquareTestModel(Model):
     def __init__(self):
         super().__init__()
-        self.no2sol = define_a_material({"CH3-CH2-CH3", "CH3-(CH2)2-CH3"})
+        self.no2sol = define_a_material(["CH3-CH2-CH3", "CH3-(CH2)2-CH3"])
 
     def interface(self):
         with self.parameters as p:
@@ -179,7 +179,7 @@ class MaterialParentTestModel(Model):
             flow = self.materials.create_flow("m_child", self.mat_def)
 
     def define(self):
-        mat_def = define_a_material({"H2O", "NO2"})
+        mat_def = define_a_material(["H2O", "NO2"])
         flow = self.materials.create_flow("m_parent", mat_def)
         with self.hierarchy.add("child", self.Child, mat_def) as child:
             child.materials.connect("port", flow)
@@ -193,7 +193,6 @@ def define_a_material(species) -> MaterialDefinition:
     speciesdb = {s: SpeciesDefinition(s) for s in species}
     frame = factory.create_frame(speciesdb, RK_LIQ)
     store = ThermoParameterStore()
-    # store.add_source("name", source)
     initial_state = InitialState.from_std(len(species))
     initial_state.temperature = Quantity("10 degC")
     initial_state.pressure = Quantity("10 bar")

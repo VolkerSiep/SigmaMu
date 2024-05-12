@@ -142,7 +142,37 @@ class NumericHandler:
         argument, which defines the unit of measurement for each property
         to be scaled with - as the numerical property vector elements must
         be dimensionless."""
-        # def traverse(properties: NestedMap[])
+        def traverse(properties: NestedMap[str],
+                     symbols: NestedMap[Quantity]) -> \
+                (Sequence[str], Sequence[SX]):
+            """Recursively go through property struct, collect symbols, and
+            convert them into desired units."""
+            try:
+                items = properties.items()
+            except AttributeError:
+                return None, None
+
+            nams, syms = [], []
+            for k, value in items:
+                n, s = traverse(value, symbols[k])
+                if n is None:
+                    nams.append(k)
+                    syms.append(symbols[k].to(value).magnitude)
+                else:
+                    nams.extend([f"{k}/{n_i}" for n_i in n])
+                    syms.extend(s)
+            return nams, syms
+
+        if key in self.__symres[NumericHandler.VECTORS]:
+            msg = f"A property vector of name '{key}' is already used."
+            raise KeyError(msg)
+
+        nam, sym = traverse(definition, self.__symres)
+
+        result = Quantity(vertcat(*sym))
+        self.__symres[NumericHandler.VECTORS][key] = result
+        self.__vec_res_names[key] = nam
+        return result
 
     def register_jacobian(self, dependent: str, independent: str) -> str:
         """Add the given symbols to the jacobian structure. These symbols must
