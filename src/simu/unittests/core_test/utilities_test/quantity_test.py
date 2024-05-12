@@ -2,7 +2,7 @@ from pytest import raises as pt_raises
 from casadi import SX
 
 from simu.core.utilities import (Quantity, SymbolQuantity, assert_reproduction,
-                                 jacobian, sum1, log, exp, sqrt, qpow, conditional,
+                                 jacobian, qsum, log, exp, qsqrt, qpow, conditional,
                                  base_unit, QFunction, flatten_dictionary,
                                  unflatten_dictionary, extract_units_dictionary)
 
@@ -40,7 +40,7 @@ def test_jacobian():
 def test_sum1():
     """Test sum function for quantities"""
     x = SymbolQuantity("x1", "m", "ABCDEFU")
-    y = sum1(x)
+    y = qsum(x)
     assert_reproduction(y)
 
 
@@ -71,7 +71,7 @@ def test_exp():
 def test_sqrt():
     """Test sqrt function for quantities"""
     x = SymbolQuantity("x", "m^2", "AB")
-    z = sqrt(x)
+    z = qsqrt(x)
     assert_reproduction(z)
 
 

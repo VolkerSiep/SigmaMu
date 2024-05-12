@@ -4,7 +4,6 @@ from pytest import raises
 
 from simu.core.utilities import SymbolQuantity
 from simu.core.utilities.errors import DataFlowError, DimensionalityError
-# from simu.model import Augmentor, MaterialSpec
 
 from .models import *
 
@@ -110,7 +109,7 @@ def test_hierarchy2():
 
 
 def test_material():
-    material = TEST_MATERIAL.create_flow()
+    material = define_a_material(["H2O", "NO2"]).create_flow()
 
     with MaterialTestModel().create_proxy() as model:
         assert "inlet" in model.materials
@@ -118,7 +117,7 @@ def test_material():
 
 
 def test_wrong_material():
-    material = define_a_material({"KMnO4"}).create_flow()
+    material = define_a_material(["KMnO4"]).create_flow()
     with raises(ValueError) as err:
         with MaterialTestModel().create_proxy() as model:
             model.materials.connect("inlet", material)
@@ -126,15 +125,19 @@ def test_wrong_material():
 
 
 def test_material_reuse_def():
-    material = TEST_MATERIAL.create_flow()
+    material = define_a_material(["H2O", "NO2"]).create_flow()
 
     with MaterialTestModel2().create_proxy() as model:
         assert "inlet" in model.materials
         model.materials.connect("inlet", material)
 
 
+def test_residual_def():
+    proxy = ResidualTestModel().top()
+
+
 def test_residual():
-    with ResidualTestModel().create_proxy() as model:
+    with ResidualTestModel2().create_proxy() as model:
         pass
     res = model.residuals["Hubert"]
     assert f"{res.value:~}" == "Hubert K"

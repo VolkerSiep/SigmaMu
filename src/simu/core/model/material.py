@@ -43,13 +43,15 @@ class MaterialHandler(Map[Material]):
     def __iter__(self) -> Iterator[str]:
         return iter(self.__materials)
 
-    def create_flow(self, name: str, definition: MaterialDefinition):
+    def create_flow(self, name: str,
+                    definition: MaterialDefinition) -> Material:
         """Create a Material as a flow in the local context."""
-        self.__create(name, definition.create_flow())
+        return self.__register(name, definition.create_flow())
 
-    def create_state(self, name: str, definition: MaterialDefinition):
+    def create_state(self, name: str,
+                     definition: MaterialDefinition) -> Material:
         """Create a Material as a state in the local context."""
-        self.__create(name, definition.create_state())
+        return self.__register(name, definition.create_state())
 
     @property
     def ports(self) -> Map[MaterialSpec]:
@@ -64,7 +66,7 @@ class MaterialHandler(Map[Material]):
         """Internal method called to provide connected ports."""
         self.__materials |= connections
 
-    def __create(self, name: str, material: Material):
+    def __register(self, name: str, material: Material) -> Material:
         """Create a Material in the local context.
         """
         if name in self.__ports:
@@ -72,9 +74,12 @@ class MaterialHandler(Map[Material]):
         if name in self.__materials:
             raise KeyError(f"{name} is already defined as a material")
         self.__materials[name] = material
+        return material
 
 
 class MaterialProxy(Map[MaterialSpec]):
+    handler: MaterialHandler
+
     def __init__(self, handler: MaterialHandler):
         self.handler = handler
         self.__ports: MutMap[MaterialSpec] = dict(handler.ports)

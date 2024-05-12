@@ -2,8 +2,6 @@
 from abc import ABC, abstractmethod
 from typing import Self, Optional
 
-# from ..utilities import QFunction
-
 from .parameter import ParameterHandler, ParameterProxy
 from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
@@ -52,7 +50,7 @@ class Model(ABC):
         return cls().create_proxy(name)
 
     def interface(self) -> None:
-        """This abstract method is to define all model parameters, material
+        """This virtual method is to define all model parameters, material
         ports, and properties provided by this model. This makes the interface
         of the model in the hierarchical context nearly self-documenting.
         A trivial example implementation could be
@@ -128,7 +126,7 @@ class ModelProxy:
     """The proxy of the material handler, to connect material ports"""
 
     residuals: ResidualProxy
-    """The proxy of the residual handler, an unmutable dictionary"""
+    """A handler object that takes care of residuals"""
 
     def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
@@ -160,6 +158,3 @@ class ModelProxy:
         self.properties.finalise()  # properties can be queried now
         self.hierarchy.finalise()  # all declared sub-models are provided
         return self
-
-    # TODO: method that allows the numeric handler to collect the symbols
-    #       and values.

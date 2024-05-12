@@ -81,7 +81,7 @@ def test_get_thermo_property_values_sources():
               "p": {"H2O": "10 bar", "NH3": "20 atm"}}
     store.add_source("Dagbladet", StringDictThermoSource(struct))
 
-    values = store.get_all_symbol_values()
+    values = store.get_all_values()
     assert f"{values['T']['H2O']:~}" == "100 K"
     sources = store.get_sources()
     assert sources["T"]["H2O"] == "Dagbladet"
@@ -97,7 +97,15 @@ def test_get_thermo_missing():
     store.add_source("Dagbladet", StringDictThermoSource(struct))
 
     missing = store.get_missing_symbols()
-    assert missing["T"]["CH4"] == "K"
+    assert missing["T"]["CH4"].strip() == "K"
+
+
+def test_get_missing_dimensionless():
+    store = ThermoParameterStore()
+    struct = {"T": {"CH4": "", "H2O": ""}}
+    store.get_symbols(struct)
+    missing = store.get_missing_symbols()
+    assert len(missing["T"]) == 2
 
 
 def test_get_thermo_property_values_two_sources():
@@ -110,7 +118,7 @@ def test_get_thermo_property_values_two_sources():
     struct = {"p": {"H2O": "10 bar", "NH3": "20 atm"}}
     store.add_source("VG", StringDictThermoSource(struct))
 
-    _ = store.get_all_symbol_values()
+    _ = store.get_all_values()
     sources = store.get_sources()
     assert sources["T"]["H2O"] == "Dagbladet"
     assert sources["p"]["H2O"] == "VG"
@@ -127,7 +135,7 @@ def test_get_same_thermo_property_values_two_sources():
     struct = {"p": {"H2O": "10 bar", "NH3": "20 atm"}}
     store.add_source("VG", StringDictThermoSource(struct))
 
-    _ = store.get_all_symbol_values()
+    _ = store.get_all_values()
     sources = store.get_sources()
     assert sources["T"]["H2O"] == "Dagbladet"
     assert sources["p"]["H2O"] == "VG"

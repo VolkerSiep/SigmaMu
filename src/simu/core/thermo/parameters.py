@@ -1,8 +1,8 @@
 """module containing classes to obtain thermodynamic parameters from various
 sources."""
 
-from abc import ABC, abstractmethod
 from typing import Iterable, Collection
+from abc import ABC, abstractmethod
 
 from pint import DimensionalityError
 
@@ -53,9 +53,13 @@ class ThermoParameterStore:
     providing the parameters, and to the model's numerical interface by
     providing the symbols and values of all used parameters, allowing those
     to be altered dynamically and optimised on."""
+
+    name: str
+
     def __init__(self):
         self.__provided_parameters: NestedMutMap[Quantity] = {}
         self.__sources: MutMap[AbstractThermoSource] = {}
+        self.name = "default"
 
     def get_symbols(self, parameter_struct: NestedMap[str]) \
             -> NestedMap[Quantity]:
@@ -106,7 +110,7 @@ class ThermoParameterStore:
         :meth:`get_symbols`, as a nested dictionary of symbolic quantities"""
         return self.__provided_parameters
 
-    def get_all_symbol_values(self) -> NestedMap[Quantity]:
+    def get_all_values(self) -> NestedMap[Quantity]:
         """This method seeks in connected data sources for all previously
         prepared symbols.
 
@@ -179,7 +183,10 @@ class ThermoParameterStore:
                     value, source = get_value(path, struct)
                     return value, {}, source
                 except KeyError:
-                    return {}, f"{struct.units:~}", {}
+                    # the space after the unit is important here, for the
+                    # string not to evaluate to false in case of dimensionless
+                    # parameters!
+                    return {}, f"{struct.units:~} ", {}
 
             # found a sub structure
             found: NestedMap[Quantity] = {}

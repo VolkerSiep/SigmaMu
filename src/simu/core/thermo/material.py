@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from ..utilities import Quantity
-from ..utilities.types import MutMap
+from ..utilities import Quantity, SymbolQuantity, QuantityDict
+from ..utilities.types import Map, MutMap
 
 from . import (
     ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
@@ -46,7 +46,7 @@ class MaterialSpec:
         listed as :attr:`species`."""
         return self.__locked
 
-    def flow(self) -> bool:
+    def is_flow(self) -> bool:
         """Whether the specification is a flow (``True``) or
         a state (``False``)"""
         return self.__flow
@@ -62,7 +62,7 @@ class MaterialSpec:
         """
         spe, mspe = self.species, set(material.species)
         locked = self.locked
-        flow_comp = self.__flow == material.is_flow()
+        flow_comp = self.is_flow() == material.is_flow()
         return flow_comp and not ((spe - mspe) or (locked and (mspe - spe)))
 
     # @property
@@ -73,6 +73,10 @@ class MaterialSpec:
 
 class Material(MutMap[Quantity]):
     """This class represents a material"""
+
+    definition: "MaterialDefinition"
+    initial_state: InitialState
+
     def __init__(self,
                  definition: "MaterialDefinition",
                  flow: bool):
@@ -81,9 +85,24 @@ class Material(MutMap[Quantity]):
 
         frame = definition.frame
         params = definition.store.get_symbols(frame.parameter_structure)
-        state = frame.create_symbol_state()
-        props = frame(state, params, squeeze_results=False, flow=flow)
-        self.__properties = {n: p for n, p in props.items()
+        self.__state = frame.create_symbol_state()
+        props = frame(self.__state, params, squeeze_results=False, flow=flow)
+        species = frame.species
+
+        def convert(n: str, prop: SymbolQuantity) -> Quantity | QuantityDict:
+            """If property is a vector, convert it to a QuantityDict, otherwise
+            just return the quantity itself."""
+            mag, unit = prop.magnitude, prop.units
+            if mag.is_scalar():
+                return prop
+            if mag.size() != (len(species), 1):
+                msg = f"Property {n} has inproper shape: {mag.size()}, " \
+                      f"should be scalar or ({len(species)}, 1)"
+                raise ValueError(msg)
+            result = {s: Quantity(mag[i], unit) for i, s in enumerate(species)}
+            return QuantityDict(result)
+
+        self.__properties = {n: convert(n, p) for n, p in props.items()
                              if not n.startswith("_")}
         self.__flow = flow
 
@@ -93,6 +112,12 @@ class Material(MutMap[Quantity]):
     def species(self) -> Collection[str]:
         """The species names"""
         return self.definition.frame.species
+
+    @property
+    def sym_state(self) -> Map[Quantity]:
+        """Return a dictionary of quantities representing the state"""
+        state = self.__state.nonzeros()
+        return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
 
     def __getitem__(self, key: str) -> Quantity:
         return self.__properties[key]

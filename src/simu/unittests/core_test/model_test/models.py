@@ -7,10 +7,21 @@ from simu.core.thermo.material import MaterialSpec, MaterialDefinition
 from simu.core.thermo.species import SpeciesDefinition
 from simu.app.thermo.factories import ExampleThermoFactory
 from simu.core.thermo import ThermoParameterStore
-from simu.core.utilities import SymbolQuantity
+from simu.core.utilities import SymbolQuantity, Quantity
 
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
+
+
+class SimpleParameterTestModel(Model):
+    """A simple model to test parameters"""
+
+    def interface(self):
+        with self.parameters as p:
+            p.define("length", 10, "m")
+
+    def define(self):
+        pass
 
 
 class ParameterTestModel(Model):
@@ -84,8 +95,9 @@ class MaterialTestModel(Model):
         self.materials.define_port("inlet", spec)
 
     def define(self):
-        inlet = self.materials["inlet"]
-        local = self.materials.create_flow("local", TEST_MATERIAL)
+        test_material = define_a_material(["H2O", "NO2"])
+        _ = self.materials["inlet"]
+        _ = self.materials.create_flow("local", test_material)
 
 
 class MaterialTestModel2(Model):
@@ -95,10 +107,31 @@ class MaterialTestModel2(Model):
 
     def define(self):
         inlet = self.materials["inlet"]
-        local = self.materials.create_state("local", inlet.definition)
+        _ = self.materials.create_state("local", inlet.definition)
+
+
+class MaterialTestModel3(Model):
+    def interface(self):
+        pass
+
+    def define(self):
+        test_material = define_a_material(["H2O", "NO2"])
+        self.materials.create_flow("local", test_material)
 
 
 class ResidualTestModel(Model):
+    """A simple model to test residuals"""
+
+    def interface(self):
+        self.parameters.define("length", 10, "m")
+        self.parameters.define("area_spec", 50, "m**2")
+
+    def define(self):
+        res = self.parameters["length"] ** 2 - self.parameters["area_spec"]
+        self.residuals.add("area", res, "m**2")
+
+
+class ResidualTestModel2(Model):
     def interface(self):
         pass
 
@@ -107,16 +140,60 @@ class ResidualTestModel(Model):
         self.residuals.add("Hubert", res, "degC")
 
 
+class SquareTestModel(Model):
+    def __init__(self):
+        super().__init__()
+        self.no2sol = define_a_material(["CH3-CH2-CH3", "CH3-(CH2)2-CH3"])
 
-def define_a_material(species):
-    """Defines a material to use. Normally, this would not be in a class
-    method, but a singelton somewhere in the project."""
+    def interface(self):
+        with self.parameters as p:
+            p.define("T", 10, "degC")
+            p.define("p", 10, "bar")
+            p.define("N", 1, "mol/s")
+            p.define("x_c3", 10, "%")
+
+    def define(self):
+        flow = self.materials.create_flow("local", self.no2sol)  # 4 DOF
+        flow["N"] = flow["n"].sum()
+        flow["x"] = flow["n"] / flow["N"]
+
+        param, radd = self.parameters, self.residuals.add
+        radd("N", flow["N"] - param["N"], "mol/s")
+        res = flow["N"] * param["x_c3"] - flow["n"]["CH3-CH2-CH3"]
+        radd("x", res, "mol/s")
+        radd("T", flow["T"] - param["T"], "K")
+        radd("p", flow["p"] - param["p"], "bar")
+
+
+class MaterialParentTestModel(Model):
+
+    class Child(Model):
+        def __init__(self, mat_def):
+            super().__init__()
+            self.mat_def = mat_def
+
+        def interface(self):
+            self.materials.define_port("port")
+
+        def define(self):
+            flow = self.materials.create_flow("m_child", self.mat_def)
+
+    def define(self):
+        mat_def = define_a_material(["H2O", "NO2"])
+        flow = self.materials.create_flow("m_parent", mat_def)
+        with self.hierarchy.add("child", self.Child, mat_def) as child:
+            child.materials.connect("port", flow)
+
+
+def define_a_material(species) -> MaterialDefinition:
+    """Defines a material to use. Normally, this would be a singelton somewhere
+    in the project."""
+
     factory = ExampleThermoFactory()
     speciesdb = {s: SpeciesDefinition(s) for s in species}
     frame = factory.create_frame(speciesdb, RK_LIQ)
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(len(species))
+    initial_state.temperature = Quantity("10 degC")
+    initial_state.pressure = Quantity("10 bar")
     return MaterialDefinition(frame, initial_state, store)
-
-
-TEST_MATERIAL = define_a_material({"H2O", "NO2"})

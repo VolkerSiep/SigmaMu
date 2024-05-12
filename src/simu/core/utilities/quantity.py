@@ -14,7 +14,7 @@ from pint.errors import DimensionalityError
 
 # internal modules
 from . import flatten_dictionary, unflatten_dictionary
-from .types import NestedMap
+from .types import NestedMap, Map, MutMap
 from ..data import DATA_DIR
 
 
@@ -115,7 +115,7 @@ def jacobian(dependent: Quantity, independent: Quantity) -> Quantity:
                     dependent.units / independent.units)
 
 
-def sum1(quantity: Quantity) -> Quantity:
+def qsum(quantity: Quantity) -> Quantity:
     """Sum a symbol vector quantity same was a ``casadi.sum1``, considering
     units of measurements. This function only applies to quantity objects with
     ``casadi.SX`` objects as magnitudes.
@@ -129,7 +129,7 @@ def sum1(quantity: Quantity) -> Quantity:
     return Quantity(cas.sum1(quantity.magnitude), quantity.units)
 
 
-def sqrt(quantity: Quantity) -> Quantity:
+def qsqrt(quantity: Quantity) -> Quantity:
     """Determine square root of symbolic quantity, considering units of
     measurement"""
     return Quantity(cas.sqrt(quantity.magnitude), quantity.units**0.5)
@@ -259,27 +259,44 @@ class QFunction:
                  func_name: str = "f"):
         args_flat = flatten_dictionary(args)
         results_flat = flatten_dictionary(results)
-        arg_names = list(args_flat.keys())
-        res_names = list(results_flat.keys())
-        arg_sym = [v.magnitude for v in args_flat.values()]
-        res_sym = [v.magnitude for v in results_flat.values()]
+        arg_sym = cas.vertcat(*[v.magnitude for v in args_flat.values()])
+
+        self.__res_shapes = {}
+        res_sym = []
+        for key, value in results_flat.items():
+            mag = value.magnitude
+            shape = mag.shape
+            self.__res_shapes[key] = mag.shape
+            res_sym.append(cas.reshape(mag, shape[0] * shape[1], 1))
+        res_sym = cas.vertcat(*res_sym)
+
         self.arg_units = {k: v.units for k, v in args_flat.items()}
         self.res_units = {k: v.units for k, v in results_flat.items()}
-        self.func = cas.Function(func_name, arg_sym, res_sym, arg_names,
-                                 res_names)
+        self.func = cas.Function(func_name, [arg_sym], [res_sym],
+                                 ["x"], ["y"])
 
     def __call__(self, args: NestedMap[Quantity],
                  squeeze_results: bool = True) -> NestedMap[Quantity]:
         """Call operator for the function object, as described above."""
-        args_flat = {
-            key: value.to(self.arg_units[key]).magnitude
+        args_flat = cas.vertcat(*[
+            value.to(self.arg_units[key]).magnitude
             for key, value in flatten_dictionary(args).items()
-        }
-        result = self.func(**args_flat)  # calling Casadi function
+        ])
+        result = self.func(args_flat)  # calling Casadi function
+        result = self.__unpack(result)
         if squeeze_results:
             result = {k: squeeze(v) for k, v in result.items()}
         result = {k: Quantity(v, self.res_units[k]) for k, v in result.items()}
         return unflatten_dictionary(result)
+
+    def __unpack(self, raw_result: cas.SX) -> Map[cas.SX]:
+        result: MutMap[cas.SX] = {}
+        idx = 0
+        for key, shape in self.__res_shapes.items():
+            size = shape[0] * shape[1]
+            result[key] = raw_result[idx:idx + size].reshape(shape)
+            idx += size
+        return result
 
     @property
     def result_structure(self) -> NestedMap[str]:

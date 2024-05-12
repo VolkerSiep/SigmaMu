@@ -9,7 +9,7 @@ import pylab
 # internal modules
 from simu.core.utilities import (
     assert_reproduction, base_unit, ParameterDictionary, SymbolQuantity,
-    jacobian, QFunction, Quantity as Q, base_magnitude, sum1, unit_registry)
+    jacobian, QFunction, Quantity as Q, base_magnitude, qsum, unit_registry)
 from simu.core.utilities.constants import R_GAS
 from simu.core.thermo import InitialState
 from simu.app.thermo.contributions import (
@@ -263,7 +263,7 @@ def test_initialise_rk2(cls):
 
     # is the rest of the state (except volume) reproduced?
     assert base_magnitude(T) == state[0]
-    assert base_magnitude(n).tolist() == state[2].tolist()
+    assert base_magnitude(n).tolist() == state[2:]
     res_num["V"] = Q(state[1], "m**3")
 
     # calculate contribution values with initial state to reproduce pressure
@@ -357,7 +357,7 @@ def plot_pv(res):
         A, B, C = [res[i] for i in "_ceos_a _ceos_b _ceos_c".split()]
         A /= 33.7
         VC = V + C
-        return sum1(res["n"]) * R_GAS * T / (VC - B) - A / VC / (VC + B)
+        return qsum(res["n"]) * R_GAS * T / (VC - B) - A / VC / (VC + B)
 
     # only plot if running this file interactively
     volumes = linspace(45, 52, num=100) * Q("1 ml")

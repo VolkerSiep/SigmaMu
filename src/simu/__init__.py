@@ -2,8 +2,8 @@
 from logging import getLogger, NullHandler
 
 from simu.core.utilities import (
-    ParameterDictionary, base_magnitude, log, sum1, conditional, jacobian,
-    qpow, qvertcat, sqrt, exp, log, log10, sin, cos, tan, arcsin, arccos,
+    ParameterDictionary, base_magnitude, log, qsum, conditional, jacobian,
+    qpow, qvertcat, qsqrt, exp, log, log10, sin, cos, tan, arcsin, arccos,
     arctan, sinh, cosh, tanh, arcsinh, arccosh, arctanh, base_magnitude
 )
 
