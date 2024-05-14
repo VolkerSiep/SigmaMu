@@ -3,11 +3,10 @@ State Definitions
 
 HelmholtzState
 --------------
-.. autoclass:: simu.thermo.HelmholtzState
-  :undoc-members: 
-   
+.. autoclass:: simu.core.thermo.state.HelmholtzState
+  :undoc-members:
+
 GibbsState
 ----------
-.. autoclass:: simu.thermo.GibbsState
-  :undoc-members: 
-
+.. autoclass:: simu.core.thermo.state.GibbsState
+  :undoc-members:

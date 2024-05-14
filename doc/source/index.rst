@@ -8,9 +8,6 @@ SiMu Documentation
 
    introduction
    getting_started
-
-.. comment::
-
    api/api
 
 .. toctree::

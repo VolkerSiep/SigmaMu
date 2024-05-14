@@ -15,7 +15,8 @@ from simu.core.utilities.constants import (
 from simu.core.thermo.factory import ThermoFactory
 from simu.core.thermo.contribution import ThermoContribution
 from simu.core.thermo.state import InitialState, all_states
-from simu.core.model import Model
+from simu.core.model import Model, NumericHandler
+from simu.core.utilities import Quantity, QuantityDict
 
 from ._version import VERSION as __version__
 

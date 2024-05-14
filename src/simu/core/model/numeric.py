@@ -90,6 +90,11 @@ class NumericHandler:
         argument structure and instead added to the vector entry as
         dimensionless entities.
 
+        :param key: The name to be used for the parameter set
+        :type key: str
+        :param definition: The parameters to be exatracted
+        :type definition: NestedMap[str]
+
         """
         def traverse(parameters: NestedMap[str],
                      symbols: NestedMutMap[Quantity],

@@ -1,60 +1,56 @@
 Process modelling
 =================
 
-Model
------
-.. autoclass:: simu.model.Model
-    :members:
+.. todo::
 
-ModelProxy
-"""""""""""""
+    Break this file up into one for each class.
 
-.. autoclass:: simu.model.base.ModelProxy
-    :members:
+.. toctree::
+   :maxdepth: 1
+
+   model
 
 ParameterProxy
 -------------------
-.. autoclass:: simu.model.parameter.ParameterProxy
+.. autoclass:: simu.core.model.parameter.ParameterProxy
     :members:
 
 ParameterHandler
 ----------------
-.. autoclass:: simu.model.parameter.ParameterHandler
+.. autoclass:: simu.core.model.parameter.ParameterHandler
     :members:
 
 PropertyProxy
 ------------------
-.. autoclass:: simu.model.property.PropertyProxy
+.. autoclass:: simu.core.model.property.PropertyProxy
     :members:
 
 PropertyHandler
 ---------------
-.. autoclass:: simu.model.property.PropertyHandler
+.. autoclass:: simu.core.model.property.PropertyHandler
     :members:
 
 ResidualHandler
 ---------------
 
-.. todo::
-
-    invent
+.. autoclass:: simu.core.model.residual.ResidualHandler
+    :members:
 
 MaterialHandler
 ---------------
 
-.. todo::
-
-    invent
+.. autoclass:: simu.core.model.material.MaterialHandler
+    :members:
 
 
 HierarchyHandler
 ----------------
 
-.. autoclass:: simu.model.hierarchy.HierarchyHandler
+.. autoclass:: simu.core.model.hierarchy.HierarchyHandler
     :members:
 
 NumericHandler
 --------------
 
-.. autoclass:: simu.model.numeric.NumericHandler
+.. autoclass:: simu.core.model.numeric.NumericHandler
     :members:

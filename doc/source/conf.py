@@ -9,17 +9,16 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
+import sys
+from os.path import abspath
 from simu import __version__ as release
 
+sys.path.insert(0, abspath('.'))
 
 project = 'SiMu'
-copyright = '2021-2023, Volker Siepmann'
+copyright = '2021-2024, Volker Siepmann'
 author = 'Volker Siepmann'
 
 
@@ -33,12 +32,14 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.todo',
-    # 'sphinx.ext.autosummary',
-    'sphinxcontrib.bibtex'
+    'sphinx.ext.autosummary',
+    'sphinxcontrib.bibtex',
+    'custom_directives'
 ]
 
 autoclass_content = 'both'
 autodoc_member_order = 'bysource'
+autodoc_typehints = 'signature'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -63,13 +64,14 @@ html_theme = 'nature'
 # 'pyramid' (headings not standing out),
 # 'classic' (a bit boring)
 
-
 # manual configuration of side-bars to have the global toc folded and not
 # messed up with all autodoc entries
 html_sidebars = {
     '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
     'using/windows': ['windowssidebar.html', 'searchbox.html'],
 }
+
+html_css_files = ["custom.css"]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

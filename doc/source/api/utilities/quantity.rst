@@ -1,26 +1,26 @@
 Quantity related functionality
 ==============================
 
-.. automodule:: simu.utilities.quantity
+.. automodule:: simu.core.utilities.quantity
 
 Objects
 -------
 
 Quantity
 ^^^^^^^^
-.. autoclass:: simu.utilities.Quantity
+.. autoclass:: simu.core.utilities.Quantity
     :members:
 
 .. auto
 
 SymbolQuantity
 ^^^^^^^^^^^^^^
-.. autoclass:: simu.utilities.SymbolQuantity
+.. autoclass:: simu.core.utilities.SymbolQuantity
     :members:
 
 QFunction
 ^^^^^^^^^
-.. autoclass:: simu.utilities.QFunction
+.. autoclass:: simu.core.utilities.QFunction
     :members:
 
 Global Functions
@@ -30,7 +30,7 @@ quantities.
 
 jacobian
 ^^^^^^^^
-.. autofunction:: simu.utilities.jacobian
+.. autofunction:: simu.core.utilities.jacobian
 
 sum1
 ^^^^
