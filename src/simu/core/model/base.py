@@ -1,4 +1,7 @@
-"""This module contains the base classes to represent (process) models."""
+"""This module contains the base classes to represent (process) models.
+
+.. currentmodule:: simu.core.model.base
+"""
 from abc import ABC, abstractmethod
 from typing import Self, Optional
 
@@ -22,8 +25,7 @@ class Model(ABC):
     two methods :meth:`interface` and :meth:`define` respectively.
 
     A model is then either instantiated by a parent model, whereas it is
-    represented in that parent model by a
-    :class:`ModelProxy <simu.core.model.base.ModelProxy>` object, or it
+    represented in that parent model by a :class:`ModelProxy` object, or it
     can be defined as the top level model by calling :meth:`top`.
     """
 
@@ -64,7 +66,7 @@ class Model(ABC):
         This is the recommended and fastest way to declare a model as being the
         top level model. It will create a proxy object (via :meth:`proxy`) and
         finalise the configuration of it via
-        :meth:`finalise() <simu.core.model.base.ModelProxy.finalise>`.
+        :meth:`ModelProxy.finalise`.
 
         Performing the finalisation in one go after creating the proxy object
         is only possible, if the model is suitable to be top model. That is,
@@ -72,8 +74,7 @@ class Model(ABC):
 
         :param name: The name of the top level model
         :type name: str
-        :return: The readily configured
-          :class:`ModelProxy <simu.core.model.base.ModelProxy>` object
+        :return: The readily configured :class:`ModelProxy` object
         """
         return cls.proxy(name).finalise()
 
@@ -89,9 +90,8 @@ class Model(ABC):
 
         :param name: The name of the top level model
         :type name: str
-        :return: The :class:`ModelProxy <simu.core.model.base.ModelProxy>`
-          object, ready for configuration from parent context. It then still
-          needs to be finalised.
+        :return: The :class:`ModelProxy` object, ready for configuration from
+          parent context. It then still needs to be finalised.
         """
         return cls().create_proxy(name)
 
@@ -166,6 +166,18 @@ class Model(ABC):
 class ModelProxy:
     """Proxy class for models, being main object to relate to when accessing
     a child model during definition of the parent model.
+
+    As for the :class:`Model` class, this proxy version offers via its handlers
+    functionality to deal with parameters, properties, hierarchy, materials,
+    and residuals, but the angle of view is different:
+
+    The ``Model`` class deals with the implementation of the model, while the
+    ``ModelProxy`` class offers its access to connect to it as a client. This
+    client is most likely a parent ``Model`` or, if it is a top level model,
+    a :class:`NumericHandler <simu.core.model.numeric.NumericHandler>` object.
+
+    ``ModelProxy`` objects are created from within the :class:`Model` class,
+    and do not need to be instantiated directly by `SiMu` client code.
     """
 
     parameters: ParameterProxy
@@ -181,7 +193,12 @@ class ModelProxy:
     """The proxy of the material handler, to connect material ports"""
 
     residuals: ResidualProxy
-    """A handler object that takes care of residuals"""
+    """A handler object that takes care of residuals. This is really just a
+    non-mutable mapping of residuals, as the client code is not supposed to
+    temper with the definition of the child model. The residuals are still
+    browsable, as required for instance by the
+    :class:`NumericHandler <simu.core.model.numeric.NumericHandler>` object
+    for obvious reasons."""
 
     def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
@@ -206,7 +223,10 @@ class ModelProxy:
 
     def finalise(self) -> Self:
         """After the parent model has connected parameters and materials,
-        this method is called to process its own modelling code"""
+        this method is called to define and finalise itself.
+        The final part of this process is to validate correct configuration and
+        to clean up data structures.
+        """
         self.parameters.finalise()  # parameters are final now
         self.materials.finalise()  # all ports are connected
         self.__model.define()
