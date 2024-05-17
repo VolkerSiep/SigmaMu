@@ -124,16 +124,25 @@ Once the thermodynamic model structures are defined, data sources are organized 
 
 Now the thermodynamic models are in place, and we can define materials. Material definitions, on top of the thermodynamic model singeltons, define the utilised set of chemical species and a representative initial state. Material definitions are then used within the :class:`Model <model.base.Model>` class to define instances, defining flows of materials or stagnant states, such as phase interface conditions.
 
+Below diagram shows the object relationships in an overview.
+
+.. image:: figures/classes_thermo.svg
+    :width: 400
+
+
 Each ``Material`` instance introduces independent variables (``states``) to the model, which uses the thermodynamic properties in combination with model parameters (mostly operational and design parameters) to evaluate both model properties of interest, but also ``Residual`` properties. In standard simulations, those residuals are bought to zero by solving over the state variables.
 
 However, instead of plain solving, one can conduct
 
-  - **Data reconciliation**: Minimising the deviation between measured data and calculated model properties over the state of the model;
+  - **Data reconciliation**: Minimising the deviation between measured data and calculated model properties over the state of the model, constrainted by a reduced set of residuals;
   - **Parameter fit**: Fitting model parameters common over multiple data-sets in combination with individual model states, constrained by the model's residuals, to minimise deviation between measured data and calculated model properties;
-  - **Thermodynamic parameter fit**: Like *Parameter fit*, but specifically with thermodynamic parameters, often utilising laboratory data concerning equilibrium or calorimetric data.
+  - **Thermodynamic parameter fit**: Like *Parameter fit*, but specifically with thermodynamic parameters, often utilising laboratory data concerning equilibrium or calorimetric data;
   - **Parameter optimisation**: Minimizing an objective function as function of model properties over the thermodynamic state and model parameters, constrained by the model's residuals.
 
 The derivatives required to efficiently perform these disciplines can easily be obtained, based on `CasADi`_ functionality.
+
+
+
 
 .. todo::
 
