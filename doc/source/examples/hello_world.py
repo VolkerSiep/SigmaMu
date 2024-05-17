@@ -23,4 +23,4 @@ print(args)
 args[NumericHandler.MODEL_PARAMS]["length"] = Quantity(20, "cm")
 result = func(args)
 
-print(result[NumericHandler.MODEL_PROPS]["area"])
+print(f"{result[NumericHandler.MODEL_PROPS]['area']:.3fP~}")

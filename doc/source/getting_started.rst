@@ -89,3 +89,52 @@ Likewise, we can query what the model will return:
 {'model_props': {'area': 'm ** 2'}, 'vectors': {'residuals': ''}}
 
 As there are no model constraints, the ``residuals`` section here is empty, but we find the calculated ``area`` as a model property.
+
+The model has also collected the default input values for us.
+
+>>> args = numeric.arguments
+>>> print(args)
+{'vectors': {'states': <Quantity(0x1, 'dimensionless')>},
+ 'model_params': {'length': <Quantity(10, 'meter')>},
+ 'thermo_params': {}}
+
+For a larger real-life problem, this would also include the initial set of independent variables (``state``) and all thermodynamic parameters, collected from the various data sources. Here we see only the ``length`` parameter as being 10 m.
+
+We can overwrite that parameter by changing its value in the obtained structure
+
+>>> args[NumericHandler.MODEL_PARAMS]["length"] = Quantity(20, "cm")
+>>> result = func(args)
+>>> print(f"{result[NumericHandler.MODEL_PROPS]['area']:.3fP~}")
+0.040 m²
+
+Note that the formatting of the physical quantities is utilising `Pint`_ functionality.
+
+
+Normal project structure
+------------------------
+Above example is cute but no usecase for using ``SiMu``. Admittingly, the area of a square can instead be calculated in one line of code. A real project starts with the setup of **thermodynamic models** to calculate physical properties of the materials that are part of the model. In ``SiMu``, a thermodynamic model is represented by a :class:`ThermoFrame <thermo.frame.ThermoFrame>` object and consists of :class:`ThermoContribution <thermo.frame.contribution.ThermoContribution>` object, the latter of which can be combined and extended with high flexibility. Examples for such contributions are
+
+  - Ideal gas heat capacity
+  - Ideal mix
+  - Mixing rules in various settings, for instance equations of states
+  - :math:`\alpha`-functions in cubic equations of state
+  - Poynting corrections in Gibbs excess models
+
+Once the thermodynamic model structures are defined, data sources are organized to provide the **thermodynamic parameters**, such as standard state parameters or critical constants. Naturally, the set of required parameters depend on the model structure and the set of chemical species.
+
+Now the thermodynamic models are in place, and we can define materials. Material definitions, on top of the thermodynamic model singeltons, define the utilised set of chemical species and a representative initial state. Material definitions are then used within the :class:`Model <model.base.Model>` class to define instances, defining flows of materials or stagnant states, such as phase interface conditions.
+
+Each ``Material`` instance introduces independent variables (``states``) to the model, which uses the thermodynamic properties in combination with model parameters (mostly operational and design parameters) to evaluate both model properties of interest, but also ``Residual`` properties. In standard simulations, those residuals are bought to zero by solving over the state variables.
+
+However, instead of plain solving, one can conduct
+
+  - **Data reconciliation**: Minimising the deviation between measured data and calculated model properties over the state of the model;
+  - **Parameter fit**: Fitting model parameters common over multiple data-sets in combination with individual model states, constrained by the model's residuals, to minimise deviation between measured data and calculated model properties;
+  - **Thermodynamic parameter fit**: Like *Parameter fit*, but specifically with thermodynamic parameters, often utilising laboratory data concerning equilibrium or calorimetric data.
+  - **Parameter optimisation**: Minimizing an objective function as function of model properties over the thermodynamic state and model parameters, constrained by the model's residuals.
+
+The derivatives required to efficiently perform these disciplines can easily be obtained, based on `CasADi`_ functionality.
+
+.. todo::
+
+    Draw a diagram and link all the classes here.
