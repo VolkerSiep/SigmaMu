@@ -112,27 +112,39 @@ Note that the formatting of the physical quantities is utilising `Pint`_ functio
 
 Normal project structure
 ------------------------
-Above example is cute but no usecase for using ``SiMu``. Admittingly, the area of a square can instead be calculated in one line of code. A real project starts with the setup of **thermodynamic models** to calculate physical properties of the materials that are part of the model. In ``SiMu``, a thermodynamic model is represented by a :class:`ThermoFrame <thermo.frame.ThermoFrame>` object and consists of :class:`ThermoContribution <thermo.frame.contribution.ThermoContribution>` object, the latter of which can be combined and extended with high flexibility. Examples for such contributions are
-
-  - Ideal gas heat capacity
-  - Ideal mix
-  - Mixing rules in various settings, for instance equations of states
-  - :math:`\alpha`-functions in cubic equations of state
-  - Poynting corrections in Gibbs excess models
+Above example is cute but no usecase for using ``SiMu``. Admittingly, the area of a square can instead be calculated in one line of code. A real project starts with the setup of **thermodynamic models** to calculate physical properties of the materials that are part of the model. In ``SiMu``, a thermodynamic model is represented by a :class:`ThermoFrame <thermo.frame.ThermoFrame>` object and consists of :class:`ThermoContribution <thermo.frame.contribution.ThermoContribution>` object, the latter of which can be combined and extended with high flexibility. Examples for such contributions are ideal gas heat capacity, mixing rules, and Poynting corrections in Gibbs excess models.
 
 Once the thermodynamic model structures are defined, data sources are organized to provide the **thermodynamic parameters**, such as standard state parameters or critical constants. Naturally, the set of required parameters depend on the model structure and the set of chemical species.
 
-Now the thermodynamic models are in place, and we can define materials. Material definitions, on top of the thermodynamic model singeltons, define the utilised set of chemical species and a representative initial state. Material definitions are then used within the :class:`Model <model.base.Model>` class to define instances, defining flows of materials or stagnant states, such as phase interface conditions.
+Now the thermodynamic models are in place, and we can define **materials**. Material definitions, on top of the thermodynamic model singeltons, define the utilised set of chemical species and a representative initial state. Material definitions are then used within the :class:`Model <model.base.Model>` class to define instances, defining flows of materials or stagnant states, such as phase interface conditions.
 
 Below diagram shows the object relationships in an overview.
 
-.. image:: figures/classes_thermo.svg
+.. image:: figures/classes_thermo.*
     :width: 400
 
 
-Each ``Material`` instance introduces independent variables (``states``) to the model, which uses the thermodynamic properties in combination with model parameters (mostly operational and design parameters) to evaluate both model properties of interest, but also ``Residual`` properties. In standard simulations, those residuals are bought to zero by solving over the state variables.
+Each ``Material`` instance introduces independent variables (``states``) to the model, which uses the thermodynamic properties in combination with **model parameters** (mostly operational and design parameters) to evaluate both **model properties** of interest, but also ``Residual`` properties, representing **process constraints**.
 
-However, instead of plain solving, one can conduct
+In summary, a :class:`Model <model.base.Model>` object holds the following entities
+
+  - ``Material`` objects representing a quantity of matter with a thermodynamic state
+  - ``Parameters`` as input physical quantities that impact the process constraints and/or calculated properties
+  - ``Properties`` as calculated physical quantities as function of thermodynamic properties and parameters
+  - ``Residuals`` representing the model constraints and being a function of thermodynamic properties and parameters
+
+For all but the smallest projects, the model is not a monolith, but a hierarchical composition of sub-models, each representing an encapsulated physical aspect of the system.
+
+The figure below shows the collaboration diagram of involved entities:
+
+.. image:: figures/model_collaboration.*
+    :width: 400
+
+
+Model application range
+-----------------------
+
+In standard simulations, the number of process contraints and state variables are equal - the system is square. The system is then solved as a non-linear equation system with a (hopefully) unique solution. However, instead of plain solving, one can conduct
 
   - **Data reconciliation**: Minimising the deviation between measured data and calculated model properties over the state of the model, constrainted by a reduced set of residuals;
   - **Parameter fit**: Fitting model parameters common over multiple data-sets in combination with individual model states, constrained by the model's residuals, to minimise deviation between measured data and calculated model properties;
@@ -141,9 +153,8 @@ However, instead of plain solving, one can conduct
 
 The derivatives required to efficiently perform these disciplines can easily be obtained, based on `CasADi`_ functionality.
 
+Where are the limits?
+---------------------
+So far, the experience and usage of ``SiMu`` is limited, but the predecessor, ``pyasim`` has been used in many in-house projects, including detailed CO\ :sub:`2` removal systems, plant-wide ammonia production processes, and detailed absorbtion column models for NO\ :sub:`x` gasses on Sieve trays and packings. Model sizes up to 80000 variables/equations have been solved. This, due to the way of building the model and counting the variables, corresponds to more than one million equations for brute force general equation oriented modelling tools.
 
-
-
-.. todo::
-
-    Draw a diagram and link all the classes here.
+For the predecessor, ``pyasim``, memory usage on ordinary business laptops became limiting for the largest models. This constituted one of the motivations to develop ``SiMu``. With much more efficient memory handling by `CasADi`_ and multi-core computations, we do not yet know where the limits of ``SiMu`` are.
