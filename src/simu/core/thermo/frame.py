@@ -32,6 +32,13 @@ class ThermoFrame:
     """This class represents the thermodynamic model, which defines a casadi
     Function object :attr:`function` of the state vector and the parameter
     vector, and calculates a set of thermodynamic properties.
+
+    .. note::
+
+        The object should not be constructed by client code, but created
+        by the :meth:`ThermoFactory.create_frame` method that handles the
+        house-keeping of contribution classes. For this reason, the constructor
+        is not further documented here.
     """
 
     def __init__(self, species: Mapping[str, SpeciesDefinition],
@@ -39,13 +46,6 @@ class ThermoFrame:
                  contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
         (casadi) with given species and contributions.
-
-        .. note::
-
-            This constructor shall not be called directly, but is invoked by
-            the :meth:`ThermoFactory.create_frame` method that handles the
-            house-keeping of contribution classes. For this reason, it is not
-            further documented here.
         """
         # need to instantiate the contributions
         species_list = list(species.keys())
@@ -90,7 +90,22 @@ class ThermoFrame:
     def __call__(self, state: SX | Sequence[float],
                  parameters: NestedMap[Quantity],
                  squeeze_results: bool = True, flow: bool = False):
-        """Shortcut: Call to the function object :attr:`function`.
+        """Shortcut operator to call to the underlying function object.
+
+        The function call can be a stand-alone evaluation of the thermodynamic
+        model, given floating point quantities for the state and the
+        parameters. Alternatively, called with ``CasADi`` ``SX`` based
+        quantities to become part of a larger functional.
+
+        :param state: A ``CasADi`` ``SX`` object or a sequence of floats,
+          representing the thermodynamic state of the model. This is to be seen
+          as a purely numerical object, as the physical interpretation, for
+          instance as temperature, volume and mole flows, is first happening
+          within the model.
+
+        :param parameters: A nested dictionary with string keys and
+          :class:`simu.Quantity` leaves. Depending on the application, these
+          quantities hold float or ``SX`` type magnitudes.
 
         :return: A list of property collections, representing the thermodynamic
           properties, in the sequence as defined by :attr:`property_names`.

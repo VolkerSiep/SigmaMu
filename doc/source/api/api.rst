@@ -4,10 +4,10 @@ API documentation
 .. toctree::
    :maxdepth: 2
 
-   modelling/modelling
+   utilities/utilities
+   thermo/thermo
+
 
 .. comment::
 
-    thermo/thermo
     modelling/modelling
-    utilities/utilities

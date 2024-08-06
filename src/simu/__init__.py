@@ -3,8 +3,10 @@ from logging import getLogger, NullHandler
 
 from simu.core.utilities import (
     ParameterDictionary, base_magnitude, log, qsum, conditional, jacobian,
-    qpow, qvertcat, qsqrt, exp, log, log10, sin, cos, tan, arcsin, arccos,
-    arctan, sinh, cosh, tanh, arcsinh, arccosh, arctanh, base_magnitude
+    qpow, qvertcat, sqrt, exp, log, log10, sin, cos, tan, arcsin, arccos,
+    arctan, sinh, cosh, tanh, arcsinh, arccosh, arctanh, base_magnitude,
+    Quantity, QuantityDict, MCounter, SymbolQuantity, QFunction, base_unit,
+    flatten_dictionary, unflatten_dictionary, extract_units_dictionary
 )
 
 from simu.core.utilities.constants import (
@@ -12,13 +14,16 @@ from simu.core.utilities.constants import (
     SIGMA, F, EPS_0, MU_0, E_0, K_B, STD_GRAVITY
 )
 
-from simu.core.thermo.factory import ThermoFactory
-from simu.core.thermo.contribution import ThermoContribution
-from simu.core.thermo.state import InitialState, all_states
-from simu.core.model import Model, NumericHandler
-from simu.core.utilities import Quantity, QuantityDict
+from simu.core.thermo import (
+    all_states, InitialState, SpeciesDefinition, SpeciesDB, StateDefinition,
+    ThermoContribution, ThermoFactory, ThermoFrame
+)
 
+from simu.core.model import Model, NumericHandler
+
+# versioning
 from ._version import VERSION as __version__
 
+# logging
 logger = getLogger(__name__)
 logger.addHandler(NullHandler())

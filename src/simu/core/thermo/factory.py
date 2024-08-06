@@ -32,9 +32,10 @@ class ThermoFactory:
         self.__state_definitions[name] = definition_cls
 
     def register(self, *contributions: Type[ThermoContribution]):
-        """Registers contributions under the name of the class.
-        The contributions must be a concrete subclass of
-        :class:`ThermoContribution`.
+        """Registers contributions under the names of their classes.
+
+        The contributions must be concrete subclasses of
+        :class:`ThermoContribution`, and their names must be unique.
 
         :param contributions: The contributions to register, being classes
           (not instances)
@@ -57,14 +58,14 @@ class ThermoFactory:
         given ``configuration``.
 
         :param species: A dictionary mapping names to species definitions
-        :param configuration: A nested dictionary with the
-          following root entries:
+        :param configuration: A nested dictionary with the following root
+          entries:
 
-            - ``state``: An identifier that represents the type of state as
-              defined by :meth:`register_state_definition`.
+            - ``state``: A string identifier that represents the type of state
+              as defined by :meth:`register_state_definition`.
             - ``contributions``: A list of strings, representing the names
               of the contributions to stack. These identifiers must have been
-              defined upfront by calls to :meth:`register_contribution`.
+              defined upfront by calls to :meth:`register`.
               A contribution entry can also be a dictionary with the following
               keys:
 
@@ -72,7 +73,7 @@ class ThermoFactory:
                   only key defined, its effect is as if the sole string of the
                   class name was provided.
                 - ``name``: The name of the contribution in the created
-                  :class:`ThermoFrame`` object. This name must be unique within
+                  :class:`ThermoFrame` object. This name must be unique within
                   the frame definition. It will also be used to define the
                   contribution parameter structure.
                   If skipped, the name will be the same as ``cls``. To be
@@ -82,7 +83,7 @@ class ThermoFactory:
                   hopefully documented) for the particular contribution.
                   If skipped, an empty dictionary is used.
 
-        :return: The thermodynamic model object
+        :return: The thermodynamic model (:class:`ThermoFrame`) object
         """
         contributions = {}
         for item in configuration["contributions"]:

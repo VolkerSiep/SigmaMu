@@ -37,9 +37,10 @@ extensions = [
     'custom_directives'
 ]
 
-autoclass_content = 'both'
+# autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 autodoc_typehints = 'signature'
+# autodoc_imported_members = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

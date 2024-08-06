@@ -8,19 +8,19 @@ Objects
 
 Quantity
 ^^^^^^^^
-.. autoclass:: simu.core.utilities.Quantity
+.. autoclass:: simu.Quantity
     :members:
 
 .. auto
 
 SymbolQuantity
 ^^^^^^^^^^^^^^
-.. autoclass:: simu.core.utilities.SymbolQuantity
+.. autoclass:: simu.SymbolQuantity
     :members:
 
 QFunction
 ^^^^^^^^^
-.. autoclass:: simu.core.utilities.QFunction
+.. autoclass:: simu.QFunction
     :members:
 
 Global Functions
@@ -30,52 +30,48 @@ quantities.
 
 jacobian
 ^^^^^^^^
-.. autofunction:: simu.core.utilities.jacobian
+.. autofunction:: simu.jacobian
 
-sum1
+qsum
 ^^^^
-.. autofunction:: simu.utilities.sum1
+.. autofunction:: simu.qsum
 
 log
 ^^^
-.. autofunction:: simu.utilities.log
-
-exp
-^^^
-.. autofunction:: simu.utilities.exp
+.. autofunction:: simu.log
 
 sqrt
 ^^^^
-.. autofunction:: simu.utilities.sqrt
+.. autofunction:: simu.sqrt
 
 qpow
 ^^^^
-.. autofunction:: simu.utilities.qpow
+.. autofunction:: simu.qpow
 
 conditional
 ^^^^^^^^^^^
-.. autofunction:: simu.utilities.conditional
+.. autofunction:: simu.conditional
 
 qvertcat
 ^^^^^^^^
-.. autofunction:: simu.utilities.qvertcat
+.. autofunction:: simu.qvertcat
 
 base_unit
 ^^^^^^^^^
-.. autofunction:: simu.utilities.base_unit
+.. autofunction:: simu.base_unit
 
 base_magnitude
 ^^^^^^^^^^^^^^
-.. autofunction:: simu.utilities.base_magnitude
+.. autofunction:: simu.base_magnitude
 
 flatten_dictionary
 ^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.utilities.flatten_dictionary
+.. autofunction:: simu.flatten_dictionary
 
 unflatten_dictionary
 ^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.utilities.unflatten_dictionary
+.. autofunction:: simu.unflatten_dictionary
 
 extract_units_dictionary
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.utilities.extract_units_dictionary
+.. autofunction:: simu.extract_units_dictionary
