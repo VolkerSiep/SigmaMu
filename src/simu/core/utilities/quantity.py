@@ -223,7 +223,7 @@ def base_magnitude(quantity: Quantity) -> Union[float, "cas.SX"]:
         "**Use SI or I will BTU you with my feet!**"
 
         I saw this sentence once on the T-shirt of a nerd.
-        It turns out it was a mirrow.
+        It turns out it was a mirror.
     """
     return quantity.to_base_units().magnitude
 
