@@ -24,6 +24,28 @@ from ..utilities import (Quantity, ParameterDictionary, QFunction,
 from ..utilities.types import NestedMap, Map, MutMap
 
 ThermoContributionDict = Map[tuple[Type["ThermoContribution"], Map]]
+"""
+A dictionary whose keys are the names of the contributions, and the values are
+tuples of the belonging classes and the options belonging to the definition.
+An example could be:
+
+.. code-block::
+
+    contribs = {
+        "LinearHeatCapacity": (LinearHeatCapacity, {}),
+        ...
+        "MixingRule_A": (NonSymmetricMixingRule, {"target": "_ceos_a"}
+    } 
+    
+This kind of structure is used to define the sequence of contributions in a 
+:cls:`ThermoFrame` object. Here, the class ``LinearHeatCapacity`` is defined 
+straight forward with no options. For the mixing rule of the ``A`` contribution,
+called ``MixingRule_A``, it uses the ``NonSymmetricMixingRule`` class, 
+configured with ``ceos_a`` being the ``target``.
+
+It is up to each individual :cls:`ThermoContribution` implementation to support
+and document their set of options.
+"""
 
 logger = getLogger(__name__)
 
@@ -33,12 +55,9 @@ class ThermoFrame:
     Function object :attr:`function` of the state vector and the parameter
     vector, and calculates a set of thermodynamic properties.
 
-    .. note::
-
-        The object should not be constructed by client code, but created
-        by the :meth:`ThermoFactory.create_frame` method that handles the
-        house-keeping of contribution classes. For this reason, the constructor
-        is not further documented here.
+    The object should not be constructed via the class constructor by
+    client code, but created by the :meth:`ThermoFactory.create_frame`
+    method that handles the house-keeping of contribution classes.
     """
 
     def __init__(self, species: Mapping[str, SpeciesDefinition],
@@ -137,8 +156,9 @@ class ThermoFrame:
         It returns the structure of all required model parameters. Initially,
         the returned object contains units of measurements that must be
         replaced with actual quantities (symbolic or not) before the
-        function can be called or :meth:`initialise` invoked. For the latter,
-        float quantities have to be provided to the parameter object.
+        function (:meth:`__call__`) or :meth:`initial_state` can be called .
+        For the latter, float quantities have to be provided to the parameter
+        object.
         """
         return self.__param_struct
 

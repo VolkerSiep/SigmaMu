@@ -4,7 +4,7 @@
 from .frame import ThermoFrame
 from .factory import ThermoFactory
 from .contribution import ThermoContribution
-from .state import StateDefinition, InitialState, all_states
+from .state import StateDefinition, InitialState
 from .species import SpeciesDB, SpeciesDefinition
 
 from .parameters import ThermoParameterStore

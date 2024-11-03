@@ -15,7 +15,7 @@ from simu.core.utilities.constants import (
 )
 
 from simu.core.thermo import (
-    all_states, InitialState, SpeciesDefinition, SpeciesDB, StateDefinition,
+    InitialState, SpeciesDefinition, SpeciesDB, StateDefinition,
     ThermoContribution, ThermoFactory, ThermoFrame
 )
 

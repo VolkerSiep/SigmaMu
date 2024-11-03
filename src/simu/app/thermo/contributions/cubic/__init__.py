@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # internal modules
-from simu import ThermoContribution, exp, conditional, qsqrt, qpow, qsum
+from simu import ThermoContribution, exp, conditional, sqrt, qpow, qsum
 from simu.core.utilities import SymbolQuantity
 
 from .rk import (RedlichKwongEOSLiquid, RedlichKwongEOSGas,
@@ -93,7 +93,7 @@ class NonSymmetricMixingRule(ThermoContribution):
             temp, n, a_i = res["T"], res["n"], res[source]
             tau = temp / par.register_scalar("T_ref", "K")
             tau_1, tau_2 = 1 - tau, 1 - 1 / tau
-            a_n = qsqrt(a_i) * n
+            a_n = sqrt(a_i) * n
             N = qsum(n)
             return n, N, a_n, tau_1, tau_2
 
@@ -239,7 +239,7 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         eta = par.register_vector("eta", self.species, "dimless")
         temp, critical_temp, m_fac = res["T"], res["_T_c"], res["_m_factor"]
         tau = temp / critical_temp
-        stau = qsqrt(tau)
+        stau = sqrt(tau)
 
         # define sub and super-critical expression
         alpha_sub = 1 + m_fac * (1 - stau) - eta * (1 - stau) * (0.7 - tau)

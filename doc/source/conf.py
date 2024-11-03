@@ -34,6 +34,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.autosummary',
     'sphinxcontrib.bibtex',
+    'sphinx.ext.doctest',
     'custom_directives'
 ]
 
@@ -51,7 +52,7 @@ templates_path = ['_templates']
 exclude_patterns: list[str] = []
 
 # bibtex file
-bibtex_bibfiles = ['bibliographics.bib']
+bibtex_bibfiles = ['bibliographies.bib']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -85,8 +86,9 @@ todo_include_todos = True
 mathjax3_config = {
     "tex": {
         "macros": {
-            "emul": '{\\stackrel{E}{\\cdot}}',
-            "vec": ['{\\mathbf{\\boldsymbol{#1}}}', 1]
+            "emul": r'{\stackrel{E}{\cdot}}',
+            "vec": [r'{\mathbf{\boldsymbol{#1}}}', 1],
+            "standard": r'{\circ\hspace{-1.45ex}-}'
         }
     }
 }

@@ -48,14 +48,15 @@ class ThermoFactory:
 
     @property
     def contribution_names(self) -> Collection[str]:
-        """This property contains the full names of all so long registered
+        """This property contains the full names of all registered
         contributions"""
         return set(self.__contributions.keys())
 
     def create_frame(self, species: Mapping[str, SpeciesDefinition],
                      configuration: Mapping) -> ThermoFrame:
         """This factory method creates a :class:`ThermoFrame` object from the
-        given ``configuration``.
+        given ``configuration``, and is the recommended way to create
+        :class:`ThermoFrame` objects.
 
         :param species: A dictionary mapping names to species definitions
         :param configuration: A nested dictionary with the following root

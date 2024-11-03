@@ -14,7 +14,7 @@ pressure levels (V = 1e-3 m3/mol) and for pressures near critical
 """
 
 from numpy import array, sqrt, exp
-import pylab
+from matplotlib import pyplot
 
 # gas constant
 R_GAS = 8.31446261815324
@@ -158,15 +158,15 @@ def alpha_data():
 def main():
     T_r = T / T_C
 
-    pylab.plot(T_r, alpha_data(), "k.", label="NIST data")
-    pylab.plot(T_r, alpha_sub(T_r), label="Mathias alpha function")
-    pylab.plot(T_r, alpha_BM(T_r), label="Boston-Mathias extrapolation")
-    pylab.plot(T_r, alpha_BMS(T_r), label="Modified extrapolation")
-    pylab.grid()
-    pylab.legend(loc="best")
-    pylab.xlabel("T / T_c [-]")
-    pylab.ylabel("sqrt(alpha) [-]")
-    pylab.show()
+    pyplot.plot(T_r, alpha_data(), "k.", label="NIST data")
+    pyplot.plot(T_r, alpha_sub(T_r), label="Mathias alpha function")
+    pyplot.plot(T_r, alpha_BM(T_r), label="Boston-Mathias extrapolation")
+    pyplot.plot(T_r, alpha_BMS(T_r), label="Modified extrapolation")
+    pyplot.grid()
+    pyplot.legend(loc="best")
+    pyplot.xlabel("T / T_c [-]")
+    pyplot.ylabel("sqrt(alpha) [-]")
+    pyplot.show()
 
 
 

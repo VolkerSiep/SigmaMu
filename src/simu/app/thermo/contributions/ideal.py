@@ -19,7 +19,7 @@ class H0S0ReferenceState(ThermoContribution):
     ``dh_form`` Molar enthalpy of formation vector :math:`\Delta_f h`
     ``s_0``     Vector of standard entropies       :math:`s_0`
     ``T_ref``   Reference temperature              :math:`T_\mathrm{ref}`
-    ``p_ref``   Reference pressure                 :math:`p_\mathrm{ref}`
+    ``p_ref``   Reference pressure                 :math:`T_\mathrm{ref}`
     =========== ================================== ======================
 
     Based on this, the reference state is defined in therms of entropy

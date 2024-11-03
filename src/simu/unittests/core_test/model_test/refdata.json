@@ -504,7 +504,7 @@
         "N": "mol / s",
         "T": "K",
         "p": "J / m ** 3",
-        "x": "% * mol / s"
+        "x": "mol * % / s"
       },
       "thermo_props": {
         "local": {
@@ -544,7 +544,7 @@
     "residuals/N": "1.000000 mol / s",
     "residuals/T": "0.000000 K",
     "residuals/p": "0.000000 J / m ** 3",
-    "residuals/x": "-80.000000 % * mol / s",
+    "residuals/x": "-80.000000 mol * % / s",
     "thermo_props/local/N": "2.000000 mol / s",
     "thermo_props/local/S": "-154.465034 kg * m ** 2 / K / s ** 3",
     "thermo_props/local/S_std": "-8.930247 kg * m ** 2 / K / s ** 3",

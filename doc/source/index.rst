@@ -8,13 +8,14 @@ SiMu Documentation
 
    introduction
    getting_started
+   tutorial/tutorial
    api/api
 
 .. toctree::
    :maxdepth: 1
 
    release_notes
-   bibliographics
+   bibliographies
 
 
 Indices and tables

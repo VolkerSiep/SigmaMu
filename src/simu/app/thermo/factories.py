@@ -5,9 +5,9 @@ from typing import Iterable
 from yaml import safe_load
 
 # internal
-from . import all_contributions
+from . import all_contributions, all_states
 from ..data import DATA_DIR
-from ... import ThermoFactory, all_states
+from ... import ThermoFactory
 
 
 class ExampleThermoFactory(ThermoFactory):

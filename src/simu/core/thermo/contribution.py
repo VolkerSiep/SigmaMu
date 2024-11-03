@@ -26,7 +26,7 @@ class ThermoContribution(ABC):
     implementation of the belonging equations.
 
     The usage of this class is mainly indirect by instantiation via the
-    :cls`ThermoFactory` objects and parametrisation via the provided parameter
+    :class:`ThermoFactory` objects and parametrisation via the provided parameter
     structures.
 
     A contribution can overwrite the class attribute ``provides``, helping

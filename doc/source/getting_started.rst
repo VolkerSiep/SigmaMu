@@ -52,6 +52,11 @@ Name                    What for
 `sphinxcontrib-bibtex`_ Handling of bibliographics in documentation
 ======================= =================================================
 
+.. testsetup::
+
+    >>> from examples.hello_world import Square
+    >>> from simu import NumericHandler, Quantity
+
 Hello World
 -----------
 To call the following a *process model* is quite an insult to actual process models, but it is a start:
@@ -68,11 +73,8 @@ In the ``define`` method, the property ``area`` is assigned to be the square of 
 
 Next, we want to do something with the model. To do that, we wrap it into an instance of :class:`NumericHandler <model.numeric.NumericHandler>` and create a :class:`QFunction <utilities.quantity.QFunction>` object:
 
-.. code-block::
-
-    numeric = NumericHandler(Square.top())
-    func = numeric.function
-
+    >>> numeric = NumericHandler(Square.top())
+    >>> func = numeric.function
 
 Now we can print the argument structure of the function:
 
@@ -144,9 +146,9 @@ The figure below shows the collaboration diagram of involved entities:
 Model application range
 -----------------------
 
-In standard simulations, the number of process contraints and state variables are equal - the system is square. The system is then solved as a non-linear equation system with a (hopefully) unique solution. However, instead of plain solving, one can conduct
+In standard simulations, the number of process constraints and state variables are equal - the system is square. The system is then solved as a non-linear equation system with a (hopefully) unique solution. However, instead of plain solving, one can conduct
 
-  - **Data reconciliation**: Minimising the deviation between measured data and calculated model properties over the state of the model, constrainted by a reduced set of residuals;
+  - **Data reconciliation**: Minimising the deviation between measured data and calculated model properties over the state of the model, constrained by a reduced set of residuals;
   - **Parameter fit**: Fitting model parameters common over multiple data-sets in combination with individual model states, constrained by the model's residuals, to minimise deviation between measured data and calculated model properties;
   - **Thermodynamic parameter fit**: Like *Parameter fit*, but specifically with thermodynamic parameters, often utilising laboratory data concerning equilibrium or calorimetric data;
   - **Parameter optimisation**: Minimizing an objective function as function of model properties over the thermodynamic state and model parameters, constrained by the model's residuals.
