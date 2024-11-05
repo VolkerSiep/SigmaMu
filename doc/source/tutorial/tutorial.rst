@@ -8,7 +8,7 @@ Creating a thermodynamic model
 First some theory to set the scene
 ----------------------------------
 
-.. warning::
+.. note::
 
     By reading this part, you might learn about and / or gain a more structured view about what thermodynamic models are. Most text books, specially those of older dates, like to confuse at this point with fugacities, activities, and their coefficients. If you want to learn more about those, read an old thermodynamics book.
 
@@ -72,7 +72,17 @@ Next, a :class:`simu.ThermoFrame` can be constructed, stacking the contributions
    :lineno-start: 8
    :lines: 8-19
 
-Here we decided to create an ideal gas model for methane. the :class:`simu.SpeciesDefinition` defines in this simple case some basic generic properties based on the chemical formula, that is molecular weight, elementary composition and electrical charge. For fun, you can analyse some formulae, for instance
+Here we decided to create an ideal gas model for methane, and used the following contributions:
+
+ - :class:`simu.app.thermo.contributions.H0S0ReferenceState`
+ - :class:`simu.app.thermo.contributions.LinearHeatCapacity`
+ - :class:`simu.app.thermo.contributions.StandardState`
+ - :class:`simu.app.thermo.contributions.IdealMix`
+ - :class:`simu.app.thermo.contributions.GibbsIdealGas`
+
+Note that we could have left out the :class:`StandardState <simu.app.thermo.contributions.StandardState>` class, as it only preserves the standard state properties and does no own calculations. Only if we later would like to introduce the concepts of fugacity :math:`f_i` and activity :math:`a_i`, we would require to access these properties. However, this is not interesting for an ideal gas, where :math:`f_i = p_i` and :math:`a_i = x_i`.
+
+The :class:`simu.SpeciesDefinition` defines in this simple case some basic generic properties based on the chemical formula, that is molecular weight, elementary composition and electrical charge. For fun, you can analyse some formulae, for instance
 
 >>> from simu import SpeciesDefinition
 >>> print(SpeciesDefinition("Ca(CH3-CH2-COO)2").elements)
@@ -80,7 +90,7 @@ Here we decided to create an ideal gas model for methane. the :class:`simu.Speci
 >>> print(f"{SpeciesDefinition('KMnO4').molecular_weight:~.3f}")
 158.032 g / mol
 
-However, now we have our frame object and can ask it for the required thermodynamic parameters. Here we dump the dictionary as a json string for cheap nicer formatting:
+However, now we have our frame object and can ask it for the required thermodynamic parameters:
 
 .. literalinclude:: ../examples/ideal_gas.py
    :language: python
@@ -90,26 +100,12 @@ However, now we have our frame object and can ask it for the required thermodyna
 
 We receive the following structure, indicating the required physical dimension as a place-holder for each parameter to be provided::
 
-    {
-      "H0S0ReferenceState": {
-        "s_0": {
-          "Methane": "kg * m ** 2 / K / mol / s ** 2"
-        },
-        "dh_form": {
-          "Methane": "kg * m ** 2 / mol / s ** 2"
-        },
-        "T_ref": "K",
-        "p_ref": "kg / m / s ** 2"
-      },
-      "LinearHeatCapacity": {
-        "cp_a": {
-          "Methane": "kg * m ** 2 / K / mol / s ** 2"
-        },
-        "cp_b": {
-          "Methane": "kg * m ** 2 / K ** 2 / mol / s ** 2"
-        }
-      }
-    }
+    {'H0S0ReferenceState': {'T_ref': 'K',
+                            'dh_form': {'Methane': 'kg * m ** 2 / mol / s ** 2'},
+                            'p_ref': 'kg / m / s ** 2',
+                            's_0': {'Methane': 'kg * m ** 2 / K / mol / s ** 2'}},
+     'LinearHeatCapacity': {'cp_a': {'Methane': 'kg * m ** 2 / K / mol / s ** 2'},
+                            'cp_b': {'Methane': 'kg * m ** 2 / K ** 2 / mol / s ** 2'}}}
 
 It is to be noted that the actual parameters can be given in different units, as long as they are compatible -- we come back to this.
 
@@ -123,24 +119,21 @@ Likewise, the frame can be queried for the properties that are calculated:
 
 This yields::
 
-    {
-      "S": "kg * m ** 2 / K / s ** 2",
-      "S_std": "kg * m ** 2 / K / s ** 2",
-      "T": "K",
-      "T_ref": "K",
-      "V": "J * m * s ** 2 / kg",
-      "_state": "dimless",
-      "mu": "kg * m ** 2 / mol / s ** 2",
-      "mu_std": "kg * m ** 2 / mol / s ** 2",
-      "n": "mol",
-      "p": "kg / m / s ** 2",
-      "p_ref": "kg / m / s ** 2",
-      "p_std": "kg / m / s ** 2"
-    }
+    {'S': 'kg * m ** 2 / K / s ** 2',
+     'S_std': 'kg * m ** 2 / K / s ** 2',
+     'T': 'K',
+     'T_ref': 'K',
+     'V': 'J * m * s ** 2 / kg',
+     '_state': 'dimless',
+     'mu': 'kg * m ** 2 / mol / s ** 2',
+     'mu_std': 'kg * m ** 2 / mol / s ** 2',
+     'mw': 'g / mol',
+     'n': 'mol',
+     'p': 'kg / m / s ** 2',
+     'p_ref': 'kg / m / s ** 2',
+     'p_std': 'kg / m / s ** 2'}
 
 
 .. todo::
-  - explain where to find help on contributions
-  - what was the standard state contribution (and hence what is mu_std)
   - put in some parameters for methane and calculate properties
   - can I add calculation of density? How did I plan this again!?!??

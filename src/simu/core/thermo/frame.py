@@ -19,7 +19,7 @@ from casadi import SX
 from .contribution import ThermoContribution
 from .state import StateDefinition, InitialState
 from .species import SpeciesDefinition
-from ..utilities import (Quantity, ParameterDictionary, QFunction,
+from ..utilities import (Quantity, ParameterDictionary, QFunction, qvertcat,
                          SymbolQuantity, extract_units_dictionary)
 from ..utilities.types import NestedMap, Map, MutMap
 
@@ -80,7 +80,8 @@ class ThermoFrame:
             # define thermodynamic state (th, mc, [ch])
             state = SymbolQuantity("x", "dimless", len(species) + 2)
             # call the contributions; build up result dictionary
-            result = {"_state": state}
+            mw = qvertcat(*[s.molecular_weight for s in species.values()])
+            result = {"_state": state, "mw": mw}
             state_definition.prepare(result, flow)
             for name, contribution in contribs.items():
                 new_params = ParameterDictionary()

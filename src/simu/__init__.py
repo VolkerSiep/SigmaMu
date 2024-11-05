@@ -6,7 +6,8 @@ from simu.core.utilities import (
     qpow, qvertcat, sqrt, exp, log, log10, sin, cos, tan, arcsin, arccos,
     arctan, sinh, cosh, tanh, arcsinh, arccosh, arctanh, base_magnitude,
     Quantity, QuantityDict, MCounter, SymbolQuantity, QFunction, base_unit,
-    flatten_dictionary, unflatten_dictionary, extract_units_dictionary
+    flatten_dictionary, unflatten_dictionary, extract_units_dictionary,
+    simplify_quantity
 )
 
 from simu.core.utilities.constants import (

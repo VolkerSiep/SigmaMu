@@ -7,7 +7,7 @@ The following are classes to generally describe the thermodynamic framework.
    :maxdepth: 2
 
    core
-
+   app
 
 .. comment::
 

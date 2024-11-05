@@ -23,8 +23,8 @@ QFunction
 .. autoclass:: simu.QFunction
     :members:
 
-Global Functions
-----------------
+Symbolic Functions
+------------------
 The following functions redefine mathematical functions on the symbolic
 quantities.
 
@@ -52,6 +52,9 @@ conditional
 ^^^^^^^^^^^
 .. autofunction:: simu.conditional
 
+Utility functions
+-----------------
+
 qvertcat
 ^^^^^^^^
 .. autofunction:: simu.qvertcat
@@ -75,3 +78,7 @@ unflatten_dictionary
 extract_units_dictionary
 ^^^^^^^^^^^^^^^^^^^^^^^^
 .. autofunction:: simu.extract_units_dictionary
+
+simplify_quantity
+^^^^^^^^^^^^^^^^^
+.. autofunction:: simu.simplify_quantity

@@ -132,18 +132,19 @@
     }
   },
   "frame_test.py::test_property_structure": {
-    "S": "kg * m ** 2 / K / s ** 2",
-    "S_std": "kg * m ** 2 / K / s ** 2",
+    "S": "J / K",
+    "S_std": "J / K",
     "T": "K",
     "T_ref": "K",
     "V": "m ** 3",
-    "_state": "dimless",
-    "mu": "kg * m ** 2 / mol / s ** 2",
-    "mu_std": "kg * m ** 2 / mol / s ** 2",
+    "_state": "",
+    "mu": "J / mol",
+    "mu_std": "J / mol",
+    "mw": "kg / mol",
     "n": "mol",
-    "p": "J / m ** 3",
-    "p_ref": "kg / m / s ** 2",
-    "p_std": "kg / m / s ** 2"
+    "p": "Pa",
+    "p_ref": "Pa",
+    "p_std": "Pa"
   },
   "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless",
   "store_test.py::test_create_frame": {

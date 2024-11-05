@@ -16,7 +16,7 @@ Therefore several authors, e.g. :cite:p:`Boston1980` have suggested alternative 
   
 Defining the interface to the sub-critical expression
 -----------------------------------------------------
-To simplify the problem further, we can transform the variables without compromising above conditions. Firstly, we consider the square of the alpha-function: :math:`\alpha' := \alpha^2`, and secondly, we use the square root of the reduced temperature as independent variable: :math:`\tau = \sqrt{\tau'}`.
+To simplify the problem further, we can transform the variables without compromising above conditions. Firstly, we consider the square root of the alpha-function: :math:`\alpha' := \sqrt{\alpha}`, and secondly, we use the square root of the reduced temperature as independent variable: :math:`\tau = \sqrt{\tau'}`.
 
 Next, we calculate the properties at :math:`\tau = 1` for the sub-critical alpha-function - which of course is individual. For the Mathias alpha-function :cite:p:`Mathias1983`, we have
 

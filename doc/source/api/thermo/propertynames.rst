@@ -54,7 +54,4 @@ Variable name Description
 
 .. note::
 
-	We encourage to not publish derivable properties on this layer, as these are very numerous and not
-	required for each model evaluation. These include for instance enthalpy, inner ennergy, compositional
-	fractions, heat capacities, adiabatic exponent, compressibility, thermal expansitivity, Joule-Thomson
-	coefficient, partial molar enthalpy and speed of sound. 
+   We encourage to not publish derivable properties on this layer, as these are very numerous and not required for each model evaluation. These include for instance enthalpy, inner energy, compositional fractions, heat capacities, adiabatic exponent, compressibility, thermal expansion coefficient, Joule-Thomson coefficient, partial molar enthalpy and speed of sound.

@@ -7,7 +7,7 @@ from .structures import (
 from .quantity import (
     QFunction, Quantity, SymbolQuantity, base_magnitude, base_unit,
     conditional, jacobian, qpow, qvertcat, qsqrt, qsum, unit_registry,
-    extract_units_dictionary)
+    extract_units_dictionary, simplify_quantity)
 from .qstructures import (
     ParameterDictionary, QuantityDict, parse_quantities_in_struct, exp, log,
     log10, sin, cos, tan, arcsin, arccos, arctan, sinh, cosh, tanh, arcsinh,

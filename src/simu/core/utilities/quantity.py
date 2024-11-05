@@ -9,7 +9,8 @@ from typing import Union
 # need to import entire casadi module to distinguish functions of same name
 import casadi as cas
 from numpy import squeeze
-from pint import UnitRegistry, set_application_registry
+from pint import UnitRegistry, set_application_registry, Unit
+from pint.util import UnitsContainer
 from pint.errors import DimensionalityError
 
 # internal modules
@@ -30,6 +31,10 @@ def _create_registry() -> UnitRegistry:
 unit_registry = _create_registry()
 _Q = unit_registry.Quantity
 del _create_registry
+
+__DERIVED_UNITS = \
+    "joule watt newton pascal coulomb volt farad ohm " \
+    "siemens weber tesla henry lumen lux".split()
 
 
 class Quantity(_Q):
@@ -202,6 +207,50 @@ def base_unit(unit: str) -> str:
     return f"{base:~}"
 
 
+def simplify_quantity(quantity: Quantity) -> Quantity:
+    """Try to convert the unit into a more compact notation, allowing
+    derived units, such as Watt, Joule and Pascal to be used.
+
+    Examples:
+
+    >>> q = Quantity(1.0, "kg * m**2 / mol / s**2")
+    >>> print(f"{simplify_quantity(q):~}")
+    1.0 J / mol
+
+    >>> q = Quantity(1.0, "kg / K / s**3")
+    >>> print(f"{simplify_quantity(q):~}")
+    1.0 W / K / m ** 2
+
+    >>> q = Quantity(1.0, "kg / m**2 / s**2")
+    >>> print(f"{simplify_quantity(q):~}")
+    1.0 Pa / m
+
+    >>> q = Quantity(1.0, "kg * m**2 / s**3 / A**2")
+    >>> print(f"{simplify_quantity(q):~}")
+    1.0 Ω
+
+    >>> q = Quantity(1.0, "m**3 / s")
+    >>> print(f"{simplify_quantity(q):~}")
+    1.0 m ** 3 / s
+    """
+    def weight_factors(dimensionality: UnitsContainer) -> float:
+        """Count the factors, but weight an exponent unequal unity less hard
+        than a completely new factor
+         """
+        return sum(1 + abs(e) for e in dimensionality.values())
+
+    quantity = quantity.to_base_units()
+    count = weight_factors(quantity.dimensionality)
+    for unit in __DERIVED_UNITS:
+        trial = Quantity(1, unit)
+        candidate = (quantity / trial).to_base_units()
+        new_count = weight_factors(candidate.dimensionality)
+        if new_count < count:
+                quantity = candidate * trial
+                count = new_count
+    return quantity
+
+
 def base_magnitude(quantity: Quantity) -> Union[float, "cas.SX"]:
     """Return the magnitude of the quantity in base units. This works for
     symbolic and numeric quantities, and for scalars and vectors
@@ -305,12 +354,18 @@ class QFunction:
     def result_structure(self) -> NestedMap[str]:
         """Return the result structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
-        units = {k: f"{v:~}" for k, v in self.res_units.items()}
+        simplify = self.__simplify_unit
+        units = {k: f"{simplify(v):~}" for k, v in self.res_units.items()}
         return unflatten_dictionary(units)
 
     @property
     def arg_structure(self) -> NestedMap[str]:
         """Return the argument structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
-        units = {k: f"{v:~}" for k, v in self.arg_units.items()}
+        simplify = self.__simplify_unit
+        units = {k: f"{simplify(v):~}" for k, v in self.arg_units.items()}
         return unflatten_dictionary(units)
+
+    @staticmethod
+    def __simplify_unit(unit: Unit) -> Unit:
+        return simplify_quantity(Quantity(1, unit)).units

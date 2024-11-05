@@ -42,7 +42,7 @@ class MaterialSpec:
 
     @property
     def locked(self) -> bool:
-        """Whether the specifcation allows other species than the ones
+        """Whether the specification allows other species than the ones
         listed as :attr:`species`."""
         return self.__locked
 

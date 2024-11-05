@@ -28,12 +28,12 @@ def main():
     tau = linspace(XMIN, XMAX)
 
     alpha_1 = 1 + m * (1 - sqrt(tau)) - eta * (1 - sqrt(tau)) * (0.7 - tau)
-    alpha_2 = exp(c* (1 - tau ** d))
-    alpha_3 = exp(c2* (1 - tau ** d2))
+    alpha_2 = exp(c * (1 - tau ** d))
+    alpha_3 = exp(c2 * (1 - tau ** d2))
 
     dadt_1 = -m / 2 / sqrt(tau) + eta / 2 / sqrt(tau) * (0.7 - tau) + eta * (1 - sqrt(tau))
-    dadt_2 =  -exp(c* (1 - tau ** d)) * c * d * tau ** (d - 1)
-    dadt_3 =  -exp(c2* (1 - tau ** d2)) * c2 * d2 * tau ** (d2 - 1)
+    dadt_2 =  -exp(c * (1 - tau ** d)) * c * d * tau ** (d - 1)
+    dadt_3 =  -exp(c2 * (1 - tau ** d2)) * c2 * d2 * tau ** (d2 - 1)
 
     fig = pyplot.figure(figsize=(6,4), dpi=300)
     ax1 = fig.subplots()
