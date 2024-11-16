@@ -35,7 +35,7 @@ At first, Muriel was afraid of the snake and didn't trust python for being its m
 When you now look back at the letter combination :math:`\Sigma\mu`, with wrong glasses and some imagination you can picture :math:`\Sigma` being the python and :math:`\mu` being Muriel.
 Her name in a way starts with this letter, and *Muriel* is a name with origins in the Irish and Gaelic language, describing the shining sea. In Norway, the expression *morild* (sea fire) stands for the effect of sea being illuminated by plankton that is excitated by movements in the water - a nice experience when taking a late-summer night swim in the fjords.
 
-In other words: **Muriel brings light into the dark when you are in deep water.**
+In other words: **Muriel brings light into the dark when you are up to the neck in deep water.**
 
 
 So what is SiMu?

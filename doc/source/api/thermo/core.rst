@@ -38,3 +38,8 @@ SpeciesDefinition
 -----------------
 .. autoclass:: SpeciesDefinition
    :members:
+
+InitialState
+------------
+.. autoclass:: InitialState
+   :members:

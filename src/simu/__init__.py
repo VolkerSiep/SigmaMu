@@ -7,7 +7,7 @@ from simu.core.utilities import (
     arctan, sinh, cosh, tanh, arcsinh, arccosh, arctanh, base_magnitude,
     Quantity, QuantityDict, MCounter, SymbolQuantity, QFunction, base_unit,
     flatten_dictionary, unflatten_dictionary, extract_units_dictionary,
-    simplify_quantity
+    simplify_quantity, parse_quantities_in_struct
 )
 
 from simu.core.utilities.constants import (

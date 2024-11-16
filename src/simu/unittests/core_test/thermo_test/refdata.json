@@ -99,35 +99,35 @@
     }
   ],
   "frame_test.py::test_call_frame_flow": {
-    "S": "19.69280941623939 kg * m ** 2 / K / s ** 3",
-    "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
+    "S": "19.69280941623939 W / K",
+    "mu": "[-1486.852957088782 -1360.216558986931] J / mol"
   },
   "frame_test.py::test_call_frame_state": {
-    "S": "19.69280941623939 kg * m ** 2 / K / s ** 2",
-    "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
+    "S": "19.69280941623939 J / K",
+    "mu": "[-1486.852957088782 -1360.216558986931] J / mol"
   },
   "frame_test.py::test_initial_state": 0.049579140592047766,
   "frame_test.py::test_parameter_structure": {
     "H0S0ReferenceState": {
       "T_ref": "K",
       "dh_form": {
-        "N2": "kg * m ** 2 / mol / s ** 2",
-        "O2": "kg * m ** 2 / mol / s ** 2"
+        "N2": "J / mol",
+        "O2": "J / mol"
       },
-      "p_ref": "kg / m / s ** 2",
+      "p_ref": "Pa",
       "s_0": {
-        "N2": "kg * m ** 2 / K / mol / s ** 2",
-        "O2": "kg * m ** 2 / K / mol / s ** 2"
+        "N2": "J / K / mol",
+        "O2": "J / K / mol"
       }
     },
     "LinearHeatCapacity": {
       "cp_a": {
-        "N2": "kg * m ** 2 / K / mol / s ** 2",
-        "O2": "kg * m ** 2 / K / mol / s ** 2"
+        "N2": "J / K / mol",
+        "O2": "J / K / mol"
       },
       "cp_b": {
-        "N2": "kg * m ** 2 / K ** 2 / mol / s ** 2",
-        "O2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+        "N2": "J / K ** 2 / mol",
+        "O2": "J / K ** 2 / mol"
       }
     }
   },
@@ -161,25 +161,25 @@
         "H2O": ""
       },
       "p_c": {
-        "H2O": "kg / m / s ** 2"
+        "H2O": "Pa"
       }
     },
     "H0S0ReferenceState": {
       "T_ref": "K",
       "dh_form": {
-        "H2O": "kg * m ** 2 / mol / s ** 2"
+        "H2O": "J / mol"
       },
-      "p_ref": "kg / m / s ** 2",
+      "p_ref": "Pa",
       "s_0": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+        "H2O": "J / K / mol"
       }
     },
     "LinearHeatCapacity": {
       "cp_a": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+        "H2O": "J / K / mol"
       },
       "cp_b": {
-        "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+        "H2O": "J / K ** 2 / mol"
       }
     },
     "MixingRule_A": {

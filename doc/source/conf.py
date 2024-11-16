@@ -95,4 +95,5 @@ mathjax3_config = {
 
 rst_prolog = r"""
 .. |m3| replace:: m\ :sup:`3`
+.. |degC| replace:: °C
 """

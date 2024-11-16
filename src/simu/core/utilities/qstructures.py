@@ -400,7 +400,31 @@ arctanh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arctanh)
 def parse_quantities_in_struct(struct: Union[NestedMap[str], str])\
         -> Union[Quantity, NestedMap[Quantity]]:
     """Return a new struct that contains parsed quantities at the leaf
-    values of the given input struct."""
+    values of the given input structure.
+
+    The structure can be a nested dictionary, given the keys as strings and the
+    leaf values as strings that can be parsed as ``pint`` quantities.
+    For example:
+
+    >>> from pprint import pprint
+    >>> y = parse_quantities_in_struct({
+    ...    'speed': {
+    ...        'car': '100 km/hr',
+    ...        'snail': '1 cm/min',
+    ...        'fingernail': '1.2 mm/day'},
+    ...    'weight': {
+    ...        'car': '1.5 t',
+    ...        'snail': '10 g',
+    ...        'fingernail': '300 mg'}
+    ... })
+    >>> pprint(y)
+    {'speed': {'car': <Quantity(100.0, 'kilometer / hour')>,
+               'fingernail': <Quantity(1.2, 'millimeter / day')>,
+               'snail': <Quantity(1.0, 'centimeter / minute')>},
+     'weight': {'car': <Quantity(1.5, 'metric_ton')>,
+                'fingernail': <Quantity(300, 'milligram')>,
+                'snail': <Quantity(10, 'gram')>}}
+    """
     try:
         items = struct.items()
     except AttributeError:

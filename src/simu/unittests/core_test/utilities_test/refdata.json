@@ -15,9 +15,9 @@
   "quantity_test.py::test_exp": "@1=100, [exp((@1*(x1.A/x2.A))), exp((@1*(x1.B/x2.B)))]",
   "quantity_test.py::test_extract_units_dictionary": {
     "b": {
-      "a": "kHz"
+      "a": "1 / s"
     },
-    "x": "cm"
+    "x": "m"
   },
   "quantity_test.py::test_flatten_escaped": {
     "A": 3,

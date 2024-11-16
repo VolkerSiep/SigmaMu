@@ -221,7 +221,7 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         \alpha_i^{\frac12} =
           1 + m_i\,(1 - \tau_i) - \eta_i\,(1 - \tau_i)(0.7 - \tau_i^2)
 
-    .. warning::
+    .. important::
 
         While the paper :cite:p:`Mathias1983` is currently unavailable to me, I
         must recognize that all but :cite:p:`AspenTech2001` quote the expression

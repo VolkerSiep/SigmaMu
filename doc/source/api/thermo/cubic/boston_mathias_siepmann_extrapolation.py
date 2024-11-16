@@ -12,8 +12,8 @@ from matplotlib import pyplot
 XMIN, XMAX = 0.5, 6.0
 
 def main():
-    omega = 0.25
-    eta = 0.063  # freely invented (= 0.065 for NH3, 0.13 for H2O)
+    omega = 0.253
+    eta = 0.065  # (= 0.065 for NH3, 0.13 for H2O)
 
     m = 0.48 + (1.57 - 0.17 * omega) * omega
     d = 1 + m / 2 + 0.3 * eta/2

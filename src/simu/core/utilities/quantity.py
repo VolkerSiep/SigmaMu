@@ -280,16 +280,16 @@ def base_magnitude(quantity: Quantity) -> Union[float, "cas.SX"]:
 def extract_units_dictionary(structure: NestedMap[Quantity] | Quantity) \
         -> NestedMap[str] | str:
     """Based on a nested dictionary of Quantities, create a new nested
-    dictionaries with only the units of measurement
+    dictionaries with only the (base) units of measurement
 
     >>> d = {"a": {"b": Quantity("1 m"), "c": Quantity("1 min")}}
     >>> extract_units_dictionary(d)
-    {'a': {'b': 'm', 'c': 'min'}}
+    {'a': {'b': 'm', 'c': 's'}}
     """
     try:
         items = structure.items()
     except AttributeError:
-        return f"{structure.units:~}"
+        return f"{simplify_quantity(structure).units:~}"
     return {key: extract_units_dictionary(value) for key, value in items}
 
 
@@ -338,7 +338,8 @@ class QFunction:
         result = self.__unpack(result)
         if squeeze_results:
             result = {k: squeeze(v) for k, v in result.items()}
-        result = {k: Quantity(v, self.res_units[k]) for k, v in result.items()}
+        result = {k: simplify_quantity(Quantity(v, self.res_units[k]))
+                  for k, v in result.items()}
         return unflatten_dictionary(result)
 
     def __unpack(self, raw_result: cas.SX) -> Map[cas.SX]:

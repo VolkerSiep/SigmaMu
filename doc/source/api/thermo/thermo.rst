@@ -9,10 +9,3 @@ The following are classes to generally describe the thermodynamic framework.
    core
    app
 
-.. comment::
-
-   propertynames
-   state_definitions
-   ideal
-   cubic
-   special

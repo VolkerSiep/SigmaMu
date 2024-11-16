@@ -82,3 +82,7 @@ extract_units_dictionary
 simplify_quantity
 ^^^^^^^^^^^^^^^^^
 .. autofunction:: simu.simplify_quantity
+
+parse_quantities_in_struct
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: simu.parse_quantities_in_struct

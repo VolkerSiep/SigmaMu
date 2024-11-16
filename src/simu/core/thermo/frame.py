@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-This module defines the :cls:`ThermoFrame` and the :cls:`ThermoFactory`
+This module defines the :class:`ThermoFrame` and the :class:`ThermoFactory`
 classes, of which the latter one is a factory for the former.
 
-:cls:`ThermoFrame` objects represent thermodynamic models as state function
+:class:`ThermoFrame` objects represent thermodynamic models as state function
 objects, calculating thermochemical properties as function of their
 state and the model parameters.
 """
@@ -38,13 +38,13 @@ An example could be:
     } 
     
 This kind of structure is used to define the sequence of contributions in a 
-:cls:`ThermoFrame` object. Here, the class ``LinearHeatCapacity`` is defined 
+:class:`ThermoFrame` object. Here, the class ``LinearHeatCapacity`` is defined 
 straight forward with no options. For the mixing rule of the ``A`` contribution,
 called ``MixingRule_A``, it uses the ``NonSymmetricMixingRule`` class, 
 configured with ``ceos_a`` being the ``target``.
 
-It is up to each individual :cls:`ThermoContribution` implementation to support
-and document their set of options.
+It is up to each individual :class:`ThermoContribution` implementation to
+support and document their set of options.
 """
 
 logger = getLogger(__name__)

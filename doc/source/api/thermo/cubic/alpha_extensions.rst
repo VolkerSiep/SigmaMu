@@ -89,14 +89,12 @@ The figure below shows the (square root of the) alpha function and its first der
 .. image:: boston_mathias_siepmann_extrapolation.*
    :width: 80%
 
-Aleady the original function :cite:p:`Boston1980` assumes the correct function value (unity) and first derivative at :math:`\tau = 1`, but the second derivative is not smooth originally, but zero at :math:`\tau = 1`. The extrapolation by :cite:p:`Boston1980` was developed for the standard SRK model (:math:`\eta = 0`), for which the curvature is zero at :math:`\tau = 1`. The authors then correctly set the derivative to zero based on this fact. No further intension in doing so has been documented.
+Already the original function :cite:p:`Boston1980` assumes the correct function value (unity) and first derivative at :math:`\tau = 1`, but the second derivative is not smooth originally, but zero at :math:`\tau = 1`. The extrapolation by :cite:p:`Boston1980` was developed for the standard SRK model (:math:`\eta = 0`), for which the curvature is zero at :math:`\tau = 1`. The authors then correctly set the derivative to zero based on this fact. No further intension in doing so has been documented.
 
 Three years later, when :cite:p:`Mathias1983` publishes the extended alpha-function for polar substances, the correction in the extrapolation was only done to refit the first derivative. The curvature however, now having the value :math:`-4\eta`, was ignored :cite:p:`AspenTech2001`.
 
-.. todo::
+.. note::
 
-    When having a complete model running (for NH3), check how a sub-critical VLE fit extrapolates to the super-critical region.
-    Compare! I could just calculate :math:`p(T, V)` for a given volume, which is determined without further tuning parameters -
-    except :math:`c`. I can fit :math:`c` to sub-critical data.
+    While the sub-critical :math:`\alpha`-function fits VLE data, it does not impact the quality of volumetric predictions that generally have a much larger error than the uncertainty caused by the :math:`\alpha`-function. For practical reasons it is therefore most important to use a differentiable extrapolation that is physically sound than to try to fit this branch to volumetric data.
 
  
