@@ -31,3 +31,8 @@ HelmholtzIdealGas
 -----------------
 .. autoclass:: simu.app.HelmholtzIdealGas
   :show-inheritance:
+
+ConstantGibbsVolume
+-------------------
+.. autoclass:: simu.app.ConstantGibbsVolume
+  :show-inheritance:

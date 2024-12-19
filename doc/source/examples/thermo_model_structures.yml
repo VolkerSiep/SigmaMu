@@ -1,0 +1,15 @@
+simple_ideal_gas:
+    state: GibbsState
+    contributions:
+      - H0S0ReferenceState
+      - LinearHeatCapacity
+      - IdealMix
+      - GibbsIdealGas
+simple_ideal_solution:
+    state: GibbsState
+    contributions:
+      - H0S0ReferenceState
+      - LinearHeatCapacity
+      - IdealMix
+      - ConstantGibbsVolume
+

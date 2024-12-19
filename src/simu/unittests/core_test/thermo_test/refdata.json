@@ -1,4 +1,14 @@
 {
+  "contribution_test.py::test_constant_gibbs_volume": {
+    "V": [
+      "((v_n.A*n_0)+(v_n.B*n_1)) meter ** 3"
+    ],
+    "mu": [
+      "@1=(p-p_ref)",
+      "[(mu_std_0+(v_n.A*@1))",
+      "(mu_std_1+(v_n.B*@1))] kilogram * meter ** 2 / mole / second ** 2"
+    ]
+  },
   "contribution_test.py::test_gibbs_ideal_gas": {
     "S": [
       "(S_im-((n_0+n_1)*(8.31446*log((p/p_ref))))) kilogram * meter ** 2 / kelvin / second ** 2"

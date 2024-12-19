@@ -33,15 +33,22 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.todo',
     'sphinx.ext.autosummary',
+    'sphinx_copybutton',
     'sphinxcontrib.bibtex',
     'sphinx.ext.doctest',
     'custom_directives'
 ]
 
+# nitpicky = True  # to check that all internal references work
+
 # autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 autodoc_typehints = 'signature'
 # autodoc_imported_members = True
+
+# copy-button config
+copybutton_prompt_text = r'>>> |\.\.\. '
+copybutton_prompt_is_regexp = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

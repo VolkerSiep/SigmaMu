@@ -57,6 +57,8 @@ Name                    What for
     >>> from examples.hello_world import Square
     >>> from simu import NumericHandler, Quantity
 
+.. _getting started hello world:
+
 Hello World
 -----------
 To call the following a *process model* is quite an insult to actual process models, but it is a start:

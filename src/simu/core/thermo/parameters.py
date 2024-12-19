@@ -6,7 +6,8 @@ from abc import ABC, abstractmethod
 
 from pint import DimensionalityError
 
-from simu.core.utilities import Quantity, parse_quantities_in_struct, SymbolQuantity
+from simu.core.utilities import (
+    Quantity, parse_quantities_in_struct, SymbolQuantity)
 from simu.core.utilities.types import NestedMap, NestedMutMap, MutMap
 
 _RT = tuple[Quantity | NestedMap[Quantity],
@@ -17,9 +18,38 @@ _RT = tuple[Quantity | NestedMap[Quantity],
 class AbstractThermoSource(ABC):
     """Any source of thermodynamic parameters is to return a Quantity object
     if the path describes an available property.
+
+    Implementations of this class can be added to the
+    :class:`ThermoParameterStore` to represent a source of thermodynamic
+    parameters. It is advisable to arrange source objects by
+    *bibliographic* sources.
+
+    .. note::
+
+        We would have loved to download large databases of thermodynamic
+        properties and to publish them with this software. Unfortunate for this
+        particular aspect, there are terms like *copyright* and *license* that
+        prohibit this.
+
+        While it is completely legal to obtain thermodynamic parameters for free
+        from many sources for the sake of working with them, re-publishing
+        compiled databases under the LGPL license is another thing.
     """
     @abstractmethod
     def __getitem__(self, path: Iterable[str]) -> Quantity:
+        """
+        This operator is used to extract a value from the source, addressed by
+        a sequence of keys to navigate into the nested data structure:
+
+        >>> struct = {"T": {"H2O": "100 K", "NH3": "200 K"},
+        ...           "p": {"H2O": "10 bar", "NH3": "20 atm"}}
+        >>> source = StringDictThermoSource(struct)
+        >>> print(source["T", "H2O"])
+        100 kelvin
+
+        A ``KeyError`` is raised if either a key does not exist or if the final
+        key still has sub-keys.
+        """
         pass
 
 
@@ -52,7 +82,24 @@ class ThermoParameterStore:
     """This class connects both to the thermodynamic model instances by
     providing the parameters, and to the model's numerical interface by
     providing the symbols and values of all used parameters, allowing those
-    to be altered dynamically and optimised on."""
+    to be altered dynamically and optimised on.
+
+    The important aspect here is that a process model can have hundreds of
+    thermodynamic model instances, and while they do not need to, most of them
+    usually share the same parameters.
+
+    Adapted to the ``SiMu`` data flow, the initial queries by the models to
+    fetch parameters are of symbolic nature, using :meth:`get_symbols` and
+    :meth:`get_all_symbols`. This happens during the model definition and
+    assures that multiple model instances that ask for the same parameter
+    receive the same symbol, such that parameter optimisation tasks can be
+    accomplished easily.
+
+    In the (numerical) evaluation phase, the store is asked for the actual
+    values via :meth:`get_all_values`. In most cases these are used as constants
+    in the calculations, but parameter estimation is possible by keeping
+    selected parameters as free variables.
+    """
 
     name: str
 
@@ -64,9 +111,9 @@ class ThermoParameterStore:
     def get_symbols(self, parameter_struct: NestedMap[str]) \
             -> NestedMap[Quantity]:
         """Query the nested structure of parameter symbols from the store.
-        The ``param_struct`` parameter is a nested dictionary with leaf entries
-        being the unit of measurement of the thermodynamic parameters defined
-        by the path of keys to address them.
+        The ``parameter_struct`` parameter is a nested dictionary with leaf
+        entries being the unit of measurement of the thermodynamic parameters
+        defined by the path of keys to address them.
 
         The method returns a dictionary of the same structure, but with
         symbolic quantities as leaf values.

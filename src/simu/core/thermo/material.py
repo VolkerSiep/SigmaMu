@@ -20,6 +20,15 @@ class MaterialSpec:
     def __init__(self, species: Optional[Iterable[str]] = None,
                  flow: bool = True):
         #        augmenters: Optional[Iterable[Type[Augmenter]]] = None):
+        """Create an instance based on the arguments as follows:
+
+        :species: If ``None`` (default), allow any species. If containing
+          a species name ``*``, allow any species, but demand the species
+          that are element of the given iterable. If  ``species`` does not
+          contain ``*``, lock the specification to the given set of species.
+        :flow: ``True`` if the material needs to represent a flow, ``False`` if
+          a state is to be represented.
+        """
         self.__flow = flow
         self.__locked = not (species is None or "*" in species)
         self.__species = set() if species is None else set(species) - set("*")
@@ -28,16 +37,18 @@ class MaterialSpec:
     @classmethod
     @property
     def flow(cls):
+        """A generic flow instance, allowing any species"""
         return cls()
 
     @classmethod
     @property
     def state(cls):
+        """A generic state instance, allowing any species"""
         return cls(flow=False)
 
     @property
     def species(self) -> set[str]:
-        """The set of species that must be provided."""
+        """The set of species that must be provided"""
         return set(self.__species)
 
     @property
@@ -54,11 +65,12 @@ class MaterialSpec:
     def is_compatible(self, material: "Material") -> bool:
         """Return true if the given material is compatible with this one.
         That is:
-          - none of the specified species are missing in the material
-          - if specification locks species set, none of the material
-            species are missing in the specification
-          - flows are only compatible with flows, states are only compatible
-            with states.
+
+        - none of the specified species are missing in the material
+        - if specification locks species set, none of the material
+          species are missing in the specification
+        - flows are only compatible with flows, states are only compatible
+          with states.
         """
         spe, mspe = self.species, set(material.species)
         locked = self.locked
@@ -75,11 +87,16 @@ class Material(MutMap[Quantity]):
     """This class represents a material"""
 
     definition: "MaterialDefinition"
+    """The underlying definition"""
+
     initial_state: InitialState
+    """The provided initial state"""
 
     def __init__(self,
                  definition: "MaterialDefinition",
                  flow: bool):
+        """Define a material based on the given definition. The ``flow`` flag
+        indicates whether a *flow* or a *state* is to be generated."""
         self.definition = definition
         self.initial_state = definition.initial_state
 
@@ -96,7 +113,7 @@ class Material(MutMap[Quantity]):
             if mag.is_scalar():
                 return prop
             if mag.size() != (len(species), 1):
-                msg = f"Property {n} has inproper shape: {mag.size()}, " \
+                msg = f"Property {n} has improper shape: {mag.size()}, " \
                       f"should be scalar or ({len(species)}, 1)"
                 raise ValueError(msg)
             result = {s: Quantity(mag[i], unit) for i, s in enumerate(species)}
@@ -115,21 +132,31 @@ class Material(MutMap[Quantity]):
 
     @property
     def sym_state(self) -> Map[Quantity]:
-        """Return a dictionary of quantities representing the state"""
+        """A dictionary of quantities representing the state"""
         state = self.__state.nonzeros()
         return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
 
     def __getitem__(self, key: str) -> Quantity:
+        """Return a (symbolc) property that is calculated by the underlying
+        thermodynamic model or later supplements via :meth:`__setitem__`."""
         return self.__properties[key]
 
-    def __setitem__(self, key: str, value: Quantity):
+    def __setitem__(self, key: str, symbol: Quantity):
+        """Supplement the material with another property. The ``symbol``
+        argument must be a symbolic quantity, and it is highly immoral to supply
+        a symbol that is a function of more than prior material properties.
+
+        Normally, this operator is only to be used by :class:`Augmentor`
+        classes, intending to equip all materials of the same type with the
+        given extra property.
+        """
         if key in self.__properties:
             raise KeyError(f"Property '{key}' already exists in material")
-        self.__properties[key] = value
+        self.__properties[key] = symbol
 
     def __delitem__(self, key):
         raise TypeError("Property deletion is disabled to avoid opaque "
-                        "property name interpretation!")
+                        "property name interpretation.")
 
     def __iter__(self):
         return iter(self.__properties)
@@ -163,6 +190,7 @@ class MaterialDefinition:
                  store: ThermoParameterStore):
         self.__frame = frame
         self.initial_state = initial_state
+        store.get_symbols(frame.parameter_structure)  # trigger querying params
         self.__store = store
 
     @property

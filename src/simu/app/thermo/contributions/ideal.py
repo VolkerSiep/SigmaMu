@@ -268,3 +268,51 @@ class HelmholtzIdealGas(ThermoContribution):
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))
+
+
+class ConstantGibbsVolume(ThermoContribution):
+    r"""This contribution defines a mixture with constant molar volumes and
+    hence zero compressibility and thermal expansion. This is an easy and
+    sufficient way to describe a condensed phase at moderate pressures in
+    limited temperature ranges. Mixing volume is not considered either, but can
+    be added via additional contributions.
+
+    The sole parameter is the molar volume for each species:
+
+    ========= =================== ===========
+    Parameter Description         Symbol
+    ========= =================== ===========
+    ``v_n``   Molar volume vector :math:`v_n`
+    ========= =================== ===========
+
+    The system volume is then calculated as
+
+    .. math::
+
+        V = \sum_i v_{n,i}\,n_i
+
+    For the chemical potential, this yields, given pressure ``p`` and reference
+    pressure ``p_ref``:
+
+    .. math::
+
+        \mu_i \leftarrow \mu_i + v_{n,i}\,(p - p_\mathrm{ref})
+
+    .. note::
+
+        The volume definition has a slight impact on the chemical potential,
+        as shown in above equation. For a typical condensed phase however, say
+        water, :math:`v_n = 1.8\cdot 10^{-5}\ \mathrm{m^3/mol}`, and if
+        pressures are in the range of few bars,
+        :math:`\Delta \mu < 10\ \mathrm{J/mol}`. This yields a 0.4 % change in
+        the activity coefficient.
+    """
+    provides = ["V"]
+
+    def define(self, res, par):
+        n, p, p_ref = res["n"], res["p"], res["p_ref"]
+        v_n = par.register_vector("v_n", self.species, "m**3/mol")
+        res["mu"] += v_n * (p - p_ref)
+        res["V"] = v_n.T @ n
+
+

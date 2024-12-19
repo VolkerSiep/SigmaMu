@@ -12,3 +12,7 @@ div.body {
     padding: 10px;
     border-radius: 5px;
 }
+
+button.copybtn {
+   opacity: 0.2;
+}

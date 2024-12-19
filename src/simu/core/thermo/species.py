@@ -51,9 +51,12 @@ class SpeciesDB(Mapping[str, SpeciesDefinition]):
     represents a dictionary of the species names to species definitions.
 
     .. note::
-        Could this just be a function?
+        For now, this class is quite primitive, but might be extended to handle
+        more meta-data, such as CAS registry numbers and species aliases.
     """
     def __init__(self, formulae: Mapping[str, str]):
+        """Create a species collection based on a mapping of species names
+        to their formulae."""
         self.__species = {n: SpeciesDefinition(f) for n, f in formulae.items()}
 
     def __getitem__(self, key: str) -> SpeciesDefinition:

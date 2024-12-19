@@ -7,3 +7,4 @@ Tutorial
    :caption: Contents:
 
    create_thermo_frame
+   first_models

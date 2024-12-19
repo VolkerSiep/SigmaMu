@@ -39,6 +39,12 @@ SpeciesDefinition
 .. autoclass:: SpeciesDefinition
    :members:
 
+SpeciesDB
+---------
+.. autoclass:: SpeciesDB
+   :special-members: __init__
+   :members:
+
 InitialState
 ------------
 .. autoclass:: InitialState

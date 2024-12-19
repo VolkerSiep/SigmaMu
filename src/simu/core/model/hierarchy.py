@@ -33,9 +33,10 @@ class HierarchyHandler(Map["ModelProxy"]):
 
     def declare(self, name: str, model_cls: Type["Model"]) -> None:
         """Declare a sub-model in the interface, and by that
-          a) Demand that it will be instantiated, and
-          b) Make it available in the hierarchy proxy for browsing from parent
-             context.
+
+        a) Demand that it will be instantiated, and
+        b) Make it available in the hierarchy proxy for browsing from parent
+           context.
         """
         if name in self.__declared:
             raise KeyError(f"Child model '{name}' already declared")
