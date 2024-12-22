@@ -1,5 +1,5 @@
-from pprint import pprint
 from yaml import safe_load
+from pprint import pprint
 
 from simu import (
     ThermoFactory, InitialState, MaterialDefinition, ThermoParameterStore,
@@ -28,7 +28,7 @@ frame = factory.create_frame(species.get_sub_db(["Methane"]),
 initial_state = InitialState.from_si(400, 2e5, [1.0])
 store = ThermoParameterStore()
 ch4_ideal = MaterialDefinition(frame, initial_state, store)
-pprint(store.get_missing_symbols())
 
+pprint(store.get_missing_symbols())
 store.add_source("my_source", parameter_source)
 pprint(store.get_missing_symbols())

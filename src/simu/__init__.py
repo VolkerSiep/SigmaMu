@@ -22,7 +22,7 @@ from .core.thermo import (
     MaterialDefinition, Material, MaterialSpec
 )
 
-from .core.model import Model, NumericHandler
+from .core.model import Model, AModel, NumericHandler
 
 # versioning
 from ._version import VERSION as __version__

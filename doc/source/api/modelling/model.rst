@@ -4,7 +4,8 @@ Model and ModelProxy
 Model
 -----
 
-.. autoclass:: simu.core.model.base.Model
+.. autoclass:: simu.Model
+    :show-inheritance:
     :members:
 
 ModelProxy
@@ -12,3 +13,10 @@ ModelProxy
 
 .. autoclass:: simu.core.model.base.ModelProxy
     :members:
+
+AModel
+------
+.. autoclass:: simu.AModel
+    :show-inheritance:
+    :members:
+
