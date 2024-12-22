@@ -1,0 +1,12 @@
+H0S0ReferenceState:
+  T_ref: 25 degC
+  dh_form:
+    Methane: -74.87 kJ/mol
+  p_ref: 1 bar,
+  s_0:
+    Methane: 188.66 J/K/mol
+LinearHeatCapacity:
+  cp_a:
+    Methane: 35.69 J/K/mol
+  cp_b:
+    Methane: 50 mJ/K**2/mol

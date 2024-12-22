@@ -11,12 +11,12 @@ from logging import DEBUG
 from yaml import safe_load
 
 # internal modules
+from simu import ThermoFactory, InitialState, SpeciesDefinition
 from simu.core.thermo import ThermoFactory
 from simu.app.thermo.contributions import (
     H0S0ReferenceState, LinearHeatCapacity, StandardState, IdealMix,
     HelmholtzIdealGas)
-from simu.core.thermo.state import HelmholtzState, InitialState
-from simu.core.thermo.species import SpeciesDefinition
+from simu.app.thermo import HelmholtzState
 from simu.core.utilities import (
     assert_reproduction, parse_quantities_in_struct, Quantity as Qty)
 

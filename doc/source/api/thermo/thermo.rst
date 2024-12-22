@@ -1,15 +1,12 @@
-Thermodynamic models
-====================
+Thermodynamic Modelling
+=======================
 
 The following are classes to generally describe the thermodynamic framework.
- 
+
 .. toctree::
    :maxdepth: 2
 
-   generic
-   propertynames
-   state_definitions
-   ideal
-   cubic
-   special
- 
+   core
+   app
+   material
+

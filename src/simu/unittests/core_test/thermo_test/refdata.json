@@ -1,4 +1,14 @@
 {
+  "contribution_test.py::test_constant_gibbs_volume": {
+    "V": [
+      "((v_n.A*n_0)+(v_n.B*n_1)) meter ** 3"
+    ],
+    "mu": [
+      "@1=(p-p_ref)",
+      "[(mu_std_0+(v_n.A*@1))",
+      "(mu_std_1+(v_n.B*@1))] kilogram * meter ** 2 / mole / second ** 2"
+    ]
+  },
   "contribution_test.py::test_gibbs_ideal_gas": {
     "S": [
       "(S_im-((n_0+n_1)*(8.31446*log((p/p_ref))))) kilogram * meter ** 2 / kelvin / second ** 2"
@@ -99,51 +109,52 @@
     }
   ],
   "frame_test.py::test_call_frame_flow": {
-    "S": "19.69280941623939 kg * m ** 2 / K / s ** 3",
-    "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
+    "S": "19.69280941623939 W / K",
+    "mu": "[-1486.852957088782 -1360.216558986931] J / mol"
   },
   "frame_test.py::test_call_frame_state": {
-    "S": "19.69280941623939 kg * m ** 2 / K / s ** 2",
-    "mu": "[-1486.852957088782 -1360.216558986931] kg * m ** 2 / mol / s ** 2"
+    "S": "19.69280941623939 J / K",
+    "mu": "[-1486.852957088782 -1360.216558986931] J / mol"
   },
   "frame_test.py::test_initial_state": 0.049579140592047766,
   "frame_test.py::test_parameter_structure": {
     "H0S0ReferenceState": {
       "T_ref": "K",
       "dh_form": {
-        "N2": "kg * m ** 2 / mol / s ** 2",
-        "O2": "kg * m ** 2 / mol / s ** 2"
+        "N2": "J / mol",
+        "O2": "J / mol"
       },
-      "p_ref": "kg / m / s ** 2",
+      "p_ref": "Pa",
       "s_0": {
-        "N2": "kg * m ** 2 / K / mol / s ** 2",
-        "O2": "kg * m ** 2 / K / mol / s ** 2"
+        "N2": "J / K / mol",
+        "O2": "J / K / mol"
       }
     },
     "LinearHeatCapacity": {
       "cp_a": {
-        "N2": "kg * m ** 2 / K / mol / s ** 2",
-        "O2": "kg * m ** 2 / K / mol / s ** 2"
+        "N2": "J / K / mol",
+        "O2": "J / K / mol"
       },
       "cp_b": {
-        "N2": "kg * m ** 2 / K ** 2 / mol / s ** 2",
-        "O2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+        "N2": "J / K ** 2 / mol",
+        "O2": "J / K ** 2 / mol"
       }
     }
   },
   "frame_test.py::test_property_structure": {
-    "S": "kg * m ** 2 / K / s ** 2",
-    "S_std": "kg * m ** 2 / K / s ** 2",
+    "S": "J / K",
+    "S_std": "J / K",
     "T": "K",
     "T_ref": "K",
     "V": "m ** 3",
-    "_state": "dimless",
-    "mu": "kg * m ** 2 / mol / s ** 2",
-    "mu_std": "kg * m ** 2 / mol / s ** 2",
+    "_state": "",
+    "mu": "J / mol",
+    "mu_std": "J / mol",
+    "mw": "kg / mol",
     "n": "mol",
-    "p": "J / m ** 3",
-    "p_ref": "kg / m / s ** 2",
-    "p_std": "kg / m / s ** 2"
+    "p": "Pa",
+    "p_ref": "Pa",
+    "p_std": "Pa"
   },
   "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless",
   "store_test.py::test_create_frame": {
@@ -160,25 +171,25 @@
         "H2O": ""
       },
       "p_c": {
-        "H2O": "kg / m / s ** 2"
+        "H2O": "Pa"
       }
     },
     "H0S0ReferenceState": {
       "T_ref": "K",
       "dh_form": {
-        "H2O": "kg * m ** 2 / mol / s ** 2"
+        "H2O": "J / mol"
       },
-      "p_ref": "kg / m / s ** 2",
+      "p_ref": "Pa",
       "s_0": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+        "H2O": "J / K / mol"
       }
     },
     "LinearHeatCapacity": {
       "cp_a": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2"
+        "H2O": "J / K / mol"
       },
       "cp_b": {
-        "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+        "H2O": "J / K ** 2 / mol"
       }
     },
     "MixingRule_A": {

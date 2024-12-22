@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from collections.abc import Mapping, Iterator, Sequence
 
 from ..utilities import Quantity
+from ..utilities.structures import Map
 from ..utilities.molecules import FormulaParser
 
 _PARSER = FormulaParser()
@@ -26,9 +27,18 @@ class SpeciesDefinition:
     -3
     """
     formula: str
+    """The formula as it was given in the constructor. The admitted formula 
+    syntax is described with examples for the
+    :class:`FormulaParser <simu.core.utilities.molecules.FormulaParser>` class.
+    """
     molecular_weight: Quantity = field(init=False)
+    """The molecular weight determined by summing up the atomic weights of 
+    the contained atoms; quantum effects and electron masses are neglected."""
     charge: int = field(init=False)
-    elements: dict[str, int] = field(init=False)
+    """The electronic charge of the species' molecule"""
+    elements: Map[int] = field(init=False)
+    """A dictionary, mapping the occurring atoms to their amount in the 
+    species' molecule"""
 
     def __post_init__(self):
         self.elements = dict(_PARSER.parse(self.formula))
@@ -41,9 +51,12 @@ class SpeciesDB(Mapping[str, SpeciesDefinition]):
     represents a dictionary of the species names to species definitions.
 
     .. note::
-        Could this just be a function?
+        For now, this class is quite primitive, but might be extended to handle
+        more meta-data, such as CAS registry numbers and species aliases.
     """
     def __init__(self, formulae: Mapping[str, str]):
+        """Create a species collection based on a mapping of species names
+        to their formulae."""
         self.__species = {n: SpeciesDefinition(f) for n, f in formulae.items()}
 
     def __getitem__(self, key: str) -> SpeciesDefinition:

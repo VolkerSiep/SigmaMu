@@ -9,9 +9,8 @@ from simu.app.thermo.factories import ExampleThermoFactory
 from simu.core.thermo import ThermoParameterStore
 from simu.core.thermo.material import MaterialDefinition, MaterialLab, MaterialSpec
 from simu.core.thermo.species import SpeciesDefinition, SpeciesDB
-from simu.core.thermo.state import GibbsState
 from simu.core.utilities import assert_reproduction
-from simu.app.thermo import all_contributions
+from simu.app.thermo import all_contributions, GibbsState
 
 # class BigNAugmentor(Augmentor):
 #     def define(self, material):

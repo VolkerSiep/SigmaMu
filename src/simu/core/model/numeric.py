@@ -3,6 +3,7 @@ of the top model instance."""
 
 from typing import Optional
 from collections.abc import Callable, Sequence, Collection
+from copy import deepcopy
 from casadi import vertcat, SX
 from pint import Unit
 
@@ -65,10 +66,13 @@ class NumericHandler:
     @property
     def arguments(self) -> Map[Quantity]:
         """The function arguments as numerical values. A DataFlowError is
-        thrown, if not all numerical values are known."""
+        thrown, if not all numerical values are known.
+        A deepcopy of the structure is provided, so the returned data can be
+        altered without side-effects.
+        """
         if not self.__arguments:
             self.__arguments = self.__collect_argument_values()
-        return self.__arguments
+        return deepcopy(self.__arguments)
 
     def extract_parameters(self, key: str,
                            definition: NestedMap[str]) -> Quantity:
@@ -89,6 +93,11 @@ class NumericHandler:
         These parameter symbols and values are then removed from the original
         argument structure and instead added to the vector entry as
         dimensionless entities.
+
+        :param key: The name to be used for the parameter set
+        :type key: str
+        :param definition: The parameters to be exatracted
+        :type definition: NestedMap[str]
 
         """
         def traverse(parameters: NestedMap[str],

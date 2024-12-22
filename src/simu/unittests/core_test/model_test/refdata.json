@@ -1,16 +1,17 @@
 {
   "material_test.py::test_create_material": {
-    "S": "kg * m ** 2 / K / s ** 3",
-    "S_std": "kg * m ** 2 / K / s ** 3",
+    "S": "W / K",
+    "S_std": "W / K",
     "T": "K",
     "T_ref": "K",
     "V": "m ** 3 / s",
-    "mu": "kg * m ** 2 / mol / s ** 2",
-    "mu_std": "kg * m ** 2 / mol / s ** 2",
+    "mu": "J / mol",
+    "mu_std": "J / mol",
+    "mw": "kg / mol",
     "n": "mol / s",
-    "p": "J / m ** 3",
-    "p_ref": "kg / m / s ** 2",
-    "p_std": "kg / m / s ** 2"
+    "p": "Pa",
+    "p_ref": "Pa",
+    "p_std": "Pa"
   },
   "material_test.py::test_material_lab": [
     "S",
@@ -20,6 +21,7 @@
     "V",
     "mu",
     "mu_std",
+    "mw",
     "n",
     "p",
     "p_ref",
@@ -45,30 +47,30 @@
               "NO2": ""
             },
             "p_c": {
-              "H2O": "kg / m / s ** 2",
-              "NO2": "kg / m / s ** 2"
+              "H2O": "Pa",
+              "NO2": "Pa"
             }
           },
           "H0S0ReferenceState": {
             "T_ref": "K",
             "dh_form": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
             },
-            "p_ref": "kg / m / s ** 2",
+            "p_ref": "Pa",
             "s_0": {
-              "H2O": "kg * m ** 2 / K / mol / s ** 2",
-              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+              "H2O": "J / K / mol",
+              "NO2": "J / K / mol"
             }
           },
           "LinearHeatCapacity": {
             "cp_a": {
-              "H2O": "kg * m ** 2 / K / mol / s ** 2",
-              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+              "H2O": "J / K / mol",
+              "NO2": "J / K / mol"
             },
             "cp_b": {
-              "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+              "H2O": "J / K ** 2 / mol",
+              "NO2": "J / K ** 2 / mol"
             }
           },
           "MixingRule_A": {
@@ -90,49 +92,57 @@
       "thermo_props": {
         "child": {
           "m_child": {
-            "S": "kg * m ** 2 / K / s ** 3",
-            "S_std": "kg * m ** 2 / K / s ** 3",
+            "S": "W / K",
+            "S_std": "W / K",
             "T": "K",
             "T_ref": "K",
             "V": "m ** 3 / s",
             "mu": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
             },
             "mu_std": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
+            },
+            "mw": {
+              "H2O": "kg / mol",
+              "NO2": "kg / mol"
             },
             "n": {
               "H2O": "mol / s",
               "NO2": "mol / s"
             },
-            "p": "J / m ** 3",
-            "p_ref": "kg / m / s ** 2",
-            "p_std": "kg / m / s ** 2"
+            "p": "Pa",
+            "p_ref": "Pa",
+            "p_std": "Pa"
           }
         },
         "m_parent": {
-          "S": "kg * m ** 2 / K / s ** 3",
-          "S_std": "kg * m ** 2 / K / s ** 3",
+          "S": "W / K",
+          "S_std": "W / K",
           "T": "K",
           "T_ref": "K",
           "V": "m ** 3 / s",
           "mu": {
-            "H2O": "kg * m ** 2 / mol / s ** 2",
-            "NO2": "kg * m ** 2 / mol / s ** 2"
+            "H2O": "J / mol",
+            "NO2": "J / mol"
           },
           "mu_std": {
-            "H2O": "kg * m ** 2 / mol / s ** 2",
-            "NO2": "kg * m ** 2 / mol / s ** 2"
+            "H2O": "J / mol",
+            "NO2": "J / mol"
+          },
+          "mw": {
+            "H2O": "kg / mol",
+            "NO2": "kg / mol"
           },
           "n": {
             "H2O": "mol / s",
             "NO2": "mol / s"
           },
-          "p": "J / m ** 3",
-          "p_ref": "kg / m / s ** 2",
-          "p_std": "kg / m / s ** 2"
+          "p": "Pa",
+          "p_ref": "Pa",
+          "p_std": "Pa"
         }
       },
       "vectors": {
@@ -160,30 +170,30 @@
               "NO2": ""
             },
             "p_c": {
-              "H2O": "kg / m / s ** 2",
-              "NO2": "kg / m / s ** 2"
+              "H2O": "Pa",
+              "NO2": "Pa"
             }
           },
           "H0S0ReferenceState": {
             "T_ref": "K",
             "dh_form": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
             },
-            "p_ref": "kg / m / s ** 2",
+            "p_ref": "Pa",
             "s_0": {
-              "H2O": "kg * m ** 2 / K / mol / s ** 2",
-              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+              "H2O": "J / K / mol",
+              "NO2": "J / K / mol"
             }
           },
           "LinearHeatCapacity": {
             "cp_a": {
-              "H2O": "kg * m ** 2 / K / mol / s ** 2",
-              "NO2": "kg * m ** 2 / K / mol / s ** 2"
+              "H2O": "J / K / mol",
+              "NO2": "J / K / mol"
             },
             "cp_b": {
-              "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+              "H2O": "J / K ** 2 / mol",
+              "NO2": "J / K ** 2 / mol"
             }
           },
           "MixingRule_A": {
@@ -205,71 +215,83 @@
       "thermo_props": {
         "child": {
           "m_child": {
-            "S": "kg * m ** 2 / K / s ** 3",
-            "S_std": "kg * m ** 2 / K / s ** 3",
+            "S": "W / K",
+            "S_std": "W / K",
             "T": "K",
             "T_ref": "K",
             "V": "m ** 3 / s",
             "mu": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
             },
             "mu_std": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
+            },
+            "mw": {
+              "H2O": "kg / mol",
+              "NO2": "kg / mol"
             },
             "n": {
               "H2O": "mol / s",
               "NO2": "mol / s"
             },
-            "p": "J / m ** 3",
-            "p_ref": "kg / m / s ** 2",
-            "p_std": "kg / m / s ** 2"
+            "p": "Pa",
+            "p_ref": "Pa",
+            "p_std": "Pa"
           },
           "port": {
-            "S": "kg * m ** 2 / K / s ** 3",
-            "S_std": "kg * m ** 2 / K / s ** 3",
+            "S": "W / K",
+            "S_std": "W / K",
             "T": "K",
             "T_ref": "K",
             "V": "m ** 3 / s",
             "mu": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
             },
             "mu_std": {
-              "H2O": "kg * m ** 2 / mol / s ** 2",
-              "NO2": "kg * m ** 2 / mol / s ** 2"
+              "H2O": "J / mol",
+              "NO2": "J / mol"
+            },
+            "mw": {
+              "H2O": "kg / mol",
+              "NO2": "kg / mol"
             },
             "n": {
               "H2O": "mol / s",
               "NO2": "mol / s"
             },
-            "p": "J / m ** 3",
-            "p_ref": "kg / m / s ** 2",
-            "p_std": "kg / m / s ** 2"
+            "p": "Pa",
+            "p_ref": "Pa",
+            "p_std": "Pa"
           }
         },
         "m_parent": {
-          "S": "kg * m ** 2 / K / s ** 3",
-          "S_std": "kg * m ** 2 / K / s ** 3",
+          "S": "W / K",
+          "S_std": "W / K",
           "T": "K",
           "T_ref": "K",
           "V": "m ** 3 / s",
           "mu": {
-            "H2O": "kg * m ** 2 / mol / s ** 2",
-            "NO2": "kg * m ** 2 / mol / s ** 2"
+            "H2O": "J / mol",
+            "NO2": "J / mol"
           },
           "mu_std": {
-            "H2O": "kg * m ** 2 / mol / s ** 2",
-            "NO2": "kg * m ** 2 / mol / s ** 2"
+            "H2O": "J / mol",
+            "NO2": "J / mol"
+          },
+          "mw": {
+            "H2O": "kg / mol",
+            "NO2": "kg / mol"
           },
           "n": {
             "H2O": "mol / s",
             "NO2": "mol / s"
           },
-          "p": "J / m ** 3",
-          "p_ref": "kg / m / s ** 2",
-          "p_std": "kg / m / s ** 2"
+          "p": "Pa",
+          "p_ref": "Pa",
+          "p_std": "Pa"
         }
       },
       "vectors": {
@@ -358,26 +380,30 @@
     ]
   ],
   "numeric_test.py::test_material_collect_props": {
-    "S": "kg * m ** 2 / K / s ** 3",
-    "S_std": "kg * m ** 2 / K / s ** 3",
+    "S": "W / K",
+    "S_std": "W / K",
     "T": "K",
     "T_ref": "K",
     "V": "m ** 3 / s",
     "mu": {
-      "H2O": "kg * m ** 2 / mol / s ** 2",
-      "NO2": "kg * m ** 2 / mol / s ** 2"
+      "H2O": "J / mol",
+      "NO2": "J / mol"
     },
     "mu_std": {
-      "H2O": "kg * m ** 2 / mol / s ** 2",
-      "NO2": "kg * m ** 2 / mol / s ** 2"
+      "H2O": "J / mol",
+      "NO2": "J / mol"
+    },
+    "mw": {
+      "H2O": "kg / mol",
+      "NO2": "kg / mol"
     },
     "n": {
       "H2O": "mol / s",
       "NO2": "mol / s"
     },
-    "p": "J / m ** 3",
-    "p_ref": "kg / m / s ** 2",
-    "p_std": "kg / m / s ** 2"
+    "p": "Pa",
+    "p_ref": "Pa",
+    "p_std": "Pa"
   },
   "numeric_test.py::test_material_collect_thermo_param": {
     "BostonMathiasAlphaFunction": {
@@ -396,30 +422,30 @@
         "NO2": ""
       },
       "p_c": {
-        "H2O": "kg / m / s ** 2",
-        "NO2": "kg / m / s ** 2"
+        "H2O": "Pa",
+        "NO2": "Pa"
       }
     },
     "H0S0ReferenceState": {
       "T_ref": "K",
       "dh_form": {
-        "H2O": "kg * m ** 2 / mol / s ** 2",
-        "NO2": "kg * m ** 2 / mol / s ** 2"
+        "H2O": "J / mol",
+        "NO2": "J / mol"
       },
-      "p_ref": "kg / m / s ** 2",
+      "p_ref": "Pa",
       "s_0": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2",
-        "NO2": "kg * m ** 2 / K / mol / s ** 2"
+        "H2O": "J / K / mol",
+        "NO2": "J / K / mol"
       }
     },
     "LinearHeatCapacity": {
       "cp_a": {
-        "H2O": "kg * m ** 2 / K / mol / s ** 2",
-        "NO2": "kg * m ** 2 / K / mol / s ** 2"
+        "H2O": "J / K / mol",
+        "NO2": "J / K / mol"
       },
       "cp_b": {
-        "H2O": "kg * m ** 2 / K ** 2 / mol / s ** 2",
-        "NO2": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+        "H2O": "J / K ** 2 / mol",
+        "NO2": "J / K ** 2 / mol"
       }
     },
     "MixingRule_A": {
@@ -436,9 +462,9 @@
     "args": {
       "model_params": {
         "N": "mol / s",
-        "T": "\u00b0C",
-        "p": "bar",
-        "x_c3": "%"
+        "T": "K",
+        "p": "Pa",
+        "x_c3": ""
       },
       "thermo_params": {
         "default": {
@@ -458,30 +484,30 @@
               "CH3-CH2-CH3": ""
             },
             "p_c": {
-              "CH3-(CH2)2-CH3": "kg / m / s ** 2",
-              "CH3-CH2-CH3": "kg / m / s ** 2"
+              "CH3-(CH2)2-CH3": "Pa",
+              "CH3-CH2-CH3": "Pa"
             }
           },
           "H0S0ReferenceState": {
             "T_ref": "K",
             "dh_form": {
-              "CH3-(CH2)2-CH3": "kg * m ** 2 / mol / s ** 2",
-              "CH3-CH2-CH3": "kg * m ** 2 / mol / s ** 2"
+              "CH3-(CH2)2-CH3": "J / mol",
+              "CH3-CH2-CH3": "J / mol"
             },
-            "p_ref": "kg / m / s ** 2",
+            "p_ref": "Pa",
             "s_0": {
-              "CH3-(CH2)2-CH3": "kg * m ** 2 / K / mol / s ** 2",
-              "CH3-CH2-CH3": "kg * m ** 2 / K / mol / s ** 2"
+              "CH3-(CH2)2-CH3": "J / K / mol",
+              "CH3-CH2-CH3": "J / K / mol"
             }
           },
           "LinearHeatCapacity": {
             "cp_a": {
-              "CH3-(CH2)2-CH3": "kg * m ** 2 / K / mol / s ** 2",
-              "CH3-CH2-CH3": "kg * m ** 2 / K / mol / s ** 2"
+              "CH3-(CH2)2-CH3": "J / K / mol",
+              "CH3-CH2-CH3": "J / K / mol"
             },
             "cp_b": {
-              "CH3-(CH2)2-CH3": "kg * m ** 2 / K ** 2 / mol / s ** 2",
-              "CH3-CH2-CH3": "kg * m ** 2 / K ** 2 / mol / s ** 2"
+              "CH3-(CH2)2-CH3": "J / K ** 2 / mol",
+              "CH3-CH2-CH3": "J / K ** 2 / mol"
             }
           },
           "MixingRule_A": {
@@ -503,32 +529,36 @@
       "residuals": {
         "N": "mol / s",
         "T": "K",
-        "p": "J / m ** 3",
-        "x": "% * mol / s"
+        "p": "Pa",
+        "x": "mol / s"
       },
       "thermo_props": {
         "local": {
           "N": "mol / s",
-          "S": "kg * m ** 2 / K / s ** 3",
-          "S_std": "kg * m ** 2 / K / s ** 3",
+          "S": "W / K",
+          "S_std": "W / K",
           "T": "K",
           "T_ref": "K",
           "V": "m ** 3 / s",
           "mu": {
-            "CH3-(CH2)2-CH3": "kg * m ** 2 / mol / s ** 2",
-            "CH3-CH2-CH3": "kg * m ** 2 / mol / s ** 2"
+            "CH3-(CH2)2-CH3": "J / mol",
+            "CH3-CH2-CH3": "J / mol"
           },
           "mu_std": {
-            "CH3-(CH2)2-CH3": "kg * m ** 2 / mol / s ** 2",
-            "CH3-CH2-CH3": "kg * m ** 2 / mol / s ** 2"
+            "CH3-(CH2)2-CH3": "J / mol",
+            "CH3-CH2-CH3": "J / mol"
+          },
+          "mw": {
+            "CH3-(CH2)2-CH3": "kg / mol",
+            "CH3-CH2-CH3": "kg / mol"
           },
           "n": {
             "CH3-(CH2)2-CH3": "mol / s",
             "CH3-CH2-CH3": "mol / s"
           },
-          "p": "J / m ** 3",
-          "p_ref": "kg / m / s ** 2",
-          "p_std": "kg / m / s ** 2",
+          "p": "Pa",
+          "p_ref": "Pa",
+          "p_std": "Pa",
           "x": {
             "CH3-(CH2)2-CH3": "",
             "CH3-CH2-CH3": ""
@@ -543,23 +573,25 @@
   "numeric_test.py::test_square_model_call": {
     "residuals/N": "1.000000 mol / s",
     "residuals/T": "0.000000 K",
-    "residuals/p": "0.000000 J / m ** 3",
-    "residuals/x": "-80.000000 % * mol / s",
+    "residuals/p": "0.000000 Pa",
+    "residuals/x": "-0.800000 mol / s",
     "thermo_props/local/N": "2.000000 mol / s",
-    "thermo_props/local/S": "-154.465034 kg * m ** 2 / K / s ** 3",
-    "thermo_props/local/S_std": "-8.930247 kg * m ** 2 / K / s ** 3",
+    "thermo_props/local/S": "-154.465034 W / K",
+    "thermo_props/local/S_std": "-8.930247 W / K",
     "thermo_props/local/T": "283.150000 K",
     "thermo_props/local/T_ref": "298.150000 K",
     "thermo_props/local/V": "0.000197 m ** 3 / s",
-    "thermo_props/local/mu/CH3-(CH2)2-CH3": "-497.918361 kg * m ** 2 / mol / s ** 2",
-    "thermo_props/local/mu/CH3-CH2-CH3": "2275.958715 kg * m ** 2 / mol / s ** 2",
-    "thermo_props/local/mu_std/CH3-(CH2)2-CH3": "-37.614242 kg * m ** 2 / mol / s ** 2",
-    "thermo_props/local/mu_std/CH3-CH2-CH3": "-28.786410 kg * m ** 2 / mol / s ** 2",
+    "thermo_props/local/mu/CH3-(CH2)2-CH3": "-497.918361 J / mol",
+    "thermo_props/local/mu/CH3-CH2-CH3": "2275.958715 J / mol",
+    "thermo_props/local/mu_std/CH3-(CH2)2-CH3": "-37.614242 J / mol",
+    "thermo_props/local/mu_std/CH3-CH2-CH3": "-28.786410 J / mol",
+    "thermo_props/local/mw/CH3-(CH2)2-CH3": "0.058124 kg / mol",
+    "thermo_props/local/mw/CH3-CH2-CH3": "0.044097 kg / mol",
     "thermo_props/local/n/CH3-(CH2)2-CH3": "1.000000 mol / s",
     "thermo_props/local/n/CH3-CH2-CH3": "1.000000 mol / s",
-    "thermo_props/local/p": "1000000.000000 J / m ** 3",
-    "thermo_props/local/p_ref": "101325.000000 kg / m / s ** 2",
-    "thermo_props/local/p_std": "101325.000000 kg / m / s ** 2",
+    "thermo_props/local/p": "1000000.000000 Pa",
+    "thermo_props/local/p_ref": "101325.000000 Pa",
+    "thermo_props/local/p_std": "101325.000000 Pa",
     "thermo_props/local/x/CH3-(CH2)2-CH3": "0.500000",
     "thermo_props/local/x/CH3-CH2-CH3": "0.500000",
     "vectors/residuals": "[10000000.000000 0.000000 0.000003 -8000000.000000]"

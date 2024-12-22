@@ -9,13 +9,13 @@ The name ``SiMu`` [zi:my:] superficially is an abbreviation for *simulation* or 
     \Huge{\Sigma\mu}
 
 This can be interpreted as the sum over chemical potentials. ``SiMu`` is built on the concept of canonical modeling, that is to represent the system's constraints in their natural form. The chemical potential, being the partial derivative of Gibbs energy with respect to molar quantities, is the natural way to describe chemical equilibrium, phase equilibrium, and driving forces.
-The constraint is then expressed as a sum of chemical potentials, weighted by the stoichiometry of the process. One can write
+The constraint is then expressed as a stoichiometric sum of chemical potentials, weighted by the stoichiometry of the process. One can write
 
 .. math::
 
-    \sum_{i\in\mathrm{educts}} \nu_i\mu_i \stackrel{\mathrm{equil.}}{=} \sum_{j\in\mathrm{products}} \nu_j\mu_j
+    \sum_{i\in\mathrm{reactants}}\hspace{-1em} \nu_i\mu_i = 0
 
-This is much easier that dealing with equilibrium constants, Henry, fugacity and activity coefficients, and other constructs of thermodynamics that have been invented to facilitate simplified calculations with paper and pen.
+This is a much easier and modern approach than dealing with Henry, fugacity and activity coefficients, and other constructs of thermodynamics that have been invented to facilitate simplified calculations by pencil, constrained to the two dimensions that old fashion paper could offer.
 
 Logo and history
 ----------------
@@ -35,7 +35,7 @@ At first, Muriel was afraid of the snake and didn't trust python for being its m
 When you now look back at the letter combination :math:`\Sigma\mu`, with wrong glasses and some imagination you can picture :math:`\Sigma` being the python and :math:`\mu` being Muriel.
 Her name in a way starts with this letter, and *Muriel* is a name with origins in the Irish and Gaelic language, describing the shining sea. In Norway, the expression *morild* (sea fire) stands for the effect of sea being illuminated by plankton that is excitated by movements in the water - a nice experience when taking a late-summer night swim in the fjords.
 
-In other words: **Muriel brings light into the dark when you are in deep water.**
+In other words: **Muriel brings light into the dark when you are up to the neck in deep water.**
 
 
 So what is SiMu?
@@ -54,4 +54,4 @@ Equation-oriented process modeling software brings the challenge of **good fault
 
 ``SiMu`` is developed for industrial use-cases. As such, **proprietary data is to be handled and encapsulated**. ``SiMu`` is designed to be slim by nature, but new python packages can be built on top to extend the basic functionality for instance with custom thermodynamic models - or just model parameters, reaction chemistry data, and in-house process models.
 
-``SiMu`` is originally designed for lumped process modeling (flow-sheet modeling). Distributed systems must be discretized manually by the developer. However, 2D distributed systems have been successfully modeled, such as reactive absorption of gas into a falling laminar film, based on a Gibbs excess model to describe the liquid phase properties.
+``SiMu`` is originally designed for lumped process modeling (flow-sheet modeling). Distributed systems must be discretized manually by the developer. However, 2D distributed systems have been successfully modeled already with the predecessor, such as reactive absorption of gas into a falling laminar film, based on a Gibbs excess model to describe the liquid phase properties.

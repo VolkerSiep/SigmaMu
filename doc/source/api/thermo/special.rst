@@ -3,5 +3,4 @@ Special contributions
 
 Derivative
 ----------
-.. autoclass:: simu.thermo.Derivative
-
+.. autoclass:: simu.app.thermo.contributions.special.Derivative

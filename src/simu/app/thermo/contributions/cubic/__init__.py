@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # internal modules
-from simu import ThermoContribution, exp, conditional, qsqrt, qpow, qsum
+from simu import ThermoContribution, exp, conditional, sqrt, qpow, qsum
 from simu.core.utilities import SymbolQuantity
 
 from .rk import (RedlichKwongEOSLiquid, RedlichKwongEOSGas,
@@ -93,7 +93,7 @@ class NonSymmetricMixingRule(ThermoContribution):
             temp, n, a_i = res["T"], res["n"], res[source]
             tau = temp / par.register_scalar("T_ref", "K")
             tau_1, tau_2 = 1 - tau, 1 - 1 / tau
-            a_n = qsqrt(a_i) * n
+            a_n = sqrt(a_i) * n
             N = qsum(n)
             return n, N, a_n, tau_1, tau_2
 
@@ -221,6 +221,34 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         \alpha_i^{\frac12} =
           1 + m_i\,(1 - \tau_i) - \eta_i\,(1 - \tau_i)(0.7 - \tau_i^2)
 
+    .. important::
+
+        While the paper :cite:p:`Mathias1983` is currently unavailable to me, I
+        must recognize that all but :cite:p:`AspenTech2001` quote the expression
+        differently, namely:
+
+        .. math::
+
+            \alpha_i^{\frac12} =
+              1 + m_i\,(1 - \tau_i) - \eta_i\,
+              (1 - \boxed{\tau_i^2})(0.7 - \tau_i^2)
+
+        Likely, there was a misprint in the original paper
+        :cite:p:`Mathias1983`, as the parameter :math:`\eta_i` shall not alter
+        the impact of the acentric factor :math:`\omega_i` at
+        :math:`T = 0.7\, T_{c,i}`, as this point is defined to match the
+        saturation pressure via
+
+        .. math::
+
+            \omega_i = -\log_{10}
+              \frac{p^\mathrm{sat}_i(0.7\cdot T_{c,i})}{p_{c, i}}
+
+        The reason why AspenTech could and did use the correct form is that the
+        author P. Mathias was working for the company at the time of these
+        developments, and the co-workers were not dependent on the journal
+        publication.
+
     As described in Appendix (:ref:`alpha_extensions`), the extrapolation into
     the super-critical region is implemented as
 
@@ -239,7 +267,7 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         eta = par.register_vector("eta", self.species, "dimless")
         temp, critical_temp, m_fac = res["T"], res["_T_c"], res["_m_factor"]
         tau = temp / critical_temp
-        stau = qsqrt(tau)
+        stau = sqrt(tau)
 
         # define sub and super-critical expression
         alpha_sub = 1 + m_fac * (1 - stau) - eta * (1 - stau) * (0.7 - tau)

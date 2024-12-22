@@ -1,18 +1,22 @@
-Model classes
-=============
+Model and ModelProxy
+====================
 
 Model
 -----
-.. autoclass:: simu.model.Model
+
+.. autoclass:: simu.Model
+    :show-inheritance:
     :members:
 
-ModelInstance
--------------
-.. autoclass:: simu.model.base.ModelInstance
+ModelProxy
+----------
+
+.. autoclass:: simu.core.model.base.ModelProxy
     :members:
 
-ModelStatus
------------
-.. autoclass:: simu.model.utils.ModelStatus
+AModel
+------
+.. autoclass:: simu.AModel
+    :show-inheritance:
     :members:
 

@@ -15,16 +15,16 @@
   "quantity_test.py::test_exp": "@1=100, [exp((@1*(x1.A/x2.A))), exp((@1*(x1.B/x2.B)))]",
   "quantity_test.py::test_extract_units_dictionary": {
     "b": {
-      "a": "kHz"
+      "a": "1 / s"
     },
-    "x": "cm"
+    "x": "m"
   },
   "quantity_test.py::test_flatten_escaped": {
     "A": 3,
     "C/A\\/D": 1,
     "C/B": 2
   },
-  "quantity_test.py::test_jacobian": "[[a, 00],  [00, a]] / s",
+  "quantity_test.py::test_jacobian": "\n[[a, 00], \n [00, a]] / s",
   "quantity_test.py::test_log": "@1=100, [log((@1*(x1.A/x2.A))), log((@1*(x1.B/x2.B)))]",
   "quantity_test.py::test_pow": "@1=100, @2=0.01, [pow((@1*(x1.A/x2.A)),(@2*(x2.A/x1.A))), pow((@1*(x1.B/x2.B)),(@2*(x2.B/x1.B)))]",
   "quantity_test.py::test_q_function_nested": "[1 2] m / s",

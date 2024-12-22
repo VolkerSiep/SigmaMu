@@ -136,55 +136,55 @@ class QuantityDict(dict[str, Quantity]):
 
     Additionally, this class supports most arithmetic operations, such as
     ``+, -, *, /, **`` - all of them interpreted element-wise. As two instances
-     can have deviating keys (mostly species), there are some rules:
+    can have deviating keys (mostly species), there are some rules:
 
-       - missing elements are assumed as zero, and structural zeros are
-         omitted, i.e.
+    - missing elements are assumed as zero, and structural zeros are
+      omitted, i.e.
 
-         >>> a = QuantityDict({
-         ...         "A": Quantity("1 m"),
-         ...         "B": Quantity("50 cm")})
-         >>> b = QuantityDict({
-         ...         "B": Quantity("1 m"),
-         ...         "C": Quantity("50 cm")})
-         >>> y = a + b
-         >>> for key, value in y.items(): print(f"{key}: {value:~}")
-         A: 1 m
-         B: 150.0 cm
-         C: 50 cm
+      >>> a = QuantityDict({
+      ...         "A": Quantity("1 m"),
+      ...         "B": Quantity("50 cm")})
+      >>> b = QuantityDict({
+      ...         "B": Quantity("1 m"),
+      ...         "C": Quantity("50 cm")})
+      >>> y = a + b
+      >>> for key, value in y.items(): print(f"{key}: {value:~}")
+      A: 1 m
+      B: 150.0 cm
+      C: 50 cm
 
-         >>> y = a * b
-         >>> for key, value in y.items(): print(f"{key}: {value:~}")
-         B: 50 cm * m
+      >>> y = a * b
+      >>> for key, value in y.items(): print(f"{key}: {value:~}")
+      B: 50 cm * m
 
-      - A missing denominator element in division directly raises
-        ``ZeroDivisionError``
+    - A missing denominator element in division directly raises
+      ``ZeroDivisionError``
 
-        >>> y = a / b
-        Traceback (most recent call last):
-        ...
-        ZeroDivisionError: Missing denominator element in QuantityDict division
+      >>> y = a / b
+      Traceback (most recent call last):
+      ...
+      ZeroDivisionError: Missing denominator element in QuantityDict division
 
-      - Operations can be mixed with scalar Quantities
+    - Operations can be mixed with scalar Quantities
 
-        >>> y = a["A"] * b
-        >>> for key, value in y.items(): print(f"{key}: {value:~}")
-        B: 1 m ** 2
-        C: 50 cm * m
+      >>> y = a["A"] * b
+      >>> for key, value in y.items(): print(f"{key}: {value:~}")
+      B: 1 m ** 2
+      C: 50 cm * m
 
-      - floats as second operands in binary operators act as dimensionless
-        quantities
+    - floats as second operands in binary operators act as dimensionless
+      quantities
 
-        >>> y = 3 * a
-        >>> for key, value in y.items(): print(f"{key}: {value:~}")
-        A: 3 m
-        B: 150 cm
+      >>> y = 3 * a
+      >>> for key, value in y.items(): print(f"{key}: {value:~}")
+      A: 3 m
+      B: 150 cm
 
-        >>> y = 3 + a
-        Traceback (most recent call last):
-        ...
-        pint.errors.DimensionalityError: ...
-     """
+      >>> y = 3 + a
+      Traceback (most recent call last):
+      ...
+      pint.errors.DimensionalityError: ...
+    """
     @classmethod
     def from_vector_quantity(cls, quantity: Quantity,
                              keys: list[str]) -> Self:
@@ -400,7 +400,31 @@ arctanh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arctanh)
 def parse_quantities_in_struct(struct: Union[NestedMap[str], str])\
         -> Union[Quantity, NestedMap[Quantity]]:
     """Return a new struct that contains parsed quantities at the leaf
-    values of the given input struct."""
+    values of the given input structure.
+
+    The structure can be a nested dictionary, given the keys as strings and the
+    leaf values as strings that can be parsed as ``pint`` quantities.
+    For example:
+
+    >>> from pprint import pprint
+    >>> y = parse_quantities_in_struct({
+    ...    'speed': {
+    ...        'car': '100 km/hr',
+    ...        'snail': '1 cm/min',
+    ...        'fingernail': '1.2 mm/day'},
+    ...    'weight': {
+    ...        'car': '1.5 t',
+    ...        'snail': '10 g',
+    ...        'fingernail': '300 mg'}
+    ... })
+    >>> pprint(y)
+    {'speed': {'car': <Quantity(100.0, 'kilometer / hour')>,
+               'fingernail': <Quantity(1.2, 'millimeter / day')>,
+               'snail': <Quantity(1.0, 'centimeter / minute')>},
+     'weight': {'car': <Quantity(1.5, 'metric_ton')>,
+                'fingernail': <Quantity(300, 'milligram')>,
+                'snail': <Quantity(10, 'gram')>}}
+    """
     try:
         items = struct.items()
     except AttributeError:

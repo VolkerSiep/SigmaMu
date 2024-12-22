@@ -3,10 +3,15 @@ Data structures
 
 MCounter
 --------
-.. autoclass:: simu.utilities.MCounter
+.. autoclass:: simu.MCounter
     :members:
 
-ParameterDictionary
--------------------
-.. autoclass:: simu.utilities.ParameterDictionary
+QuantityDict
+------------
+.. autoclass:: simu.QuantityDict
+    :members:
+
+Formula parser
+--------------
+.. autoclass:: simu.core.utilities.molecules.FormulaParser
     :members:

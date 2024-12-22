@@ -55,6 +55,13 @@ def test_material_collect_states():
     assert args["vectors"][NumericHandler.STATE_VEC] == ""
 
 
+def test_material_collect_multiple_states():
+    proxy = MaterialTestModel4.top()
+    numeric = NumericHandler(proxy)
+    state = numeric.arguments["vectors"][NumericHandler.STATE_VEC]
+    assert len(state.magnitude.nz) == 6
+
+
 def test_material_collect_props():
     _, results = create_material_functions()
     assert_reproduction(results["thermo_props"]["local"])

@@ -1,10 +1,10 @@
 Ideal-Solid:
-  state: HelmholtzState
+  state: GibbsState
   contributions:
     - H0S0ReferenceState
     - LinearHeatCapacity
     - StandardState
-    # TODO: missing a volume here, this doesn't work
+    - ConstantGibbsVolume
 
 Ideal-Liquid:
   state: GibbsState
@@ -13,7 +13,7 @@ Ideal-Liquid:
     - LinearHeatCapacity
     - StandardState
     - IdealMix
-    # TODO: missing a volume here, this doesn't work
+    - ConstantGibbsVolume
 
 Ideal-Gas:
   state: GibbsState

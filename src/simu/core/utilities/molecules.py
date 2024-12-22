@@ -13,10 +13,11 @@ class FormulaParser:
     """This class implements the functionality to analyse chemical sum
     formulae. The atomic composition and molecular weight can be obtained.
     """
-    VALID_REG = re_compile(r"^[A-Za-z0-9.()=\-+]+(:\d+[+-])?$")
+    VALID_REG = re_compile(r"^[A-Za-z0-9.·\[{(<>)}\]=≡|\-+]+(:\d+[+-])?$")
     EL_REG = re_compile(r"([A-Z][a-z]*|[(])")
     NUM_REG = re_compile(r"\d+(\.\d*)?")
-    STRUC_REG = re_compile(r"[=\-+]")
+    CRYSTAL_REG = re_compile(r"·(\d+)?([^·]+)")
+    STRUC_REG = re_compile(r"[=\-<>≡|+]")
     CHARGE_REG = re_compile(r":\d+[+-]$")
 
     def __init__(self):
@@ -42,19 +43,42 @@ class FormulaParser:
         """Parse a formula and return a Counter object with the atomic symbols
         as keys and the number of occurances as values:
 
+        Plain formulae:
             >>> parser = FormulaParser()
             >>> parser.parse("H3PO4")
             MCounter({'O': 4, 'H': 3, 'P': 1})
-            >>> parser.parse("FISH")
-            MCounter({'F': 1, 'I': 1, 'S': 1, 'H': 1})
-            >>> parser.parse("(NH4)2HPO4")
-            MCounter({'H': 9, 'O': 4, 'N': 2, 'P': 1})
-            >>> parser.parse("CH3-(CH2)3-CH=O")
-            MCounter({'H': 10, 'C': 5, 'O': 1})
-            >>> parser.parse("SO4:2-")
-            MCounter({'O': 4, 'S': 1})
             >>> parser.parse("KMnO4")
             MCounter({'O': 4, 'K': 1, 'Mn': 1})
+            >>> parser.parse("FISH")
+            MCounter({'F': 1, 'I': 1, 'S': 1, 'H': 1})
+
+        With parantheses:
+            >>> parser.parse("(NH4)2HPO4")
+            MCounter({'H': 9, 'O': 4, 'N': 2, 'P': 1})
+
+        With structure:
+            >>> parser.parse("CH3-(CH2)3-CH=O>")
+            MCounter({'H': 10, 'C': 5, 'O': 1})
+            >>> parser.parse("|N≡N|")
+            MCounter({'N': 2})
+            >>> parser.parse("<O=O>")
+            MCounter({'O': 2})
+
+        With charge:
+            >>> parser.parse("SO4:2-")
+            MCounter({'O': 4, 'S': 1})
+
+        With a complex:
+            >>> parser.parse("Na(UO2)3[Zn(H2O)6](CH3CO2)9")
+            MCounter({'H': 39, 'O': 30, 'C': 18, 'U': 3, 'Na': 1, 'Zn': 1})
+
+        With crystal water:
+            >>> parser.parse("CuSO4·5H2O")
+            MCounter({'H': 10, 'O': 9, 'Cu': 1, 'S': 1})
+
+        With crystal water and another solvent:
+            >>> parser.parse("CuSO4·3H2O·2(CH3)-COOH")
+            MCounter({'H': 14, 'O': 11, 'C': 4, 'Cu': 1, 'S': 1})
 
         .. warning::
 
@@ -92,6 +116,9 @@ class FormulaParser:
         # coefficient.
 
         f_mod = self.CHARGE_REG.sub("", formula)
+        for c in "{( [( }) ])".split():
+            f_mod =  f_mod.replace(c[0], c[1])
+        f_mod = self.CRYSTAL_REG.sub(r"(\2)\1", f_mod)
         f_mod = self.STRUC_REG.sub("", f_mod)
         f_mod = self.EL_REG.sub(repl_el, f_mod)
         f_mod = self.NUM_REG.sub(repl_fac, f_mod)
@@ -106,7 +133,7 @@ class FormulaParser:
 
     def molecular_weight(self, formula: str) -> Quantity:
         """Return the molecular weight for a given formula. The atomic weights
-        are originally obtained from [CoplenShrestha_2016]_.
+        are originally obtained from :cite:p:`CoplenShrestha_2016`.
 
             >>> parser = FormulaParser()
             >>> mw = parser.molecular_weight("CH3-(CH2)24-CH3")

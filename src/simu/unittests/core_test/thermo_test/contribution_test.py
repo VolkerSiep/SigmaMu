@@ -5,7 +5,7 @@
 from simu.core.thermo import InitialState
 from simu.app.thermo.contributions import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
-    LinearHeatCapacity)
+    LinearHeatCapacity, ConstantGibbsVolume)
 from simu.core.utilities import (
     ParameterDictionary, Quantity, SymbolQuantity, assert_reproduction,
     base_unit)
@@ -116,3 +116,17 @@ def test_helmholtz_ideal_gas_initialise():
     state = cont.initial_state(initial_state, {})
     ref_volume = 2 * 8.31446261815324 * (273.15 + 25) / 1e5
     assert abs(state[1] / ref_volume - 1) < 1e-7
+
+
+def test_constant_gibbs_volume():
+    """Test definition of constant gibbs volume contribution"""
+    res = {
+        "p": sym("p", "Pa"),
+        "p_ref": sym("p_ref", "Pa"),
+        "n": vec("n", 2, "mol"),
+        "mu": vec("mu_std", 2, "J/mol")
+    }
+    cont = ConstantGibbsVolume(["A", "B"], {})
+    cont.define(res, ParameterDictionary())
+    result = {i: str(res[i]).split(", ") for i in "V mu".split()}
+    assert_reproduction(result)

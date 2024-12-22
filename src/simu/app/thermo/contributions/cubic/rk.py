@@ -10,7 +10,7 @@ from numpy import dot, ravel, roots
 # internal modules
 from simu import (
     InitialState, base_magnitude, jacobian, log, qsum, R_GAS,
-    ThermoContribution
+    ThermoContribution, Quantity
 )
 
 
@@ -88,24 +88,62 @@ class RedlichKwongEOS(ThermoContribution):
         p &\leftarrow p + p^\mathrm{res}\\
         \mu_i &\leftarrow \mu_i + \mu_i^\mathrm{res}\\
 
-    .. todo::
+    .. important::
 
-        The original publication on the volume correction of CEOS
-        :cite:p:`Peneloux82` suggests to shift both V and B, not only V.
-        It is yet unclear which approach is correct.
+        The original publication on the volume correction of EOS
+        :cite:p:`Peneloux82` suggests to shift both V and B, not only V. The
+        derivation of this proposal is not given, and a numerical experiment
+        shows that doing so drastically impacts the equilibrium and the density
+        predictions in a negative way. We therefore stick to the approach taken
+        by :cite:p:`AspenTech2001`, namely a pure volume translation. For this
+        translation, it can easily be shown, as by :cite:p:`Peneloux82` that
+        equilibrium conditions are not affected:
+
+        Consider the chemical potential derived from the Helmholtz function
+
+        .. math::
+            A = A(T, V, \vec n)\quad\Rightarrow\quad
+            \vec \mu = \left . \frac{\partial A}{\partial \vec n}
+              \right |_{T, V}
+
+        If we translate :math:`\tilde V = V - \vec c\cdot\vec n`, we can derive
+
+        .. math::
+            \tilde A = \tilde A(T, \tilde V, \vec n)\quad\Rightarrow\quad
+             \vec{\tilde \mu} = \left . \frac{\partial \tilde A}{\partial \vec n}
+              \right |_{T, \tilde V}
+              = \left . \frac{\partial \tilde A}{\partial \vec n}
+              \right |_{T, V} +
+              \left . \frac{\partial \tilde A}{\partial \tilde V}
+              \right |_{T, n}\cdot
+              \left . \frac{\partial \tilde V}{\partial \vec n}
+                \right |_{T}
+              =  \vec \mu - p\,\vec c
+
+        Hence at given temperature and pressure, the chemical potential only
+        shifts by a constant, not affecting any equilibrium constraints.
     """
 
     provides = ["_VCB", "_VCB_x", "_p_x", "_p_V", "_p_V_x"]
 
     def define(self, res, par):
-        abc_names = ["_ceos_a", "_ceos_b", "_ceos_c"]
-        T, V, n, A, B = [res[i] for i in ["T", "V", "n"] + abc_names[:-1]]
-        C = res.get("_ceos_c", SX(1, 1))  # C is optional
-        for i in abc_names:
+        ab_names = ["_ceos_a", "_ceos_b"]
+        T, V, n, A, B = [res[i] for i in ["T", "V", "n"] + ab_names]
+
+        for i in ab_names:
             res[f"{i}_T"] = jacobian(res[i], T)
             res[f"{i}_n"] = jacobian(res[i], n).T  # jacobian transposes
-        A_t, B_t, C_t = [res[f"{i}_T"] for i in abc_names]
-        A_n, B_n, C_n = [res[f"{i}_n"] for i in abc_names]
+        A_t, B_t = [res[f"{i}_T"] for i in ab_names]
+        A_n, B_n = [res[f"{i}_n"] for i in ab_names]
+
+        if (c_name := "_ceos_c") in res:  # C is optional
+            C = res[c_name]
+            C_t = res[f"{c_name}_T"] = jacobian(res[c_name], T)
+            C_n = res[f"{c_name}_n"] = jacobian(res[c_name], n).T  # jacobian transposes
+        else:
+            C = res[c_name] = Quantity(SX(1, 1), "m**3/mol") * n.units
+            C_t = res[f"{c_name}_T"] = Quantity(SX(1, 1), "m**3/mol/K") * n
+            C_n = res[f"{c_name}_n"] = Quantity(SX(*n.shape), "m**3/mol")
 
         # common terms
         N = qsum(n)

@@ -13,8 +13,8 @@ pressure levels (V = 1e-3 m3/mol) and for pressures near critical
 (1/V = 13211 mol/m3).
 """
 
-from numpy import array, sqrt, exp
-import pylab
+from numpy import array, sqrt, exp, linspace
+from matplotlib import pyplot
 
 # gas constant
 R_GAS = 8.31446261815324
@@ -121,20 +121,45 @@ T2, P2 = array([
     [690.00, 685.59],
     [700.00, 704.93]]).T
 
+V = 1e-2  # m3/mol
+T, P = array([
+    [280.00, 2.2558],
+    [300.00, 2.4319],
+    [320.00, 2.6055],
+    [340.00, 2.7775],
+    [360.00, 2.9483],
+    [380.00, 3.1185],
+    [400.00, 3.2880],
+    [420.00, 3.4572],
+    [440.00, 3.6261],
+    [460.00, 3.7946],
+    [480.00, 3.9630],
+    [500.00, 4.1312],
+    [520.00, 4.2993],
+    [540.00, 4.4672],
+    [560.00, 4.6350],
+    [580.00, 4.8027],
+    [600.00, 4.9703],
+    [620.00, 5.1379],
+    [640.00, 5.3054],
+    [660.00, 5.4729],
+    [680.00, 5.6403],
+    [700.00, 5.8076],
+    [720.00, 5.9750]]).T
 
 def alpha_BMS(tau):
     # my own c and d parameters for smooth second derivative
     m = 0.48 + (1.57 - 0.17 * OMEGA) * OMEGA
     c = m + 0.3 * ETA
     d = 1 + c + 4 * ETA / c
-    return exp(c / d* (1 - tau ** (d / 2)))
+    return exp(c / d * (1 - tau ** (d / 2)))
 
 
 def alpha_BM(tau):
     m = 0.48 + (1.57 - 0.17 * OMEGA) * OMEGA
-    d = 1 + m / 2 + 0.3 * ETA/2
+    d = 1 + m / 2 + 0.3 * ETA / 2
     c = 1 - 1 / d
-    return exp(c* (1 - tau ** d))
+    return exp(c * (1 - tau ** d))
 
 
 def alpha_sub(tau):
@@ -153,20 +178,23 @@ def alpha_data():
     p = 1e5 * P
 
     a = (R_GAS * T / (V - b + C) - p) * (V + C) * (V + b + C)
-    return sqrt(a / omega_a / (R_GAS * T_C) ** 2 * P_C)
+    alpha_factor = omega_a * R_GAS ** 2 * T_C ** 2 / P_C
+    return (a / alpha_factor) ** 0.5
 
 def main():
     T_r = T / T_C
-
-    pylab.plot(T_r, alpha_data(), "k.", label="NIST data")
-    pylab.plot(T_r, alpha_sub(T_r), label="Mathias alpha function")
-    pylab.plot(T_r, alpha_BM(T_r), label="Boston-Mathias extrapolation")
-    pylab.plot(T_r, alpha_BMS(T_r), label="Modified extrapolation")
-    pylab.grid()
-    pylab.legend(loc="best")
-    pylab.xlabel("T / T_c [-]")
-    pylab.ylabel("sqrt(alpha) [-]")
-    pylab.show()
+    pyplot.plot(T_r, alpha_data(), "k.", label="NIST data")
+    T_r = linspace(0.001, 5, num=1000)
+    pyplot.plot(T_r, alpha_sub(T_r), label="Mathias alpha function")
+    pyplot.plot(T_r, alpha_BM(T_r), label="Boston-Mathias extrapolation")
+    pyplot.plot(T_r, alpha_BMS(T_r), label="Modified extrapolation")
+    pyplot.grid()
+    pyplot.legend(loc="best")
+    pyplot.xlabel("$T / T_c$ [-]")
+    pyplot.xlim([0, None])
+    pyplot.ylim([0, None])
+    pyplot.ylabel(r"$\sqrt{\alpha}$ [-]")
+    pyplot.show()
 
 
 

@@ -3,31 +3,36 @@ Reference state, standard state, and ideal contributions
 
 H0S0ReferenceState
 ------------------
-.. autoclass:: simu.thermo.H0S0ReferenceState
-  :undoc-members: 
+.. autoclass:: simu.app.H0S0ReferenceState
+  :show-inheritance:
+  :undoc-members:
 
 LinearHeatCapacity
 ------------------
-.. autoclass:: simu.thermo.LinearHeatCapacity
-  :undoc-members: 
+.. autoclass:: simu.app.LinearHeatCapacity
+  :show-inheritance:
 
 StandardState
 -------------
-.. autoclass:: simu.thermo.StandardState
-  :undoc-members: 
+.. autoclass:: simu.app.StandardState
+  :undoc-members:
 
 IdealMix
 --------
-.. autoclass:: simu.thermo.IdealMix
-  :undoc-members: 
+.. autoclass:: simu.app.IdealMix
+  :show-inheritance:
 
 GibbsIdealGas
 -------------
-.. autoclass:: simu.thermo.GibbsIdealGas
-  :undoc-members: 
+.. autoclass:: simu.app.GibbsIdealGas
+  :show-inheritance:
 
 HelmholtzIdealGas
 -----------------
-.. autoclass:: simu.thermo.HelmholtzIdealGas
-  :undoc-members: 
+.. autoclass:: simu.app.HelmholtzIdealGas
+  :show-inheritance:
 
+ConstantGibbsVolume
+-------------------
+.. autoclass:: simu.app.ConstantGibbsVolume
+  :show-inheritance:
