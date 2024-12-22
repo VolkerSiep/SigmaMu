@@ -192,7 +192,7 @@ Parts of the above might seem cumbersome for this *application*, but we are off 
 
 - Collect thermodynamic parameters in :class:`simu.ThermoStore` objects that can be shared among multiple models of different types.
 - Add the calculation of more (derived) physical properties in the thermodynamic models.
-- Create :class:`simu.Material` class objects as a glue towards the actual purpose: process modelling -- finally.
+- Create :class:`simu.MaterialDefinition` class objects as a glue towards the actual purpose: process modelling -- finally.
 
 .. important::
     The entire setup of thermodynamic models including material definitions is common for all projects dealing with the same type of process. This can be developed and maintained even in a separate repository, available and encapsulated within the authoring organization. This approach assures

@@ -1,8 +1,6 @@
 The first process model
 =======================
 
-.. _CasADi: https://web.casadi.org
-
 Recap
 -----
 
@@ -162,3 +160,10 @@ This yields::
 Here we see the residuals as physical quantities, but also converted to a dimensionless vector, representing the quotient of residuals and their tolerances. Thermodynamic properties are included, and model properties would, if there were any.
 
 The volume is calculated to 59.86 m3/hr, but we specified 10 m3/hr, and also the pressure and temperature are not yet as desired. The specifications are only fulfilled once the residuals are brought down to values below their tolerances.
+
+Summary / Outlook
+-----------------
+- Based on the previously defined thermodynamic model, we created a material definition object.
+- For good house-keeping, we can move most of the static configuration for instance into ``yaml`` files.
+- Such material definition can be utilized in process models to initiate a state or flow of that material.
+- Once instantiated in a model, the properties of the material can be used to derive new properties or to define model constraints (residuals).

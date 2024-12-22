@@ -1,16 +1,5 @@
 .. currentmodule:: simu.core
 
-.. _pytest: https://docs.pytest.org/
-.. _CasADi: https://web.casadi.org
-.. _NumPy: https://numpy.org/
-.. _SciPy: https://scipy.org/
-.. _Pint: https://pint.readthedocs.io
-.. _PyYAML: https://pyyaml.org/
-.. _Sphinx: https://www.sphinx-doc.org
-.. _sphinxcontrib-bibtex: https://github.com/mcmtroffaes/sphinxcontrib-bibtex
-.. _Matplotlib: https://matplotlib.org/
-
-
 Getting started
 ===============
 Installation
