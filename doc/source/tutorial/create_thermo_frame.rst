@@ -194,4 +194,10 @@ Parts of the above might seem cumbersome for this *application*, but we are off 
 - Add the calculation of more (derived) physical properties in the thermodynamic models.
 - Create :class:`simu.Material` class objects as a glue towards the actual purpose: process modelling -- finally.
 
+.. important::
+    The entire setup of thermodynamic models including material definitions is common for all projects dealing with the same type of process. This can be developed and maintained even in a separate repository, available and encapsulated within the authoring organization. This approach assures
+
+     - protection of intellectual property by limited access rights
+     - separation of thermodynamic modelling from process modelling, likely involving different teams and experts.
+     - an efficient way to provide updates to derived work, as the thermodynamic models might be improved over time.
 

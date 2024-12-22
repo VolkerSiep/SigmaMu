@@ -87,7 +87,7 @@ html_css_files = ["custom.css"]
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 html_show_sourcelink = False
-
+html_favicon = "_static/goose.png"
 todo_include_todos = True
 
 mathjax3_config = {

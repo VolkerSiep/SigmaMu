@@ -1,5 +1,5 @@
-Creating the first models
-=========================
+The first process model
+=======================
 
 .. _CasADi: https://web.casadi.org
 
@@ -88,7 +88,6 @@ In real applications, storing the meta-data and parameters in ``yml`` files is n
 .. note::
 
     As multiple parameter sources can be stacked in one store, we recommend to assign one source per bibliographic source of parameters. The models can then easily be queried for the names of the used sources and by that keep these sources traceable.
-
 
 Using a material in a model
 ---------------------------

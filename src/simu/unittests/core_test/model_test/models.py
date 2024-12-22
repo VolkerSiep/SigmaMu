@@ -6,7 +6,7 @@ from simu.core.thermo import InitialState
 from simu.core.thermo.material import MaterialSpec, MaterialDefinition
 from simu.core.thermo.species import SpeciesDefinition
 from simu.app.thermo.factories import ExampleThermoFactory
-from simu.core.thermo import ThermoParameterStore
+from simu.core.thermo import ThermoParameterStore, StringDictThermoSource
 from simu.core.utilities import SymbolQuantity, Quantity
 
 
@@ -119,6 +119,16 @@ class MaterialTestModel3(Model):
         self.materials.create_flow("local", test_material)
 
 
+class  MaterialTestModel4(Model):
+    def interface(self):
+        pass
+
+    def define(self):
+        test_material = define_a_material_with_parameters()
+        self.materials.create_flow("flow1", test_material)
+        self.materials.create_flow("flow2", test_material)
+
+
 class ResidualTestModel(Model):
     """A simple model to test residuals"""
 
@@ -186,14 +196,33 @@ class MaterialParentTestModel(Model):
 
 
 def define_a_material(species) -> MaterialDefinition:
-    """Defines a material to use. Normally, this would be a singelton somewhere
+    """Defines a material to use. Normally, this would be a singleton somewhere
     in the project."""
 
     factory = ExampleThermoFactory()
-    speciesdb = {s: SpeciesDefinition(s) for s in species}
-    frame = factory.create_frame(speciesdb, RK_LIQ)
+    species_db = {s: SpeciesDefinition(s) for s in species}
+    frame = factory.create_frame(species_db, RK_LIQ)
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(len(species))
     initial_state.temperature = Quantity("10 degC")
     initial_state.pressure = Quantity("10 bar")
+    return MaterialDefinition(frame, initial_state, store)
+
+
+def define_a_material_with_parameters() -> MaterialDefinition:
+    factory = ExampleThermoFactory()
+    species_db = {"H2O": SpeciesDefinition("H2O")}
+    frame = factory.create_frame(species_db, "Ideal-Solid")
+    store = ThermoParameterStore()
+
+    source = StringDictThermoSource({
+        'H0S0ReferenceState': {
+            's_0': {'H2O': '0 J / K / mol '},
+            'dh_form': {'H2O': '0 J / mol '},
+            'T_ref': '298.15 K', 'p_ref': '1 bar'},
+        'LinearHeatCapacity': {'cp_a': {'H2O': '50.0 J / K / mol '},
+                               'cp_b': {'H2O': '0 J / K ** 2 / mol '}},
+        'ConstantGibbsVolume': {'v_n': {'H2O': '18 ml / mol '}}})
+    store.add_source("default", source)
+    initial_state = InitialState.from_std(1)
     return MaterialDefinition(frame, initial_state, store)

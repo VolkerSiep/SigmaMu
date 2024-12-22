@@ -9,13 +9,13 @@ The name ``SiMu`` [zi:my:] superficially is an abbreviation for *simulation* or 
     \Huge{\Sigma\mu}
 
 This can be interpreted as the sum over chemical potentials. ``SiMu`` is built on the concept of canonical modeling, that is to represent the system's constraints in their natural form. The chemical potential, being the partial derivative of Gibbs energy with respect to molar quantities, is the natural way to describe chemical equilibrium, phase equilibrium, and driving forces.
-The constraint is then expressed as a sum of chemical potentials, weighted by the stoichiometry of the process. One can write
+The constraint is then expressed as a stoichiometric sum of chemical potentials, weighted by the stoichiometry of the process. One can write
 
 .. math::
 
-    \sum_{i\in\mathrm{educts}} \nu_i\mu_i \stackrel{\mathrm{equil.}}{=} \sum_{j\in\mathrm{products}} \nu_j\mu_j
+    \sum_{i\in\mathrm{reactants}}\hspace{-1em} \nu_i\mu_i = 0
 
-This is much easier that dealing with equilibrium constants, Henry, fugacity and activity coefficients, and other constructs of thermodynamics that have been invented to facilitate simplified calculations with paper and pen.
+This is a much easier and modern approach than dealing with Henry, fugacity and activity coefficients, and other constructs of thermodynamics that have been invented to facilitate simplified calculations by pencil, constrained to the two dimensions that old fashion paper could offer.
 
 Logo and history
 ----------------
