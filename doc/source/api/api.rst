@@ -6,7 +6,6 @@ API documentation
 
    utilities/utilities
    thermo/thermo
-   modelling/model
    modelling/modelling
 
 
