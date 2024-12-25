@@ -18,16 +18,16 @@ class Source(AModel):
 numeric = NumericHandler(Source.top())
 args = numeric.arguments
 
-from pprint import pprint
-print("Default function arguments:")
-print("---------------------------")
-pprint(args)
-print()
-
-print("Function results:")
-print("-----------------")
-res = numeric.function(args)
-pprint(res)
+# from pprint import pprint
+# print("Default function arguments:")
+# print("---------------------------")
+# pprint(args)
+# print()
+#
+# print("Function results:")
+# print("-----------------")
+# res = numeric.function(args)
+# pprint(res)
 
 
 

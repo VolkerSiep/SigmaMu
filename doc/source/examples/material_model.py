@@ -1,5 +1,5 @@
-from simu import Model, NumericHandler
-from material_factory import ch4_ideal_gas
+from simu import Model
+from .material_factory import ch4_ideal_gas
 
 class Source(Model):
     """A model of a methane source"""
@@ -15,19 +15,11 @@ class Source(Model):
         self.residuals.add( "p", self.parameters["p"] - src["p"], "bar")
         self.residuals.add( "V", self.parameters["V"] - src["V"], "m^3/h")
 
-numeric = NumericHandler(Source.top())
-args = numeric.arguments
 
-from pprint import pprint
-print("Default function arguments:")
-print("---------------------------")
-pprint(args)
-print()
-
-print("Function results:")
-print("-----------------")
-res = numeric.function(args)
-pprint(res)
+# print("Function results:")
+# print("-----------------")
+# res = numeric.function(args)
+# pprint(res)
 
 
 

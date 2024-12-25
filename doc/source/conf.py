@@ -13,13 +13,14 @@
 # -- Project information -----------------------------------------------------
 import sys
 from os.path import abspath
-from simu import __version__ as release
+from simu import __version__ as _release
 
 sys.path.insert(0, abspath('.'))
 
 project = 'SiMu'
 copyright = '2021-2024, Volker Siepmann'
 author = 'Volker Siepmann'
+release = _release
 
 
 # -- General configuration ---------------------------------------------------
@@ -57,9 +58,12 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns: list[str] = []
-
 # bibtex file
 bibtex_bibfiles = ['bibliographies.bib']
+
+# break signature into multiple lines when length is greater as given value
+maximum_signature_line_length = 80  #
+
 
 # -- Options for HTML output -------------------------------------------------
 

@@ -16,6 +16,10 @@ from .base import ModelProxy
 from ..thermo import ThermoParameterStore
 
 
+# TODO:
+#  - set state and get state (in T, p, n)
+#  - set parameters and get parameters
+
 class NumericHandler:
     """This class implements the function object describing the top level
     model."""
@@ -68,11 +72,37 @@ class NumericHandler:
         """The function arguments as numerical values. A DataFlowError is
         thrown, if not all numerical values are known.
         A deepcopy of the structure is provided, so the returned data can be
-        altered without side-effects.
+        altered without side effects.
         """
         if not self.__arguments:
             self.__arguments = self.__collect_argument_values()
         return deepcopy(self.__arguments)
+
+    def export_state(self) -> NestedMutMap[str]:
+        """Export the internal state of the model in a hierarchical structure,
+        whereas all thermodynamic states are given in :math:`T, p, n`.
+
+        As by the philosophy of the chosen approach, only the thermodynamic
+        models know how to obtain their internal state from any :math:`T, p, n`
+        specification.
+
+        The returned structure is meant to be easy to store for instance in
+        yaml or json format, and easy to edit. One can use
+        :func:`simu.parse_quantities_in_struct` to convert the values of the
+        data structure into :class:`simu.Quantity` objects for programmatic
+        processing.
+
+        """
+        def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch material states from a specific model"""
+            mat_proxy = model.materials
+            # todo: change sym_state into Tpn something
+            return {k: m.sym_state for k, m in mat_proxy.handler.items()
+                    if k not in mat_proxy}
+
+        thermo =  self.__fetch(self.model, fetch_material_states, "state")
+        # TODO: when non-canonical states are implemented, collect them here.
+        return {"thermo": thermo, "non-canonical": {}}
 
     def extract_parameters(self, key: str,
                            definition: NestedMap[str]) -> Quantity:
@@ -96,7 +126,7 @@ class NumericHandler:
 
         :param key: The name to be used for the parameter set
         :type key: str
-        :param definition: The parameters to be exatracted
+        :param definition: The parameters to be extracted
         :type definition: NestedMap[str]
 
         """

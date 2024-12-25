@@ -68,7 +68,7 @@ Next, a :class:`simu.ThermoFrame` can be constructed, stacking the contributions
    :language: python
    :linenos:
    :lineno-start: 11
-   :lines: 11-22
+   :lines: 11-21
 
 Here we decided to create an ideal gas model for methane, and used the following contributions (don't be afraid to follow the links to see their parameters, calculated properties, and mathematical formulations:
 
@@ -87,22 +87,20 @@ The :class:`simu.SpeciesDefinition` defines in this simple case some basic gener
 
 However, now we have our frame object and can ask it for the required thermodynamic parameters:
 
-.. literalinclude:: ../examples/ideal_gas.py
-   :language: python
-   :linenos:
-   :lineno-start: 23
-   :lines: 23-24
+.. testsetup::
 
-We receive the following structure, indicating the required physical dimension as a place-holder for each parameter to be provided::
+    >>> from pprint import pprint
+    >>> from examples.ideal_gas import frame, parameters
 
-    {'H0S0ReferenceState': {'T_ref': 'K',
-                            'dh_form': {'Methane': 'J / mol'},
-                            'p_ref': 'Pa',
-                            's_0': {'Methane': 'J / K / mol'}},
-     'LinearHeatCapacity': {'cp_a': {'Methane': 'J / K / mol'},
-                            'cp_b': {'Methane': 'J / K ** 2 / mol'}}}
+>>> pprint(frame.parameter_structure, width=90)
+{'H0S0ReferenceState': {'T_ref': 'K',
+                        'dh_form': {'Methane': 'J / mol'},
+                        'p_ref': 'Pa',
+                        's_0': {'Methane': 'J / K / mol'}},
+ 'LinearHeatCapacity': {'cp_a': {'Methane': 'J / K / mol'},
+                        'cp_b': {'Methane': 'J / K ** 2 / mol'}}}
 
-It is to be noted that the actual parameters can be given in different units, as long as they are compatible -- we come back to this.
+We receive the structure above, indicating the required physical dimension as a place-holder for each parameter to be provided. It is to be noted that the actual parameters can be given in different units, as long as they are compatible -- we come back to this.
 
 ..  note::
 
@@ -110,35 +108,25 @@ It is to be noted that the actual parameters can be given in different units, as
 
 Likewise, the frame can be queried for the properties that will be calculated:
 
-.. literalinclude:: ../examples/ideal_gas.py
-   :language: python
-   :linenos:
-   :lineno-start: 26
-   :lines: 26
-
-This yields::
-
-    {'S': 'J / K',
-     'S_std': 'J / K',
-     'T': 'K',
-     'T_ref': 'K',
-     'V': 'm ** 3',
-     '_state': '',
-     'mu': 'J / mol',
-     'mu_std': 'J / mol',
-     'mw': 'kg / mol',
-     'n': 'mol',
-     'p': 'Pa',
-     'p_ref': 'Pa',
-     'p_std': 'Pa'}
+>>> pprint(frame.property_structure)
+{'S': 'J / K',
+ 'T': 'K',
+ 'T_ref': 'K',
+ 'V': 'm ** 3',
+ '_state': '',
+ 'mu': 'J / mol',
+ 'mw': 'kg / mol',
+ 'n': 'mol',
+ 'p': 'Pa',
+ 'p_ref': 'Pa'}
 
 Getting back to the parameter structure, let us fill in some values and convert the structure into a dictionary of quantities:
 
 .. literalinclude:: ../examples/ideal_gas.py
    :language: python
    :linenos:
-   :lineno-start: 28
-   :lines: 28-37
+   :lineno-start: 23
+   :lines: 23-32
 
 Here, we use the function :func:`simu.parse_quantities_in_struct` to convert the dictionary values into quantities.
 
@@ -150,35 +138,27 @@ We can call the model at this point, just be aware of an important design featur
 
 We show in a moment how to create such states from physical quantities, but for now, the following code computes our ideal gas model:
 
-.. literalinclude:: ../examples/ideal_gas.py
-   :language: python
-   :linenos:
-   :lineno-start: 39
-   :lines: 39-42
-
-This gives::
-
-    S: 199.86 J / K
-    S_std: 199.86 J / K
-    T: 400 K
-    T_ref: 298.15 K
-    V: 0.033258 m ** 3
-    _state: [400 1e+05 1]
-    mu: -1.5092e+05 J / mol
-    mu_std: -1.5092e+05 J / mol
-    mw: 0.016043 kg / mol
-    n: 1 mol
-    p: 1e+05 Pa
-    p_ref: 1e+05 Pa
-    p_std: 1e+05 Pa
+>>> result = frame([400, 1e5, 1.0], parameters)
+>>> for key, value in result.items():
+...     print(f"{key}: {value:.5g~}")
+S: 199.86 J / K
+T: 400 K
+T_ref: 298.15 K
+V: 0.033258 m ** 3
+_state: [400 1e+05 1]
+mu: -1.5092e+05 J / mol
+mw: 0.016043 kg / mol
+n: 1 mol
+p: 1e+05 Pa
+p_ref: 1e+05 Pa
 
 As this is a pure species ideal gas, not much exciting is going on, but we have a chemical potential, entropy and volume. *Wait, where is enthalpy, heat capacity, density, compressibility, and all this interesting stuff?* -- We will come back to that. First let's look at a better way to define the initial state:
 
 .. literalinclude:: ../examples/ideal_gas.py
    :language: python
    :linenos:
-   :lineno-start: 44
-   :lines: 44-46
+   :lineno-start: 36
+   :lines: 36-38
 
 Here, we use the :class:`simu.InitialState` helper class to generate a tuple of temperature, pressure, and molar quantities ``tpn``. Subsequently, the model (:class:`simu.ThermoFrame` object) takes this definition and turns it into a valid state for itself. In this case it trivially returns the SI values of the given state, but a proper initialization is and must be performed by the relevant thermodynamic contributions, if we define a model Helmholtz coordinates (an equation of state) or more exotic models, that could use entropy or enthalpy as free variables.
 

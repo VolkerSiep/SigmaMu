@@ -41,45 +41,54 @@ Let's first import some classes and read in those files:
 
 .. literalinclude:: ../examples/ideal_gas_material.py
    :language: python
-   :lines: 1-19
+   :lines: 1-22
    :linenos:
 
 Now, as before, we can create the factory and from there the frame for our thermodynamic model:
 
 .. literalinclude:: ../examples/ideal_gas_material.py
    :language: python
-   :lines: 21-26
-   :lineno-start: 21
+   :lines: 24-29
+   :lineno-start: 24
    :linenos:
 
 Next, we go for the material definition, requiring also the initial state and a :class:`simu.ThermoParameterStore` object:
 
 .. literalinclude:: ../examples/ideal_gas_material.py
    :language: python
-   :lines: 28-32
-   :lineno-start: 28
+   :lines: 31-34
+   :lineno-start: 31
    :linenos:
 
 This parameter store can be shared among multiple -- normally all -- material definitions, and thus holds a global set of thermodynamic parameters. Multiple stores are only required if two materials containing the same chemical species need to receive distinct values for the same thermodynamic parameter.
 
-So far, we did not provide the concrete parameters, but the material definition has already told the store which parameters are required. Line 32 prints the super-set of the parameter names and units of all missing parameters required::
+So far, we did not provide the concrete parameters, but the material definition has already told the store which parameters are required. We can query the super-set of the parameter names and units of all missing parameters required:
 
-    {'H0S0ReferenceState': {'T_ref': 'K ',
-                            'dh_form': {'Methane': 'J / mol '},
-                            'p_ref': 'Pa ',
-                            's_0': {'Methane': 'J / K / mol '}},
-     'LinearHeatCapacity': {'cp_a': {'Methane': 'J / K / mol '},
-                            'cp_b': {'Methane': 'J / K ** 2 / mol '}}}
+.. testsetup::
+
+   >>> from examples.ideal_gas_material import missing_symbols, store
+   >>> from pprint import pprint
+
+>>> pprint(missing_symbols)
+{'H0S0ReferenceState': {'T_ref': 'K ',
+                        'dh_form': {'Methane': 'J / mol '},
+                        'p_ref': 'Pa ',
+                        's_0': {'Methane': 'J / K / mol '}},
+ 'LinearHeatCapacity': {'cp_a': {'Methane': 'J / K / mol '},
+                        'cp_b': {'Methane': 'J / K ** 2 / mol '}}}
 
 Finally, we provide the already read parameters to the store:
 
 .. literalinclude:: ../examples/ideal_gas_material.py
    :language: python
-   :lines: 33-34
-   :lineno-start: 33
+   :lines: 36
+   :lineno-start: 36
    :linenos:
 
-This time, there are no more missing symbols, and the print statement prints an empty dictionary.
+This time, there are no more missing symbols, and the print statement prints an empty dictionary:
+
+>>> pprint(store.get_missing_symbols())
+{}
 
 In real applications, storing the meta-data and parameters in ``yml`` files is not the most stupid idea, but you might connect to any other file format or database of your choice, as long as the source can provide the nested dictionary of properties as requested by the store.
 
@@ -111,50 +120,44 @@ This is as much as we can do without entirely drowning out the pythonic way of c
 
 Either way, here we are with a complete process model. By creating a :class:`simu.NumericHandler`, we obtain a function object representing our model. The function argument and result is a nested structure of quantities:
 
-.. literalinclude:: ../examples/material_amodel.py
-   :language: python
-   :lines: 21-24
-   :lineno-start: 21
-   :linenos:
+.. testsetup::
 
-This yields::
+   >>> from pprint import pprint
+   >>> from examples.material_model import Source
 
-    {'model_params': {'T': <Quantity(25, 'degree_Celsius')>,
-                      'V': <Quantity(10, 'meter ** 3 / hour')>,
-                      'p': <Quantity(1, 'bar')>},
-     'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': <Quantity(25, 'degree_Celsius')>,
-                                                          'dh_form': {'Methane': <Quantity(-74.87, 'kilojoule / mole')>},
-                                                          'p_ref': <Quantity(1, 'bar')>,
-                                                          's_0': {'Methane': <Quantity(188.66, 'joule / kelvin / mole')>}},
-                                   'LinearHeatCapacity': {'cp_a': {'Methane': <Quantity(35.69, 'joule / kelvin / mole')>},
-                                                          'cp_b': {'Methane': <Quantity(50.0, 'millijoule / kelvin ** 2 / mole')>}}}},
-     'vectors': {'states': <Quantity([400, 200000, 1], 'dimensionless')>}}
+>>> from simu import NumericHandler
+>>> numeric = NumericHandler(Source.top())
+>>> args = numeric.arguments
+>>> pprint(args)
+{'model_params': {'T': <Quantity(25, 'degree_Celsius')>,
+                  'V': <Quantity(10, 'meter ** 3 / hour')>,
+                  'p': <Quantity(1, 'bar')>},
+ 'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': <Quantity(25, 'degree_Celsius')>,
+                                                      'dh_form': {'Methane': <Quantity(-74.87, 'kilojoule / mole')>},
+                                                      'p_ref': <Quantity(1, 'bar')>,
+                                                      's_0': {'Methane': <Quantity(188.66, 'joule / kelvin / mole')>}},
+                               'LinearHeatCapacity': {'cp_a': {'Methane': <Quantity(35.69, 'joule / kelvin / mole')>},
+                                                      'cp_b': {'Methane': <Quantity(50.0, 'millijoule / kelvin ** 2 / mole')>}}}},
+ 'vectors': {'states': <Quantity([400, 200000, 1], 'dimensionless')>}}
 
 Firstly, we can recognize the model parameters, the thermodynamic parameters, and the thermodynamic state of our material. The latter is stored in a dimensionless vector for the purpose of numerical solving. Later-on, we show how this vector, and/or individual parameters can be substituted by `CasADi`_ symbols and thus become free variables in a calculation.
 
 Further, we can query the result by calling the function with this argument:
 
-.. literalinclude:: ../examples/material_amodel.py
-   :language: python
-   :lines: 27-30
-   :lineno-start: 27
-   :linenos:
-
-This yields::
-
-    {'residuals': {'T': <Quantity(-101.85, 'kelvin')>,
-                   'V': <Quantity(-0.0138511475, 'meter ** 3 / second')>,
-                   'p': <Quantity(-100000.0, 'pascal')>},
-     'thermo_props': {'source': {'S': <Quantity(194.096662, 'watt / kelvin')>,
-                                 'T': <Quantity(400.0, 'kelvin')>,
-                                 'T_ref': <Quantity(298.15, 'kelvin')>,
-                                 'V': <Quantity(0.01662892523630648, 'meter ** 3 / second')>,
-                                 'mu': <Quantity(-148614.303, 'joule / mole')>,
-                                 'mw': <Quantity(0.016042999999999998, 'kilogram / mole')>,
-                                 'n': <Quantity(1.0, 'mole / second')>,
-                                 'p': <Quantity(200000.0, 'pascal')>,
-                                 'p_ref': <Quantity(100000.0, 'pascal')>}},
-     'vectors': {'residuals': <Quantity([-1.01850000e+09 -4.98641309e+08 -1.00000000e+07], 'dimensionless')>}}
+>>> print(numeric.function(args))
+ {'residuals': {'T': <Quantity(-101.85, 'kelvin')>,
+                'V': <Quantity(-0.0138511475, 'meter ** 3 / second')>,
+                'p': <Quantity(-100000.0, 'pascal')>},
+ 'thermo_props': {'source': {'S': <Quantity(194.096662, 'watt / kelvin')>,
+                             'T': <Quantity(400.0, 'kelvin')>,
+                             'T_ref': <Quantity(298.15, 'kelvin')>,
+                             'V': <Quantity(0.01662892523630648, 'meter ** 3 / second')>,
+                             'mu': <Quantity(-148614.303, 'joule / mole')>,
+                             'mw': <Quantity(0.016042999999999998, 'kilogram / mole')>,
+                             'n': <Quantity(1.0, 'mole / second')>,
+                             'p': <Quantity(200000.0, 'pascal')>,
+                             'p_ref': <Quantity(100000.0, 'pascal')>}},
+ 'vectors': {'residuals': <Quantity([-1.01850000e+09 -4.98641309e+08 -1.00000000e+07], 'dimensionless')>}}
 
 
 Here we see the residuals as physical quantities, but also converted to a dimensionless vector, representing the quotient of residuals and their tolerances. Thermodynamic properties are included, and model properties would, if there were any.

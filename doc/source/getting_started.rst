@@ -45,6 +45,7 @@ Name                    What for
 
     >>> from examples.hello_world import Square
     >>> from simu import NumericHandler, Quantity
+    >>> from simu import NumericHandler, Quantity
 
 .. _getting started hello world:
 

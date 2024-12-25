@@ -20,11 +20,6 @@ config = {
 species = {"Methane": SpeciesDefinition("CH4")}
 frame = factory.create_frame(species, config)
 
-from pprint import pprint
-pprint(frame.parameter_structure, width=90)
-print()
-pprint(frame.property_structure)
-
 parameters = parse_quantities_in_struct({
     'H0S0ReferenceState': {
         'T_ref': '25 degC',
@@ -37,10 +32,7 @@ parameters = parse_quantities_in_struct({
 })
 
 result = frame([400, 1e5, 1.0], parameters)
-print()
-for key, value in result.items():
-    print(f"{key}: {value:.5g~}")
 
 tpn = InitialState.from_si(400, 2e5, [1.0])
 state = frame.initial_state(tpn, parameters)
-result = frame(state, parameters)
+result2 = frame(state, parameters)
