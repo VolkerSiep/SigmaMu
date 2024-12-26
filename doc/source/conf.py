@@ -32,6 +32,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
+    'sphinx_licenseinfo',
     'sphinx.ext.todo',
     'sphinx.ext.autosummary',
     'sphinx_copybutton',

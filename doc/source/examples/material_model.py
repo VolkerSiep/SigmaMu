@@ -16,11 +16,5 @@ class Source(Model):
         self.residuals.add( "V", self.parameters["V"] - src["V"], "m^3/h")
 
 
-# print("Function results:")
-# print("-----------------")
-# res = numeric.function(args)
-# pprint(res)
-
-
 
 

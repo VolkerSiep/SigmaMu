@@ -11,5 +11,5 @@ from .quantity import (
 from .qstructures import (
     ParameterDictionary, QuantityDict, parse_quantities_in_struct, exp, log,
     log10, sin, cos, tan, arcsin, arccos, arctan, sinh, cosh, tanh, arcsinh,
-    arccosh, arctanh, sqrt)
+    arccosh, arctanh, sqrt, extract_sub_structure)
 from .testing import assert_reproduction, user_agree

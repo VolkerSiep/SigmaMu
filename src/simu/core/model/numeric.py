@@ -20,6 +20,7 @@ from ..thermo import ThermoParameterStore
 #  - set state and get state (in T, p, n)
 #  - set parameters and get parameters
 
+
 class NumericHandler:
     """This class implements the function object describing the top level
     model."""
@@ -78,31 +79,48 @@ class NumericHandler:
             self.__arguments = self.__collect_argument_values()
         return deepcopy(self.__arguments)
 
-    def export_state(self) -> NestedMutMap[str]:
-        """Export the internal state of the model in a hierarchical structure,
-        whereas all thermodynamic states are given in :math:`T, p, n`.
+    # def export_state(self) -> NestedMutMap[str]:
+    #     """Export the internal state of the model in a hierarchical structure,
+    #     whereas all thermodynamic states are given in :math:`T, p, n`.
+    #
+    #     As by the philosophy of the chosen approach, only the thermodynamic
+    #     models know how to obtain their internal state from any :math:`T, p, n`
+    #     specification.
+    #
+    #     The returned structure is meant to be easy to store for instance in
+    #     yaml or json format, and easy to edit. One can use
+    #     :func:`simu.parse_quantities_in_struct` to convert the values of the
+    #     data structure into :class:`simu.Quantity` objects for programmatic
+    #     processing.
+    #
+    #     """
+    #     def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
+    #         """fetch material states from a specific model"""
+    #         mat_proxy = model.materials
+    #         # todo: change sym_state into Tpn something
+    #         return {k: m.sym_state for k, m in mat_proxy.handler.items()
+    #                 if k not in mat_proxy}
+    #
+    #     thermo =  self.__fetch(self.model, fetch_material_states, "state")
+    #     # TODO: when non-canonical states are implemented, collect them here.
+    #     return {"thermo": thermo, "non-canonical": {}}
 
-        As by the philosophy of the chosen approach, only the thermodynamic
-        models know how to obtain their internal state from any :math:`T, p, n`
-        specification.
+    def retain_initial_values(self, state: Sequence[float],
+                              parameters: NestedMap[Quantity]):
+        """"""
+        index = 0  # mutable index
 
-        The returned structure is meant to be easy to store for instance in
-        yaml or json format, and easy to edit. One can use
-        :func:`simu.parse_quantities_in_struct` to convert the values of the
-        data structure into :class:`simu.Quantity` objects for programmatic
-        processing.
+        def fetch_retain_initial_state(model: ModelProxy):
+            """retain initial states for a specific model"""
+            nonlocal index
+            for m in model.materials.handler.values():
+                state_length = 2 + len(m.species)
+                state_part = state[index:index + state_length]
+                m.retain_initial_state(state_part, parameters)
+                index += state_length
 
-        """
-        def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch material states from a specific model"""
-            mat_proxy = model.materials
-            # todo: change sym_state into Tpn something
-            return {k: m.sym_state for k, m in mat_proxy.handler.items()
-                    if k not in mat_proxy}
+        self.__traverse(self.model, fetch_retain_initial_state)
 
-        thermo =  self.__fetch(self.model, fetch_material_states, "state")
-        # TODO: when non-canonical states are implemented, collect them here.
-        return {"thermo": thermo, "non-canonical": {}}
 
     def extract_parameters(self, key: str,
                            definition: NestedMap[str]) -> Quantity:
@@ -125,10 +143,7 @@ class NumericHandler:
         dimensionless entities.
 
         :param key: The name to be used for the parameter set
-        :type key: str
         :param definition: The parameters to be extracted
-        :type definition: NestedMap[str]
-
         """
         def traverse(parameters: NestedMap[str],
                      symbols: NestedMutMap[Quantity],
@@ -405,6 +420,17 @@ class NumericHandler:
                 raise KeyError(msg)
             result[name] = call_self(proxy, func, typ, path + [name])
         return result
+
+    @staticmethod
+    def __traverse[**P](
+            root: ModelProxy,
+            func: Callable[[ModelProxy, P], None],
+            **kwargs: P.kwargs):
+        """Drill recursively into child modules to perform some action."""
+        call_self = NumericHandler.__traverse
+        func(root, **kwargs)
+        for name, proxy in root.hierarchy.handler.items():
+            call_self(proxy, func, **kwargs)
 
     @staticmethod
     def __fetch_thermo_stores(model: ModelProxy) \

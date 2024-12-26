@@ -329,7 +329,14 @@ class QFunction:
 
     def __call__(self, args: NestedMap[Quantity],
                  squeeze_results: bool = True) -> NestedMap[Quantity]:
-        """Call operator for the function object, as described above."""
+        """Call operator for the function object, as described above.
+
+        :param args: The arguments of the function
+        :param squeeze_results: The underlying `Casadi`_ function returns
+        the result objects in 2D shapes. With this parameter being ``True``
+        (default), ``numpy.squeeze`` is applied to all results, to omit
+        dimensions that are of size one.
+        """
         args_flat = cas.vertcat(*[
             value.to(self.arg_units[key]).magnitude
             for key, value in flatten_dictionary(args).items()

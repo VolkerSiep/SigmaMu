@@ -10,11 +10,13 @@ SiMu Documentation
    getting_started
    tutorial/tutorial
    api/api
+   faq
 
 .. toctree::
    :maxdepth: 1
 
    release_notes
+   license
    bibliographies
 
 

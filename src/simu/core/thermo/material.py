@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from ..utilities import Quantity, SymbolQuantity, QuantityDict
-from ..utilities.types import Map, MutMap
+from ..utilities import Quantity, SymbolQuantity, QuantityDict, QFunction
+from ..utilities.types import Map, MutMap, NestedMap
 
 from . import (
     ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
@@ -119,11 +119,30 @@ class Material(MutMap[Quantity]):
             result = {s: Quantity(mag[i], unit) for i, s in enumerate(species)}
             return QuantityDict(result)
 
+        # TODO: this has no effect, as I'd need to assign the properties to
+        #       the dict that that Material represents
         self.__properties = {n: convert(n, p) for n, p in props.items()
                              if not n.startswith("_")}
         self.__flow = flow
 
-        # apply augmenters as required in definition
+        # create a QFunction to map a state and parameters into a new initial
+        # state
+        args = {"state": Quantity(self.__state), "param": params}
+        props = frame(self.__state, params, squeeze_results=False, flow=flow)
+        res = {n: props[n] for n in "Tpn"}
+        self.__ini_func = QFunction(args, res, "ini_func")
+
+        # TODO: apply augmenters as required in definition
+
+    def retain_initial_state(self, state: Sequence[float],
+                             parameters: NestedMap[Quantity]):
+        param_struct = self.frame.parameter_structure
+        # filter parameters I really need
+        res = self.__ini_func(state, parameters)
+        ini = self.initial_state
+        ini.temperature = res["T"]
+        ini.pressure = res["p"]
+        ini.mol_vector = res["n"]
 
     @property
     def species(self) -> Collection[str]:

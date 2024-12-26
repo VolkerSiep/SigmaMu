@@ -86,3 +86,7 @@ simplify_quantity
 parse_quantities_in_struct
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autofunction:: simu.parse_quantities_in_struct
+
+extract_sub_structure
+^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: simu.core.utilities.extract_sub_structure
