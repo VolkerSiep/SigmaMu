@@ -6,9 +6,9 @@ Recap
 
 A brief description on how models are created is given in the :ref:`getting started hello world` paragraph of the getting started section. The example was
 
-.. literalinclude:: ../examples/hello_world.py
-   :language: python
-   :linenos:
+.. exampleinclude:: hello_world.py
+    :language: python
+    :linenos:
 
 To recap, the model declares an interface telling other (parent) models that it has a parameter called ``length`` and calculates a property called ``area``. Then, the definition implements the relationship.
 
@@ -21,32 +21,32 @@ Creating a material definition
 
 We can reuse much of the previous code, resulting into a :class:`simu.ThermoFrame` object for a pure methane ideal gas. Only now, we store configuration data in yaml files. Let us have one file with some chemical species and their formulae (``species_db.yml``):
 
-.. literalinclude:: ../examples/species_db.yml
+.. exampleinclude:: species_db.yml
    :language: yaml
    :linenos:
 
 Further, we store the thermodynamic model structures in another file (``thermo_model_structures.yml``):
 
-.. literalinclude:: ../examples/thermo_model_structures.yml
+.. exampleinclude:: thermo_model_structures.yml
    :language: yaml
    :linenos:
 
 And finally, the actual thermodynamic parameters (``ideal_gas_param.yml``):
 
-.. literalinclude:: ../examples/ideal_gas_param.yml
+.. exampleinclude:: ideal_gas_param.yml
    :language: yaml
    :linenos:
 
 Let's first import some classes and read in those files:
 
-.. literalinclude:: ../examples/ideal_gas_material.py
+.. exampleinclude:: ideal_gas_material.py
    :language: python
    :lines: 1-22
    :linenos:
 
 Now, as before, we can create the factory and from there the frame for our thermodynamic model:
 
-.. literalinclude:: ../examples/ideal_gas_material.py
+.. exampleinclude:: ideal_gas_material.py
    :language: python
    :lines: 24-29
    :lineno-start: 24
@@ -54,7 +54,7 @@ Now, as before, we can create the factory and from there the frame for our therm
 
 Next, we go for the material definition, requiring also the initial state and a :class:`simu.ThermoParameterStore` object:
 
-.. literalinclude:: ../examples/ideal_gas_material.py
+.. exampleinclude:: ideal_gas_material.py
    :language: python
    :lines: 31-34
    :lineno-start: 31
@@ -66,7 +66,7 @@ So far, we did not provide the concrete parameters, but the material definition 
 
 .. testsetup::
 
-   >>> from examples.ideal_gas_material import missing_symbols, store
+   >>> from simu.examples.ideal_gas_material import missing_symbols, store
    >>> from pprint import pprint
 
 >>> pprint(missing_symbols)
@@ -79,7 +79,7 @@ So far, we did not provide the concrete parameters, but the material definition 
 
 Finally, we provide the already read parameters to the store:
 
-.. literalinclude:: ../examples/ideal_gas_material.py
+.. exampleinclude:: ideal_gas_material.py
    :language: python
    :lines: 36
    :lineno-start: 36
@@ -102,7 +102,7 @@ This is the big moment, as we now can use the material definition in an actual p
 
 The following model is a *hello world* example for using such material:
 
-.. literalinclude:: ../examples/material_model.py
+.. exampleinclude:: material_model.py
    :language: python
    :lines: 1-16
    :linenos:
@@ -111,7 +111,7 @@ Here we first define the three parameters ``T``, ``p`` and ``V`` that determine 
 
 Well, the above syntax is very verbose, but might get into the way with regards to coding efficiency and the ambitions to keep lines short and to the point. For this reason, we define a subclass to :class:`simu.Model`, namely :class:`simu.AModel` that does nothing but defining abbreviations. As such, we can reduce the above model to:
 
-.. literalinclude:: ../examples/material_amodel.py
+.. exampleinclude:: material_amodel.py
    :language: python
    :lines: 1-16
    :linenos:
@@ -123,7 +123,7 @@ Either way, here we are with a complete process model. By creating a :class:`sim
 .. testsetup::
 
    >>> from pprint import pprint
-   >>> from examples.material_model import Source
+   >>> from simu.examples.material_model import Source
 
 >>> from simu import NumericHandler
 >>> numeric = NumericHandler(Source.top())

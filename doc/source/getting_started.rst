@@ -43,7 +43,7 @@ Name                    What for
 
 .. testsetup::
 
-    >>> from examples.hello_world import Square
+    >>> from simu.examples.hello_world import Square
     >>> from simu import NumericHandler, Quantity
     >>> from simu import NumericHandler, Quantity
 
@@ -53,7 +53,7 @@ Hello World
 -----------
 To call the following a *process model* is quite an insult to actual process models, but it is a start:
 
-.. literalinclude:: examples/hello_world.py
+.. exampleinclude:: hello_world.py
    :language: python
    :linenos:
    :pyobject: Square
@@ -65,8 +65,8 @@ In the ``define`` method, the property ``area`` is assigned to be the square of 
 
 Next, we want to do something with the model. To do that, we wrap it into an instance of :class:`NumericHandler <model.numeric.NumericHandler>` and create a :class:`QFunction <utilities.quantity.QFunction>` object:
 
-    >>> numeric = NumericHandler(Square.top())
-    >>> func = numeric.function
+>>> numeric = NumericHandler(Square.top())
+>>> func = numeric.function
 
 Now we can print the argument structure of the function:
 

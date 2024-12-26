@@ -1,5 +1,5 @@
-GNU Lesser General Public License
-=================================
+License
+=======
 
 Comment
 -------
@@ -9,8 +9,12 @@ The entire concept of ``SiMu`` is to enable encapsulation of intellectual proper
 
 On the other hand, more liberal licenses would encourage users to take this code apart and create private forks. This is something I probably cannot prevent entirely, but I do not wish. I hope that parallel developments can to large degree be included into ``SiMu``.
 
-License
--------
+GNU Lesser General Public License
+---------------------------------
+
+``SiMu`` is licensed under the :choosealicense:`lgpl-3.0`
+
+.. license-info:: LGPL-3.0
 
 .. license::
-   :file: ../../LICENSE
+    :py: simu

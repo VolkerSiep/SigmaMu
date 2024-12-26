@@ -55,7 +55,7 @@ How to do this in SiMu?
 -----------------------
 As indicated above, thermodynamic models can easily be chunked into contributions, and these contributions are often additive, in this case exclusively. All above introduced contributions are already defined in ``SiMu``. They take care of defining the required parameters and adding the contributions up in order to form a state function like the Gibbs free energy. As a first step, we do some necessary imports for this session and create a :class:`simu.ThermoFactory` object, register the Gibbs state and all thermodynamic model contributions that are available:
 
-.. literalinclude:: ../examples/ideal_gas.py
+.. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
    :lines: 1-9
@@ -64,7 +64,7 @@ Note that generic entities are imported directly from the ``simu`` root module, 
 
 Next, a :class:`simu.ThermoFrame` can be constructed, stacking the contributions as discussed in the previous section, based on a Gibbs thermodynamic state, that is using the state function :math:`G(T, p, n)`:
 
-.. literalinclude:: ../examples/ideal_gas.py
+.. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
    :lineno-start: 11
@@ -90,7 +90,7 @@ However, now we have our frame object and can ask it for the required thermodyna
 .. testsetup::
 
     >>> from pprint import pprint
-    >>> from examples.ideal_gas import frame, parameters
+    >>> from simu.examples.ideal_gas import frame, parameters
 
 >>> pprint(frame.parameter_structure, width=90)
 {'H0S0ReferenceState': {'T_ref': 'K',
@@ -122,7 +122,7 @@ Likewise, the frame can be queried for the properties that will be calculated:
 
 Getting back to the parameter structure, let us fill in some values and convert the structure into a dictionary of quantities:
 
-.. literalinclude:: ../examples/ideal_gas.py
+.. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
    :lineno-start: 23
@@ -154,7 +154,7 @@ p_ref: 1e+05 Pa
 
 As this is a pure species ideal gas, not much exciting is going on, but we have a chemical potential, entropy and volume. *Wait, where is enthalpy, heat capacity, density, compressibility, and all this interesting stuff?* -- We will come back to that. First let's look at a better way to define the initial state:
 
-.. literalinclude:: ../examples/ideal_gas.py
+.. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
    :lineno-start: 36
