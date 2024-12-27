@@ -11,6 +11,7 @@ from simu.core.thermo.material import MaterialDefinition, MaterialLab, MaterialS
 from simu.core.thermo.species import SpeciesDefinition, SpeciesDB
 from simu.core.utilities import assert_reproduction
 from simu.app.thermo import all_contributions, GibbsState
+from simu.core.utilities import flatten_dictionary
 
 # class BigNAugmentor(Augmentor):
 #     def define(self, material):
@@ -41,7 +42,8 @@ def test_create_material_definition_wrong_init():
 
 def test_create_material():
     material = create_material()
-    res = {name: f"{value.units:~}" for name, value in material.items()}
+    flat = flatten_dictionary(material)
+    res = {name: f"{value.units:~}" for name, value in flat.items()}
     assert_reproduction(res)
 
 

@@ -60,7 +60,7 @@ class ThermoFrame:
     method that handles the house-keeping of contribution classes.
     """
 
-    def __init__(self, species: Mapping[str, SpeciesDefinition],
+    def __init__(self, species: Map[SpeciesDefinition],
                  state_definition: StateDefinition,
                  contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
@@ -72,7 +72,8 @@ class ThermoFrame:
             name: cls_(species_list, options)
             for name, (cls_, options) in contributions.items()
         }
-        self.__species: Mapping[str, SpeciesDefinition] = species
+        self.__species: Map[SpeciesDefinition] = species
+        self.__vectors: MutMap[Sequence[str]] = {}
 
         def create_function(flow: bool = False):
             """Build up the result dictionary and define function"""
@@ -82,10 +83,13 @@ class ThermoFrame:
             # call the contributions; build up result dictionary
             mw = qvertcat(*[s.molecular_weight for s in species.values()])
             result = {"_state": state, "mw": mw}
+            self.__vectors.update({"mw": species_list})
             state_definition.prepare(result, flow)
+            self.__vectors.update(state_definition.declare_vector_keys(species))
             for name, contribution in contribs.items():
                 new_params = ParameterDictionary()
                 contribution.define(result, new_params)
+                self.__vectors.update(contribution.declare_vector_keys(species))
                 logger.debug(f"Defining contribution '{name}'")
                 if new_params:
                     params[name] = new_params
@@ -144,6 +148,13 @@ class ThermoFrame:
     def species(self) -> Sequence[str]:
         """Returns a list of species names"""
         return list(self.__species.keys())
+
+    @property
+    def vector_keys(self) -> Map[Sequence[[str]]]:
+        """Return the index keys for the registered vector properties.
+        For a standard model, there should at least be entries for ``n`` and
+        ``mu``."""
+        return self.__vectors
 
     @property
     def property_structure(self) -> NestedMap[str]:

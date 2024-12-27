@@ -106,19 +106,20 @@ class Material(MutMap[Quantity]):
         self.__state = frame.create_symbol_state()
         props = frame(self.__state, params, squeeze_results=False, flow=flow)
         species = frame.species
-
+        vectors = frame.vector_keys
         def convert(n: str, prop: SymbolQuantity) -> Quantity | QuantityDict:
-            """If property is a vector, convert it to a QuantityDict, otherwise
-            just return the quantity itself."""
+            """If property is a registered vector, convert it to a QuantityDict,
+            otherwise just return the quantity itself."""
             mag, unit = prop.magnitude, prop.units
-            print(n, prop.keys)
-            if mag.is_scalar():
+            try:
+                keys = vectors[n]
+            except KeyError:
                 return prop
-            if mag.size() != (len(species), 1):
+            if mag.size() != (len(keys), 1):
                 msg = f"Property {n} has improper shape: {mag.size()}, " \
-                      f"should be scalar or ({len(species)}, 1)"
+                      f"should be ({len(keys)}, 1)"
                 raise ValueError(msg)
-            result = {s: Quantity(mag[i], unit) for i, s in enumerate(species)}
+            result = {s: Quantity(mag[i], unit) for i, s in enumerate(keys)}
             return QuantityDict(result)
 
         self.__properties = {n: convert(n, p) for n, p in props.items()

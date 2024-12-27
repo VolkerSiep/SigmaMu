@@ -144,17 +144,17 @@ Firstly, we can recognize the model parameters, the thermodynamic parameters, an
 
 Further, we can query the result by calling the function with this argument:
 
->>> print(numeric.function(args))
- {'residuals': {'T': <Quantity(-101.85, 'kelvin')>,
-                'V': <Quantity(-0.0138511475, 'meter ** 3 / second')>,
-                'p': <Quantity(-100000.0, 'pascal')>},
+>>> pprint(numeric.function(args))
+{'residuals': {'T': <Quantity(-101.85, 'kelvin')>,
+               'V': <Quantity(-0.0138511475, 'meter ** 3 / second')>,
+               'p': <Quantity(-100000.0, 'pascal')>},
  'thermo_props': {'source': {'S': <Quantity(194.096662, 'watt / kelvin')>,
                              'T': <Quantity(400.0, 'kelvin')>,
                              'T_ref': <Quantity(298.15, 'kelvin')>,
                              'V': <Quantity(0.01662892523630648, 'meter ** 3 / second')>,
-                             'mu': <Quantity(-148614.303, 'joule / mole')>,
-                             'mw': <Quantity(0.016042999999999998, 'kilogram / mole')>,
-                             'n': <Quantity(1.0, 'mole / second')>,
+                             'mu': {'Methane': <Quantity(-148614.303, 'joule / mole')>},
+                             'mw': {'Methane': <Quantity(0.016042999999999998, 'kilogram / mole')>},
+                             'n': {'Methane': <Quantity(1.0, 'mole / second')>},
                              'p': <Quantity(200000.0, 'pascal')>,
                              'p_ref': <Quantity(100000.0, 'pascal')>}},
  'vectors': {'residuals': <Quantity([-1.01850000e+09 -4.98641309e+08 -1.00000000e+07], 'dimensionless')>}}

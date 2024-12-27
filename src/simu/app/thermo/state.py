@@ -2,8 +2,8 @@
 from casadi import vertsplit, vertcat
 
 # internal modules
-from ...core.thermo import StateDefinition
-from ...core.utilities import Quantity, base_unit, base_magnitude
+from ... import StateDefinition, Quantity
+from ...core.utilities import base_unit, base_magnitude
 from ...core.utilities.types import MutMap
 
 
@@ -33,6 +33,8 @@ class HelmholtzState(StateDefinition):
         return [base_magnitude(state.temperature), None] + \
             list(base_magnitude(state.mol_vector))
 
+    def declare_vector_keys(self, species):
+        return {"n": list(species.keys())}
 
 class GibbsState(StateDefinition):
     """This definition interprets the state as being temperature, pressure,
@@ -59,6 +61,9 @@ class GibbsState(StateDefinition):
         return [base_magnitude(state.temperature),
                 base_magnitude(state.pressure)] + \
                 list(base_magnitude(state.mol_vector))
+
+    def declare_vector_keys(self, species):
+        return {"n": list(species.keys())}
 
 
 all_states = [GibbsState, HelmholtzState]

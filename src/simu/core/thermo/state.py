@@ -5,13 +5,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-# external modules
-from casadi import vertsplit, vertcat
-
 # internal modules
-from ..utilities import Quantity, base_unit, base_magnitude
-from ..utilities.types import MutMap
-
+from ..utilities import Quantity
+from ..utilities.types import Map
+from .species import SpeciesDefinition
 
 @dataclass
 class InitialState:
@@ -71,6 +68,12 @@ class StateDefinition(ABC):
         When ``True``, all extensive variables are divided by time.
         """
         ...
+
+    def declare_vector_keys(
+            self, species: Map[SpeciesDefinition]) -> Map[Sequence[str]]:
+        """Declare the keys of vectorial state properties. In most cases,
+        this will be the species names for the mole vector."""
+        return {}
 
     @abstractmethod
     def reverse(self, state: InitialState) -> Sequence[float]:

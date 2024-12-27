@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence, MutableSequence
 
 # internal modules
+from .species import SpeciesDefinition
 from .state import InitialState
 from ..utilities import Quantity, ParameterDictionary
 from ..utilities.types import Map, MutMap
@@ -92,3 +93,15 @@ class ThermoContribution(ABC):
         .. seealso:: :meth:`ThermoFrame.initial_state`
         """
         ...
+
+    def declare_vector_keys(
+            self, species: Map[SpeciesDefinition]) -> Map[Sequence[str]]:
+        """Declare the keys of newly introduced vectorial properties. In most
+        cases, this will be the species names for the mole vector, and the
+        implementation will look as folllows::
+
+            def declare_vector_keys(self, species):
+                return {"my_vector_prop": list(species.keys())}
+
+        """
+        return {}

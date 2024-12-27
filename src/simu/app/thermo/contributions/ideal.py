@@ -5,7 +5,7 @@ from copy import copy
 
 # internal modules
 from simu import (
-    ThermoContribution, R_GAS, log, qsum, ParameterDictionary, base_magnitude
+    ThermoContribution, R_GAS, log, qsum, ParameterDictionary, base_magnitude,
 )
 
 
@@ -44,7 +44,7 @@ class H0S0ReferenceState(ThermoContribution):
 
     provides = ["T_ref", "p_ref", "S", "mu"]
 
-    def define(self, res: dict, par: ParameterDictionary):
+    def define(self, res, par):
         species = self.species
 
         s_0 = par.register_vector("s_0", species, "J/(mol*K)")
@@ -54,6 +54,9 @@ class H0S0ReferenceState(ThermoContribution):
         res["T_ref"] = par.register_scalar("T_ref", "K")
         res["p_ref"] = par.register_scalar("p_ref", "Pa")
 
+
+    def declare_vector_keys(self, species):
+        return {"mu": list(species.keys())}
 
 class LinearHeatCapacity(ThermoContribution):
     r"""This contribution implements a simple heat capacity, being linear
@@ -142,6 +145,9 @@ class StandardState(ThermoContribution):
         res["S_std"] = copy(res["S"])
         res["p_std"] = copy(res["p_ref"])
         res["mu_std"] = copy(res["mu"])
+
+    def declare_vector_keys(self, species):
+        return {"mu_std": list(species.keys())}
 
 
 class IdealMix(ThermoContribution):
