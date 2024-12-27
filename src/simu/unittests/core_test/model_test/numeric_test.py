@@ -162,6 +162,18 @@ def test_collect_properties():
     assert_reproduction(ref)
 
 
+def test_retain_initial_values():
+    model = SquareTestModel()
+    numeric = NumericHandler(model.create_proxy().finalise())
+    material = model.materials["local"]
+    material.definition.store.add_source("default", StringDictThermoSource(DATA))
+    params = numeric.arguments["thermo_params"]["default"]
+    state = [283.15, 2 * 0.000196732, 2, 2]
+    numeric.retain_initial_values(state, params)
+    pressure = material.initial_state.pressure
+    assert Quantity(0.999, "MPa") < pressure < Quantity(1.001, "MPa")
+
+
 def create_material_functions():
     """Make a function out of a model defining materials"""
     proxy = MaterialTestModel3.top()

@@ -137,9 +137,10 @@ class Material(MutMap[Quantity]):
 
     def retain_initial_state(self, state: Sequence[float],
                              parameters: NestedMap[Quantity]):
-        param_struct = self.frame.parameter_structure
+        param_struct = self.definition.frame.parameter_structure
         parameters = extract_sub_structure(parameters, param_struct)
-        res = self.__ini_func(state, parameters)
+        args = {"state": Quantity(state), "param": parameters}
+        res = self.__ini_func(args)
         ini = self.initial_state
         ini.temperature = res["T"]
         ini.pressure = res["p"]
