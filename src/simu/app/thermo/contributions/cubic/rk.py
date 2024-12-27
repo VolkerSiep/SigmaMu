@@ -268,7 +268,7 @@ class RedlichKwongAFunction(ThermoContribution):
         \Omega_a = \frac19\,(2^{1/3} - 1)^{-1}
     """
 
-    provides = ["ceos_a_i"]
+    provides = ["_ceos_a_i"]
 
     def define(self, res, par):
         omega_r2 = R_GAS * R_GAS / (9 * (2**(1 / 3) - 1))
@@ -306,7 +306,7 @@ class RedlichKwongMFactor(ThermoContribution):
         m_i = 0.48508 + (1.55171 - 0.15613\,\omega_i)\,\omega_i
     """
 
-    provides = ["m_factor"]
+    provides = ["_m_factor"]
 
     def define(self, res, par):
         omega = res["_omega"]

@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from ..utilities import Quantity, SymbolQuantity, QuantityDict, QFunction
+from ..utilities import (
+    Quantity, SymbolQuantity, QuantityDict, QFunction, extract_sub_structure)
 from ..utilities.types import Map, MutMap, NestedMap
 
 from . import (
@@ -110,6 +111,7 @@ class Material(MutMap[Quantity]):
             """If property is a vector, convert it to a QuantityDict, otherwise
             just return the quantity itself."""
             mag, unit = prop.magnitude, prop.units
+            print(n, prop.keys)
             if mag.is_scalar():
                 return prop
             if mag.size() != (len(species), 1):
@@ -119,8 +121,6 @@ class Material(MutMap[Quantity]):
             result = {s: Quantity(mag[i], unit) for i, s in enumerate(species)}
             return QuantityDict(result)
 
-        # TODO: this has no effect, as I'd need to assign the properties to
-        #       the dict that that Material represents
         self.__properties = {n: convert(n, p) for n, p in props.items()
                              if not n.startswith("_")}
         self.__flow = flow
@@ -137,7 +137,7 @@ class Material(MutMap[Quantity]):
     def retain_initial_state(self, state: Sequence[float],
                              parameters: NestedMap[Quantity]):
         param_struct = self.frame.parameter_structure
-        # filter parameters I really need
+        parameters = extract_sub_structure(parameters, param_struct)
         res = self.__ini_func(state, parameters)
         ini = self.initial_state
         ini.temperature = res["T"]
@@ -156,7 +156,7 @@ class Material(MutMap[Quantity]):
         return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
 
     def __getitem__(self, key: str) -> Quantity:
-        """Return a (symbolc) property that is calculated by the underlying
+        """Return a (symbolic) property that is calculated by the underlying
         thermodynamic model or later supplements via :meth:`__setitem__`."""
         return self.__properties[key]
 

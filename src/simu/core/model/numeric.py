@@ -422,15 +422,14 @@ class NumericHandler:
         return result
 
     @staticmethod
-    def __traverse[**P](
+    def __traverse(
             root: ModelProxy,
-            func: Callable[[ModelProxy, P], None],
-            **kwargs: P.kwargs):
+            func: Callable[[ModelProxy], None]):
         """Drill recursively into child modules to perform some action."""
         call_self = NumericHandler.__traverse
-        func(root, **kwargs)
+        func(root)
         for name, proxy in root.hierarchy.handler.items():
-            call_self(proxy, func, **kwargs)
+            call_self(proxy, func)
 
     @staticmethod
     def __fetch_thermo_stores(model: ModelProxy) \
