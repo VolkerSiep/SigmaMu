@@ -214,20 +214,18 @@ class ThermoFrame:
         and (T, p, n) is the initial state.
 
         """
-        # call own function (assert that it is defined yet)
-        #   defining the state as [T, NaN] + n.
-
-        # then start from top and call contributions to try to initialise,
-        #  based on results that might contain NaNs (if they depend on volume).
         st_def = self.__state_definition
         state_flat: Sequence[float] = st_def.reverse(state)
-        if None not in state_flat:
+        if None not in state_flat:  # trivial case, Gibbs coordinates
             return state_flat
 
+        # define the state, replacing non-explicitly given values with nan
         state_flat = [float("NaN") if x is None else x for x in state_flat]
-        # calculate all properties ... accept NaNs
+        # calculate all properties ... accept NaNs, by calling own function
         properties = self(state_flat, parameters)
 
+        # start from top and call contributions to try to initialise,
+        #  based on results that might contain NaNs (if they depend on non-given state parts).
         for cont in reversed(self.__contributions.values()):
             result = cont.initial_state(state, properties)
             if result:

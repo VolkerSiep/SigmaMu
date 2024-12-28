@@ -55,7 +55,7 @@ exclude_patterns: list[str] = []
 bibtex_bibfiles = ['bibliographies.bib']
 
 # break signature into multiple lines when length is greater as given value
-maximum_signature_line_length = 80  #
+maximum_signature_line_length = 90  #
 
 
 # -- Options for HTML output -------------------------------------------------

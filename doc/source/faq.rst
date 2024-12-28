@@ -20,3 +20,15 @@ What about phase stability analysis?
 **Q:** In other simulation tools, flash calculations automatically determine the phase-region and calculate one-phase or two-phase stream properties depending on this stability analysis. In `SiMu`, I need to specify whether my fluid is liquid, solid or gaseous, even for equation of states. Why cannot it be more flexible?
 
 **A:** For a sequential simulation tool, it is rather straight forward to perform phase stability analyses in a unit operation calculation, and simply forward the stream information to the downstream entities. In the equation-oriented approach, this is less straight forward, as the (dis-)appearance of phases causes a change in system size, and as such a change in degrees of freedom. As a second part of this answer, it can be stated that phase stability is seldom a practical problem when modelling steady-state systems. For a process to work, the number of phases must normally be as designed / desired. Now, there are exceptions, such as a discretised heat exchanger with on-setting condensation or evaporation. For most of such cases, there are tricks however to elegantly circumvent the need to dynamically change the number of phases in the model.
+
+How to render degree-circles in files with property data
+--------------------------------------------------------
+**Q:** When I write ``yaml`` files with property data, the ``°C`` is escaped to ``\xB0C``. This is annoying, as I like to expose the files to my users and myself.
+
+**A:** This is really just a detail on how to store the data using the `PyYaml`_ library. Use
+
+.. code-block::
+
+    dump(your_data, your_file, allow_unicode=True)
+
+Reading of the same data can be done without setting the flag. However, if you use ``json``, be aware that ``json`` is designed for non-human information exchange, and the general recommendation is not to temper with it. Use ``yaml`` for files that users might need to work with.

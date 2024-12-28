@@ -1,7 +1,12 @@
-from simu.core.model import NumericHandler
-from simu.core.utilities import assert_reproduction, flatten_dictionary
+from numpy import squeeze
+from numpy.testing import assert_allclose
+
+from simu import NumericHandler, flatten_dictionary
+from simu.core.utilities import assert_reproduction
 from simu.core.thermo.parameters import StringDictThermoSource
+
 from .models import *
+
 
 DATA = {
     'H0S0ReferenceState': {
@@ -162,6 +167,26 @@ def test_collect_properties():
     assert_reproduction(ref)
 
 
+def test_export_state():
+    numeric = NumericHandler(SquareTestModel.top())
+    state = numeric.export_state()
+    assert_reproduction(state)
+
+
+def test_import_state():
+    model = SquareTestModel()
+    numeric = NumericHandler(model.create_proxy().finalise())
+    state = {
+        'thermo': {'local': {
+            'T': '100 °C', 'p': '5 bar',
+            'n': {'CH3-CH2-CH3': '2 mol', 'CH3-(CH2)2-CH3': '1 mol'}}},
+        'non-canonical': {}}
+    species = list(state["thermo"]["local"]["n"].keys())
+    numeric.import_state(state)
+    state = model.materials["local"].initial_state.to_dict(species)
+    assert_reproduction(state)
+
+
 def test_retain_initial_values():
     model = SquareTestModel()
     numeric = NumericHandler(model.create_proxy().finalise())
@@ -172,6 +197,18 @@ def test_retain_initial_values():
     numeric.retain_initial_values(state, params)
     pressure = material.initial_state.pressure
     assert Quantity(0.999, "MPa") < pressure < Quantity(1.001, "MPa")
+
+
+def test_retain_and_args():
+    model = SquareTestModel()
+    numeric = NumericHandler(model.create_proxy().finalise())
+    material = model.materials["local"]
+    material.definition.store.add_source("default", StringDictThermoSource(DATA))
+    params = numeric.arguments["thermo_params"]["default"]
+    state = [283.15, 2 * 0.000196732, 2, 2]
+    numeric.retain_initial_values(state, params)
+    new_state  = squeeze(numeric.arguments["vectors"]["states"].magnitude)
+    assert_allclose(new_state, state)
 
 
 def create_material_functions():

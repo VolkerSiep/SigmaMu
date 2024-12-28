@@ -7,13 +7,15 @@ from copy import deepcopy
 from casadi import vertcat, SX
 from pint import Unit
 
-from ..utilities import flatten_dictionary
+from ..utilities import (
+    flatten_dictionary, quantity_dict_to_strings, parse_quantities_in_struct)
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction, jacobian
 from ..utilities.errors import DataFlowError
 
 from .base import ModelProxy
 from ..thermo import ThermoParameterStore
+from ... import unflatten_dictionary, InitialState
 
 
 # TODO:
@@ -79,37 +81,109 @@ class NumericHandler:
             self.__arguments = self.__collect_argument_values()
         return deepcopy(self.__arguments)
 
-    # def export_state(self) -> NestedMutMap[str]:
-    #     """Export the internal state of the model in a hierarchical structure,
-    #     whereas all thermodynamic states are given in :math:`T, p, n`.
-    #
-    #     As by the philosophy of the chosen approach, only the thermodynamic
-    #     models know how to obtain their internal state from any :math:`T, p, n`
-    #     specification.
-    #
-    #     The returned structure is meant to be easy to store for instance in
-    #     yaml or json format, and easy to edit. One can use
-    #     :func:`simu.parse_quantities_in_struct` to convert the values of the
-    #     data structure into :class:`simu.Quantity` objects for programmatic
-    #     processing.
-    #
-    #     """
-    #     def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
-    #         """fetch material states from a specific model"""
-    #         mat_proxy = model.materials
-    #         # todo: change sym_state into Tpn something
-    #         return {k: m.sym_state for k, m in mat_proxy.handler.items()
-    #                 if k not in mat_proxy}
-    #
-    #     thermo =  self.__fetch(self.model, fetch_material_states, "state")
-    #     # TODO: when non-canonical states are implemented, collect them here.
-    #     return {"thermo": thermo, "non-canonical": {}}
+    def export_state(self) -> NestedMutMap[str]:
+        """Export the internal state of the model in a hierarchical structure,
+        whereas all thermodynamic states are given in :math:`T, p, n`.
+
+        As by the philosophy of the chosen approach, only the thermodynamic
+        models know how to obtain their internal state from any :math:`T, p, n`
+        specification.
+
+        The returned structure is meant to be easy to store for instance in
+        yaml or json format, and easy to edit. One can use
+        :func:`simu.parse_quantities_in_struct` to convert the values of the
+        data structure into :class:`simu.Quantity` objects for programmatic
+        processing.
+
+        """
+        def fetch_initial_states(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch material states from a specific model"""
+            mat_proxy = model.materials
+            return {k: m.initial_state.to_dict(m.species)
+                    for k, m in mat_proxy.handler.items()
+                    if k not in mat_proxy}
+
+        thermo =  self.__fetch(self.model, fetch_initial_states, "state")
+        # TODO: when non-canonical states are implemented, collect them here.
+
+        return quantity_dict_to_strings(
+            {"thermo": thermo,
+             "non-canonical": {}}
+        )
+
+    def import_state(self, state: NestedMap[str],
+                     allow_missing: bool=False, allow_extra: bool = False)\
+            -> NestedMap[str]:
+        """Imports the state data in terms of ":math:`T, p, n` as exported by
+        :meth:`export_state`.
+
+        :param state: A nested mapping as returned by :meth:`export_state`,
+          containing the two first-level keys ``thermo`` (for thermodynamic
+          states) and ``non-canonical`` for non-canonical states.
+        :param allow_missing: If true, throw a ``ValueError`` if there are model
+          states in the model that are not defined in the given ``state``
+          structure.
+        :param allow_extra: If false, throw a ``ValueError`` if there are states
+          in the given ``state`` structure that are not present in the model.
+        :return: A nested mapping of same structure as ``state``, but containing
+          states that are not present in the model (value = ``extra``) and
+          states that were not given as part of ``state`` (value = ``missing``)
+        """
+        def mk_new_path(path: str, name: str) -> str:
+            name = name.replace("/", r"\/")
+            return name if not path else f"{path}/{name}"
+
+        def traverse(model: ModelProxy, state_part: NestedMap[Quantity],
+                     path: str):
+            # process local material objects
+            all_names = set()
+            for name, material in model.materials.handler.items():
+                new_path = mk_new_path(path, name)
+                all_names.add(name)
+                try:
+                    new_part = state_part[name]
+                except KeyError:
+                    if not allow_missing:
+                        raise
+                    result[new_path] = "missing"
+                else:
+                    material.initial_state = \
+                        InitialState.from_dict(new_part, material.species)
+
+            # traverse down into model hierarchy
+            for name, proxy in model.hierarchy.handler.items():
+                all_names.add(name)
+                new_path = mk_new_path(path, name)
+                try:
+                    new_part = state_part[name]
+                except KeyError:
+                    if not allow_missing:
+                        raise
+                    result[new_path] = "missing"
+                else:
+                    traverse(proxy, new_part, new_path)
+
+            # detect states that are not defined in model
+            for name in state_part.keys():
+                new_path = mk_new_path(path, name)
+                if not name in all_names:
+                    if not allow_extra:
+                        raise KeyError(f"{new_path} not found in model structure")
+                    result[new_path] = "extra"
+
+        self.__arguments = {}  # force reread
+        result = {}
+        traverse(self.model, parse_quantities_in_struct(state["thermo"]), "")
+        return unflatten_dictionary(result)
+
 
     def retain_initial_values(self, state: Sequence[float],
                               parameters: NestedMap[Quantity]):
-        """"""
-        index = 0  # mutable index
-
+        """Given a numeric ``state`` vector and the current set of
+        ``parameters`` as a nested mapping of quantities, store the values for
+        temperature, pressure and molar quantities back into the internal
+        representations of the initial thermodynamic states.
+        """
         def fetch_retain_initial_state(model: ModelProxy):
             """retain initial states for a specific model"""
             nonlocal index
@@ -119,7 +193,11 @@ class NumericHandler:
                 m.retain_initial_state(state_part, parameters)
                 index += state_length
 
+        index = 0  # mutable index
+        self.__arguments = {}  # force reread
         self.__traverse(self.model, fetch_retain_initial_state)
+
+        # todo: if there are non-canonical states, treat them now.
 
 
     def extract_parameters(self, key: str,

@@ -319,6 +319,19 @@
       "thermo_props/local/mu/CH3-CH2-CH3"
     ]
   },
+  "numeric_test.py::test_export_state": {
+    "non-canonical": {},
+    "thermo": {
+      "local": {
+        "T": "10 \u00b0C",
+        "n": {
+          "CH3-(CH2)2-CH3": "1 mol",
+          "CH3-CH2-CH3": "1 mol"
+        },
+        "p": "10 bar"
+      }
+    }
+  },
   "numeric_test.py::test_extract_parameters": {
     "J": [
       [
@@ -352,6 +365,14 @@
       "model_params/p",
       "model_params/x_c3"
     ]
+  },
+  "numeric_test.py::test_import_state": {
+    "T": "100 \u00b0C",
+    "n": {
+      "CH3-(CH2)2-CH3": "1 mol",
+      "CH3-CH2-CH3": "2 mol"
+    },
+    "p": "5 bar"
   },
   "numeric_test.py::test_jacobian": [
     [

@@ -432,6 +432,38 @@ def parse_quantities_in_struct(struct: Union[NestedMap[str], str])\
     return {key: parse_quantities_in_struct(value) for key, value in items}
 
 
+def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
+                             significant_digits: int = 17) \
+        -> str | NestedMap[str]:
+    """Return a new structure with the quantity instances replaced by a string
+    representation that is parsable by the :class:`simu.Quantity` constructor.
+
+    Example:
+
+    >>> from pprint import pprint
+    >>> from simu import Quantity
+    >>> struct = {'speed': {'car': Quantity(400 / 3, 'kilometer / hour'),
+    ...                     'fingernail': Quantity(1.2, 'millimeter / day'),
+    ...                     'snail': Quantity(1.0, 'centimeter / minute')},
+    ...           'weight': {'car': Quantity(1.5, 'metric_ton'),
+    ...                      'fingernail': Quantity(300, 'milligram'),
+    ...                      'snail': Quantity(10, 'gram')}}
+    >>> pprint(quantity_dict_to_strings(struct))
+    {'speed': {'car': '133.33333333333334 km / h',
+               'fingernail': '1.2 mm / d',
+               'snail': '1 cm / min'},
+     'weight': {'car': '1.5 t', 'fingernail': '300 mg', 'snail': '10 g'}}
+    """
+    try:
+        items = struct.items()
+    except AttributeError:
+        return f"{struct:.{significant_digits}g~}"
+    return {key: quantity_dict_to_strings(value, significant_digits)
+            for key, value in items}
+
+
+
+
 def extract_sub_structure(source: NestedMap[Quantity],
                           structure: NestedMap[str]) -> NestedMap[Quantity]:
     """Given a nested structure map ``structure`` that defines the units of

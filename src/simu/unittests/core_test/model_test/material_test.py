@@ -55,7 +55,7 @@ def test_retain_initial_state_material():
     ini = material.initial_state
     assert ini.temperature == Quantity(300.0, "K")
     assert ini.pressure == Quantity(2, "bar")
-    assert ini.mol_vector == Quantity([10], "mol/s")
+    assert ini.mol_vector == Quantity([10], "mol")
 
 
 def test_species_db():

@@ -141,10 +141,10 @@ class Material(MutMap[Quantity]):
         parameters = extract_sub_structure(parameters, param_struct)
         args = {"state": Quantity(state), "param": parameters}
         res = self.__ini_func(args)
-        ini = self.initial_state
-        ini.temperature = res["T"]
-        ini.pressure = res["p"]
-        ini.mol_vector = res["n"]
+        self.initial_state = InitialState(
+            temperature=res["T"],
+            pressure=res["p"],
+            mol_vector=res["n"])
 
     @property
     def species(self) -> Collection[str]:
