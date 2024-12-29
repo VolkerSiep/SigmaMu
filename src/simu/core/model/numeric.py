@@ -33,6 +33,7 @@ class NumericHandler:
     RESIDUALS: str = "residuals"
     STATE_VEC: str = "states"
     RES_VEC: str = "residuals"
+    BOUND_VEC: str = "bounds"
     VECTORS: str = "vectors"
     JACOBIANS: str = "jacobians"
 
@@ -377,6 +378,11 @@ class NumericHandler:
             """fetch residuals from a specific model"""
             return {k: r.value for k, r in model.residuals.items()}
 
+        def fetch_bounds(model: ModelProxy) -> MutMap[Quantity]:
+            mat_proxy = model.materials
+            return {k: m.bounds for k, m in mat_proxy.handler.items()
+                    if k not in mat_proxy}
+
         def fetch_normed_residuals(model: ModelProxy) -> MutMap[Quantity]:
             """fetch normed residuals from a specific model"""
             return {k: (r.value / r.tolerance).to("")
@@ -384,7 +390,7 @@ class NumericHandler:
 
         def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
             """fetch model properties from a specific model"""
-            return dict(model.properties)
+            return dict(model.properties.items())
 
         def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
             """fetch properties of materials in a specific model"""
@@ -399,15 +405,19 @@ class NumericHandler:
 
         residual_structure = fetch(mod, fetch_normed_residuals,
                                    "normalised residual")
+        bounds_structure = fetch(mod, fetch_bounds, "bound")
         residuals, residual_names = to_vector(residual_structure)
+        bounds, bound_names = to_vector(bounds_structure)
         self.__vec_res_names[self.RES_VEC] = residual_names
+        self.__vec_res_names[self.BOUND_VEC] = bound_names
         return {
             self.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
             self.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
             self.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
             self.VECTORS: {
-                self.RES_VEC: residuals
+                self.RES_VEC: residuals,
+                self.BOUND_VEC: bounds
             },
             self.JACOBIANS: {}
         }

@@ -84,6 +84,7 @@
     "_p_c": "[p_c.A, p_c.B] kg / m / s ** 2"
   },
   "cubic_test.py::test_linear_mixing_rule": "((c_i_0*n_0)+(c_i_1*n_1)) m ** 3",
+  "cubic_test.py::test_non_symmetric_mixing_rule": "@1=(sqrt(a_i_0)*n_0), @2=(sqrt(a_i_1)*n_1), @3=(sqrt(a_i_2)*n_2), @4=-2, @5=(@1*@2), ((sq(((@1+@2)+@3))+(@4*(((@5*k_1.A.B)+((@1*@3)*k_1.A.C))-(((T/T_ref)-1)*(@5*k_2.A.B)))))+((@4/((n_0+n_1)+n_2))*((((@2*@1)*(n_1-n_0))*l_1.B.A)+(((@3*@2)*(n_2-n_1))*l_1.C.B)))) kg * m ** 5 * mol / s ** 2",
   "cubic_test.py::test_non_symmmetric_mixing_rule": "@1=(sqrt(a_i_0)*n_0), @2=(sqrt(a_i_1)*n_1), @3=(sqrt(a_i_2)*n_2), @4=-2, @5=(@1*@2), ((sq(((@1+@2)+@3))+(@4*(((@5*k_1.A.B)+((@1*@3)*k_1.A.C))-(((T/T_ref)-1)*(@5*k_2.A.B)))))+((@4/((n_0+n_1)+n_2))*((((@2*@1)*(n_1-n_0))*l_1.B.A)+(((@3*@2)*(n_2-n_1))*l_1.C.B)))) kg * m ** 5 * mol / s ** 2",
   "cubic_test.py::test_redlich_kwong_a_function": "@1=29.5518, [(((@1*alpha_0)*sq(T_c_0))/p_c_0), (((@1*alpha_1)*sq(T_c_1))/p_c_1)] J ** 2 * m * s ** 2 / kg / mol ** 2",
   "cubic_test.py::test_redlich_kwong_b_function": "@1=0.720368, [((@1*T_c_0)/p_c_0), ((@1*T_c_1)/p_c_1)] J * m * s ** 2 / kg / mol",
@@ -142,19 +143,26 @@
     }
   },
   "frame_test.py::test_property_structure": {
-    "S": "J / K",
-    "S_std": "J / K",
-    "T": "K",
-    "T_ref": "K",
-    "V": "m ** 3",
-    "_state": "",
-    "mu": "J / mol",
-    "mu_std": "J / mol",
-    "mw": "kg / mol",
-    "n": "mol",
-    "p": "Pa",
-    "p_ref": "Pa",
-    "p_std": "Pa"
+    "bounds": {
+      "T": "K",
+      "V": "m ** 3",
+      "n": "mol"
+    },
+    "props": {
+      "S": "J / K",
+      "S_std": "J / K",
+      "T": "K",
+      "T_ref": "K",
+      "V": "m ** 3",
+      "_state": "",
+      "mu": "J / mol",
+      "mu_std": "J / mol",
+      "mw": "kg / mol",
+      "n": "mol",
+      "p": "Pa",
+      "p_ref": "Pa",
+      "p_std": "Pa"
+    }
   },
   "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless",
   "store_test.py::test_create_frame": {

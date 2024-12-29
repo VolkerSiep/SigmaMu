@@ -83,19 +83,21 @@ class ThermoFrame:
             # call the contributions; build up result dictionary
             mw = qvertcat(*[s.molecular_weight for s in species.values()])
             result = {"_state": state, "mw": mw}
+            bounds = {}
             self.__vectors.update({"mw": species_list})
             state_definition.prepare(result, flow)
             self.__vectors.update(state_definition.declare_vector_keys(species))
             for name, contribution in contribs.items():
                 new_params = ParameterDictionary()
-                contribution.define(result, new_params)
+                contribution.define(result, bounds, new_params)
                 self.__vectors.update(contribution.declare_vector_keys(species))
                 logger.debug(f"Defining contribution '{name}'")
                 if new_params:
                     params[name] = new_params
             # create function
             args = {"state": state, "parameters": params}
-            return QFunction(args, result, "thermo_frame"), params
+            res = {"props": result, "bounds": bounds}
+            return QFunction(args, res, "thermo_frame"), params
 
         self.__function, parameters = create_function(flow=False)
         function, _ = create_function(flow=True)
@@ -222,7 +224,7 @@ class ThermoFrame:
         # define the state, replacing non-explicitly given values with nan
         state_flat = [float("NaN") if x is None else x for x in state_flat]
         # calculate all properties ... accept NaNs, by calling own function
-        properties = self(state_flat, parameters)
+        properties = self(state_flat, parameters)["props"]
 
         # start from top and call contributions to try to initialise,
         #  based on results that might contain NaNs (if they depend on non-given state parts).

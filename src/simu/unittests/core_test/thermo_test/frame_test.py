@@ -80,7 +80,7 @@ def test_call_frame_state():
     assert_reproduction(result)
 
 
-def test_relax():
+def test_relax_old():
     """Simple test of relaxation method"""
     frame, state, result = call_frame()
     delta_state = [-500, 10, -0.5, 1]
@@ -89,7 +89,7 @@ def test_relax():
 
 
 def test_initial_state():
-    """Test whether initialisation of a Helmholtz ideal gas contributioon
+    """Test whether initialisation of a Helmholtz ideal gas contribution
     gives the correct volume"""
     frame = create_simple_frame()
     initial_state = InitialState(temperature=Qty("25 degC"),
@@ -106,7 +106,7 @@ def call_frame(flow: bool = True):
     frame = create_simple_frame()
     state = Qty([398.15, 0.0448, 1, 1])  # = T, V, *n
     result = frame(state, example_parameters, flow=flow)
-    return frame, state, result
+    return frame, state, result["props"]
 
 
 def create_frame_factory():

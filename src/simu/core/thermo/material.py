@@ -105,11 +105,12 @@ class Material(MutMap[Quantity]):
         params = definition.store.get_symbols(frame.parameter_structure)
         self.__state = frame.create_symbol_state()
         props = frame(self.__state, params, squeeze_results=False, flow=flow)
-        species = frame.species
         vectors = frame.vector_keys
+
         def convert(n: str, prop: SymbolQuantity) -> Quantity | QuantityDict:
             """If property is a registered vector, convert it to a QuantityDict,
             otherwise just return the quantity itself."""
+            nonlocal vectors
             mag, unit = prop.magnitude, prop.units
             try:
                 keys = vectors[n]
@@ -122,15 +123,17 @@ class Material(MutMap[Quantity]):
             result = {s: Quantity(mag[i], unit) for i, s in enumerate(keys)}
             return QuantityDict(result)
 
-        self.__properties = {n: convert(n, p) for n, p in props.items()
+        self.__properties = {n: convert(n, p) for n, p in props["props"].items()
                              if not n.startswith("_")}
+        self.__bounds = {n: convert(n, p) for n, p in props["bounds"].items()
+                         if not n.startswith("_")}
         self.__flow = flow
 
         # create a QFunction to map a state and parameters into a new initial
         # state
         args = {"state": Quantity(self.__state), "param": params}
         props = frame(self.__state, params, squeeze_results=False, flow=flow)
-        res = {n: props[n] for n in "Tpn"}
+        res = {n: props["props"][n] for n in "Tpn"}
         self.__ini_func = QFunction(args, res, "ini_func")
 
         # TODO: apply augmenters as required in definition
@@ -156,6 +159,10 @@ class Material(MutMap[Quantity]):
         """A dictionary of quantities representing the state"""
         state = self.__state.nonzeros()
         return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
+
+    @property
+    def bounds(self):
+        return self.__bounds
 
     def __getitem__(self, key: str) -> Quantity:
         """Return a (symbolic) property that is calculated by the underlying

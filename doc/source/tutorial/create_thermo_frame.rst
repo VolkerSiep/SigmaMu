@@ -109,16 +109,19 @@ We receive the structure above, indicating the required physical dimension as a 
 Likewise, the frame can be queried for the properties that will be calculated:
 
 >>> pprint(frame.property_structure)
-{'S': 'J / K',
- 'T': 'K',
- 'T_ref': 'K',
- 'V': 'm ** 3',
- '_state': '',
- 'mu': 'J / mol',
- 'mw': 'kg / mol',
- 'n': 'mol',
- 'p': 'Pa',
- 'p_ref': 'Pa'}
+{'bounds': {'T': 'K', 'n': 'mol', 'p': 'Pa'},
+ 'props': {'S': 'J / K',
+           'T': 'K',
+           'T_ref': 'K',
+           'V': 'm ** 3',
+           '_state': '',
+           'mu': 'J / mol',
+           'mw': 'kg / mol',
+           'n': 'mol',
+           'p': 'Pa',
+           'p_ref': 'Pa'}}
+
+Here, the bounds are variables that the thermodynamic model requires to be positive.
 
 Getting back to the parameter structure, let us fill in some values and convert the structure into a dictionary of quantities:
 
@@ -138,7 +141,7 @@ We can call the model at this point, just be aware of an important design featur
 
 We show in a moment how to create such states from physical quantities, but for now, the following code computes our ideal gas model:
 
->>> result = frame([400, 1e5, 1.0], parameters)
+>>> result = frame([400, 1e5, 1.0], parameters)["props"]
 >>> for key, value in result.items():
 ...     print(f"{key}: {value:.5g~}")
 S: 199.86 J / K

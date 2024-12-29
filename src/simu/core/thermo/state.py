@@ -75,10 +75,10 @@ class InitialState:
         initial state. The map must contain the top-level keys ``T``, ``p`` and
         ``n``, and a mapping from species to molar quantities as value of the
         ``n`` key. The correct sequence of ``species`` is provided separately,
-         to be consistent with the targeted thermodynamic model.
+        to be consistent with the targeted thermodynamic model.
 
-         The method raises a ``KeyError``, if the elements of ``struct`` are not
-         as expected, in particular considering the given ``species`` argument.
+        The method raises a ``KeyError``, if the elements of ``struct`` are not
+        as expected, in particular considering the given ``species`` argument.
          """
         for s in struct["n"].keys():
             if s not in species:

@@ -36,7 +36,7 @@ def test_critical_parameters():
     res = {}
     par = ParameterDictionary()
     cont = CriticalParameters(["A", "B"], {})
-    cont.define(res, par)
+    cont.define(res, {}, par)
     assert_reproduction(res)
 
 
@@ -45,7 +45,7 @@ def test_volume_shift():
     res = {}
     par = ParameterDictionary()
     cont = VolumeShift(["A", "B"], {})
-    cont.define(res, par)
+    cont.define(res, {}, par)
     assert_reproduction([res, par])
 
 
@@ -56,7 +56,7 @@ def test_linear_mixing_rule():
     par = ParameterDictionary()
     opt = {"target": "c"}
     cont = LinearMixingRule(["A", "B"], opt)
-    cont.define(res, par)
+    cont.define(res, {}, par)
     assert_reproduction(res["c"])
 
 
@@ -81,7 +81,7 @@ def test_redlich_kwong_eos():
         vec("x", 4, "dimless")
     })
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
-    cont.define(res, {})
+    cont.define(res, {}, {})
     keys = "S p mu _ceos_a_T _ceos_b_T _VBC _dp_dV".split()
     result = {k: res[k] for k in keys}
     assert_reproduction(result)
@@ -95,7 +95,7 @@ def test_abstract_class_init():
     assert "abstract" in str(excinfo.value)
 
 
-def test_non_symmmetric_mixing_rule():
+def test_non_symmetric_mixing_rule():
     """Test definition of NonSymmetricMixingRule contribution"""
     res = {
         "T": sym("T", "K"),
@@ -110,7 +110,7 @@ def test_non_symmmetric_mixing_rule():
     }
     cont = NonSymmetricMixingRule(["A", "B", "C"], options)
     par = ParameterDictionary()
-    cont.define(res, par)
+    cont.define(res, {}, par)
     assert_reproduction(res["a"])
 
 
@@ -129,7 +129,7 @@ def test_non_symmmetric_mixing_rule_no_interaction():
     }
     cont = NonSymmetricMixingRule(["A", "B", "C"], options)
     par = ParameterDictionary()
-    cont.define(res, par)
+    cont.define(res, {}, par)
 
 
 def test_redlich_kwong_a_function():
@@ -140,7 +140,7 @@ def test_redlich_kwong_a_function():
         "_p_c": vec('p_c', 2, "bar")
     }
     cont = RedlichKwongAFunction(["A", "B"], {})
-    cont.define(res, {})
+    cont.define(res, {}, {})
     assert_reproduction(res["_ceos_a_i"])
 
 
@@ -148,7 +148,7 @@ def test_redlich_kwong_b_function():
     """Test definition of RedlichKwongBFunction contribution"""
     res = {"_T_c": vec('T_c', 2, "K"), "_p_c": vec('p_c', 2, "bar")}
     cont = RedlichKwongBFunction(["A", "B"], {})
-    cont.define(res, {})
+    cont.define(res, {}, {})
     assert_reproduction(res["_ceos_b_i"])
 
 
@@ -156,7 +156,7 @@ def test_rk_m_factor():
     """Test definition of RedlichKwongMFactor contribution"""
     res = {"_omega": vec('w', 2, "dimless")}
     cont = RedlichKwongMFactor(["A", "B"], {})
-    cont.define(res, {})
+    cont.define(res, {}, {})
     assert_reproduction(res["_m_factor"])
 
 
@@ -245,7 +245,7 @@ def test_initialise_rk2(cls):
 
     res.update(ideal)
     cont = cls(["A", "B"], {})
-    cont.define(res, {})  # now the ideal part in res is overwritten
+    cont.define(res, {}, {})  # now the ideal part in res is overwritten
 
     # now with number quantities
     T, p, n = Q("100 degC"), Q("1 bar"), Q([0.5, 0.5], "mol")
@@ -345,7 +345,7 @@ def create_boston_mathias_alpha_function():
     }
     par = ParameterDictionary()
     cont = BostonMathiasAlphaFunction(["A", "B"], {})
-    cont.define(res, par)
+    cont.define(res, {},  par)
     return res, par
 
 

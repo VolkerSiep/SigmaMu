@@ -42,13 +42,26 @@ class ThermoContribution(ABC):
         self.options = options
 
     @abstractmethod
-    def define(self, res: MutMap[Quantity], par: ParameterDictionary):
+    def define(self, res: MutMap[Quantity],
+               bounds: MutMap[Quantity],
+               par: ParameterDictionary):
         """Abstract method to implement the ``casadi`` expressions
         that make up this contribution.
+
+        See :ref:`standard property names` for a guideline on how to name
+        standard properties generated in the contribution implementations.
 
         :param res: A dictionary with already calculated properties that is to
           be supplemented by the properties calculated in this contribution.
           The values of the dictionaries are of type ``casadi.SX``.
+        :param bounds: A dictionary including properties of which the base_unit
+          magnitude must stay positive. Solvers can use this information to
+          stay within the mathematical domain of the model.
+          By convention, if the property is also a result, the same name shall
+          be used, and it is not a problem if prior entries are over-written.
+          For instance multiple contributions will not allow negative ``T``,
+          and all of them shall declare this, as they cannot rely on the others
+          being used in the same model.
         :param par: A dictionary with parameters for this contribution. This
           dictionary can be nested. All values are scalar symbols of type
           ``casadi.SX``.

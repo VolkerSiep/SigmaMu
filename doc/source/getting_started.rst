@@ -80,7 +80,7 @@ The ``length`` parameter is a model parameter and registered as such. We have no
 Likewise, we can query what the model will return:
 
 >>> print(func.result_structure)
-{'model_props': {'area': 'm ** 2'}, 'vectors': {'residuals': ''}}
+{'model_props': {'area': 'm ** 2'}, 'vectors': {'bounds': '', 'residuals': ''}}
 
 As there are no model constraints, the ``residuals`` section here is empty, but we find the calculated ``area`` as a model property.
 
@@ -102,7 +102,6 @@ We can overwrite that parameter by changing its value in the obtained structure
 0.040 m²
 
 Note that the formatting of the physical quantities is utilising `Pint`_ functionality.
-
 
 Normal project structure
 ------------------------
