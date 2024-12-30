@@ -7,6 +7,7 @@ API documentation
    utilities/utilities
    thermo/thermo
    modelling/modelling
+   solver/solver
 
 
 .. comment::

@@ -20,26 +20,31 @@ Also this is supposed to work without any failed tests.
 
 ``SiMu`` depends on the following packages:
 
-========= =================================================================
-Name      What for
-========= =================================================================
-`CasADi`_ All symbolic algebra in the background uses it-
-`Pint`_   All modelling happens via ``pint``'s ``Quantity`` class
-`NumPy`_  Number chrunching, in particular linear algebra
-`SciPy`_  For advanced numeric methods, utilised for instance by the solver
-`PyYAML`_ The chosen format for configuration files.
-========= =================================================================
+============ =================================================================
+Name         What for
+============ =================================================================
+`CasADi`_    All symbolic algebra in the background is based on it
+`Pint`_      All modelling happens via ``pint``'s ``Quantity`` class
+`NumPy`_     Number crunching, in particular linear algebra
+`SciPy`_     For advanced numeric methods, utilised for instance by the solver
+`PyPardiso`_ Efficient solving of linear equation systems on multiple cores
+`PyYAML`_    The chosen format for configuration files.
+============ =================================================================
 
 For development, we require additionally
 
-======================= =================================================
+======================= =====================================================
 Name                    What for
-======================= =================================================
+======================= =====================================================
 `pytest`_               For running the unit tests
 `matplotlib`_           In examples, we like to plot results sometimes
 `Sphinx`_               The documentation is built with it.
-`sphinxcontrib-bibtex`_ Handling of bibliographics in documentation
-======================= =================================================
+`sphinxcontrib-bibtex`_ Handling of bibliographies in documentation
+`matplotlib`_           Used in some example scripts for plotting
+`sphinx-licenseinfo`_   For including the license file into the docs
+`sphinx_copybutton`_    For the fancy copy buttons on the scripts in the docs
+`pytest-doctestplus`_   To run doctest elements in rst-files
+======================= =====================================================
 
 .. testsetup::
 

@@ -24,6 +24,8 @@ from .core.thermo import (
 
 from .core.model import Model, AModel, NumericHandler
 
+from .core.solver import SimulationSolver
+
 # versioning
 from ._version import VERSION as __version__
 

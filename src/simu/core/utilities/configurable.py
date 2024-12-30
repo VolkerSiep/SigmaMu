@@ -12,18 +12,23 @@ class Configurable:
 
     __DEFAULT_VALIDATION = {"f": lambda x: True, "msg": ""}
 
-    def __init__(self):
+    def __init__(self, exclude: list[str] = None):
         """
         The constructor uses the ``inspect`` module to obtain the arguments of
         the subclass constructor and collects them into the ``options``
         attribute after validation.
+
+        Arguments given in ``exclude`` are not included here.
         """
+        if exclude is None:
+            exclude = []
         frame = currentframe().f_back
         args, _, _, values = getargvalues(frame)
         self._args = args[1:]
         self.options = {}
         for k in self._args:
-            self.set_option(k, values[k])
+            if k not in exclude:
+                self.set_option(k, values[k])
 
     def set_option(self, name: str, value: Any):
         """
@@ -58,3 +63,14 @@ class Configurable:
           arguments.
         """
         ...
+
+    @staticmethod
+    def _validate_between(low: float , high: float):
+        """This function can be used to define an argument validation
+         between ``low`` and ``high``. It returns a dict with appropriate
+         entries for ``f`` and ``msg`` as described for :meth:`_arg_validations`
+         """
+        return {
+            "f": lambda x: low <= x <= high,
+            "msg": f"must be between {low} and {high}"
+        }

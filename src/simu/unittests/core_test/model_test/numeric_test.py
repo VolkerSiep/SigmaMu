@@ -3,7 +3,6 @@ from numpy.testing import assert_allclose
 
 from simu import NumericHandler, flatten_dictionary
 from simu.core.utilities import assert_reproduction
-from simu.core.thermo.parameters import StringDictThermoSource
 
 from .models import *
 

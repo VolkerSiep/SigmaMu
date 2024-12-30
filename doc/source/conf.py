@@ -108,7 +108,12 @@ rst_epilog = r"""
 .. _SciPy: https://scipy.org/
 .. _Pint: https://pint.readthedocs.io
 .. _PyYAML: https://pyyaml.org/
+.. _PyPardiso: https://pypi.org/project/pypardiso/
+.. _matplotlib: https://matplotlib.org/
 .. _Sphinx: https://www.sphinx-doc.org
 .. _sphinxcontrib-bibtex: https://github.com/mcmtroffaes/sphinxcontrib-bibtex
+.. _sphinx-licenseinfo: https://sphinx-licenseinfo.readthedocs.io/
+.. _sphinx_copybutton: https://github.com/executablebooks/sphinx-copybutton
+.. _pytest-doctestplus: https://github.com/scientific-python/pytest-doctestplus
 .. _Matplotlib: https://matplotlib.org/
 """
