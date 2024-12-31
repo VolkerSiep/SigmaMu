@@ -126,7 +126,7 @@ class RedlichKwongEOS(ThermoContribution):
 
     provides = ["_VCB", "_VCB_x", "_p_x", "_p_V", "_p_V_x"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         ab_names = ["_ceos_a", "_ceos_b"]
         T, V, n, A, B = [res[i] for i in ["T", "V", "n"] + ab_names]
 
@@ -174,6 +174,11 @@ class RedlichKwongEOS(ThermoContribution):
         res["_dp_dx"] = jacobian(res["p"], state)
         res["_dp_dV"] = jacobian(res["p"], V)
         res["_ddp_dV_dx"] = jacobian(res["_dp_dV"], state)
+
+        bounds["RK_VmBC"] = VmBC  # V - B + C > 0
+        bounds["V"] = V
+        bounds["dp_dV"] = -jacobian(res["p"], V)  # dp/dv < 0
+        bounds["p"] = res["p"]
 
     def relax(self, current_result, delta_state):
         # V - B + C > 0 ?
@@ -268,9 +273,9 @@ class RedlichKwongAFunction(ThermoContribution):
         \Omega_a = \frac19\,(2^{1/3} - 1)^{-1}
     """
 
-    provides = ["ceos_a_i"]
+    provides = ["_ceos_a_i"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         omega_r2 = R_GAS * R_GAS / (9 * (2**(1 / 3) - 1))
         alpha, T_c, p_c = [res[i] for i in "_alpha _T_c _p_c".split()]
         res["_ceos_a_i"] = omega_r2 * alpha * (T_c * T_c) / p_c
@@ -290,7 +295,7 @@ class RedlichKwongBFunction(ThermoContribution):
 
     provides = ["_ceos_b_i"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         omega_r = R_GAS * (2**(1 / 3) - 1) / 3
         T_c, p_c = [res[i] for i in "_T_c _p_c".split()]
         res["_ceos_b_i"] = omega_r * T_c / p_c
@@ -306,8 +311,9 @@ class RedlichKwongMFactor(ThermoContribution):
         m_i = 0.48508 + (1.55171 - 0.15613\,\omega_i)\,\omega_i
     """
 
-    provides = ["m_factor"]
+    provides = ["_m_factor"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         omega = res["_omega"]
-        res["_m_factor"] = 0.48508 + (1.55171 - 0.15613 * omega) * omega
+        m = 0.48508 + (1.55171 - 0.15613 * omega) * omega
+        res["_m_factor"] = Quantity(m)

@@ -7,13 +7,19 @@ from copy import deepcopy
 from casadi import vertcat, SX
 from pint import Unit
 
-from ..utilities import flatten_dictionary
+from ..utilities import (
+    flatten_dictionary, quantity_dict_to_strings, parse_quantities_in_struct)
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction, jacobian
 from ..utilities.errors import DataFlowError
 
 from .base import ModelProxy
 from ..thermo import ThermoParameterStore
+from ... import unflatten_dictionary, InitialState
+
+
+# TODO:
+#  - set parameters and get parameters
 
 
 class NumericHandler:
@@ -26,6 +32,7 @@ class NumericHandler:
     RESIDUALS: str = "residuals"
     STATE_VEC: str = "states"
     RES_VEC: str = "residuals"
+    BOUND_VEC: str = "bounds"
     VECTORS: str = "vectors"
     JACOBIANS: str = "jacobians"
 
@@ -36,7 +43,6 @@ class NumericHandler:
         self.options = {
             "port_properties": port_properties
         }
-
         self.model = model
         # the name vectors of vector arguments
         self.__vec_arg_names: MutMap[Sequence[str]] = {}
@@ -68,11 +74,130 @@ class NumericHandler:
         """The function arguments as numerical values. A DataFlowError is
         thrown, if not all numerical values are known.
         A deepcopy of the structure is provided, so the returned data can be
-        altered without side-effects.
+        altered without side effects.
         """
         if not self.__arguments:
             self.__arguments = self.__collect_argument_values()
         return deepcopy(self.__arguments)
+
+    def export_state(self) -> NestedMutMap[str]:
+        """Export the internal state of the model in a hierarchical structure,
+        whereas all thermodynamic states are given in :math:`T, p, n`.
+
+        As by the philosophy of the chosen approach, only the thermodynamic
+        models know how to obtain their internal state from any :math:`T, p, n`
+        specification.
+
+        The returned structure is meant to be easy to store for instance in
+        yaml or json format, and easy to edit. One can use
+        :func:`simu.parse_quantities_in_struct` to convert the values of the
+        data structure into :class:`simu.Quantity` objects for programmatic
+        processing.
+
+        """
+        def fetch_initial_states(model: ModelProxy) -> MutMap[Quantity]:
+            """fetch material states from a specific model"""
+            mat_proxy = model.materials
+            return {k: m.initial_state.to_dict(m.species)
+                    for k, m in mat_proxy.handler.items()
+                    if k not in mat_proxy}
+
+        thermo =  self.__fetch(self.model, fetch_initial_states, "state")
+        # TODO: when non-canonical states are implemented, collect them here.
+
+        return quantity_dict_to_strings(
+            {"thermo": thermo,
+             "non-canonical": {}}
+        )
+
+    def import_state(self, state: NestedMap[str],
+                     allow_missing: bool=False, allow_extra: bool = False)\
+            -> NestedMap[str]:
+        """Imports the state data in terms of ":math:`T, p, n` as exported by
+        :meth:`export_state`.
+
+        :param state: A nested mapping as returned by :meth:`export_state`,
+          containing the two first-level keys ``thermo`` (for thermodynamic
+          states) and ``non-canonical`` for non-canonical states.
+        :param allow_missing: If true, throw a ``ValueError`` if there are model
+          states in the model that are not defined in the given ``state``
+          structure.
+        :param allow_extra: If false, throw a ``ValueError`` if there are states
+          in the given ``state`` structure that are not present in the model.
+        :return: A nested mapping of same structure as ``state``, but containing
+          states that are not present in the model (value = ``extra``) and
+          states that were not given as part of ``state`` (value = ``missing``)
+        """
+        def mk_new_path(path: str, name: str) -> str:
+            name = name.replace("/", r"\/")
+            return name if not path else f"{path}/{name}"
+
+        def traverse(model: ModelProxy, state_part: NestedMap[Quantity],
+                     path: str):
+            # process local material objects
+            all_names = set()
+            for name, material in model.materials.handler.items():
+                new_path = mk_new_path(path, name)
+                all_names.add(name)
+                try:
+                    new_part = state_part[name]
+                except KeyError:
+                    if not allow_missing:
+                        raise
+                    result[new_path] = "missing"
+                else:
+                    material.initial_state = \
+                        InitialState.from_dict(new_part, material.species)
+
+            # traverse down into model hierarchy
+            for name, proxy in model.hierarchy.handler.items():
+                all_names.add(name)
+                new_path = mk_new_path(path, name)
+                try:
+                    new_part = state_part[name]
+                except KeyError:
+                    if not allow_missing:
+                        raise
+                    result[new_path] = "missing"
+                else:
+                    traverse(proxy, new_part, new_path)
+
+            # detect states that are not defined in model
+            for name in state_part.keys():
+                new_path = mk_new_path(path, name)
+                if not name in all_names:
+                    if not allow_extra:
+                        raise KeyError(f"{new_path} not found in model structure")
+                    result[new_path] = "extra"
+
+        self.__arguments = {}  # force reread
+        result = {}
+        traverse(self.model, parse_quantities_in_struct(state["thermo"]), "")
+        return unflatten_dictionary(result)
+
+
+    def retain_initial_values(self, state: Sequence[float],
+                              parameters: NestedMap[Quantity]):
+        """Given a numeric ``state`` vector and the current set of
+        ``parameters`` as a nested mapping of quantities, store the values for
+        temperature, pressure and molar quantities back into the internal
+        representations of the initial thermodynamic states.
+        """
+        def fetch_retain_initial_state(model: ModelProxy):
+            """retain initial states for a specific model"""
+            nonlocal index
+            for m in model.materials.handler.values():
+                state_length = 2 + len(m.species)
+                state_part = state[index:index + state_length]
+                m.retain_initial_state(state_part, parameters)
+                index += state_length
+
+        index = 0  # mutable index
+        self.__arguments = {}  # force reread
+        self.__traverse(self.model, fetch_retain_initial_state)
+
+        # todo: if there are non-canonical states, treat them now.
+
 
     def extract_parameters(self, key: str,
                            definition: NestedMap[str]) -> Quantity:
@@ -95,10 +220,7 @@ class NumericHandler:
         dimensionless entities.
 
         :param key: The name to be used for the parameter set
-        :type key: str
-        :param definition: The parameters to be exatracted
-        :type definition: NestedMap[str]
-
+        :param definition: The parameters to be extracted
         """
         def traverse(parameters: NestedMap[str],
                      symbols: NestedMutMap[Quantity],
@@ -254,6 +376,11 @@ class NumericHandler:
             """fetch residuals from a specific model"""
             return {k: r.value for k, r in model.residuals.items()}
 
+        def fetch_bounds(model: ModelProxy) -> MutMap[Quantity]:
+            mat_proxy = model.materials
+            return {k: m.bounds for k, m in mat_proxy.handler.items()
+                    if k not in mat_proxy}
+
         def fetch_normed_residuals(model: ModelProxy) -> MutMap[Quantity]:
             """fetch normed residuals from a specific model"""
             return {k: (r.value / r.tolerance).to("")
@@ -261,7 +388,7 @@ class NumericHandler:
 
         def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
             """fetch model properties from a specific model"""
-            return dict(model.properties)
+            return dict(model.properties.items())
 
         def fetch_thermo_props(model: ModelProxy) -> MutMap[Quantity]:
             """fetch properties of materials in a specific model"""
@@ -276,15 +403,19 @@ class NumericHandler:
 
         residual_structure = fetch(mod, fetch_normed_residuals,
                                    "normalised residual")
+        bounds_structure = fetch(mod, fetch_bounds, "bound")
         residuals, residual_names = to_vector(residual_structure)
+        bounds, bound_names = to_vector(bounds_structure)
         self.__vec_res_names[self.RES_VEC] = residual_names
+        self.__vec_res_names[self.BOUND_VEC] = bound_names
         return {
             self.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
             self.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
             self.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
             self.VECTORS: {
-                self.RES_VEC: residuals
+                self.RES_VEC: residuals,
+                self.BOUND_VEC: bounds
             },
             self.JACOBIANS: {}
         }
@@ -375,6 +506,16 @@ class NumericHandler:
                 raise KeyError(msg)
             result[name] = call_self(proxy, func, typ, path + [name])
         return result
+
+    @staticmethod
+    def __traverse(
+            root: ModelProxy,
+            func: Callable[[ModelProxy], None]):
+        """Drill recursively into child modules to perform some action."""
+        call_self = NumericHandler.__traverse
+        func(root)
+        for name, proxy in root.hierarchy.handler.items():
+            call_self(proxy, func)
 
     @staticmethod
     def __fetch_thermo_stores(model: ModelProxy) \

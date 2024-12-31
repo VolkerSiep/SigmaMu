@@ -1,23 +1,25 @@
 from yaml import safe_load
+from pathlib import Path
 
 from simu import (
     ThermoFactory, InitialState, MaterialDefinition, ThermoParameterStore,
     StringDictThermoSource, SpeciesDB)
 from simu.app.thermo import all_contributions, all_states
 
+CURRENT_DIR = Path(__file__).parent
 
 class MaterialFactory:
     def __init__(self):
         # load species database
-        with open("species_db.yml") as file:
+        with open(CURRENT_DIR / "species_db.yml") as file:
             self.species = SpeciesDB(safe_load(file))
 
         # load model structure database
-        with open("thermo_model_structures.yml") as file:
+        with open(CURRENT_DIR / "thermo_model_structures.yml") as file:
             self.model_structures = safe_load(file)
 
         # load thermodynamic parameter database
-        with open("ideal_gas_param.yml") as file:
+        with open(CURRENT_DIR / "ideal_gas_param.yml") as file:
             parameter_source = StringDictThermoSource(safe_load(file))
 
         self.store = ThermoParameterStore()

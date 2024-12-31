@@ -60,7 +60,7 @@ class ThermoFrame:
     method that handles the house-keeping of contribution classes.
     """
 
-    def __init__(self, species: Mapping[str, SpeciesDefinition],
+    def __init__(self, species: Map[SpeciesDefinition],
                  state_definition: StateDefinition,
                  contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
@@ -72,7 +72,8 @@ class ThermoFrame:
             name: cls_(species_list, options)
             for name, (cls_, options) in contributions.items()
         }
-        self.__species: Mapping[str, SpeciesDefinition] = species
+        self.__species: Map[SpeciesDefinition] = species
+        self.__vectors: MutMap[Sequence[str]] = {}
 
         def create_function(flow: bool = False):
             """Build up the result dictionary and define function"""
@@ -82,16 +83,21 @@ class ThermoFrame:
             # call the contributions; build up result dictionary
             mw = qvertcat(*[s.molecular_weight for s in species.values()])
             result = {"_state": state, "mw": mw}
+            bounds = {}
+            self.__vectors.update({"mw": species_list})
             state_definition.prepare(result, flow)
+            self.__vectors.update(state_definition.declare_vector_keys(species))
             for name, contribution in contribs.items():
                 new_params = ParameterDictionary()
-                contribution.define(result, new_params)
+                contribution.define(result, bounds, new_params)
+                self.__vectors.update(contribution.declare_vector_keys(species))
                 logger.debug(f"Defining contribution '{name}'")
                 if new_params:
                     params[name] = new_params
             # create function
             args = {"state": state, "parameters": params}
-            return QFunction(args, result, "thermo_frame"), params
+            res = {"props": result, "bounds": bounds}
+            return QFunction(args, res, "thermo_frame"), params
 
         self.__function, parameters = create_function(flow=False)
         function, _ = create_function(flow=True)
@@ -144,6 +150,13 @@ class ThermoFrame:
     def species(self) -> Sequence[str]:
         """Returns a list of species names"""
         return list(self.__species.keys())
+
+    @property
+    def vector_keys(self) -> Map[Sequence[[str]]]:
+        """Return the index keys for the registered vector properties.
+        For a standard model, there should at least be entries for ``n`` and
+        ``mu``."""
+        return self.__vectors
 
     @property
     def property_structure(self) -> NestedMap[str]:
@@ -203,20 +216,18 @@ class ThermoFrame:
         and (T, p, n) is the initial state.
 
         """
-        # call own function (assert that it is defined yet)
-        #   defining the state as [T, NaN] + n.
-
-        # then start from top and call contributions to try to initialise,
-        #  based on results that might contain NaNs (if they depend on volume).
         st_def = self.__state_definition
         state_flat: Sequence[float] = st_def.reverse(state)
-        if None not in state_flat:
+        if None not in state_flat:  # trivial case, Gibbs coordinates
             return state_flat
 
+        # define the state, replacing non-explicitly given values with nan
         state_flat = [float("NaN") if x is None else x for x in state_flat]
-        # calculate all properties ... accept NaNs
-        properties = self(state_flat, parameters)
+        # calculate all properties ... accept NaNs, by calling own function
+        properties = self(state_flat, parameters)["props"]
 
+        # start from top and call contributions to try to initialise,
+        #  based on results that might contain NaNs (if they depend on non-given state parts).
         for cont in reversed(self.__contributions.values()):
             result = cont.initial_state(state, properties)
             if result:

@@ -5,7 +5,7 @@ from copy import copy
 
 # internal modules
 from simu import (
-    ThermoContribution, R_GAS, log, qsum, ParameterDictionary, base_magnitude
+    ThermoContribution, R_GAS, log, qsum, ParameterDictionary, base_magnitude,
 )
 
 
@@ -44,7 +44,7 @@ class H0S0ReferenceState(ThermoContribution):
 
     provides = ["T_ref", "p_ref", "S", "mu"]
 
-    def define(self, res: dict, par: ParameterDictionary):
+    def define(self, res, bounds, par):
         species = self.species
 
         s_0 = par.register_vector("s_0", species, "J/(mol*K)")
@@ -54,6 +54,9 @@ class H0S0ReferenceState(ThermoContribution):
         res["T_ref"] = par.register_scalar("T_ref", "K")
         res["p_ref"] = par.register_scalar("p_ref", "Pa")
 
+
+    def declare_vector_keys(self, species):
+        return {"mu": list(species.keys())}
 
 class LinearHeatCapacity(ThermoContribution):
     r"""This contribution implements a simple heat capacity, being linear
@@ -102,7 +105,7 @@ class LinearHeatCapacity(ThermoContribution):
     due to a logarithmic contribution to entropy.
     """
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         T, n = res["T"], res["n"]
         T_ref = res["T_ref"]
         d_T, f_T = T - T_ref, T / T_ref
@@ -113,6 +116,8 @@ class LinearHeatCapacity(ThermoContribution):
         d_s = (cp_a - cp_b * T_ref) * log(f_T) + cp_b * d_T
         res["S"] += d_s.T @ n
         res["mu"] += d_h - T * d_s
+
+        bounds["T"] = T  # logarithm taken
 
     def relax(self, current_result, delta_state):
         T, d_T = current_result["_state"][0], delta_state[0]
@@ -136,12 +141,15 @@ class StandardState(ThermoContribution):
 
     provides = ["S_std", "p_std", "mu_std"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         # tag current chemical potential and entropy as standard state
         # create copy, such that tagged objects will not be mutated.
         res["S_std"] = copy(res["S"])
         res["p_std"] = copy(res["p_ref"])
         res["mu_std"] = copy(res["mu"])
+
+    def declare_vector_keys(self, species):
+        return {"mu_std": list(species.keys())}
 
 
 class IdealMix(ThermoContribution):
@@ -166,13 +174,15 @@ class IdealMix(ThermoContribution):
     domains has proven to be challenging in terms of solver robustness.
     """
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         T, n = res["T"], res["n"]
         N = qsum(n)
         x = n / N
         gtn = R_GAS * log(x)
         res["S"] -= n.T @ gtn
         res["mu"] += T * gtn
+
+        bounds["n"] = n
 
     def relax(self, current_result, delta_state):
         n, d_n = current_result["_state"][2:], delta_state[2:]
@@ -207,7 +217,7 @@ class GibbsIdealGas(ThermoContribution):
 
     provides = ["V"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         T, p, n, p_ref = res["T"], res["p"], res["n"], res["p_ref"]
         N = qsum(n)
         gtn = R_GAS * log(p / p_ref)
@@ -215,6 +225,8 @@ class GibbsIdealGas(ThermoContribution):
         res["S"] -= N * gtn
         res["V"] = N * R_GAS * T / p
         res["mu"] += T * gtn
+
+        bounds["p"] = p
 
     def relax(self, current_result, delta_state):
         p, d_p = current_result["_state"][1], delta_state[1]
@@ -248,7 +260,7 @@ class HelmholtzIdealGas(ThermoContribution):
     limited to positive volumes.
     """
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]
         N = qsum(n)
         p = N * R_GAS * T / V
@@ -257,6 +269,8 @@ class HelmholtzIdealGas(ThermoContribution):
         res["S"] -= N * gtn
         res["p"] = p
         res["mu"] += T * gtn
+
+        bounds["V"] = V
 
     def relax(self, current_result, delta_state):
         V, d_V = current_result["_state"][1], delta_state[1]
@@ -309,7 +323,7 @@ class ConstantGibbsVolume(ThermoContribution):
     """
     provides = ["V"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         n, p, p_ref = res["n"], res["p"], res["p_ref"]
         v_n = par.register_vector("v_n", self.species, "m**3/mol")
         res["mu"] += v_n * (p - p_ref)

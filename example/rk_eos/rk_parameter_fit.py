@@ -8,7 +8,7 @@ import pylab
 
 from simu.core.utilities import (FlexiDict, flatten_dictionary,
                                  unflatten_dictionary)
-from examples.rk_eos.rkt import MyThermoFactory, relax
+from example.rk_eos.rkt import MyThermoFactory, relax
 
 
 def p_sat(temperature):

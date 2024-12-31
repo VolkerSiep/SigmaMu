@@ -20,30 +20,36 @@ Also this is supposed to work without any failed tests.
 
 ``SiMu`` depends on the following packages:
 
-========= =================================================================
-Name      What for
-========= =================================================================
-`CasADi`_ All symbolic algebra in the background uses it-
-`Pint`_   All modelling happens via ``pint``'s ``Quantity`` class
-`NumPy`_  Number chrunching, in particular linear algebra
-`SciPy`_  For advanced numeric methods, utilised for instance by the solver
-`PyYAML`_ The chosen format for configuration files.
-========= =================================================================
+============ =================================================================
+Name         What for
+============ =================================================================
+`CasADi`_    All symbolic algebra in the background is based on it
+`Pint`_      All modelling happens via ``pint``'s ``Quantity`` class
+`NumPy`_     Number crunching, in particular linear algebra
+`SciPy`_     For advanced numeric methods, utilised for instance by the solver
+`PyPardiso`_ Efficient solving of linear equation systems on multiple cores
+`PyYAML`_    The chosen format for configuration files.
+============ =================================================================
 
 For development, we require additionally
 
-======================= =================================================
+======================= =====================================================
 Name                    What for
-======================= =================================================
+======================= =====================================================
 `pytest`_               For running the unit tests
 `matplotlib`_           In examples, we like to plot results sometimes
 `Sphinx`_               The documentation is built with it.
-`sphinxcontrib-bibtex`_ Handling of bibliographics in documentation
-======================= =================================================
+`sphinxcontrib-bibtex`_ Handling of bibliographies in documentation
+`matplotlib`_           Used in some example scripts for plotting
+`sphinx-licenseinfo`_   For including the license file into the docs
+`sphinx_copybutton`_    For the fancy copy buttons on the scripts in the docs
+`pytest-doctestplus`_   To run doctest elements in rst-files
+======================= =====================================================
 
 .. testsetup::
 
-    >>> from examples.hello_world import Square
+    >>> from simu.examples.hello_world import Square
+    >>> from simu import NumericHandler, Quantity
     >>> from simu import NumericHandler, Quantity
 
 .. _getting started hello world:
@@ -52,7 +58,7 @@ Hello World
 -----------
 To call the following a *process model* is quite an insult to actual process models, but it is a start:
 
-.. literalinclude:: examples/hello_world.py
+.. exampleinclude:: hello_world.py
    :language: python
    :linenos:
    :pyobject: Square
@@ -64,8 +70,8 @@ In the ``define`` method, the property ``area`` is assigned to be the square of 
 
 Next, we want to do something with the model. To do that, we wrap it into an instance of :class:`NumericHandler <model.numeric.NumericHandler>` and create a :class:`QFunction <utilities.quantity.QFunction>` object:
 
-    >>> numeric = NumericHandler(Square.top())
-    >>> func = numeric.function
+>>> numeric = NumericHandler(Square.top())
+>>> func = numeric.function
 
 Now we can print the argument structure of the function:
 
@@ -79,7 +85,7 @@ The ``length`` parameter is a model parameter and registered as such. We have no
 Likewise, we can query what the model will return:
 
 >>> print(func.result_structure)
-{'model_props': {'area': 'm ** 2'}, 'vectors': {'residuals': ''}}
+{'model_props': {'area': 'm ** 2'}, 'vectors': {'bounds': '', 'residuals': ''}}
 
 As there are no model constraints, the ``residuals`` section here is empty, but we find the calculated ``area`` as a model property.
 
@@ -101,7 +107,6 @@ We can overwrite that parameter by changing its value in the obtained structure
 0.040 m²
 
 Note that the formatting of the physical quantities is utilising `Pint`_ functionality.
-
 
 Normal project structure
 ------------------------

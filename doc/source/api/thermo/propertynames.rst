@@ -1,32 +1,32 @@
+.. _standard property names:
+
 Standard property names of thermodynamic model results
 ======================================================
 
 Introduction
 ------------
-:class:`~simu.thermo.ThermoContribution` objects generate calculated properties that are eventually via the :class:`~simu.thermo.ThermoFrame` objects exported to the client code. The following section puts some standard on the names of these properties, in particular for generic properties that can be expected to be evaluated by any thermodynamic model.
+:class:`~simu.ThermoContribution` objects generate calculated properties that are eventually via the :class:`~simu.ThermoFrame` objects exported to the client code. The following section puts some standard on the names of these properties, in particular for generic properties that can be expected to be evaluated by any thermodynamic model.
 
-Obligatory properties
----------------------
+Generally, properties starting with an underscore ``_`` are not exposed in the material objects and hence the process modelling context.
 
-============================== ===========================================================================
-Variable name                  Description
-============================== ===========================================================================
-``x``                          This property is not calculated, but initially provided to the first
-                               contribution. It simply contains the state as a vector with:math:`n+2`
-                               elements.
-``T``, (``p`` or ``V``), ``n`` Based on the state above, the first contribution defines the interpretation
-                               of the state, i.e. whether it is for instance a Gibbs or a Helmholtz model.
-                               (``n`` is a vector) 
-``S``                          Entropy is first defined by the reference state and supplemented throughout
-                               the contribution chain.
-``mu``                         Chemical potential is first defined by the reference state and supplemented
-                               throughout the contribution chain. (vector)
-``V`` or ``p``                 The conjugated variable to the state, either volume or pressure.
-============================== ===========================================================================
+Standardized properties
+-----------------------
+The following properties shall be published under the listed names, such that downstream contributions and materials can rely on them:
 
-Optional common properties
+============== ===========================================================================
+Variable name  Description
+============== ===========================================================================
+``_state``     The canonical state of the thermodynamic model, as it may be required for
+               derivative calculations in constrained systems.
+``T``          Temperature
+``p``          Pressure
+``n``          Vector of molar quantities
+``S``          Entropy (as the extensive quantity)
+``mu``         Chemical potential vector
+============== ===========================================================================
+
+Standard property suffixes
 --------------------------
-
 Some of the above properties that are updated from one contribution to another (e.g. ``S``, ``mu``),
 can be frozen in various states with below suffixes.
   
@@ -51,7 +51,3 @@ Variable name Description
 ``s_bar``     Partial molar entropies (vector)
 ``v_bar``     Partial molar volumes (vector)
 ============= ======================================================
-
-.. note::
-
-   We encourage to not publish derivable properties on this layer, as these are very numerous and not required for each model evaluation. These include for instance enthalpy, inner energy, compositional fractions, heat capacities, adiabatic exponent, compressibility, thermal expansion coefficient, Joule-Thomson coefficient, partial molar enthalpy and speed of sound.

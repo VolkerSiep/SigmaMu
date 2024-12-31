@@ -25,15 +25,10 @@ class LinearMixingRule(ThermoContribution):
         will be generated as the target name with ``_i`` appended.
     """
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         target = self.options["target"]
         source = self.options.get("source", target + "_i")
         res[target] = res[source].T @ res["n"]
-
-        # else:
-        #     unit = self.options.get("unit", "")
-        #     param = par.register_vector(source, self.species, unit)
-        #     res[target] = param.T @ res["n"]
 
 
 class NonSymmetricMixingRule(ThermoContribution):
@@ -84,7 +79,7 @@ class NonSymmetricMixingRule(ThermoContribution):
           = \left (\sum_i \sqrt{a_i(T)}\,n_i \right )^2
     """
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         target = self.options["target"]
 
         def extract():
@@ -149,6 +144,7 @@ class NonSymmetricMixingRule(ThermoContribution):
             res[target] += sym
         if asym is not None:
             res[target] += asym
+        bounds["T"] = res["T"]
 
 
 class CriticalParameters(ThermoContribution):
@@ -172,7 +168,7 @@ class CriticalParameters(ThermoContribution):
 
     provides = ["_T_c", "_p_c", "_omega"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         res["_T_c"] = par.register_vector("T_c", self.species, "K")
         res["_p_c"] = par.register_vector("p_c", self.species, "bar")
         res["_omega"] = par.register_vector("omega", self.species, "dimless")
@@ -193,7 +189,7 @@ class VolumeShift(ThermoContribution):
 
     provides = ["_ceos_c_i"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         res["_ceos_c_i"] = par.register_vector("c_i", self.species, "m**3/mol")
 
 
@@ -263,7 +259,7 @@ class BostonMathiasAlphaFunction(ThermoContribution):
 
     provides = ["_alpha"]
 
-    def define(self, res, par):
+    def define(self, res, bounds, par):
         eta = par.register_vector("eta", self.species, "dimless")
         temp, critical_temp, m_fac = res["T"], res["_T_c"], res["_m_factor"]
         tau = temp / critical_temp
@@ -279,3 +275,5 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         alpha = conditional(tau > 1, alpha_sub, alpha_sup)
         # result is square of above
         res["_alpha"] = alpha * alpha
+
+        res["T"] = temp

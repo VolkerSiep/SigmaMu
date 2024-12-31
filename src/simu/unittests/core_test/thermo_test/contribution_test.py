@@ -26,9 +26,10 @@ def test_h0s0_reference_state():
     """Test definition of H0S0ReferenceState contribution"""
 
     res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
+    bounds = {}
     par = ParameterDictionary()
     cont = H0S0ReferenceState(["A", "B"], {})
-    cont.define(res, par)
+    cont.define(res, bounds, par)
     to_reproduce = {
         "res": {i: str(res[i])
                 for i in "S mu".split()},
@@ -46,9 +47,10 @@ def test_linear_heat_capacity():
         "S": sym("S_ref", "J/K"),
         "mu": vec("mu_ref", 2, "J/mol")
     }
+    bounds = {}
     cont = LinearHeatCapacity(["A", "B"], {})
     par = ParameterDictionary()
-    cont.define(res, par)
+    cont.define(res, bounds, par)
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
@@ -61,8 +63,9 @@ def test_ideal_mix():
         "S": sym("S_std", "J/K"),
         "mu": vec("mu_std", 2, "J/mol")
     }
+    bounds = {}
     cont = IdealMix(["A", "B"], {})
-    cont.define(res, ParameterDictionary())
+    cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
@@ -77,8 +80,9 @@ def test_gibbs_ideal_gas():
         "S": sym("S_im", "J/K"),
         "mu": vec("mu_im", 2, "J/mol")
     }
+    bounds = {}
     cont = GibbsIdealGas(["A", "B"], {})
-    cont.define(res, ParameterDictionary())
+    cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
     assert_reproduction(result)
 
@@ -98,8 +102,9 @@ def test_helmholtz_ideal_gas():
         "S": sym("S_im", "J/K"),
         "mu": vec("mu_im", 2, "J/mol")
     }
+    bounds = {}
     cont = HelmholtzIdealGas(["A", "B"], {})
-    cont.define(res, ParameterDictionary())
+    cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S p mu".split()}
     assert_reproduction(result)
 
@@ -126,7 +131,8 @@ def test_constant_gibbs_volume():
         "n": vec("n", 2, "mol"),
         "mu": vec("mu_std", 2, "J/mol")
     }
+    bounds = {}
     cont = ConstantGibbsVolume(["A", "B"], {})
-    cont.define(res, ParameterDictionary())
+    cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "V mu".split()}
     assert_reproduction(result)

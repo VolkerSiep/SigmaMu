@@ -203,9 +203,7 @@ def define_a_material(species) -> MaterialDefinition:
     species_db = {s: SpeciesDefinition(s) for s in species}
     frame = factory.create_frame(species_db, RK_LIQ)
     store = ThermoParameterStore()
-    initial_state = InitialState.from_std(len(species))
-    initial_state.temperature = Quantity("10 degC")
-    initial_state.pressure = Quantity("10 bar")
+    initial_state = InitialState.from_cbar(10.0, 10.0, [1.0] * len(species))
     return MaterialDefinition(frame, initial_state, store)
 
 

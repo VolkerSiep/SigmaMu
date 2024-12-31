@@ -120,7 +120,7 @@ class ThermoParameterStore:
 
         With multiple calls to this method with varying parameter structs,
         previously defined symbols will be reused, and a
-        ``DimensionialityError`` is raised if such previously defined symbol
+        ``DimensionalityError`` is raised if such previously defined symbol
         is incompatible with respect to the physical dimension.
         """
 

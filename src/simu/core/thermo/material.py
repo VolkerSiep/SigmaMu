@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from ..utilities import Quantity, SymbolQuantity, QuantityDict
-from ..utilities.types import Map, MutMap
+from ..utilities import (
+    Quantity, SymbolQuantity, QuantityDict, QFunction, extract_sub_structure)
+from ..utilities.types import Map, MutMap, NestedMap
 
 from . import (
     ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
@@ -104,26 +105,49 @@ class Material(MutMap[Quantity]):
         params = definition.store.get_symbols(frame.parameter_structure)
         self.__state = frame.create_symbol_state()
         props = frame(self.__state, params, squeeze_results=False, flow=flow)
-        species = frame.species
+        vectors = frame.vector_keys
 
         def convert(n: str, prop: SymbolQuantity) -> Quantity | QuantityDict:
-            """If property is a vector, convert it to a QuantityDict, otherwise
-            just return the quantity itself."""
+            """If property is a registered vector, convert it to a QuantityDict,
+            otherwise just return the quantity itself."""
+            nonlocal vectors
             mag, unit = prop.magnitude, prop.units
-            if mag.is_scalar():
+            try:
+                keys = vectors[n]
+            except KeyError:
                 return prop
-            if mag.size() != (len(species), 1):
+            if mag.size() != (len(keys), 1):
                 msg = f"Property {n} has improper shape: {mag.size()}, " \
-                      f"should be scalar or ({len(species)}, 1)"
+                      f"should be ({len(keys)}, 1)"
                 raise ValueError(msg)
-            result = {s: Quantity(mag[i], unit) for i, s in enumerate(species)}
+            result = {s: Quantity(mag[i], unit) for i, s in enumerate(keys)}
             return QuantityDict(result)
 
-        self.__properties = {n: convert(n, p) for n, p in props.items()
+        self.__properties = {n: convert(n, p) for n, p in props["props"].items()
                              if not n.startswith("_")}
+        self.__bounds = {n: convert(n, p) for n, p in props["bounds"].items()
+                         if not n.startswith("_")}
         self.__flow = flow
 
-        # apply augmenters as required in definition
+        # create a QFunction to map a state and parameters into a new initial
+        # state
+        args = {"state": Quantity(self.__state), "param": params}
+        props = frame(self.__state, params, squeeze_results=False, flow=flow)
+        res = {n: props["props"][n] for n in "Tpn"}
+        self.__ini_func = QFunction(args, res, "ini_func")
+
+        # TODO: apply augmenters as required in definition
+
+    def retain_initial_state(self, state: Sequence[float],
+                             parameters: NestedMap[Quantity]):
+        param_struct = self.definition.frame.parameter_structure
+        parameters = extract_sub_structure(parameters, param_struct)
+        args = {"state": Quantity(state), "param": parameters}
+        res = self.__ini_func(args)
+        self.initial_state = InitialState(
+            temperature=res["T"],
+            pressure=res["p"],
+            mol_vector=res["n"])
 
     @property
     def species(self) -> Collection[str]:
@@ -136,8 +160,12 @@ class Material(MutMap[Quantity]):
         state = self.__state.nonzeros()
         return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
 
+    @property
+    def bounds(self):
+        return self.__bounds
+
     def __getitem__(self, key: str) -> Quantity:
-        """Return a (symbolc) property that is calculated by the underlying
+        """Return a (symbolic) property that is calculated by the underlying
         thermodynamic model or later supplements via :meth:`__setitem__`."""
         return self.__properties[key]
 

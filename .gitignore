@@ -9,3 +9,4 @@ doc/literature
 build/
 dist/
 .idea/
+.run/

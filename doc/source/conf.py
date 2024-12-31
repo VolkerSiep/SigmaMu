@@ -1,25 +1,18 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
+# more info on configuring this file:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-
-# -- Project information -----------------------------------------------------
 import sys
 from os.path import abspath
-from simu import __version__ as release
+from simu import __version__ as _release
 
+# -- Path setup --------------------------------------------------------------
 sys.path.insert(0, abspath('.'))
 
+# -- Project information -----------------------------------------------------
 project = 'SiMu'
 copyright = '2021-2024, Volker Siepmann'
 author = 'Volker Siepmann'
+release = _release
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,6 +24,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
+    'sphinx_licenseinfo',
     'sphinx.ext.todo',
     'sphinx.ext.autosummary',
     'sphinx_copybutton',
@@ -57,9 +51,12 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns: list[str] = []
-
 # bibtex file
 bibtex_bibfiles = ['bibliographies.bib']
+
+# break signature into multiple lines when length is greater as given value
+maximum_signature_line_length = 90  #
+
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -111,7 +108,12 @@ rst_epilog = r"""
 .. _SciPy: https://scipy.org/
 .. _Pint: https://pint.readthedocs.io
 .. _PyYAML: https://pyyaml.org/
+.. _PyPardiso: https://pypi.org/project/pypardiso/
+.. _matplotlib: https://matplotlib.org/
 .. _Sphinx: https://www.sphinx-doc.org
 .. _sphinxcontrib-bibtex: https://github.com/mcmtroffaes/sphinxcontrib-bibtex
+.. _sphinx-licenseinfo: https://sphinx-licenseinfo.readthedocs.io/
+.. _sphinx_copybutton: https://github.com/executablebooks/sphinx-copybutton
+.. _pytest-doctestplus: https://github.com/scientific-python/pytest-doctestplus
 .. _Matplotlib: https://matplotlib.org/
 """

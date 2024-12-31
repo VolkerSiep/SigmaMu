@@ -2,15 +2,16 @@
 
 from pytest import raises
 
+from simu import (
+    InitialState, ThermoFactory, ThermoParameterStore, MaterialDefinition,
+    MaterialSpec, SpeciesDefinition, SpeciesDB, flatten_dictionary, Quantity)
 from simu.core.model.material import MaterialHandler
-from simu.core.thermo import InitialState
-from simu.core.thermo.factory import ThermoFactory
-from simu.app.thermo.factories import ExampleThermoFactory
-from simu.core.thermo import ThermoParameterStore
-from simu.core.thermo.material import MaterialDefinition, MaterialLab, MaterialSpec
-from simu.core.thermo.species import SpeciesDefinition, SpeciesDB
+from simu.core.thermo.material import MaterialLab
 from simu.core.utilities import assert_reproduction
-from simu.app.thermo import all_contributions, GibbsState
+from simu.app import all_contributions, GibbsState
+from simu.app.thermo.factories import ExampleThermoFactory
+
+from .models import define_a_material_with_parameters
 
 # class BigNAugmentor(Augmentor):
 #     def define(self, material):
@@ -41,8 +42,20 @@ def test_create_material_definition_wrong_init():
 
 def test_create_material():
     material = create_material()
-    res = {name: f"{value.units:~}" for name, value in material.items()}
+    flat = flatten_dictionary(material)
+    res = {name: f"{value.units:~}" for name, value in flat.items()}
     assert_reproduction(res)
+
+def test_retain_initial_state_material():
+    material_def = define_a_material_with_parameters()
+    material = material_def.create_flow()
+    param = material_def.store.get_all_values()
+    x = [300, 2e5, 10]
+    material.retain_initial_state(x, param)
+    ini = material.initial_state
+    assert ini.temperature == Quantity(300.0, "K")
+    assert ini.pressure == Quantity(2, "bar")
+    assert ini.mol_vector == Quantity([10], "mol")
 
 
 def test_species_db():

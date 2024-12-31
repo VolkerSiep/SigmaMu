@@ -7,7 +7,7 @@ from .core.utilities import (
     arctan, sinh, cosh, tanh, arcsinh, arccosh, arctanh, base_magnitude,
     Quantity, QuantityDict, MCounter, SymbolQuantity, QFunction, base_unit,
     flatten_dictionary, unflatten_dictionary, extract_units_dictionary,
-    simplify_quantity, parse_quantities_in_struct
+    simplify_quantity, parse_quantities_in_struct, quantity_dict_to_strings
 )
 
 from .core.utilities.constants import (
@@ -23,6 +23,8 @@ from .core.thermo import (
 )
 
 from .core.model import Model, AModel, NumericHandler
+
+from .core.solver import SimulationSolver
 
 # versioning
 from ._version import VERSION as __version__

@@ -430,3 +430,69 @@ def parse_quantities_in_struct(struct: Union[NestedMap[str], str])\
     except AttributeError:
         return Quantity(struct)
     return {key: parse_quantities_in_struct(value) for key, value in items}
+
+
+def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
+                             significant_digits: int = 17) \
+        -> str | NestedMap[str]:
+    """Return a new structure with the quantity instances replaced by a string
+    representation that is parsable by the :class:`simu.Quantity` constructor.
+
+    Example:
+
+    >>> from pprint import pprint
+    >>> from simu import Quantity
+    >>> struct = {'speed': {'car': Quantity(400 / 3, 'kilometer / hour'),
+    ...                     'fingernail': Quantity(1.2, 'millimeter / day'),
+    ...                     'snail': Quantity(1.0, 'centimeter / minute')},
+    ...           'weight': {'car': Quantity(1.5, 'metric_ton'),
+    ...                      'fingernail': Quantity(300, 'milligram'),
+    ...                      'snail': Quantity(10, 'gram')}}
+    >>> pprint(quantity_dict_to_strings(struct))
+    {'speed': {'car': '133.33333333333334 km / h',
+               'fingernail': '1.2 mm / d',
+               'snail': '1 cm / min'},
+     'weight': {'car': '1.5 t', 'fingernail': '300 mg', 'snail': '10 g'}}
+    """
+    try:
+        items = struct.items()
+    except AttributeError:
+        return f"{struct:.{significant_digits}g~}"
+    return {key: quantity_dict_to_strings(value, significant_digits)
+            for key, value in items}
+
+
+
+
+def extract_sub_structure(source: NestedMap[Quantity],
+                          structure: NestedMap[str]) -> NestedMap[Quantity]:
+    """Given a nested structure map ``structure`` that defines the units of
+    measurement of leaf value quantities, extract those quantities from a source
+    structure ``source``. A ``KeyError`` is raised if the source structure does
+    not contain the requested data, and a ``DimensionalityError`` is raised if
+    the queried quantity is of incompatible dimensions.
+
+    Example:
+
+    >>> from simu import Quantity
+    >>> src = {"a": {"b": Quantity(1, "km")},
+    ...        "c": Quantity(3, "degC"),
+    ...        "d": {"e": Quantity(2, "s"), "f": Quantity(3, "kJ")}}
+    >>> struct = {"a": {"b": "m"}, "d": {"e": "s"}}
+    >>> print(extract_sub_structure(src, struct))
+    {'a': {'b': <Quantity(1, 'kilometer')>}, 'd': {'e': <Quantity(2, 'second')>}}
+    """
+    def prepare(name: str, key: str, query: NestedMap[str],
+                src: NestedMap[Quantity]) -> NestedMap[Quantity]:
+        name = f"{name}.{key}" if name else key
+        try:
+            items = query.items()
+        except AttributeError:
+            try:
+                src[key].to(query)
+            except DimensionalityError as err:
+                err.extra_msg = f" - Error fetching thermo parameter '{name}'."
+                raise err from None
+            return src[key]
+        return {k: prepare(name, k, q, src[key]) for k, q in items}
+    return {k: prepare("", k, s, source) for k, s in structure.items()}

@@ -5,10 +5,10 @@
     "T": "K",
     "T_ref": "K",
     "V": "m ** 3 / s",
-    "mu": "J / mol",
-    "mu_std": "J / mol",
-    "mw": "kg / mol",
-    "n": "mol / s",
+    "mu/H2O": "J / mol",
+    "mu_std/H2O": "J / mol",
+    "mw/H2O": "kg / mol",
+    "n/H2O": "mol / s",
     "p": "Pa",
     "p_ref": "Pa",
     "p_std": "Pa"
@@ -146,6 +146,7 @@
         }
       },
       "vectors": {
+        "bounds": "",
         "residuals": ""
       }
     }
@@ -295,6 +296,7 @@
         }
       },
       "vectors": {
+        "bounds": "",
         "residuals": ""
       }
     }
@@ -318,6 +320,19 @@
       "thermo_props/local/mu/CH3-(CH2)2-CH3",
       "thermo_props/local/mu/CH3-CH2-CH3"
     ]
+  },
+  "numeric_test.py::test_export_state": {
+    "non-canonical": {},
+    "thermo": {
+      "local": {
+        "T": "10 \u00b0C",
+        "n": {
+          "CH3-(CH2)2-CH3": "1 mol",
+          "CH3-CH2-CH3": "1 mol"
+        },
+        "p": "10 bar"
+      }
+    }
   },
   "numeric_test.py::test_extract_parameters": {
     "J": [
@@ -352,6 +367,14 @@
       "model_params/p",
       "model_params/x_c3"
     ]
+  },
+  "numeric_test.py::test_import_state": {
+    "T": "100 \u00b0C",
+    "n": {
+      "CH3-(CH2)2-CH3": "1 mol",
+      "CH3-CH2-CH3": "2 mol"
+    },
+    "p": "5 bar"
   },
   "numeric_test.py::test_jacobian": [
     [
@@ -566,6 +589,7 @@
         }
       },
       "vectors": {
+        "bounds": "",
         "residuals": ""
       }
     }
@@ -594,6 +618,7 @@
     "thermo_props/local/p_std": "101325.000000 Pa",
     "thermo_props/local/x/CH3-(CH2)2-CH3": "0.500000",
     "thermo_props/local/x/CH3-CH2-CH3": "0.500000",
+    "vectors/bounds": "[0.000053 283.150000 0.000197 949263768680.530884 1.000000 1.000000 1000000.000000]",
     "vectors/residuals": "[10000000.000000 0.000000 0.000003 -8000000.000000]"
   }
 }
