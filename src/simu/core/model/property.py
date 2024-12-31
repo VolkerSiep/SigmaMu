@@ -30,13 +30,19 @@ class PropertyHandler(Mapping[str, Quantity]):
     def __setitem__(self, name: str, quantity: Quantity):
         """Via this operator, a calculated property is defined as a
         model result."""
-        if name not in self.__declared:
-            self.__raise(name,  "is not declared")
+
+        # TODO: is it not ok to define properties that are not declared?
+        #  if it is, remove the commended code
+        # if name not in self.__declared:
+        #     self.__raise(name,  "is not declared")
         if name in self.__props:
             self.__raise(name,  "is already defined")
 
         # check unit compatibility -> throw exception on demand
-        quantity.to(self.__declared[name])
+        try:
+            quantity.to(self.__declared[name])
+        except KeyError:
+            pass  # property wasn't declared, no problem
 
         self.__props[name] = quantity
 

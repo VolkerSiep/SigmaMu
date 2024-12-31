@@ -19,7 +19,6 @@ from ... import unflatten_dictionary, InitialState
 
 
 # TODO:
-#  - set state and get state (in T, p, n)
 #  - set parameters and get parameters
 
 
@@ -44,7 +43,6 @@ class NumericHandler:
         self.options = {
             "port_properties": port_properties
         }
-
         self.model = model
         # the name vectors of vector arguments
         self.__vec_arg_names: MutMap[Sequence[str]] = {}
