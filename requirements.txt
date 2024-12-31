@@ -1,7 +1,7 @@
 casadi~=3.6.7
 numpy~=2.1.2
 Pint~=0.24.3
-pytest~=8.3.3
+pytest~=8.3.4
 PyYAML~=6.0.2
 simu~=1.0a1
 setuptools~=75.1.0
@@ -14,6 +14,6 @@ Sphinx~=5.3.0
 sphinxcontrib-bibtex~=2.6.3
 sphinx-licenseinfo~=0.5.0
 sphinx-copybutton~=0.5.2
-pytest~=8.3.3
+pytest~=8.3.4
 pytest-doctestplus~=1.2.1
 
