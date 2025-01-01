@@ -224,10 +224,12 @@ class RedlichKwongEOS(ThermoContribution):
 
 
 class RedlichKwongEOSLiquid(RedlichKwongEOS):
-    """As a subclass of :class:`RedlichKwongEOS`, this entity specialises
-    on describing liquid (and super-critical) phases. The distinct elements
-    are the initialisation and the relaxation, ensuring the state to be within
-    the correct domain with respect to volume."""
+    """As a subclass of
+    :class:`~simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS`, this
+    entity specialises on describing liquid (and super-critical) phases.
+    The distinct elements are the initialisation and the relaxation,
+    ensuring the state to be within the correct domain with respect to volume.
+    """
 
     def relax_more(self, current_result, delta_state):
         """Additionally to the main relaxation method, this implementation
@@ -243,10 +245,11 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
 
 
 class RedlichKwongEOSGas(RedlichKwongEOS):
-    """As a subclass of :class:`RedlichKwongEOS`, this entity specialises
-    on describing gas (and super-critical) phases. The distinct elements
-    are the initialisation and the relaxation, ensuring the state to be within
-    the correct domain with respect to volume."""
+    """As a subclass of
+    :class:`~simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS`, this
+    entity specialises on describing gas (and super-critical) phases. The
+    distinct elements are the initialisation and the relaxation, ensuring the
+    state to be within the correct domain with respect to volume."""
 
     def relax_more(self, current_result, delta_state):
         """For the gas phase, no more constraints apply then the ones that

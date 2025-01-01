@@ -14,19 +14,19 @@ class AModel(Model, ABC):
     ============ ==============================================================
     Abbreviation ... resolves to
     ============ ==============================================================
-    pa           :attr:`parameters <base.Model.parameters>`
+    pa           :attr:`parameters <simu.Model.parameters>`
     pad          :meth:`parameters.define <parameter.ParameterHandler.define>`
     pas          :meth:`parameters.static <parameter.ParameterHandler.static>`
-    pr           :attr:`properties <base.Model.properties>`
+    pr           :attr:`properties <simu.Model.properties>`
     prd          :meth:`properties.declare <property.PropertyHandler.declare>`
-    h            :attr:`hierarchy <base.Model.hierarchy>`
+    h            :attr:`hierarchy <simu.Model.hierarchy>`
     hd           :meth:`hierarchy.declare <hierarchy.HierarchyHandler.declare>`
     ha           :meth:`hierarchy.add <hierarchy.HierarchyHandler.add>`
-    m            :attr:`materials <base.Model.materials>`
+    m            :attr:`materials <simu.Model.materials>`
     md           :meth:`materials.define_port <material.MaterialHandler.define_port>`
     mcf          :meth:`materials.create_flow <material.MaterialHandler.create_flow>`
     mcs          :meth:`materials.create_state <material.MaterialHandler.create_state>`
-    r            :attr:`residuals <base.Model.residuals>`
+    r            :attr:`residuals <simu.Model.residuals>`
     ra           :meth:`residuals.add <residual.ResidualHandler.add>`
     ============ ==============================================================
     """

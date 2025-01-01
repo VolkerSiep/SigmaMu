@@ -9,17 +9,17 @@ from ..utilities.errors import DataFlowError
 
 
 class ParameterHandler(Map[Quantity]):
-    """This class, being instantiated as the :attr:`Model.parameters`
+    """This class, being instantiated as the :attr:`simu.Model.parameters`
     attribute, allows to define and access process parameters.
 
-    During :meth:`Model.initialise`, the model defines parameters with and
+    During :meth:`simu.Model.interface`, the model defines parameters with and
     without pre-defined values.
 
     Within the ``with`` block, the parent module connects parameters by
     providing external symbols. Here, the unit of measurement must be
     compatible to the parameters' definition.
 
-    During :meth:`Model.define` checks that all required symbols (the ones
+    During :meth:`simu.Model.define` checks that all required symbols (the ones
     without default values) are connected. It keeps track of the non-connected
     and static parameters, as they will need to be used as arguments for the
     overall model function.
@@ -44,7 +44,7 @@ class ParameterHandler(Map[Quantity]):
                name: str,
                value: Optional[float] = None,
                unit: Optional[str] = "dimless") -> None:
-        """Define a parameter from within the :meth:`Model.interface`
+        """Define a parameter from within the :meth:`simu.Model.interface`
         method."""
 
         if name in self.__params:
@@ -82,7 +82,7 @@ class ParameterHandler(Map[Quantity]):
 
     def __getitem__(self, name: str) -> Quantity:
         """Return the symbol of a defined parameter. This is to be used within
-        the :meth:`Model.define` method."""
+        the :meth:`simu.Model.define` method."""
         return self.__params[name]
 
     def get_static(self, name: str) -> SymbolQuantity:
@@ -103,8 +103,9 @@ class ParameterHandler(Map[Quantity]):
 
 
 class ParameterProxy(Mapping[str, Quantity]):
-    """This class is instantiated by the parent's :class:`ParameterHandler`
-    to configure the parameter connections from the parent context."""
+    """This class is instantiated by the parent's
+    :class:`~simu.core.model.parameter.ParameterHandler` to configure the
+    parameter connections from the parent context."""
 
     def __init__(self, handler: ParameterHandler,
                  params: MutMap[Quantity], values: MutMap[Quantity]):

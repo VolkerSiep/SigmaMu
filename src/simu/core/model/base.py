@@ -1,6 +1,5 @@
 """This module contains the base classes to represent (process) models.
 
-.. currentmodule:: simu.core.model.base
 """
 from abc import ABC, abstractmethod
 from typing import Self, Optional
@@ -10,7 +9,6 @@ from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 from .material import MaterialHandler, MaterialProxy
 from .residual import ResidualHandler, ResidualProxy
-# from .numeric import NumericHandler
 
 
 class Model(ABC):
@@ -25,8 +23,9 @@ class Model(ABC):
     two methods :meth:`interface` and :meth:`define` respectively.
 
     A model is then either instantiated by a parent model, whereas it is
-    represented in that parent model by a :class:`ModelProxy` object, or it
-    can be defined as the top level model by calling :meth:`top`.
+    represented in that parent model by a
+    :class:`~simu.core.model.base.ModelProxy` object, or it can be defined as
+    the top level model by calling :meth:`top`.
     """
 
     parameters: ParameterHandler
@@ -66,7 +65,7 @@ class Model(ABC):
         This is the recommended and fastest way to declare a model as being the
         top level model. It will create a proxy object (via :meth:`proxy`) and
         finalise the configuration of it via
-        :meth:`ModelProxy.finalise`.
+        :meth:`simu.core.model.base.ModelProxy.finalise`.
 
         Performing the finalisation in one go after creating the proxy object
         is only possible, if the model is suitable to be top model. That is,
@@ -74,7 +73,8 @@ class Model(ABC):
 
         :param name: The name of the top level model
         :type name: str
-        :return: The readily configured :class:`ModelProxy` object
+        :return: The readily configured
+          :class:`~simu.core.model.base.ModelProxy` object
         """
         return cls.proxy(name).finalise()
 
@@ -83,15 +83,16 @@ class Model(ABC):
         """Instantiate and create proxy of this model.
 
         This is a helper method called by the
-        :class:`HierarchyHandler <simu.core.model.hierarchy.HierarchyHandler>`
+        :class:`~simu.core.model.hierarchy.HierarchyHandler`
         when defining a child model. After the proxy class is generated,
         the parent model can connect materials and provide parameters. When
         that is done, the proxy object can be finalised.
 
         :param name: The name of the top level model
         :type name: str
-        :return: The :class:`ModelProxy` object, ready for configuration from
-          parent context. It then still needs to be finalised.
+        :return: The :class:`~simu.core.model.base.ModelProxy` object, ready
+          for configuration from parent context. It then still needs to be
+          finalised.
         """
         return cls().create_proxy(name)
 

@@ -173,7 +173,7 @@ Summary / Outlook
 
 Parts of the above might seem cumbersome for this *application*, but we are off for bigger things than calculating single species ideal gas properties. Later, we will among other things do the following:
 
-- Collect thermodynamic parameters in :class:`simu.ThermoStore` objects that can be shared among multiple models of different types.
+- Collect thermodynamic parameters in :class:`simu.ThermoParameterStore` objects that can be shared among multiple models of different types.
 - Add the calculation of more (derived) physical properties in the thermodynamic models.
 - Create :class:`simu.MaterialDefinition` class objects as a glue towards the actual purpose: process modelling -- finally.
 

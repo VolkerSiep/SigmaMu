@@ -71,7 +71,7 @@ class InitialState:
 
     @classmethod
     def from_dict(cls, struct: NestedMap[Quantity], species: Sequence[str]):
-        """Convert a nested Quantity map as obtained by :meth:`do_dict` to an
+        """Convert a nested Quantity map as obtained by :meth:`to_dict` to an
         initial state. The map must contain the top-level keys ``T``, ``p`` and
         ``n``, and a mapping from species to molar quantities as value of the
         ``n`` key. The correct sequence of ``species`` is provided separately,

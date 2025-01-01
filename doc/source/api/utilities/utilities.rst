@@ -6,3 +6,4 @@ Utilities
 
    structures
    quantity
+   types

@@ -9,7 +9,7 @@ from ..utilities.types import Map, MutMap
 
 
 class PropertyHandler(Mapping[str, Quantity]):
-    """This class, being instantiated as the :attr:`Model.properties`
+    """This class, being instantiated as the :attr:`simu.Model.properties`
     attribute, allows to declare and define process properties."""
 
     def __init__(self):

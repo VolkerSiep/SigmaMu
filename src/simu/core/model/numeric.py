@@ -36,7 +36,7 @@ class NumericHandler:
     VECTORS: str = "vectors"
     JACOBIANS: str = "jacobians"
 
-    def __init__(self, model: ModelProxy, port_properties=True):
+    def __init__(self, model: ModelProxy, port_properties: bool = True):
         """The option ``port_properties`` determines whether the properties
         of connected materials are also reported from a child model's
         perspective by the name of their ports."""
@@ -90,8 +90,8 @@ class NumericHandler:
 
         The returned structure is meant to be easy to store for instance in
         yaml or json format, and easy to edit. One can use
-        :func:`simu.parse_quantities_in_struct` to convert the values of the
-        data structure into :class:`simu.Quantity` objects for programmatic
+        :func:`~simu.parse_quantities_in_struct` to convert the values of the
+        data structure into :class:`~simu.Quantity` objects for programmatic
         processing.
 
         """
@@ -167,7 +167,8 @@ class NumericHandler:
                 new_path = mk_new_path(path, name)
                 if not name in all_names:
                     if not allow_extra:
-                        raise KeyError(f"{new_path} not found in model structure")
+                        msg = f"{new_path} not found in model structure"
+                        raise KeyError(msg)
                     result[new_path] = "extra"
 
         self.__arguments = {}  # force reread

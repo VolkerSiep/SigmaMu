@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-This module defines the :class:`ThermoFrame` and the :class:`ThermoFactory`
-classes, of which the latter one is a factory for the former.
+This module defines the :class:`~simu.ThermoFrame` and the
+:class:`~simu.ThermoFactory` classes, of which the latter one is a factory for
+the former.
 
-:class:`ThermoFrame` objects represent thermodynamic models as state function
-objects, calculating thermochemical properties as function of their
+:class:`~simu.ThermoFrame` objects represent thermodynamic models as state
+function objects, calculating thermochemical properties as function of their
 state and the model parameters.
 """
 # stdlib modules
@@ -23,7 +24,7 @@ from ..utilities import (Quantity, ParameterDictionary, QFunction, qvertcat,
                          SymbolQuantity, extract_units_dictionary)
 from ..utilities.types import NestedMap, Map, MutMap
 
-ThermoContributionDict = Map[tuple[Type["ThermoContribution"], Map]]
+ThermoContributionDict = Map[tuple[Type[ThermoContribution], Map]]
 """
 A dictionary whose keys are the names of the contributions, and the values are
 tuples of the belonging classes and the options belonging to the definition.
@@ -38,12 +39,12 @@ An example could be:
     } 
     
 This kind of structure is used to define the sequence of contributions in a 
-:class:`ThermoFrame` object. Here, the class ``LinearHeatCapacity`` is defined 
-straight forward with no options. For the mixing rule of the ``A`` contribution,
-called ``MixingRule_A``, it uses the ``NonSymmetricMixingRule`` class, 
-configured with ``ceos_a`` being the ``target``.
+:class:`~simu.ThermoFrame` object. Here, the class ``LinearHeatCapacity`` is
+defined  straight forward with no options. For the mixing rule of the ``A`` 
+contribution, called ``MixingRule_A``, it uses the ``NonSymmetricMixingRule``
+class,  configured with ``ceos_a`` being the ``target``.
 
-It is up to each individual :class:`ThermoContribution` implementation to
+It is up to each individual :class:`~simu.ThermoContribution` implementation to
 support and document their set of options.
 """
 
@@ -51,12 +52,12 @@ logger = getLogger(__name__)
 
 
 class ThermoFrame:
-    """This class represents the thermodynamic model, which defines a casadi
-    Function object :attr:`function` of the state vector and the parameter
+    """This class represents the thermodynamic model, which defines a
+    Function object :class:`QFunction` of the state vector and the parameter
     vector, and calculates a set of thermodynamic properties.
 
     The object should not be constructed via the class constructor by
-    client code, but created by the :meth:`ThermoFactory.create_frame`
+    client code, but created by the :meth:`~simu.ThermoFactory.create_frame`
     method that handles the house-keeping of contribution classes.
     """
 
@@ -64,7 +65,7 @@ class ThermoFrame:
                  state_definition: StateDefinition,
                  contributions: ThermoContributionDict):
         """This constructor establishes a thermo frame function object
-        (casadi) with given species and contributions.
+        with given species and contributions.
         """
         # need to instantiate the contributions
         species_list = list(species.keys())
@@ -120,21 +121,21 @@ class ThermoFrame:
 
         The function call can be a stand-alone evaluation of the thermodynamic
         model, given floating point quantities for the state and the
-        parameters. Alternatively, called with ``CasADi`` ``SX`` based
+        parameters. Alternatively, called with `CasADi`_ ``SX`` based
         quantities to become part of a larger functional.
 
-        :param state: A ``CasADi`` ``SX`` object or a sequence of floats,
+        :param state: A `CasADi`_ ``SX`` object or a sequence of floats,
           representing the thermodynamic state of the model. This is to be seen
           as a purely numerical object, as the physical interpretation, for
           instance as temperature, volume and mole flows, is first happening
           within the model.
 
         :param parameters: A nested dictionary with string keys and
-          :class:`simu.Quantity` leaves. Depending on the application, these
+          :class:`~simu.Quantity` leaves. Depending on the application, these
           quantities hold float or ``SX`` type magnitudes.
 
         :return: A list of property collections, representing the thermodynamic
-          properties, in the sequence as defined by :attr:`property_names`.
+          properties, in the structure as defined by :attr:`property_structure`.
 
         Depending on the ``flow`` parameter, extensive properties will be
         returned as flow quantities, such as ``W`` or ``mol/s`` or as stagnant

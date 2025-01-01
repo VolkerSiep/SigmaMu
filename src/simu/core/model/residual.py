@@ -14,11 +14,11 @@ class Residual:
 
 
 ResidualProxy = Map[Residual]
-
+""""""
 
 class ResidualHandler(ResidualProxy):
-    """This class, being instantiated as the :attr:`Model.residuals` attribute,
-    allows to define residuals, i.e. process constraints."""
+    """This class, being instantiated as the :attr:`simu.Model.residuals`
+    attribute, allows to define residuals, i.e. process constraints."""
 
     def __init__(self):
         self.__residuals = {}
