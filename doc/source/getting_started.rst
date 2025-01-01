@@ -8,7 +8,7 @@ By intention, installation shall be as easy as
 
 .. code-block::
 
-    pip install SiMu
+    pip install SigmaMu
 
 By the time this is read by anybody but me, the package is available on ``PyPi``, hence this shall work. The tests can then be run, if `pytest`_ is available (see below) via
 
@@ -18,7 +18,7 @@ By the time this is read by anybody but me, the package is available on ``PyPi``
 
 Also this is supposed to work without any failed tests.
 
-``SiMu`` depends on the following packages:
+``SigmaMu`` depends on the following packages:
 
 ============ =================================================================
 Name         What for
@@ -110,11 +110,11 @@ Note that the formatting of the physical quantities is utilising `Pint`_ functio
 
 Normal project structure
 ------------------------
-Above example is cute but no usecase for using ``SiMu``. Admittingly, the area of a square can instead be calculated in one line of code. A real project starts with the setup of **thermodynamic models** to calculate physical properties of the materials that are part of the model. In ``SiMu``, a thermodynamic model is represented by a :class:`ThermoFrame <thermo.frame.ThermoFrame>` object and consists of :class:`ThermoContribution <thermo.frame.contribution.ThermoContribution>` object, the latter of which can be combined and extended with high flexibility. Examples for such contributions are ideal gas heat capacity, mixing rules, and Poynting corrections in Gibbs excess models.
+Above example is cute but no use-case for using ``SigmaMu``. Admittingly, the area of a square can instead be calculated in one line of code. A real project starts with the setup of **thermodynamic models** to calculate physical properties of the materials that are part of the model. In ``SigmaMu``, a thermodynamic model is represented by a :class:`ThermoFrame <thermo.frame.ThermoFrame>` object and consists of :class:`ThermoContribution <thermo.frame.contribution.ThermoContribution>` object, the latter of which can be combined and extended with high flexibility. Examples for such contributions are ideal gas heat capacity, mixing rules, and Poynting corrections in Gibbs excess models.
 
 Once the thermodynamic model structures are defined, data sources are organized to provide the **thermodynamic parameters**, such as standard state parameters or critical constants. Naturally, the set of required parameters depend on the model structure and the set of chemical species.
 
-Now the thermodynamic models are in place, and we can define **materials**. Material definitions, on top of the thermodynamic model singeltons, define the utilised set of chemical species and a representative initial state. Material definitions are then used within the :class:`Model <model.base.Model>` class to define instances, defining flows of materials or stagnant states, such as phase interface conditions.
+Now the thermodynamic models are in place, and we can define **materials**. Material definitions, on top of the thermodynamic model singletons, define the utilised set of chemical species and a representative initial state. Material definitions are then used within the :class:`Model <model.base.Model>` class to define instances, defining flows of materials or stagnant states, such as phase interface conditions.
 
 Below diagram shows the object relationships in an overview.
 
@@ -153,6 +153,6 @@ The derivatives required to efficiently perform these disciplines can easily be 
 
 Where are the limits?
 ---------------------
-So far, the experience and usage of ``SiMu`` is limited, but the predecessor, ``pyasim`` has been used in many in-house projects, including detailed CO\ :sub:`2` removal systems, plant-wide ammonia production processes, and detailed absorbtion column models for NO\ :sub:`x` gasses on Sieve trays and packings. Model sizes up to 80000 variables/equations have been solved. This, due to the way of building the model and counting the variables, corresponds to more than one million equations for brute force general equation oriented modelling tools.
+So far, the experience and usage of ``SigmaMu`` is limited, but the predecessor, ``pyasim`` has been used in many in-house projects, including detailed CO\ :sub:`2` removal systems, plant-wide ammonia production processes, and detailed absorption column models for NO\ :sub:`x` gasses on Sieve trays and packings. Model sizes up to 80000 variables/equations have been solved. This, due to the way of building the model and counting the variables, corresponds to more than one million equations for brute force general equation oriented modelling tools.
 
-For the predecessor, ``pyasim``, memory usage on ordinary business laptops became limiting for the largest models. This constituted one of the motivations to develop ``SiMu``. With much more efficient memory handling by `CasADi`_ and multi-core computations, we do not yet know where the limits of ``SiMu`` are.
+For the predecessor, ``pyasim``, memory usage on ordinary business laptops became limiting for the largest models. This constituted one of the motivations to develop ``SigmaMu``. With much more efficient memory handling by `CasADi`_ and multi-core computations, we do not yet know where the limits of ``SigmaMu`` are.

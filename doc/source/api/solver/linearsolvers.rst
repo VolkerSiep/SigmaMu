@@ -1,10 +1,10 @@
 Linear solvers
 ==============
-As a sub-problem for nearly all simulation disciplines, linear systems must be solved. More specifically, the system matrix for process models in ``SiMu`` can reach O(10000) for models with large scope and/or level of detail.
+As a sub-problem for nearly all simulation disciplines, linear systems must be solved. More specifically, the system matrix for process models in ``SigmaMu`` can reach O(10000) for models with large scope and/or level of detail.
 
 .. note::
 
-    As ``SiMu`` formulates most of the model via explicit relationships of properties, the system size is by about two magnitudes lower than in other equation oriented modelling tools, such as ``gPROMs`` or ``Modelica``. The explicit formulation includes the entire thermodynamic model formulation and calculation of physical properties.
+    As ``SigmaMu`` formulates most of the model via explicit relationships of properties, the system size is by about two magnitudes lower than in other equation oriented modelling tools, such as ``gPROMs`` or ``Modelica``. The explicit formulation includes the entire thermodynamic model formulation and calculation of physical properties.
 
     As an example, a process of 10 packed columns, where each packing is discretised into 10 slices - or 10 tray columns with 10 stages each, and the gas liquid boundary layer of each slice is discretised into 10 reactive elements, an eight-species system yields typically 10 x 10 x 10 x (8 + 2) = 10000 variables.
 
@@ -12,7 +12,7 @@ Typically, the sparsity of the system matrices is around 1 % to 2 %, slightly de
 
 Casadi solver
 -------------
-`CasADi`_ features high performant and efficient functionality for solving differential equation systems that come with control problems, and, as a very essential part of ``SiMu``, we obtain Jacobian information from the library. Within the ``SiMu`` solvers, we hence retrieve the system matrices as ``casadi.DM`` objects. Though it is possible to solve smaller linear systems, these are not designed to be subject to larger computations.
+`CasADi`_ features high performant and efficient functionality for solving differential equation systems that come with control problems, and, as a very essential part of ``SigmaMu``, we obtain Jacobian information from the library. Within the ``SigmaMu`` solvers, we hence retrieve the system matrices as ``casadi.DM`` objects. Though it is possible to solve smaller linear systems, these are not designed to be subject to larger computations.
 
 Scipy solver
 ------------
@@ -27,7 +27,7 @@ The ``scipy.sparse.linalg`` module offers ``spsolve``. To utilise this, we first
     ...
     scipy_matrix = csc_matrix(dm_matrix)
 
-The `SciPy`_ module is capable of solving the sparse system of size 10\ :sup:`4` in about 100 seconds, but not exploiting multiple CPUs in the calculation. One declared target of ``SiMu`` is to scale its performance with available CPUs.
+The `SciPy`_ module is capable of solving the sparse system of size 10\ :sup:`4` in about 100 seconds, but not exploiting multiple CPUs in the calculation. One declared target of ``SigmaMu`` is to scale its performance with available CPUs.
 
 Pypardiso solver
 ----------------
