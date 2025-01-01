@@ -170,7 +170,7 @@ class IdealMix(ThermoContribution):
     The contribution model domain is limited to positive quantities in order to
     prevent negative arguments to the logarithmic functions. One could enable
     also the third quadrant (**all** mole numbers negative), but doing so and
-    therreby allowing the solver to jump between these two nearly disconnected
+    thereby allowing the solver to jump between these two nearly disconnected
     domains has proven to be challenging in terms of solver robustness.
     """
 
@@ -236,7 +236,7 @@ class GibbsIdealGas(ThermoContribution):
 class HelmholtzIdealGas(ThermoContribution):
     r"""This contribution supplements the ideal gas entropy contribution and
     defines the pressure property in Helmholtz coordinates, i.e. with pressure
-    as function of volme. This is the common base contribution for most
+    as function of volume. This is the common base contribution for most
     equations of state. Based on the previously provided reference pressure
     ``p_ref`` and
 

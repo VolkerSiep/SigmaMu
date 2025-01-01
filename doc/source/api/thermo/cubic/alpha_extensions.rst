@@ -5,7 +5,7 @@ Extensions of alpha-functions to super-critical regions
 
 Introduction
 ------------
-Alpha-functions in cubic equations of state are designed to describe the vapour-liquid equilibrium well. The end-point is defined by the critical point. Beyond this critical point, extrapolation is non-physical and yields large errors in prysical property calculations, such as density, enthalpy, entropy and chemical potentials.
+Alpha-functions in cubic equations of state are designed to describe the vapour-liquid equilibrium well. The end-point is defined by the critical point. Beyond this critical point, extrapolation is non-physical and yields large errors in physical property calculations, such as density, enthalpy, entropy and chemical potentials.
 
 Therefore several authors, e.g. :cite:p:`Boston1980` have suggested alternative alpha-functions to be used for reduced temperatures :math:`\tau':= T / T_{c}` above unity. To be suitable, the following properties must hold for the extension:
 
@@ -89,7 +89,7 @@ The figure below shows the (square root of the) alpha function and its first der
 .. image:: boston_mathias_siepmann_extrapolation.*
    :width: 80%
 
-Already the original function :cite:p:`Boston1980` assumes the correct function value (unity) and first derivative at :math:`\tau = 1`, but the second derivative is not smooth originally, but zero at :math:`\tau = 1`. The extrapolation by :cite:p:`Boston1980` was developed for the standard SRK model (:math:`\eta = 0`), for which the curvature is zero at :math:`\tau = 1`. The authors then correctly set the derivative to zero based on this fact. No further intension in doing so has been documented.
+Already the original function :cite:p:`Boston1980` assumes the correct function value (unity) and first derivative at :math:`\tau = 1`, but the second derivative is not smooth originally, but zero at :math:`\tau = 1`. The extrapolation by :cite:p:`Boston1980` was developed for the standard SRK model (:math:`\eta = 0`), for which the curvature is zero at :math:`\tau = 1`. The authors then correctly set the derivative to zero based on this fact. No further intention in doing so has been documented.
 
 Three years later, when :cite:p:`Mathias1983` publishes the extended alpha-function for polar substances, the correction in the extrapolation was only done to refit the first derivative. The curvature however, now having the value :math:`-4\eta`, was ignored :cite:p:`AspenTech2001`.
 

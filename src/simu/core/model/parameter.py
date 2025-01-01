@@ -12,12 +12,12 @@ class ParameterHandler(Map[Quantity]):
     """This class, being instantiated as the :attr:`Model.parameters`
     attribute, allows to define and access process parameters.
 
-    During :meth:`Model.initialse`, the model defines parameters with and
+    During :meth:`Model.initialise`, the model defines parameters with and
     without pre-defined values.
 
     Within the ``with`` block, the parent module connects parameters by
     providing external symbols. Here, the unit of measurement must be
-    compatibe to the parameters' definition.
+    compatible to the parameters' definition.
 
     During :meth:`Model.define` checks that all required symbols (the ones
     without default values) are connected. It keeps track of the non-connected

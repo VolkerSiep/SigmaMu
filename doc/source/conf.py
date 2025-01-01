@@ -9,8 +9,8 @@ from simu import __version__ as _release
 sys.path.insert(0, abspath('.'))
 
 # -- Project information -----------------------------------------------------
-project = 'SiMu'
-copyright = '2021-2024, Volker Siepmann'
+project = 'SigmaMu'
+copyright = '2021-2025, Volker Siepmann'
 author = 'Volker Siepmann'
 release = _release
 
@@ -70,7 +70,7 @@ html_theme = 'nature'
 # 'pyramid' (headings not standing out),
 # 'classic' (a bit boring)
 
-# manual configuration of side-bars to have the global toc folded and not
+# manual configuration of sidebars to have the global toc folded and not
 # messed up with all autodoc entries
 html_sidebars = {
     '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],

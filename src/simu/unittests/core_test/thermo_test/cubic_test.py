@@ -168,7 +168,7 @@ def test_boston_mathias_alpha_function():
 
 def test_boston_mathias_alpha_function_smoothness():
     """Check smoothness of alpha function at critical temperature, where
-    the expressions switches to the super-critical extrapolation"""
+    the expression switches to the super-critical extrapolation"""
     res, par = create_boston_mathias_alpha_function()
 
     args = {k: res[k] for k in ["T", "_T_c", "_m_factor"]}
@@ -291,7 +291,7 @@ def test_relax_rk():
         "_dp_dx": Q([0, 0, 0, 0], "bar")
     }
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
-    delta = [0.1, -v_magnitude, 0.1, 0.1]  # this one is float
+    delta = [0.1, -v_magnitude, 0.1, 0.1]  # this one is a float
     beta = cont.relax(res, delta)
     assert beta < 1
 

@@ -113,7 +113,7 @@ class NumericHandler:
     def import_state(self, state: NestedMap[str],
                      allow_missing: bool=False, allow_extra: bool = False)\
             -> NestedMap[str]:
-        """Imports the state data in terms of ":math:`T, p, n` as exported by
+        """Imports the state data in terms of :math:`T, p, n` as exported by
         :meth:`export_state`.
 
         :param state: A nested mapping as returned by :meth:`export_state`,

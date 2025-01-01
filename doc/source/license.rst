@@ -17,4 +17,4 @@ GNU Lesser General Public License
 .. license-info:: LGPL-3.0
 
 .. license::
-    :py: simu
+    :py: SigmaMu

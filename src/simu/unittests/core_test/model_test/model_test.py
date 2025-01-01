@@ -91,7 +91,7 @@ def test_parameters_define_other():
 
 
 def test_hierarchy():
-    """Test evaluating a simple hierarchicals model with just parameters and
+    """Test evaluating a simple hierarchical model with just parameters and
     properties"""
     proxy = HierarchyTestModel.top()
     volume = proxy.properties["volume"]
@@ -99,7 +99,7 @@ def test_hierarchy():
 
 
 def test_hierarchy2():
-    """Test evaluating a simple hierarchicals model with just parameters and
+    """Test evaluating a simple hierarchical model with just parameters and
     properties"""
     proxy = HierarchyTestModel2.top()
     volume = proxy.properties["volume"]
@@ -131,7 +131,7 @@ def test_material_reuse_def():
 
 
 def test_residual_def():
-    proxy = ResidualTestModel().top()
+    _ = ResidualTestModel().top()
 
 
 def test_residual():

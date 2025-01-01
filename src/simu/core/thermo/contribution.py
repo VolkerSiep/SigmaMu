@@ -111,7 +111,7 @@ class ThermoContribution(ABC):
             self, species: Map[SpeciesDefinition]) -> Map[Sequence[str]]:
         """Declare the keys of newly introduced vectorial properties. In most
         cases, this will be the species names for the mole vector, and the
-        implementation will look as folllows::
+        implementation will look as follows::
 
             def declare_vector_keys(self, species):
                 return {"my_vector_prop": list(species.keys())}

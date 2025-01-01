@@ -199,7 +199,7 @@ class SimulationSolver(Configurable):
             result=funcs["f_y"]({"x": Quantity(x)})
         )
 
-    def _prepare_functions(self):
+    def _prepare_functions(self) -> Map[Callable]:
         # prepare
         #  - a casadi MX function x -> (r, dr/dx)
         #  - a casadi MX function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)

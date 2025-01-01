@@ -2,7 +2,7 @@
 
 ***SigmaMu* is a python library for first principle steady-state modelling of chemical processes.**
 
-<center><img src="doc/source/figures/simu_logo.jpeg" alt="SigmaMu logo" width="400"></center>
+<img src="doc/source/figures/simu_logo.jpeg" alt="SigmaMu logo" style="display: block; margin-left: auto; margin-right: auto; width: 400pt">
 
 **Once public, the detailed documentation will be on [readthedocs](https://docs.readthedocs.io) and linked from here. Also, the package will be registered in [PyPi](https://pypi.org/).**
 
@@ -31,7 +31,7 @@ Being a python library built on well establish dependencies only, **SigmaMu** is
   - forcing consistent modelling with respect to physical dimensions by using [Pint](https://pint.readthedocs.io) for all exchange of physical quantities.
 - Extensive documentation, use of `doctest` and *unit tests*, and examples to make the software most accessible for new users.  
 
-## .. and what not?
+## ... and what not?
 - **SigmaMu** makes no attempt to provide a **graphical user interface** to make its functionality easier accessible and increase usability. This can surely be done and might be a good idea for some use-cases, but is not the primary goal of this project.
 - **SigmaMu** is not a general purpose modelling tool, such as for instance [Modelica](https://modelica.org/). While it is to some degree possible to model non-chemical systems, one is surely better off by using such generic tools.
 - While the modelling approach of **SigmaMu** strongly promotes better understanding of thermodynamics and chemical process modelling, it is not removing the necessity to define the model on equation level. However, some models are readily available for reuse, and experts might develop further in-house model parts that need not be understood by downstream developers.
@@ -74,7 +74,7 @@ solver = SimulationSolver(numeric)
 solver.solve()
 ```
 
-The solver applies the *Newton-Raphson* nethod, whereas the system matrix (here pathetically 3x3) is obtained using [CasADi](https://web.casadi.org). The linearized systems are solved using the multicore *Intel oneAPI* solver provided by the [PyPardiso](https://pypi.org/project/pypardiso/) package:
+The solver applies the *Newton-Raphson* method, whereas the system matrix (here pathetically 3x3) is obtained using [CasADi](https://web.casadi.org). The linearized systems are solved using the multicore *Intel oneAPI* solver provided by the [PyPardiso](https://pypi.org/project/pypardiso/) package:
 ```
 Iter   LMET   Alpha   Time   Limit on bound Max residual
 ----- ----- ------- ------ ---------------- ------------
