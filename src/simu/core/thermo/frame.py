@@ -182,30 +182,6 @@ class ThermoFrame:
         symbolically."""
         return SX.sym("x", len(self.__species) + 2)
 
-    def relax(self, current_result: Map[Quantity],
-              delta_state: Sequence[float]) -> float:
-        """As a thermodynamic function, this object's contributions hold
-        information on the domain limits of the state variables. This is mostly
-        as trivial as demanding positive temperature, pressure, or quantities,
-        as these variables occur for instance as logarithm arguments. In
-        some cases, elaborate constraints apply, such as the minimum allowed
-        volume for an equation of state.
-
-        This method, after querying the contributions, returns a floating
-        point number representing the maximal accepted step size.
-
-        :param current_result: The result objects from the calculation with
-          the current state
-        :param delta_state: The direction vector (typically suggested by a
-          solver)
-        :return: The maximal allowed step size as a pre-factor to
-          ``delta_state``. Hence, a value of one describes full step length.
-        """
-        return float(
-            min(
-                cont.relax(current_result, delta_state)
-                for cont in self.__contributions.values()))
-
     def initial_state(self, state: InitialState,
                       parameters: NestedMap[Quantity]) -> Sequence[float]:
         """Return a state estimate for given temperature, pressure and

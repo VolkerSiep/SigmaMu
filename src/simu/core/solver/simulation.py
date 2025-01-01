@@ -155,7 +155,7 @@ class SimulationSolver(Configurable):
                     alpha = a[min_a_idx] * opt["gamma"]
                     min_alpha_name = bound_names[min_a_idx]
                 if alpha < opt["wall"]:
-                    msg = f"Relaxation coefficient is below {opt["wall"]}, " \
+                    msg = f"Relaxation factor is below {opt["wall"]}, " \
                           "no solution found"
                     raise ValueError(msg)
             # apply update

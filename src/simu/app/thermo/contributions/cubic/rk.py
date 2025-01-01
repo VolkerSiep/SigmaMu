@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 # stdlib modules
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 # external modules
 from casadi import SX
-from numpy import dot, ravel, roots
+from numpy import roots
 
 # internal modules
 from simu import (
@@ -14,7 +14,7 @@ from simu import (
 )
 
 
-class RedlichKwongEOS(ThermoContribution):
+class RedlichKwongEOS(ThermoContribution, ABC):
     r"""This contribution implements a general Redlich-Kwong equation of state
     with Peneloux volume translation:
 
@@ -167,46 +167,10 @@ class RedlichKwongEOS(ThermoContribution):
         dmu += AB * (C_n / VC - (B_n + C_n) / VpBC)
         res["mu"] += dmu
 
-        # quantities specific for relaxation
-        state = res["_state"]
-        res["_VBC"] = VmBC
-        res["_dVBC_dx"] = jacobian(VmBC, state)
-        res["_dp_dx"] = jacobian(res["p"], state)
-        res["_dp_dV"] = jacobian(res["p"], V)
-        res["_ddp_dV_dx"] = jacobian(res["_dp_dV"], state)
-
         bounds["RK_VmBC"] = VmBC  # V - B + C > 0
         bounds["V"] = V
         bounds["dp_dV"] = -jacobian(res["p"], V)  # dp/dv < 0
         bounds["p"] = res["p"]
-
-    def relax(self, current_result, delta_state):
-        # V - B + C > 0 ?
-        y = current_result["_VBC"]
-        d_y = current_result["_dVBC_dx"] @ delta_state
-        beta = -y / d_y if d_y < 0 else 100
-
-        # V > 0 ?
-        if delta_state[1] < 0:
-            beta = min(beta, -current_result["_state"][1] / delta_state[1])
-
-        #  dp/dV < 0 ?
-        y = current_result["_dp_dV"]
-        d_y = current_result["_ddp_dV_dx"] @ delta_state
-        if d_y > 0:
-            beta = min(beta, -y / d_y)
-
-        # p > 0 for liquid phase? (cannot happen in gas phase)
-        beta_more = self.relax_more(current_result, delta_state)
-        beta = beta if beta_more is None else min(beta, beta_more)
-        return float(beta)
-
-    @abstractmethod
-    def relax_more(self, current_result, delta_state):
-        """For the Redlich Kwong equation of state, both phases are required
-        to keep the EOS denominators positive and the volume derivative of
-        pressure negative. More specific constraints are to be implemented
-        by the subclasses to represent in particular the liquid phase"""
 
     @staticmethod
     def find_zeros(state: InitialState, properties):
@@ -223,20 +187,18 @@ class RedlichKwongEOS(ThermoContribution):
         return zeros[zeros > beta].real * NRT / p - C
 
 
+    @abstractmethod
+    def initial_state(self, state, properties):
+        """Force implementation of this method"""
+        ...
+
+
 class RedlichKwongEOSLiquid(RedlichKwongEOS):
     """As a subclass of
     :class:`~simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS`, this
     entity specialises on describing liquid (and super-critical) phases.
-    The distinct elements are the initialisation and the relaxation,
-    ensuring the state to be within the correct domain with respect to volume.
+    The distinct element is the initialisation.
     """
-
-    def relax_more(self, current_result, delta_state):
-        """Additionally to the main relaxation method, this implementation
-        also assures positive pressures"""
-        y = current_result["p"]
-        d_y = dot(ravel(current_result["_dp_dx"]), delta_state)
-        return -y / d_y if d_y < 0 else None
 
     def initial_state(self, state, properties):
         volume = min(self.find_zeros(state, properties))
@@ -248,12 +210,7 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
     """As a subclass of
     :class:`~simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS`, this
     entity specialises on describing gas (and super-critical) phases. The
-    distinct elements are the initialisation and the relaxation, ensuring the
-    state to be within the correct domain with respect to volume."""
-
-    def relax_more(self, current_result, delta_state):
-        """For the gas phase, no more constraints apply then the ones that
-        apply for both phases."""
+    distinct elements is the initialisation."""
 
     def initial_state(self, state, properties):
         zeros = self.find_zeros(state, properties)

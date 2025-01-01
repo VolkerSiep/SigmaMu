@@ -82,7 +82,7 @@ def test_redlich_kwong_eos():
     })
     cont = RedlichKwongEOSLiquid(["A", "B"], {})
     cont.define(res, {}, {})
-    keys = "S p mu _ceos_a_T _ceos_b_T _VBC _dp_dV".split()
+    keys = "S p mu _ceos_a_T _ceos_b_T".split()
     result = {k: res[k] for k in keys}
     assert_reproduction(result)
 
@@ -275,65 +275,6 @@ def test_initialise_rk2(cls):
     p2 = func(args)["p_res"] + sum(n) * R_GAS * T / args["V"]
     assert abs(p2 - p) < Q("1 Pa")
 
-
-def test_relax_rk():
-    """test relaxation method for RK model"""
-    v_magnitude = 1.5260379390336834e-05
-    V = Q(v_magnitude, "m**3")
-    res = {
-        "_state": Q([370.0, v_magnitude, 0.5, 0.5]),
-        "V": V,
-        "p": Q("1 bar"),
-        "_VBC": V + Q("-15 ml"),
-        "_dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
-        "_dp_dV": Q("-0.1 bar/ml"),
-        "_ddp_dV_dx": Q([0, 1e4, 0, 0], "bar/ml"),
-        "_dp_dx": Q([0, 0, 0, 0], "bar")
-    }
-    cont = RedlichKwongEOSLiquid(["A", "B"], {})
-    delta = [0.1, -v_magnitude, 0.1, 0.1]  # this one is a float
-    beta = cont.relax(res, delta)
-    assert beta < 1
-
-
-def test_relax_rk_advanced():
-    """test relaxation method for RK models, limited by dp/DV:
-
-    - provoke parameters to have dp/dV limiting
-    - relax only in V-direction
-    - provide p_V and p_V_x[1] approximately correctly
-    - relax from V = 4.6e-5 by dV = +0.4e-5"""
-
-    state = [370.0, 4.6e-05, 0.5, 0.5]
-    T = Q(state[0], "K")
-    V = Q(state[1], "m**3")
-    n = Q(state[2:], "mol")
-    res = {
-        "_state": Q(state),
-        "T": T,
-        "V": V,
-        "n": n,
-        "p": Q(11, "bar"),
-        "_ceos_a": Q("15 Pa * m**6"),
-        "_ceos_b": Q("25 ml"),
-        "_ceos_c": Q("10 ml"),
-        "_dVBC_dx": Q([0, 1e6, 10 - 25, 10 - 25], "ml"),
-        "_dp_dV": Q("-2.5 bar/ml"),
-        "_ddp_dV_dx": Q([0, 8.5e5, 0, 0], "bar/ml"),
-        "_dp_dx": Q([0, 0, 0, 0], "bar")
-    }
-    res["_VBC"] = V + res["_ceos_c"] - res["_ceos_b"]
-    # in above data, p, p_V and p_V_x are set approximately to reproduce
-    # taylor approximation in graph. For plotting, p is evaluated exactly.
-
-
-    # TODO: make an example folder with these things.
-    # if user_agree("Plot pV-plot for relaxation dp/dV < 0"):
-    #     plot_pv(res)
-
-    cont = RedlichKwongEOSLiquid(["A", "B"], {})
-    beta = cont.relax(res, [0.0, 4e-6, 0.0, 0.0])
-    assert 0.7 < beta < 0.8  # from plot, this is where dp/dV turns positive
 
 # *** auxiliary routines
 

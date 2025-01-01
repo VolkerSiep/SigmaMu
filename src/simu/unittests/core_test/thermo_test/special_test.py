@@ -24,5 +24,5 @@ def test_derivative():
     res = {"T": tau, "poly": poly}
     opt = {"y": "poly", "x": "T"}
     deri = Derivative(["A", "B"], opt)
-    deri.define(res, {})
+    deri.define(res, {}, {})
     assert_reproduction(str(res["dpoly_dT"]))
