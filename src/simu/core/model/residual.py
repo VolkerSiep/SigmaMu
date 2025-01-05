@@ -8,13 +8,45 @@ from ..utilities.errors import DimensionalityError
 
 @dataclass
 class Residual:
-    """Class representing a single residual"""
+    """Class representing a single residual.
+
+    The post-constructor will raise a ``DimensionalityError`` if the
+    ``tolerance`` unit is not compatible with the ``value`` unit.
+
+    A possible offset in the tolerance unit, such as in degrees Celsius or gauge
+    pressures, will be eliminated automatically. That is:
+
+    >>> from simu import SymbolQuantity as S, Quantity as Q
+    >>> val = S("r", "barg")
+    >>> r1 = Residual(val, Q(1e-7, "barg"))
+    >>> r2 = Residual(val, Q(1e-7, "bar"))
+    >>> f"{r1.tolerance - r2.tolerance:.15f~}"
+    '0.000000000000000 bar'
+
+    *(there is a silly rounding error, hence the trick with the formatting to
+    make this doctest work)*
+    """
     value: Quantity
+    """The value as a symbolic quantity"""
     tolerance: Quantity
+    """The absolute tolerance of the residual as a numeric quantity in the same
+    physical dimensions as the value"""
+
+    def __post_init__(self):
+        tol_unit = self.tolerance.units
+        try:
+            self.value.to(tol_unit)
+        except DimensionalityError:
+            msg = f"Incompatible tolerance unit in residual"
+            raise DimensionalityError(self.value.units, tol_unit, extra_msg=msg)
+
+        # eliminate impact of offset in units like degC and barg
+        self.tolerance -= Quantity(0.0, tol_unit)
 
 
 ResidualProxy = Map[Residual]
-""""""
+"""This is just a dictionary, mapping the names (*str*) to the :class:`Residual`
+objects"""
 
 class ResidualHandler(ResidualProxy):
     """This class, being instantiated as the :attr:`simu.Model.residuals`
@@ -28,15 +60,7 @@ class ResidualHandler(ResidualProxy):
         """Define a residual"""
         if name in self.__residuals:
             raise KeyError(f"Residual {name} already defined")
-        try:
-            residual.to(tol_unit)
-        except DimensionalityError:
-            msg = f"Incompatible tolerance unit in residual {name}"
-            raise DimensionalityError(residual.units, tol_unit, extra_msg=msg)
-
-        # eliminate impact of offset in units like degC and barg
-        tolerance = Quantity(tol, tol_unit) - Quantity(0.0, tol_unit)
-        self.__residuals[name] = Residual(residual, tolerance)
+        self.__residuals[name] = Residual(residual, Quantity(tol, tol_unit))
 
     def __getitem__(self, key: str) -> Residual:
         return self.__residuals[key]

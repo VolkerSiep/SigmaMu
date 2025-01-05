@@ -11,6 +11,7 @@ from ..utilities import (
     flatten_dictionary, quantity_dict_to_strings, parse_quantities_in_struct)
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction, jacobian
+from ..utilities.structures import FLATTEN_SEPARATOR
 from ..utilities.errors import DataFlowError
 
 from .base import ModelProxy
@@ -129,8 +130,8 @@ class NumericHandler:
           states that were not given as part of ``state`` (value = ``missing``)
         """
         def mk_new_path(path: str, name: str) -> str:
-            name = name.replace("/", r"\/")
-            return name if not path else f"{path}/{name}"
+            name = name.replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")
+            return name if not path else f"{path}{FLATTEN_SEPARATOR}{name}"
 
         def traverse(model: ModelProxy, state_part: NestedMap[Quantity],
                      path: str):
@@ -177,8 +178,8 @@ class NumericHandler:
         return unflatten_dictionary(result)
 
 
-    def retain_initial_values(self, state: Sequence[float],
-                              parameters: NestedMap[Quantity]):
+    def retain_state(self, state: Sequence[float],
+                     parameters: NestedMap[Quantity]):
         """Given a numeric ``state`` vector and the current set of
         ``parameters`` as a nested mapping of quantities, store the values for
         temperature, pressure and molar quantities back into the internal

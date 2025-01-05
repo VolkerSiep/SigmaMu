@@ -11,3 +11,4 @@ ResiduaProxy
 Residual
 ========
 .. autoclass:: simu.core.model.residual.Residual
+   :members:

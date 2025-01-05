@@ -193,7 +193,7 @@ def test_retain_initial_values():
     material.definition.store.add_source("default", StringDictThermoSource(DATA))
     params = numeric.arguments["thermo_params"]["default"]
     state = [283.15, 2 * 0.000196732, 2, 2]
-    numeric.retain_initial_values(state, params)
+    numeric.retain_state(state, params)
     pressure = material.initial_state.pressure
     assert Quantity(0.999, "MPa") < pressure < Quantity(1.001, "MPa")
 
@@ -205,7 +205,7 @@ def test_retain_and_args():
     material.definition.store.add_source("default", StringDictThermoSource(DATA))
     params = numeric.arguments["thermo_params"]["default"]
     state = [283.15, 2 * 0.000196732, 2, 2]
-    numeric.retain_initial_values(state, params)
+    numeric.retain_state(state, params)
     new_state  = squeeze(numeric.arguments["vectors"]["states"].magnitude)
     assert_allclose(new_state, state)
 

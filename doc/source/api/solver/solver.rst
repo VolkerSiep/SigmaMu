@@ -6,4 +6,5 @@ The following are classes to generally describe the solvers that are part of ``S
 .. toctree::
    :maxdepth: 2
 
+   simulationsolver
    linearsolvers

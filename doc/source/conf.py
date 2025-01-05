@@ -32,7 +32,7 @@ extensions = [
     'sphinx.ext.doctest',
     'custom_directives',
     'sphinx.ext.intersphinx',
-    'sphinx_autodoc_typehints'
+    # 'sphinx_autodoc_typehints'
 ]
 
 nitpicky = True  # to check that all internal references work
@@ -53,8 +53,8 @@ nitpick_ignore = [
 
 # autoclass_content = 'both'
 autodoc_member_order = 'bysource'
+autodoc_class_signature = 'separated'
 autodoc_typehints = 'signature'
-# autodoc_imported_members = True
 
 # copy-button config
 copybutton_prompt_text = r'>>> |\.\.\. '

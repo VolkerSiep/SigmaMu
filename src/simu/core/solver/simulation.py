@@ -1,5 +1,5 @@
 from symtable import Function
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
 from time import time
@@ -13,8 +13,10 @@ from pypardiso import spsolve
 
 from ..model.numeric import NumericHandler
 from ..utilities import Quantity, QFunction
+from ..utilities.output import ProgressTableOutput
 from ..utilities.types import Map, NestedMutMap, NestedMap
 from ..utilities.configurable import Configurable
+from ..utilities.errors import IterativeProcessInterrupted
 
 _VEC, _STATE = NumericHandler.VECTORS, NumericHandler.STATE_VEC
 _RES, _BOUND = NumericHandler.RES_VEC, NumericHandler.BOUND_VEC
@@ -24,69 +26,128 @@ _RES, _BOUND = NumericHandler.RES_VEC, NumericHandler.BOUND_VEC
 #  - can I allow logging to the right logger additionally?
 #    (just give it as a bloody optional argument, you dork!)
 #  - document the whole solver thingy
-class Table:
-    def __init__(self, columns: Map[Tuple[str, str]], row_dig = 3,
-                 row_head = "Row", stream=stdout):
-        self.__cols = columns
-        self._first = True
-        self._row_fmt = None if row_dig is None else f"{{:{row_dig}d}}"
-        self._row_head = row_head
-        self._write = (lambda t: None) if (stream is None) else stream.write
-        self._row = 1
-
-    def row(self, data: object, row: int = None):
-        write = self._write
-        row = self._row if row is None else row
-
-        elem = [c[1].format(getattr(data, k)) for k, c in self.__cols.items()]
-        if self._row_fmt is not None:
-            row = self._row_fmt.format(row)
-
-        if self._first:
-            headings = [f"{c[0]:>{len(e)}s}"
-                        for e, c in zip(elem, self.__cols.values())]
-            if self._row_fmt is not None:
-                row_head = f"{self._row_head:{len(row)}s}"
-                headings = [row_head] + headings
-
-            write(" ".join(headings) + "\n")
-            write(" ".join("-" * len(h) for h in headings) + "\n")
-            self._first = False
-
-        if self._row_fmt is not None:
-            elem = [row] + elem
-        write(" ".join(elem) + "\n")
-
-
 
 
 @dataclass
 class SimulationSolverIterationReport:
-    max_err: float  # maximum error to tolerance in residuals
-    max_res_name: str  # name of residual with maximum error
-    relax_factor: float  # applied relaxation factor
-    min_alpha_name: str  # name of most step-constraining bound variable
-    duration: float  # accumulative seconds past during solving process
+    """This data class object is provided for each iteration during a
+    :class:`SimulationSolver` run.
+    """
+    max_err: float
+    r"""For each :class:`~simu.core.model.residual.Residual`, the quotient of
+    residual value :math:`r_i` and tolerance :math:`t_i` is calculated.
+    ``max_err`` is the maximum absolute value of these quotients:
+    
+    .. math:: \mathrm{MET} = \max_i \frac{r_i}{t_i}
+    """
+     
+
+    max_res_name: str
+    """The name of the :class:`~simu.core.model.residual.Residual` which causes
+    the value of :attr:`max_err`"""
+
+    relax_factor: float
+    """The applied relaxation factor to stay within the domain of the process
+    model and the thermodynamic models, according to the defined bounds."""
+
+    min_alpha_name: str
+    """The name of the bound that is most limiting and therefore causing the
+    value of :attr:`relax_factor`"""
+
+    duration: float
+    """The accumulative duration of the solving process inclusive the given
+    iteration"""
+
     lmet: float = field(init=False)  # logarithmic max error to tolerance
+    r"""The logarithmic (base 10) value of :attr:`max_err` :math:`r_i / t_i`,
+    practically defined as
+    
+    .. math::
+        
+        \mathrm{LMET} = \log_{10} \left (
+            \max_i \frac{r_i}{t_i} + 10^{-8} \right )
+
+    The offset is introduced to not cause ``NaN`` values for the lucky case in
+    which all residuals are exactly zero. This can however easily happen for
+    linear systems. Otherwise, :math:`\mathrm{LMET} < 1` is already a sufficient
+    condition for convergence.    
+    """
 
     def __post_init__(self):
         self.lmet = log10(self.max_err + 1e-8)
 
 @dataclass
 class SimulationSolverReport:
+    """The data class object returned from a :class:`SimulationSolver` run
+    """
     iterations: Sequence[SimulationSolverIterationReport]
+    """A :class:'SimulationSolverIterationReport` object for each performed
+    iteration"""
+
     final_state: Sequence[float]
+    """The numerical final state of the model.
+    
+    .. important::
+    
+        This state is not suitable for handling initial values in a robust way,
+        as it can be very sensitive to minor model changes that for instance
+        impact the liquid volumes of equations of state.
+        
+        Instead, use :meth:`simu.NumericHandler.export_state`,
+        :meth:`~simu.NumericHandler.import_state` and 
+        :meth:`~simu.NumericHandler.retain_state`.
+    """
+
     result: NestedMap[Quantity]
+    """A nested dictionary of all calculated model properties"""
 
 
-CALL_BACK_TYPE = Callable[
-    [int, SimulationSolverIterationReport, Quantity, QFunction], bool]
+SimulationSolverCallback = Callable[
+    [int,
+     SimulationSolverIterationReport,
+     Sequence[float],
+     Callable[
+         [Sequence[float]],
+         NestedMap[Quantity]]
+     ],
+     bool]
+"""A function (type) to act as a call-back in the :class:`SimulationSolver`
+solving process. The arguments are as follows:
 
+- ``iteration``: The iteration number as integer, incrementing from zero
+- ``report``: The (:class:`SimulationSolverIterationReport`) object
+- ``state``: The internal state of the model at given iteration as a sequence of
+  floats
+- ``prop_func``: A function to calculate all model properties for the given
+  state.
+
+The last argument is provided instead of the property structure itself, as it
+might be expensive to calculate the entire property structure in each iteration.
+This way it can be done on demand.
+
+The callback shall return ``True``, if the solver is to continue, or ``False``
+otherwise. In the latter case, the solver will raise a 
+:class:`~simu.core.utilities.errors.IterativeProcessInterrupted` exception.
+
+Example:
+
+.. code-block::
+   :linenos:
+
+    from pprint import pprint
+    
+    def my_callback(iteration, report, state, prop_func):
+        # This can be a lot to print
+        all_properties = prop_func(state)
+        pprint(all_properties)
+
+"""
 
 class SimulationSolver(Configurable):
     r"""
     The simulation solver assumes both thermodynamic and model parameters to
-    be constant
+    be constant, aiming to find the state variable values such that all
+    residuals evaluate to zero within their tolerance.
     """
     # noinspection PyUnusedLocal
     # Options are parsed via inspection
@@ -95,9 +156,53 @@ class SimulationSolver(Configurable):
                  gamma: float = 0.9,
                  wall: float = 1e-20,
                  output: TextIOBase|None = stdout,
-                 call_back_iter: CALL_BACK_TYPE = None):
-        """
+                 call_back_iter: SimulationSolverCallback = None):
+        r"""On construction, the solver object requires a
+        :class:`~simu.NumericHandler` object. The solver object can then be
+        reused for multiple solver runs, for instance with variable parameter
+        values (sensitivity study).
 
+        :param model: The numeric handler of a model, in most cases obtained by
+          the expression ``NumericHandler(ModelClass.top())``.
+        :param max_iter: The maximum number of iterations (default 30).
+
+          .. note::
+
+            Normally, 30 iterations should be sufficient. In other words, if the
+            model is not converged after 30 iterations, chances are quite low
+            that it still will converge at all. The advice would be to try to
+            improve the starting values and to investigate whether the model is
+            properly posed.
+
+        :param gamma: As described above, :math:`\gamma` (default 0.9) is the
+          fraction of the step-length applied by the solver before hitting the
+          domain boundary. Normally, changing the value is not required.
+          Generally, a lower value makes the model more robust against
+          non-linear domain boundaries (and thus linearisation errors causing
+          the state to exit the domain. A higher value yields slightly faster
+          convergence, if the solution is in comparison with the initial values
+          very close to the domain boundary.
+        :param wall: Either if there is no solution within the domain of the
+          model (for instance: The material balance forces some of the species
+          flows in a stream to be negative), or if the solver for other reasons
+          is forced to try to leave the model domain, the state will move closer
+          and closer to the domain boundary and not revert. At some point,
+          :math:`\gamma` becomes ridiculously small, and we need to give up.
+          This threshold value is defined by ``wall`` (default ``1e-20``).
+        :param output: The io-stream to direct the solver output to (default
+          ``sys.stdout``). If set to ``None``, no output will be printed.
+
+          .. note::
+
+            Instead of printing, one might either analyse the returned
+            :class:`~simu.core.solver.simulation.SimulationSolverReport` project
+            after the run, or utilise the ``call_back_iter`` callback and
+            process the iteration progress from there.
+
+        :param call_back_iter: A callback function (default ``None``),
+          see :data:`~simu.core.solver.simulation.SimulationSolverCallback`,
+          to intercept the solving process. The returned boolean variable
+          determines whether the solver iteration is continued or not.
         """
         super().__init__(exclude=["model"])
         self._model = model
@@ -111,6 +216,11 @@ class SimulationSolver(Configurable):
         self.__model_parameters : NestedMutMap[Quantity] = args
 
     def solve(self) -> SimulationSolverReport:
+        """
+
+
+        :return:
+        """
         start_time = time()
         opt = self.options
         model = self._model
@@ -118,7 +228,7 @@ class SimulationSolver(Configurable):
         bound_names = model.vector_res_names(_BOUND)
         reports = []
 
-        table = Table({
+        table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
             "duration": ("Time", "{:6.1g}"),
@@ -177,7 +287,7 @@ class SimulationSolver(Configurable):
                 )
                 if not cb_result:
                     msg = "Solver iterations interrupted by callback"
-                    raise ValueError(msg)
+                    raise IterativeProcessInterrupted(msg)
             table.row(reports[-1], iteration)
         else:
             msg = f"Model did not converge after {opt["max_iter"]} iterations"
@@ -225,6 +335,7 @@ class SimulationSolver(Configurable):
 
     @property
     def model_parameters(self) -> NestedMutMap[Quantity]:
+        """"""
         return self.__model_parameters
 
     @property

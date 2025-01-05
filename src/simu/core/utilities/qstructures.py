@@ -439,6 +439,7 @@ def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
     representation that is parsable by the :class:`simu.Quantity` constructor.
 
     Example:
+
     >>> from pprint import pprint
     >>> from simu import Quantity
     >>> struct = {'speed': {'car': Quantity(400 / 3, 'kilometer / hour'),
