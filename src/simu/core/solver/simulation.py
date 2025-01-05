@@ -1,5 +1,5 @@
 from symtable import Function
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Any
 from copy import deepcopy
 from dataclasses import dataclass, field
 from time import time
@@ -9,23 +9,21 @@ from io import TextIOBase
 from casadi import MX, jacobian, jtimes, Function
 from numpy import array, argmin, argmax, abs, squeeze, log10
 from scipy.sparse import csc_array
-from pypardiso import spsolve
+
+try:  # use pypardiso if installed
+    from pypardiso import spsolve
+except ImportError:  # use scipy if not
+    from scipy.sparse.linalg import spsolve
 
 from ..model.numeric import NumericHandler
 from ..utilities import Quantity, QFunction
 from ..utilities.output import ProgressTableOutput
 from ..utilities.types import Map, NestedMutMap, NestedMap
 from ..utilities.configurable import Configurable
-from ..utilities.errors import IterativeProcessInterrupted
+from ..utilities.errors import IterativeProcessInterrupted, NonSquareSystem
 
 _VEC, _STATE = NumericHandler.VECTORS, NumericHandler.STATE_VEC
 _RES, _BOUND = NumericHandler.RES_VEC, NumericHandler.BOUND_VEC
-
-# todo:
-#  - move to utilities.table
-#  - can I allow logging to the right logger additionally?
-#    (just give it as a bloody optional argument, you dork!)
-#  - document the whole solver thingy
 
 
 @dataclass
@@ -40,7 +38,6 @@ class SimulationSolverIterationReport:
     
     .. math:: \mathrm{MET} = \max_i \frac{r_i}{t_i}
     """
-     
 
     max_res_name: str
     """The name of the :class:`~simu.core.model.residual.Residual` which causes
@@ -75,6 +72,7 @@ class SimulationSolverIterationReport:
 
     def __post_init__(self):
         self.lmet = log10(self.max_err + 1e-8)
+
 
 @dataclass
 class SimulationSolverReport:
@@ -211,19 +209,38 @@ class SimulationSolver(Configurable):
         args = deepcopy(model.arguments)
         # store size of state
         self.__state_size = args[_VEC][_STATE].magnitude.size()[0]
+        res_size = len(model.vector_res_names(NumericHandler.RES_VEC))
+
+        if self.__state_size != res_size:
+            raise NonSquareSystem(self.__state_size, res_size)
+
         # user shall not think that putting a state here has any effect
         del args[_VEC][_STATE]
         self.__model_parameters : NestedMutMap[Quantity] = args
 
-    def solve(self) -> SimulationSolverReport:
+    def solve(self, **kwargs: Any) -> SimulationSolverReport:
         """
+        This method triggers iterative the solving process. This takes less than
+        0.1 seconds for small models, and increases with model complexity.
+        For large models, the time per iteration is due to the solving of linear
+        systems cubic in system size, though the model structure might render
+        this a conservative estimate.
 
+        With `pypardiso`_ installed, the solving of the linear systems is
+        performed on all available CPU cores.
 
-        :return:
+        For each given keyword argument, the
+        :meth:`~simu.core.utilities.configurable.Configurable.set_option`
+        method is invoked, giving the same effect as if the option was provided
+        with the constructor.
+
+        :return: The report including the iteration sequence
         """
-        start_time = time()
+        for name, value in kwargs.items():
+            self.set_option(name, value)
         opt = self.options
         model = self._model
+        start_time = time()
         residual_names = model.vector_res_names(_RES)
         bound_names = model.vector_res_names(_BOUND)
         reports = []
@@ -335,7 +352,10 @@ class SimulationSolver(Configurable):
 
     @property
     def model_parameters(self) -> NestedMutMap[Quantity]:
-        """"""
+        """A convenience property to access the parameters of the model as a
+        mutable object. The state variables are removed in this instance, as
+        these are rather provided by the solver during the iterative solving
+        process."""
         return self.__model_parameters
 
     @property

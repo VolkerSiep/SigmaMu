@@ -1,5 +1,6 @@
 from numpy import squeeze
 from numpy.testing import assert_allclose
+from pytest import fixture
 
 from simu import NumericHandler, flatten_dictionary
 from simu.core.utilities import assert_reproduction
@@ -54,8 +55,8 @@ def test_residuals():
     assert results[NumericHandler.RESIDUALS]['area'] == "m ** 2"
 
 
-def test_material_collect_states():
-    args, _ = create_material_functions()
+def test_material_collect_states(material_function):
+    args = material_function[0]
     assert args["vectors"][NumericHandler.STATE_VEC] == ""
 
 
@@ -66,13 +67,13 @@ def test_material_collect_multiple_states():
     assert len(state.magnitude.nz) == 6
 
 
-def test_material_collect_props():
-    _, results = create_material_functions()
+def test_material_collect_props(material_function):
+    results = material_function[1]
     assert_reproduction(results["thermo_props"]["local"])
 
 
-def test_material_collect_thermo_param():
-    args, _ = create_material_functions()
+def test_material_collect_thermo_param(material_function):
+    args = material_function[0]
     assert_reproduction(args["thermo_params"]["default"])
 
 
@@ -209,8 +210,8 @@ def test_retain_and_args():
     new_state  = squeeze(numeric.arguments["vectors"]["states"].magnitude)
     assert_allclose(new_state, state)
 
-
-def create_material_functions():
+@fixture(scope="module")
+def material_function():
     """Make a function out of a model defining materials"""
     proxy = MaterialTestModel3.top()
     numeric = NumericHandler(proxy)
