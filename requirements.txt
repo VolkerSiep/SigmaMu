@@ -1,5 +1,5 @@
 casadi~=3.6.7
-numpy~=2.1.2
+numpy~=2.2.1
 Pint~=0.24.3
 pytest~=8.3.4
 PyYAML~=6.0.2
