@@ -1,5 +1,5 @@
 """This module handles functionality concerning model hierarchy."""
-from typing import TYPE_CHECKING, Type, Any, NewType
+from typing import TYPE_CHECKING, Type, Any
 from collections.abc import Mapping, Iterator
 
 from ..utilities.types import Map, MutMap
@@ -7,12 +7,11 @@ from ..utilities.errors import DataFlowError
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import Model, ModelProxy
-    SubModel = Type[NewType("SubModel", Model)]
 
 
 class HierarchyHandler(Map["ModelProxy"]):
-    """This class, being instantiated as the :attr:`Model.hierarchy` attribute,
-    allows to define child models in a hierarchy context."""
+    """This class, being instantiated as the :attr:`simu.Model.hierarchy`
+    attribute, allows to define child models in a hierarchy context."""
 
     def __init__(self, model: "Model"):
         self.model = model
@@ -42,11 +41,11 @@ class HierarchyHandler(Map["ModelProxy"]):
             raise KeyError(f"Child model '{name}' already declared")
         self.__declared[name] = model_cls
 
-    def add(self, name: str, model_cls: "SubModel",
+    def add(self, name: str, model_cls: Type["Model"],
             *args: Any, **kwargs: Any) -> "ModelProxy":
         """Add an instance of the class ``model_cls`` as child to the current
-        (parent) context. A :class:`ModelProxy` object is created, registered,
-        and returned."""
+        (parent) context. A :class:`~simu.core.model.base.ModelProxy` object is
+        created, registered, and returned."""
         if name in self.__children:
             raise KeyError(f"Child model '{name}' already exists")
         if (name in self.__declared and

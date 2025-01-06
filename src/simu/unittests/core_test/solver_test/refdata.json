@@ -4,5 +4,10 @@
     "source/T",
     "source/n/Methane",
     "source/p"
-  ]
+  ],
+  "simulation_solver_test.py::test_model_parameters": {
+    "T": "25 \u00b0C",
+    "V": "10 m ** 3 / h",
+    "p": "1 bar"
+  }
 }

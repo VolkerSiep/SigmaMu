@@ -9,8 +9,8 @@ from simu import __version__ as _release
 sys.path.insert(0, abspath('.'))
 
 # -- Project information -----------------------------------------------------
-project = 'SiMu'
-copyright = '2021-2024, Volker Siepmann'
+project = 'SigmaMu'
+copyright = '2021-2025, Volker Siepmann'
 author = 'Volker Siepmann'
 release = _release
 
@@ -30,15 +30,31 @@ extensions = [
     'sphinx_copybutton',
     'sphinxcontrib.bibtex',
     'sphinx.ext.doctest',
-    'custom_directives'
+    'custom_directives',
+    'sphinx.ext.intersphinx',
+    # 'sphinx_autodoc_typehints'
 ]
 
-# nitpicky = True  # to check that all internal references work
+nitpicky = True  # to check that all internal references work
+
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}
+
+nitpick_ignore = [
+    ("py:class", "simu.core.utilities.types.__V"),
+    ("py:data", "simu.core.utilities.structures._V"),
+    ("py:data", "simu.core.utilities.qstructures._V"),
+    ("py:class", "casadi.SX"),
+    ("py:class", "casadi.casadi.SX"),  # no clue why it tries to find this!?
+]
+
 
 # autoclass_content = 'both'
 autodoc_member_order = 'bysource'
+autodoc_class_signature = 'separated'
 autodoc_typehints = 'signature'
-# autodoc_imported_members = True
 
 # copy-button config
 copybutton_prompt_text = r'>>> |\.\.\. '
@@ -70,7 +86,7 @@ html_theme = 'nature'
 # 'pyramid' (headings not standing out),
 # 'classic' (a bit boring)
 
-# manual configuration of side-bars to have the global toc folded and not
+# manual configuration of sidebars to have the global toc folded and not
 # messed up with all autodoc entries
 html_sidebars = {
     '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],

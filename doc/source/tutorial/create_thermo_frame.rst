@@ -53,14 +53,14 @@ Surprise! We are back at the ideal gas law from above. This is simply because we
 
 How to do this in SiMu?
 -----------------------
-As indicated above, thermodynamic models can easily be chunked into contributions, and these contributions are often additive, in this case exclusively. All above introduced contributions are already defined in ``SiMu``. They take care of defining the required parameters and adding the contributions up in order to form a state function like the Gibbs free energy. As a first step, we do some necessary imports for this session and create a :class:`simu.ThermoFactory` object, register the Gibbs state and all thermodynamic model contributions that are available:
+As indicated above, thermodynamic models can easily be chunked into contributions, and these contributions are often additive, in this case exclusively. All above introduced contributions are already defined in ``SigmaMu``. They take care of defining the required parameters and adding the contributions up in order to form a state function like the Gibbs free energy. As a first step, we do some necessary imports for this session and create a :class:`simu.ThermoFactory` object, register the Gibbs state and all thermodynamic model contributions that are available:
 
 .. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
    :lines: 1-9
 
-Note that generic entities are imported directly from the ``simu`` root module, while specific implementations, such as thermodynamic contributions are provided by the ``simu.app`` module.
+Note that generic entities are imported directly from the ``SigmaMu`` root module, while specific implementations, such as thermodynamic contributions are provided by the ``simu.app`` module.
 
 Next, a :class:`simu.ThermoFrame` can be constructed, stacking the contributions as discussed in the previous section, based on a Gibbs thermodynamic state, that is using the state function :math:`G(T, p, n)`:
 
@@ -133,11 +133,11 @@ Getting back to the parameter structure, let us fill in some values and convert 
 
 Here, we use the function :func:`simu.parse_quantities_in_struct` to convert the dictionary values into quantities.
 
-We can call the model at this point, just be aware of an important design feature in ``SiMu``:
+We can call the model at this point, just be aware of an important design feature in ``SigmaMu``:
 
 .. important::
 
-    Thermodynamic states (for instance :math:`(T, p, \vec n)` or :math:`(T, V, \vec n)` are considered as plain arrays of their values in SI units. As an example, ``[373.15, 1e5, 1.0]`` represents a thermodynamic state for our model, describing a system of 1 mol methane at 1 bar pressure and 100 |degC|. This is because ``SiMu`` uses thermodynamic states as independent variables during numerical solving. Only the thermodynamic models themselves are to interpret the array elements.
+    Thermodynamic states (for instance :math:`(T, p, \vec n)` or :math:`(T, V, \vec n)` are considered as plain arrays of their values in SI units. As an example, ``[373.15, 1e5, 1.0]`` represents a thermodynamic state for our model, describing a system of 1 mol methane at 1 bar pressure and 100 |degC|. This is because ``SigmaMu`` uses thermodynamic states as independent variables during numerical solving. Only the thermodynamic models themselves are to interpret the array elements.
 
 We show in a moment how to create such states from physical quantities, but for now, the following code computes our ideal gas model:
 
@@ -173,7 +173,7 @@ Summary / Outlook
 
 Parts of the above might seem cumbersome for this *application*, but we are off for bigger things than calculating single species ideal gas properties. Later, we will among other things do the following:
 
-- Collect thermodynamic parameters in :class:`simu.ThermoStore` objects that can be shared among multiple models of different types.
+- Collect thermodynamic parameters in :class:`simu.ThermoParameterStore` objects that can be shared among multiple models of different types.
 - Add the calculation of more (derived) physical properties in the thermodynamic models.
 - Create :class:`simu.MaterialDefinition` class objects as a glue towards the actual purpose: process modelling -- finally.
 

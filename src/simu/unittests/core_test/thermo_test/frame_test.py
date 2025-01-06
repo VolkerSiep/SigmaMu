@@ -80,14 +80,6 @@ def test_call_frame_state():
     assert_reproduction(result)
 
 
-def test_relax_old():
-    """Simple test of relaxation method"""
-    frame, state, result = call_frame()
-    delta_state = [-500, 10, -0.5, 1]
-    beta = frame.relax(result, delta_state)
-    assert beta == state[0] / 500
-
-
 def test_initial_state():
     """Test whether initialisation of a Helmholtz ideal gas contribution
     gives the correct volume"""

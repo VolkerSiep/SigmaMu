@@ -11,7 +11,7 @@ This section describes the classes required to generate :class:`Material` object
 
 Once the :class:`MaterialDefinition` object is created, it can fabricate :class:`Material` objects according to its definition.
 
-A :class:`ThermoParameterStore` instance administers any number of :class:`AbstractThermoSource` implementations, the actual sources of data that can be represented by parsed data files or adapters to databases. We provide some basic implementations by :class:`NestedDictThermoSource` and :class:`StringThermoSource`.
+A :class:`ThermoParameterStore` instance administers any number of :class:`AbstractThermoSource` implementations, the actual sources of data that can be represented by parsed data files or adapters to databases. We provide some basic implementations by :class:`NestedDictThermoSource` and :class:`StringDictThermoSource`.
 
 ThermoParameterStore
 --------------------

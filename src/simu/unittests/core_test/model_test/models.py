@@ -186,7 +186,7 @@ class MaterialParentTestModel(Model):
             self.materials.define_port("port")
 
         def define(self):
-            flow = self.materials.create_flow("m_child", self.mat_def)
+            self.materials.create_flow("m_child", self.mat_def)
 
     def define(self):
         mat_def = define_a_material(["H2O", "NO2"])

@@ -13,6 +13,14 @@ div.body {
     border-radius: 5px;
 }
 
+/* make the copy buttons a bit transparent */
 button.copybtn {
    opacity: 0.2;
+}
+
+/* Highlight all autodoc references */
+.xref {
+    color: #0000C0; /* Change the color */
+   /* font-style: italic; /* Apply italic formatting */
+    text-decoration: underline; /* Add underline */
 }

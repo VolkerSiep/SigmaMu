@@ -11,6 +11,7 @@ from ..utilities import (
     flatten_dictionary, quantity_dict_to_strings, parse_quantities_in_struct)
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction, jacobian
+from ..utilities.structures import FLATTEN_SEPARATOR
 from ..utilities.errors import DataFlowError
 
 from .base import ModelProxy
@@ -36,7 +37,7 @@ class NumericHandler:
     VECTORS: str = "vectors"
     JACOBIANS: str = "jacobians"
 
-    def __init__(self, model: ModelProxy, port_properties=True):
+    def __init__(self, model: ModelProxy, port_properties: bool = True):
         """The option ``port_properties`` determines whether the properties
         of connected materials are also reported from a child model's
         perspective by the name of their ports."""
@@ -90,8 +91,8 @@ class NumericHandler:
 
         The returned structure is meant to be easy to store for instance in
         yaml or json format, and easy to edit. One can use
-        :func:`simu.parse_quantities_in_struct` to convert the values of the
-        data structure into :class:`simu.Quantity` objects for programmatic
+        :func:`~simu.parse_quantities_in_struct` to convert the values of the
+        data structure into :class:`~simu.Quantity` objects for programmatic
         processing.
 
         """
@@ -113,7 +114,7 @@ class NumericHandler:
     def import_state(self, state: NestedMap[str],
                      allow_missing: bool=False, allow_extra: bool = False)\
             -> NestedMap[str]:
-        """Imports the state data in terms of ":math:`T, p, n` as exported by
+        """Imports the state data in terms of :math:`T, p, n` as exported by
         :meth:`export_state`.
 
         :param state: A nested mapping as returned by :meth:`export_state`,
@@ -129,8 +130,8 @@ class NumericHandler:
           states that were not given as part of ``state`` (value = ``missing``)
         """
         def mk_new_path(path: str, name: str) -> str:
-            name = name.replace("/", r"\/")
-            return name if not path else f"{path}/{name}"
+            name = name.replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")
+            return name if not path else f"{path}{FLATTEN_SEPARATOR}{name}"
 
         def traverse(model: ModelProxy, state_part: NestedMap[Quantity],
                      path: str):
@@ -167,7 +168,8 @@ class NumericHandler:
                 new_path = mk_new_path(path, name)
                 if not name in all_names:
                     if not allow_extra:
-                        raise KeyError(f"{new_path} not found in model structure")
+                        msg = f"{new_path} not found in model structure"
+                        raise KeyError(msg)
                     result[new_path] = "extra"
 
         self.__arguments = {}  # force reread
@@ -176,8 +178,8 @@ class NumericHandler:
         return unflatten_dictionary(result)
 
 
-    def retain_initial_values(self, state: Sequence[float],
-                              parameters: NestedMap[Quantity]):
+    def retain_state(self, state: Sequence[float],
+                     parameters: NestedMap[Quantity]):
         """Given a numeric ``state`` vector and the current set of
         ``parameters`` as a nested mapping of quantities, store the values for
         temperature, pressure and molar quantities back into the internal

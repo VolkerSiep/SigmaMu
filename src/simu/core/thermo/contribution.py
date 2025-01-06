@@ -72,20 +72,6 @@ class ThermoContribution(ABC):
 
         """
 
-    def relax(self, current_result: Map[Quantity],
-              delta_state: Sequence[float]) -> float:
-        """Virtual function to report the maximal allowable step size in
-        the state variables.
-
-        :param current_result: The numeric results based on the current state
-        :param delta_state: The given direction
-
-        :seealso: :meth:`ThermoFrame.relax`
-        """
-        # default implementation
-        del current_result, delta_state  # unused
-        return 999  # a number greater than 1 / gamma for practical gamma
-
     def initial_state(self, state: InitialState, properties: Map[Quantity]) \
             -> MutableSequence[float] | None:
         """When the :class:`ThermoFrame` object is queried for an initial state
@@ -111,7 +97,7 @@ class ThermoContribution(ABC):
             self, species: Map[SpeciesDefinition]) -> Map[Sequence[str]]:
         """Declare the keys of newly introduced vectorial properties. In most
         cases, this will be the species names for the mole vector, and the
-        implementation will look as folllows::
+        implementation will look as follows::
 
             def declare_vector_keys(self, species):
                 return {"my_vector_prop": list(species.keys())}

@@ -14,13 +14,11 @@ Liquid root
 ...........
 .. autoclass:: simu.app.thermo.contributions.cubic.RedlichKwongEOSLiquid
   :show-inheritance:
-  :members: relax
 
 Gas root
 ........
 .. autoclass:: simu.app.thermo.contributions.cubic.RedlichKwongEOSGas
   :show-inheritance:
-  :members: relax
 
 Critical parameters
 -------------------

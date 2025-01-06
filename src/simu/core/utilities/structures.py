@@ -4,14 +4,13 @@ levels, while relying to maximal degree on standard python structures.
 """
 from re import escape, split
 from typing import TypeVar
-# stdlib modules
 from collections import Counter
 
 # internal modules
 from .types import NestedMap, MutMap, Map, NestedMutMap
 
 _V = TypeVar("_V")
-_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
+FLATTEN_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 
 class MCounter(Counter):
@@ -58,8 +57,8 @@ def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:
     # must sort to create the same sequence every time
     # (dictionary might have content permuted)
     for key, value in sorted(items):
-        key = str(key).replace(_SEPARATOR, rf"\{_SEPARATOR}")  # esc. separator
-        key = f"{prefix}{_SEPARATOR}{key}" if prefix else key
+        key = str(key).replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")  # esc. separator
+        key = f"{prefix}{FLATTEN_SEPARATOR}{key}" if prefix else key
         result.update(flatten_dictionary(value, key))
     return result
 
@@ -85,10 +84,10 @@ def unflatten_dictionary(flat_structure: Map[_V]) -> NestedMap[_V]:
             struct[first] = sub_value
 
     # split by non-escaped separators and unescape escaped separators
-    regex = rf'(?<!\\){escape(_SEPARATOR)}'
+    regex = rf'(?<!\\){escape(FLATTEN_SEPARATOR)}'
     for key, value in flat_structure.items():
         keys = [
-            k.replace(rf"\{_SEPARATOR}", _SEPARATOR)
+            k.replace(rf"\{FLATTEN_SEPARATOR}", FLATTEN_SEPARATOR)
             for k in split(regex, key)
         ]
         insert(result, keys, value)

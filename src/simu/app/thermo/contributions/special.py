@@ -17,11 +17,11 @@ class Derivative(ThermoContribution):
         - ``x``: The name of the independent property :math:`x`
         - ``y``: The name of the dependent property :math:`y`
 
-    The derivative :math:`\partial y/\partial x` will be provied as
+    The derivative :math:`\partial y/\partial x` will be provided as
     ``f"d{options['y']}_d{options['x']}"``.
     """
 
-    def define(self, res, par):
+    def define(self, res, bound, par):
         independent = self.options["x"]
         dependent = self.options["y"]
         name = f"d{dependent}_d{independent}"
