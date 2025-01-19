@@ -4,7 +4,7 @@
 # external modules
 from numpy import linspace
 from pytest import mark, raises
-import pylab
+from matplotlib import pyplot
 
 # internal modules
 from simu.core.utilities import (
@@ -15,8 +15,7 @@ from simu.core.thermo import InitialState
 from simu.app.thermo.contributions import (
     CriticalParameters, LinearMixingRule, RedlichKwongEOSLiquid,
     RedlichKwongEOSGas, NonSymmetricMixingRule, RedlichKwongAFunction,
-    RedlichKwongBFunction, RedlichKwongMFactor, BostonMathiasAlphaFunction,
-    VolumeShift)
+    RedlichKwongBFunction, RedlichKwongMFactor, VolumeShift)
 from simu.app.thermo.contributions.cubic.rk import RedlichKwongEOS
 
 
@@ -31,36 +30,36 @@ def vec(name: str, size: int, units: str) -> SymbolQuantity:
     return SymbolQuantity(name, base_unit(units), size)
 
 
-def test_critical_parameters():
+def test_critical_parameters(species_definitions_ab):
     """Test definition of CriticalParameters contribution"""
     res = {}
     par = ParameterDictionary()
-    cont = CriticalParameters(["A", "B"], {})
+    cont = CriticalParameters(species_definitions_ab, {})
     cont.define(res, {}, par)
     assert_reproduction(res)
 
 
-def test_volume_shift():
+def test_volume_shift(species_definitions_ab):
     """Test definition of VolumeShift contribution"""
     res = {}
     par = ParameterDictionary()
-    cont = VolumeShift(["A", "B"], {})
+    cont = VolumeShift(species_definitions_ab, {})
     cont.define(res, {}, par)
     assert_reproduction([res, par])
 
 
-def test_linear_mixing_rule():
+def test_linear_mixing_rule(species_definitions_ab):
     """Test definition of LinearMixingRule contribution"""
     res = {"T": sym("T", "K"), "n": vec("n", 2, "mol"),
            "c_i": vec("c_i", 2, "m**3/mol")}
     par = ParameterDictionary()
     opt = {"target": "c"}
-    cont = LinearMixingRule(["A", "B"], opt)
+    cont = LinearMixingRule(species_definitions_ab, opt)
     cont.define(res, {}, par)
     assert_reproduction(res["c"])
 
 
-def test_redlich_kwong_eos():
+def test_redlich_kwong_eos(species_definitions_ab):
     """Test definition of RedlichKwongEOS contribution"""
     res = {
         "T": sym("T", "K"),
@@ -80,22 +79,22 @@ def test_redlich_kwong_eos():
         "_state":
         vec("x", 4, "dimless")
     })
-    cont = RedlichKwongEOSLiquid(["A", "B"], {})
+    cont = RedlichKwongEOSLiquid(species_definitions_ab, {})
     cont.define(res, {}, {})
     keys = "S p mu _ceos_a_T _ceos_b_T".split()
     result = {k: res[k] for k in keys}
     assert_reproduction(result)
 
 
-def test_abstract_class_init():
+def test_abstract_class_init(species_definitions_ab):
     """Check that abstract RedlichKwongEOS class cannot be instantiated"""
     with raises(TypeError) as excinfo:
         # pylint: disable=abstract-class-instantiated
-        RedlichKwongEOS(["A", "B"], {})
+        RedlichKwongEOS(species_definitions_ab, {})
     assert "abstract" in str(excinfo.value)
 
 
-def test_non_symmetric_mixing_rule():
+def test_non_symmetric_mixing_rule(species_definitions_abc):
     """Test definition of NonSymmetricMixingRule contribution"""
     res = {
         "T": sym("T", "K"),
@@ -108,13 +107,13 @@ def test_non_symmetric_mixing_rule():
         "l_1": [["B", "A"], ["C", "B"]],
         "target": "a"
     }
-    cont = NonSymmetricMixingRule(["A", "B", "C"], options)
+    cont = NonSymmetricMixingRule(species_definitions_abc, options)
     par = ParameterDictionary()
     cont.define(res, {}, par)
     assert_reproduction(res["a"])
 
 
-def test_non_symmmetric_mixing_rule_no_interaction():
+def test_non_symmetric_mixing_rule_no_interaction(species_definitions_abc):
     """Test definition of NonSymmetricMixingRule contribution"""
     res = {
         "T": sym("T", "K"),
@@ -127,49 +126,49 @@ def test_non_symmmetric_mixing_rule_no_interaction():
         "l_1": [],
         "target": "a"
     }
-    cont = NonSymmetricMixingRule(["A", "B", "C"], options)
+    cont = NonSymmetricMixingRule(species_definitions_abc, options)
     par = ParameterDictionary()
     cont.define(res, {}, par)
 
 
-def test_redlich_kwong_a_function():
+def test_redlich_kwong_a_function(species_definitions_ab):
     """Test definition of RedlichKwongAFunction contribution"""
     res = {
         "_alpha": vec('alpha', 2, "dimless"),
         "_T_c": vec('T_c', 2, "K"),
         "_p_c": vec('p_c', 2, "bar")
     }
-    cont = RedlichKwongAFunction(["A", "B"], {})
+    cont = RedlichKwongAFunction(species_definitions_ab, {})
     cont.define(res, {}, {})
     assert_reproduction(res["_ceos_a_i"])
 
 
-def test_redlich_kwong_b_function():
+def test_redlich_kwong_b_function(species_definitions_ab):
     """Test definition of RedlichKwongBFunction contribution"""
     res = {"_T_c": vec('T_c', 2, "K"), "_p_c": vec('p_c', 2, "bar")}
-    cont = RedlichKwongBFunction(["A", "B"], {})
+    cont = RedlichKwongBFunction(species_definitions_ab, {})
     cont.define(res, {}, {})
     assert_reproduction(res["_ceos_b_i"])
 
 
-def test_rk_m_factor():
+def test_rk_m_factor(species_definitions_ab):
     """Test definition of RedlichKwongMFactor contribution"""
     res = {"_omega": vec('w', 2, "dimless")}
-    cont = RedlichKwongMFactor(["A", "B"], {})
+    cont = RedlichKwongMFactor(species_definitions_ab, {})
     cont.define(res, {}, {})
     assert_reproduction(res["_m_factor"])
 
 
-def test_boston_mathias_alpha_function():
+def test_boston_mathias_alpha_function(boston_mathias_alpha_function):
     """Test definition of BostonMathiasAlphaFunction contribution"""
-    res, par = create_boston_mathias_alpha_function()
+    res, par = boston_mathias_alpha_function
     assert_reproduction(res["_alpha"][0])
 
 
-def test_boston_mathias_alpha_function_smoothness():
+def test_boston_mathias_alpha_function_smoothness(boston_mathias_alpha_function):
     """Check smoothness of alpha function at critical temperature, where
     the expression switches to the super-critical extrapolation"""
-    res, par = create_boston_mathias_alpha_function()
+    res, par = boston_mathias_alpha_function
 
     args = {k: res[k] for k in ["T", "_T_c", "_m_factor"]}
     args["_eta"] = par.get_vector_quantity("eta")
@@ -204,7 +203,7 @@ def test_boston_mathias_alpha_function_smoothness():
     assert res < 1e-7, "second derivative not smooth"
 
 
-def test_initialise_rk():
+def test_initialise_rk(species_definitions_ab):
     """Test volume initialisation of RK-model"""
     T, p = Q("100 degC"), Q("1 bar")
     n = Q([0.5, 0.5], "mol")
@@ -214,8 +213,8 @@ def test_initialise_rk():
         "_ceos_b": Q("25 ml"),
         "_ceos_c": Q("10 ml")
     }
-    liq = RedlichKwongEOSLiquid(["A", "B"], {})
-    gas = RedlichKwongEOSGas(["A", "B"], {})
+    liq = RedlichKwongEOSLiquid(species_definitions_ab, {})
+    gas = RedlichKwongEOSGas(species_definitions_ab, {})
     ini_state = InitialState(temperature=T, pressure=p, mol_vector=n)
     v_liq = liq.initial_state(ini_state, res)[1]
     v_gas = gas.initial_state(ini_state, res)[1]
@@ -224,7 +223,7 @@ def test_initialise_rk():
 
 
 @mark.parametrize("cls", [RedlichKwongEOSGas, RedlichKwongEOSLiquid])
-def test_initialise_rk2(cls):
+def test_initialise_rk2(cls, species_definitions_ab):
     """test initialisation of rk gas and liquid"""
 
     # define upstream expected results
@@ -244,7 +243,7 @@ def test_initialise_rk2(cls):
     }
 
     res.update(ideal)
-    cont = cls(["A", "B"], {})
+    cont = cls(species_definitions_ab, {})
     cont.define(res, {}, {})  # now the ideal part in res is overwritten
 
     # now with number quantities
@@ -276,19 +275,7 @@ def test_initialise_rk2(cls):
     assert abs(p2 - p) < Q("1 Pa")
 
 
-# *** auxiliary routines
-
-def create_boston_mathias_alpha_function():
-    res = {
-        "_m_factor": vec("m", 2, "dimless"),
-        "_T_c": vec("T_c", 2, "K"),
-        "T": sym("T", "K")
-    }
-    par = ParameterDictionary()
-    cont = BostonMathiasAlphaFunction(["A", "B"], {})
-    cont.define(res, {},  par)
-    return res, par
-
+# *** auxiliary routines (TODO: plot should be an example instead!)
 
 def plot_pv(res):
     """auxiliary method to plot pv-graph and linear/quadratic approximation"""
@@ -308,15 +295,15 @@ def plot_pv(res):
     quad_p = lin_p + (volumes - V)**2 * ddp_dv2 / 2
 
     unit_registry.setup_matplotlib(True)  # allow plotting with units
-    pylab.plot(volumes, pressures.to("bar"), 1)
-    pylab.plot(volumes, lin_p.to("bar"), ":")
-    pylab.plot(volumes, quad_p.to("bar"), "--")
-    pylab.xlim([volumes[0], volumes[-1]])
-    # pylab.ylim(Q([0, 15], "bar"))
-    pylab.xlabel("V [m3]")
-    pylab.ylabel("p [bar]")
-    pylab.grid()
-    pylab.show()
+    pyplot.plot(volumes, pressures.to("bar"), 1)
+    pyplot.plot(volumes, lin_p.to("bar"), ":")
+    pyplot.plot(volumes, quad_p.to("bar"), "--")
+    pyplot.xlim([volumes[0], volumes[-1]])
+    # pyplot.ylim(Q([0, 15], "bar"))
+    pyplot.xlabel("V [m3]")
+    pyplot.ylabel("p [bar]")
+    pyplot.grid()
+    pyplot.show()
 
 
 if __name__ == "__main__":

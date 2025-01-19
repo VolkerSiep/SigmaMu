@@ -1,38 +1,10 @@
 from numpy import squeeze
 from numpy.testing import assert_allclose
-from pytest import fixture
 
-from simu import NumericHandler, flatten_dictionary
+from simu import NumericHandler, flatten_dictionary, Quantity
 from simu.core.utilities import assert_reproduction
 
 from .models import *
-
-
-DATA = {
-    'H0S0ReferenceState': {
-        's_0': {'CH3-(CH2)2-CH3': '0 J/(mol*K)',
-                'CH3-CH2-CH3': '0 J/(mol*K)'},
-        'dh_form': {'CH3-(CH2)2-CH3': '0 kJ/mol',
-                    'CH3-CH2-CH3': '0 kJ/mol'},
-        'T_ref': '25 degC',
-        'p_ref': '1 atm'},
-    'LinearHeatCapacity': {
-        'cp_a': {'CH3-(CH2)2-CH3': '98 J/(mol*K)',
-                 'CH3-CH2-CH3': '75 J/(mol*K)'},
-        'cp_b': {'CH3-(CH2)2-CH3': '0 J/(mol*K*K)',
-                 'CH3-CH2-CH3': '0 J/(mol*K*K)'}},
-    'CriticalParameters': {
-        'T_c': {'CH3-(CH2)2-CH3': '425 K', 'CH3-CH2-CH3': '370 K'},
-        'p_c': {'CH3-(CH2)2-CH3': '38 bar', 'CH3-CH2-CH3': '42.5 bar'},
-        'omega': {'CH3-CH2-CH3': 0.199, 'CH3-(CH2)2-CH3': 0.153}},
-    'MixingRule_A': {'T_ref': '25 degC'},
-    'VolumeShift': {
-        'c_i': {'CH3-(CH2)2-CH3': '0 m ** 3 / mol',
-                'CH3-CH2-CH3': '0 m ** 3 / mol'}},
-    'BostonMathiasAlphaFunction': {
-        'eta': {'CH3-CH2-CH3': 0, 'CH3-(CH2)2-CH3': 0}}
-}
-
 
 def test_parameters():
     proxy = SimpleParameterTestModel.top()
@@ -55,25 +27,25 @@ def test_residuals():
     assert results[NumericHandler.RESIDUALS]['area'] == "m ** 2"
 
 
-def test_material_collect_states(material_function):
-    args = material_function[0]
+def test_material_collect_states(material_model_function):
+    args = material_model_function[0]
     assert args["vectors"][NumericHandler.STATE_VEC] == ""
 
 
-def test_material_collect_multiple_states():
-    proxy = MaterialTestModel4.top()
+def test_material_collect_multiple_states(material_test_model_4):
+    proxy = material_test_model_4.top()
     numeric = NumericHandler(proxy)
     state = numeric.arguments["vectors"][NumericHandler.STATE_VEC]
     assert len(state.magnitude.nz) == 6
 
 
-def test_material_collect_props(material_function):
-    results = material_function[1]
+def test_material_collect_props(material_model_function):
+    results = material_model_function[1]
     assert_reproduction(results["thermo_props"]["local"])
 
 
-def test_material_collect_thermo_param(material_function):
-    args = material_function[0]
+def test_material_collect_thermo_param(material_model_function):
+    args = material_model_function[0]
     assert_reproduction(args["thermo_params"]["default"])
 
 
@@ -83,39 +55,39 @@ def test_hierarchy_collect_numerics():
     assert "area" in results["model_props"]["square"]
 
 
-def test_square_model():
-    numeric = NumericHandler(SquareTestModel.top())
+def test_square_model(square_test_model):
+    numeric = NumericHandler(square_test_model.top())
     ref = {"args": numeric.function.arg_structure,
            "res": numeric.function.result_structure}
     assert_reproduction(ref)
 
 
-def test_square_model_args():
-    model = SquareTestModel()
+def test_square_model_args(thermo_param, square_test_model):
+    model = square_test_model()
     material = model.no2sol
     numeric = NumericHandler(model.create_proxy().finalise())
-    material.store.add_source("default", StringDictThermoSource(DATA))
+    material.store.add_source("default", thermo_param)
     struct = numeric.function.arg_structure
     args = numeric.arguments
     check_same_keys(struct, args)
 
 
-def test_square_model_call():
-    model = SquareTestModel()
+def test_square_model_call(thermo_param, square_test_model):
+    model = square_test_model()
     material = model.no2sol
     numeric = NumericHandler(model.create_proxy().finalise())
-    material.store.add_source("default", StringDictThermoSource(DATA))
+    material.store.add_source("default", thermo_param)
     args = numeric.arguments
     res = flatten_dictionary(numeric.function(args))
     res = {k: f"{v:.6f~}" for k, v in res.items()}
     assert_reproduction(res)
 
 
-def test_jacobian():
-    model = SquareTestModel()
+def test_jacobian(thermo_param, square_test_model):
+    model = square_test_model()
     material = model.no2sol
     numeric = NumericHandler(model.create_proxy().finalise())
-    material.store.add_source("default", StringDictThermoSource(DATA))
+    material.store.add_source("default", thermo_param)
     jac_id = numeric.register_jacobian(NumericHandler.RES_VEC,
                                        NumericHandler.STATE_VEC)
     args = numeric.arguments
@@ -124,8 +96,8 @@ def test_jacobian():
     assert_reproduction(dr_dx.tolist())
 
 
-def test_collect_hierarchy_material():
-    proxy = MaterialParentTestModel.top()
+def test_collect_hierarchy_material(material_parent_test_model):
+    proxy = material_parent_test_model.top()
     for port_props in (True, False):
         numeric = NumericHandler(proxy, port_properties=port_props)
         ref = {"args": numeric.function.arg_structure,
@@ -133,11 +105,11 @@ def test_collect_hierarchy_material():
         assert_reproduction(ref, suffix=f"{port_props}".lower())
 
 
-def test_extract_parameters():
-    model = SquareTestModel()
+def test_extract_parameters(thermo_param, square_test_model):
+    model = square_test_model()
     store = model.no2sol.store
     numeric = NumericHandler(model.create_proxy().finalise())
-    store.add_source("default", StringDictThermoSource(DATA))
+    store.add_source("default", thermo_param)
     params = {'model_params': {'N': 'mol / s', 'T': '°C',
                                'p': 'bar', 'x_c3': '%'}}
     numeric.extract_parameters("param", params)
@@ -150,11 +122,11 @@ def test_extract_parameters():
     assert_reproduction(ref)
 
 
-def test_collect_properties():
-    model = SquareTestModel()
+def test_collect_properties(thermo_param, square_test_model):
+    model = square_test_model()
     store = model.no2sol.store
     numeric = NumericHandler(model.create_proxy().finalise())
-    store.add_source("default", StringDictThermoSource(DATA))
+    store.add_source("default", thermo_param)
     props = {'thermo_props': {'local': {'mu': {
         'CH3-(CH2)2-CH3': 'kJ/mol', 'CH3-CH2-CH3': 'kJ/mol'}}}}
     numeric.collect_properties("mu", props)
@@ -167,14 +139,14 @@ def test_collect_properties():
     assert_reproduction(ref)
 
 
-def test_export_state():
-    numeric = NumericHandler(SquareTestModel.top())
+def test_export_state(square_test_model):
+    numeric = NumericHandler(square_test_model.top())
     state = numeric.export_state()
     assert_reproduction(state)
 
 
-def test_import_state():
-    model = SquareTestModel()
+def test_import_state(square_test_model):
+    model = square_test_model()
     numeric = NumericHandler(model.create_proxy().finalise())
     state = {
         'thermo': {'local': {
@@ -187,11 +159,11 @@ def test_import_state():
     assert_reproduction(state)
 
 
-def test_retain_initial_values():
-    model = SquareTestModel()
+def test_retain_initial_values(thermo_param, square_test_model):
+    model = square_test_model()
     numeric = NumericHandler(model.create_proxy().finalise())
     material = model.materials["local"]
-    material.definition.store.add_source("default", StringDictThermoSource(DATA))
+    material.definition.store.add_source("default", thermo_param)
     params = numeric.arguments["thermo_params"]["default"]
     state = [283.15, 2 * 0.000196732, 2, 2]
     numeric.retain_state(state, params)
@@ -199,25 +171,16 @@ def test_retain_initial_values():
     assert Quantity(0.999, "MPa") < pressure < Quantity(1.001, "MPa")
 
 
-def test_retain_and_args():
-    model = SquareTestModel()
+def test_retain_and_args(thermo_param, square_test_model):
+    model = square_test_model()
     numeric = NumericHandler(model.create_proxy().finalise())
     material = model.materials["local"]
-    material.definition.store.add_source("default", StringDictThermoSource(DATA))
+    material.definition.store.add_source("default", thermo_param)
     params = numeric.arguments["thermo_params"]["default"]
     state = [283.15, 2 * 0.000196732, 2, 2]
     numeric.retain_state(state, params)
     new_state  = squeeze(numeric.arguments["vectors"]["states"].magnitude)
     assert_allclose(new_state, state)
-
-@fixture(scope="module")
-def material_function():
-    """Make a function out of a model defining materials"""
-    proxy = MaterialTestModel3.top()
-    numeric = NumericHandler(proxy)
-    args = numeric.function.arg_structure
-    results = numeric.function.result_structure
-    return args, results
 
 
 def check_same_keys(dic1, dic2):

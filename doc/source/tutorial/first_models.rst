@@ -153,7 +153,6 @@ Further, we can query the result by calling the function with this argument:
                              'T_ref': <Quantity(298.15, 'kelvin')>,
                              'V': <Quantity(0.01662892523630648, 'meter ** 3 / second')>,
                              'mu': {'Methane': <Quantity(-148614.303, 'joule / mole')>},
-                             'mw': {'Methane': <Quantity(0.016042999999999998, 'kilogram / mole')>},
                              'n': {'Methane': <Quantity(1.0, 'mole / second')>},
                              'p': <Quantity(200000.0, 'pascal')>,
                              'p_ref': <Quantity(100000.0, 'pascal')>}},

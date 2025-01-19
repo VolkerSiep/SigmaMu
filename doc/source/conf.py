@@ -24,15 +24,13 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx_licenseinfo',
     'sphinx.ext.todo',
     'sphinx.ext.autosummary',
     'sphinx_copybutton',
     'sphinxcontrib.bibtex',
     'sphinx.ext.doctest',
     'custom_directives',
-    'sphinx.ext.intersphinx',
-    # 'sphinx_autodoc_typehints'
+    'sphinx.ext.intersphinx'
 ]
 
 nitpicky = True  # to check that all internal references work

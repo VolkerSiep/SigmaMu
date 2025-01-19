@@ -12,9 +12,7 @@ On the other hand, more liberal licenses would encourage users to take this code
 GNU Lesser General Public License
 ---------------------------------
 
-``SigmaMu`` is licensed under the :choosealicense:`lgpl-3.0`
+``SigmaMu`` is licensed under the `LGPL-3.0 license <https://choosealicense.com/licenses/lgpl-3.0/>`_.
 
-.. license-info:: LGPL-3.0
-
-.. license::
-    :py: SigmaMu
+.. literalinclude:: ../../LICENSE
+   :language: none

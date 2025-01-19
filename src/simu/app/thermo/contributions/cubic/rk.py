@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # stdlib modules
 from abc import ABC, abstractmethod
 

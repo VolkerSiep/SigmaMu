@@ -11,7 +11,6 @@ pypardiso~=0.4.6
 docutils~=0.17.1
 Sphinx~=5.3.0
 sphinxcontrib-bibtex~=2.6.3
-sphinx-licenseinfo~=0.5.0
 sphinx-copybutton~=0.5.2
 sphinx-autodoc-typehints~=1.23.0
 pytest~=8.3.4

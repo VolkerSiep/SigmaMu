@@ -68,9 +68,9 @@ class ThermoFrame:
         with given species and contributions.
         """
         # need to instantiate the contributions
-        species_list = list(species.keys())
+        # species_list = list(species.keys())
         contribs: Map[ThermoContribution] = {
-            name: cls_(species_list, options)
+            name: cls_(species, options)
             for name, (cls_, options) in contributions.items()
         }
         self.__species: Map[SpeciesDefinition] = species
@@ -82,16 +82,16 @@ class ThermoFrame:
             # define thermodynamic state (th, mc, [ch])
             state = SymbolQuantity("x", "dimless", len(species) + 2)
             # call the contributions; build up result dictionary
-            mw = qvertcat(*[s.molecular_weight for s in species.values()])
-            result = {"_state": state, "mw": mw}
+            # mw = qvertcat(*[s.molecular_weight for s in species.values()])
+            result = {"_state": state}
             bounds = {}
-            self.__vectors.update({"mw": species_list})
+            # self.__vectors.update({"mw": species_list})
             state_definition.prepare(result, flow)
             self.__vectors.update(state_definition.declare_vector_keys(species))
             for name, contribution in contribs.items():
                 new_params = ParameterDictionary()
                 contribution.define(result, bounds, new_params)
-                self.__vectors.update(contribution.declare_vector_keys(species))
+                self.__vectors.update(contribution.declare_vector_keys())
                 logger.debug(f"Defining contribution '{name}'")
                 if new_params:
                     params[name] = new_params
@@ -151,6 +151,11 @@ class ThermoFrame:
     def species(self) -> Sequence[str]:
         """Returns a list of species names"""
         return list(self.__species.keys())
+
+    @property
+    def species_definitions(self) -> Map[SpeciesDefinition]:
+        """Return the map of species definitions"""
+        return self.__species
 
     @property
     def vector_keys(self) -> Map[Sequence[[str]]]:

@@ -1,6 +1,6 @@
-from .ideal import (
+from .basic import (
     H0S0ReferenceState, LinearHeatCapacity, StandardState, IdealMix,
-    GibbsIdealGas, HelmholtzIdealGas, ConstantGibbsVolume)
+    GibbsIdealGas, HelmholtzIdealGas, ConstantGibbsVolume, MolecularWeight)
 from .cubic import (
     NonSymmetricMixingRule, LinearMixingRule, BostonMathiasAlphaFunction,
     CriticalParameters, RedlichKwongEOSLiquid, RedlichKwongEOSGas,
@@ -10,7 +10,7 @@ from .special import Derivative
 
 all_contributions = [H0S0ReferenceState, LinearHeatCapacity, StandardState,
                      IdealMix, GibbsIdealGas, HelmholtzIdealGas,
-                     ConstantGibbsVolume,
+                     ConstantGibbsVolume, MolecularWeight,
                      NonSymmetricMixingRule, LinearMixingRule,
                      BostonMathiasAlphaFunction, CriticalParameters,
                      RedlichKwongEOSLiquid, RedlichKwongEOSGas,

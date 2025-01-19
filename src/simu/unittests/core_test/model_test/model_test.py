@@ -1,6 +1,6 @@
 """Unit tests related to the model class"""
 
-from pytest import raises
+from pytest import raises, mark
 
 from simu.core.utilities.errors import DataFlowError, DimensionalityError
 from .models import *
@@ -80,11 +80,11 @@ def test_parameters_dont_define():
 def test_parameters_define_other():
     model = PropertyTestModel()
 
-    def mydef():
+    def my_def():
         """replace define"""
         model.properties["area"] = model.parameters["length"]
 
-    model.define = mydef
+    model.define = my_def
     with raises(DimensionalityError):
         with model.create_proxy():
             pass
@@ -105,25 +105,27 @@ def test_hierarchy2():
     volume = proxy.properties["volume"]
     assert f"{volume:~}" == "(depth*sq((2*radius))) cm ** 3"
 
+@mark.parametrize("simple_material_definition", [["H2O", "NO2"]], indirect=True)
+def test_material(simple_material_definition, material_test_model):
+    material = simple_material_definition.create_flow()
 
-def test_material():
-    material = define_a_material(["H2O", "NO2"]).create_flow()
-
-    with MaterialTestModel().create_proxy() as model:
+    with material_test_model().create_proxy() as model:
         assert "inlet" in model.materials
         model.materials.connect("inlet", material)
 
 
-def test_wrong_material():
-    material = define_a_material(["KMnO4"]).create_flow()
+@mark.parametrize("simple_material_definition", [["KMnO4"]], indirect=True)
+def test_wrong_material(simple_material_definition, material_test_model):
+    material = simple_material_definition.create_flow()
     with raises(ValueError) as err:
-        with MaterialTestModel().create_proxy() as model:
+        with material_test_model().create_proxy() as model:
             model.materials.connect("inlet", material)
     assert "incompatible" in str(err)
 
 
-def test_material_reuse_def():
-    material = define_a_material(["H2O", "NO2"]).create_flow()
+@mark.parametrize("simple_material_definition", [["H2O", "NO2"]], indirect=True)
+def test_material_reuse_def(simple_material_definition):
+    material = simple_material_definition.create_flow()
 
     with MaterialTestModel2().create_proxy() as model:
         assert "inlet" in model.materials

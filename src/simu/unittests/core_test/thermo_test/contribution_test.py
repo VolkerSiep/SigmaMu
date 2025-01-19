@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Test module for ideal contributions"""
+"""Test module for basic contributions"""
 
 # internal modules
 from simu.core.thermo import InitialState
 from simu.app.thermo.contributions import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
-    LinearHeatCapacity, ConstantGibbsVolume)
+    LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight)
 from simu.core.utilities import (
     ParameterDictionary, Quantity, SymbolQuantity, assert_reproduction,
     base_unit)
@@ -22,13 +22,14 @@ def vec(name, size, units):
     return SymbolQuantity(name, base_unit(units), size)
 
 
-def test_h0s0_reference_state():
+def test_h0s0_reference_state(species_definitions_ab):
     """Test definition of H0S0ReferenceState contribution"""
 
     res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
     bounds = {}
     par = ParameterDictionary()
-    cont = H0S0ReferenceState(["A", "B"], {})
+
+    cont = H0S0ReferenceState(species_definitions_ab, {})
     cont.define(res, bounds, par)
     to_reproduce = {
         "res": {i: str(res[i])
@@ -38,7 +39,7 @@ def test_h0s0_reference_state():
     assert_reproduction(to_reproduce)
 
 
-def test_linear_heat_capacity():
+def test_linear_heat_capacity(species_definitions_ab):
     """Test definition of LinearHeatCapacity contribution"""
     res = {
         "T": sym("T", "K"),
@@ -48,14 +49,14 @@ def test_linear_heat_capacity():
         "mu": vec("mu_ref", 2, "J/mol")
     }
     bounds = {}
-    cont = LinearHeatCapacity(["A", "B"], {})
+    cont = LinearHeatCapacity(species_definitions_ab, {})
     par = ParameterDictionary()
     cont.define(res, bounds, par)
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
 
-def test_ideal_mix():
+def test_ideal_mix(species_definitions_ab):
     """Test definition of IdealMix contribution"""
     res = {
         "T": sym("T", "K"),
@@ -64,13 +65,13 @@ def test_ideal_mix():
         "mu": vec("mu_std", 2, "J/mol")
     }
     bounds = {}
-    cont = IdealMix(["A", "B"], {})
+    cont = IdealMix(species_definitions_ab, {})
     cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
 
-def test_gibbs_ideal_gas():
+def test_gibbs_ideal_gas(species_definitions_ab):
     """Test definition of GibbsIdealGas contribution"""
     res = {
         "T": sym("T", "K"),
@@ -81,7 +82,7 @@ def test_gibbs_ideal_gas():
         "mu": vec("mu_im", 2, "J/mol")
     }
     bounds = {}
-    cont = GibbsIdealGas(["A", "B"], {})
+    cont = GibbsIdealGas(species_definitions_ab, {})
     cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
     assert_reproduction(result)
@@ -92,7 +93,7 @@ def test_gibbs_ideal_gas():
     assert res["mu"].is_compatible_with("J/mol")
 
 
-def test_helmholtz_ideal_gas():
+def test_helmholtz_ideal_gas(species_definitions_ab):
     """Test definition of GibbsIdealGas contribution"""
     res = {
         "T": sym("T", "K"),
@@ -103,15 +104,15 @@ def test_helmholtz_ideal_gas():
         "mu": vec("mu_im", 2, "J/mol")
     }
     bounds = {}
-    cont = HelmholtzIdealGas(["A", "B"], {})
+    cont = HelmholtzIdealGas(species_definitions_ab, {})
     cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "S p mu".split()}
     assert_reproduction(result)
 
 
-def test_helmholtz_ideal_gas_initialise():
+def test_helmholtz_ideal_gas_initialise(species_definitions_ab):
     """Test initialisation via Helmholtz ideal gas contribution"""
-    cont = HelmholtzIdealGas(["A", "B"], {})
+    cont = HelmholtzIdealGas(species_definitions_ab, {})
     # normally, we would need to provide numeric quantities as results,
     #  but these are not used for ideal gas initialisation.
     initial_state = InitialState(temperature=Quantity("25 degC"),
@@ -123,7 +124,7 @@ def test_helmholtz_ideal_gas_initialise():
     assert abs(state[1] / ref_volume - 1) < 1e-7
 
 
-def test_constant_gibbs_volume():
+def test_constant_gibbs_volume(species_definitions_ab):
     """Test definition of constant gibbs volume contribution"""
     res = {
         "p": sym("p", "Pa"),
@@ -132,7 +133,16 @@ def test_constant_gibbs_volume():
         "mu": vec("mu_std", 2, "J/mol")
     }
     bounds = {}
-    cont = ConstantGibbsVolume(["A", "B"], {})
+    cont = ConstantGibbsVolume(species_definitions_ab, {})
     cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "V mu".split()}
     assert_reproduction(result)
+
+
+def test_molecular_weight(species_definitions_ab):
+    """Test definition of molecular weights"""
+    res, bounds = {}, {}
+    cont = MolecularWeight(species_definitions_ab, {})
+    cont.define(res, bounds, ParameterDictionary())
+    mw = res["mw"].to("g/mol").magnitude
+    assert_reproduction(str(mw))

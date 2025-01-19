@@ -2,11 +2,11 @@
 
 # stdlib modules
 from copy import copy
+from typing import Sequence
 
 # internal modules
-from simu import (
-    ThermoContribution, R_GAS, log, qsum, ParameterDictionary, base_magnitude,
-)
+from simu import ThermoContribution, R_GAS, log, qsum, base_magnitude, qvertcat
+from simu.core.utilities.types import Map
 
 
 class H0S0ReferenceState(ThermoContribution):
@@ -54,9 +54,9 @@ class H0S0ReferenceState(ThermoContribution):
         res["T_ref"] = par.register_scalar("T_ref", "K")
         res["p_ref"] = par.register_scalar("p_ref", "Pa")
 
+    def declare_vector_keys(self):
+        return {"mu": self.species}
 
-    def declare_vector_keys(self, species):
-        return {"mu": list(species.keys())}
 
 class LinearHeatCapacity(ThermoContribution):
     r"""This contribution implements a simple heat capacity, being linear
@@ -144,8 +144,8 @@ class StandardState(ThermoContribution):
         res["p_std"] = copy(res["p_ref"])
         res["mu_std"] = copy(res["mu"])
 
-    def declare_vector_keys(self, species):
-        return {"mu_std": list(species.keys())}
+    def declare_vector_keys(self):
+        return {"mu_std": self.species}
 
 
 class IdealMix(ThermoContribution):
@@ -313,3 +313,15 @@ class ConstantGibbsVolume(ThermoContribution):
         res["V"] = v_n.T @ n
 
 
+class MolecularWeight(ThermoContribution):
+    """This contribution defines the molecular weights as a species vector,
+    based on the underlying :class:`simu.SpeciesDefinition` definitions."""
+    provides = ["mw"]
+
+    def define(self, res, bounds, par):
+        mw = qvertcat(*[s.molecular_weight
+                        for s in self.species_definitions.values()])
+        res["mw"] = mw
+
+    def declare_vector_keys(self):
+        return {"mw": self.species}

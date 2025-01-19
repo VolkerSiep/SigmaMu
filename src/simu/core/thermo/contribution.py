@@ -5,6 +5,7 @@ the building blocks of a :class:`ThermoFrame` function object."""
 # stdlib modules
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, MutableSequence
+from typing import Any
 
 # internal modules
 from .species import SpeciesDefinition
@@ -37,9 +38,20 @@ class ThermoContribution(ABC):
 
     provides: list[str] = []
 
-    def __init__(self, species, options):
-        self.species = species
+    species_definitions: Map[SpeciesDefinition]
+    """The map of species definition objects"""
+
+    options: Map[Any]
+    """The map of species definition objects"""
+
+    def __init__(self, species: Map[SpeciesDefinition], options):
+        self.species_definitions: Map[SpeciesDefinition] = species
         self.options = options
+
+    @property
+    def species(self) -> Sequence[str]:
+        """Returns a list of species names"""
+        return list(self.species_definitions.keys())
 
     @abstractmethod
     def define(self, res: MutMap[Quantity],
@@ -93,14 +105,13 @@ class ThermoContribution(ABC):
         """
         ...
 
-    def declare_vector_keys(
-            self, species: Map[SpeciesDefinition]) -> Map[Sequence[str]]:
+    def declare_vector_keys(self) -> Map[Sequence[str]]:
         """Declare the keys of newly introduced vectorial properties. In most
         cases, this will be the species names for the mole vector, and the
         implementation will look as follows::
 
-            def declare_vector_keys(self, species):
-                return {"my_vector_prop": list(species.keys())}
+            def declare_vector_keys(self):
+                return {"my_vector_property": self.species}
 
         """
         return {}

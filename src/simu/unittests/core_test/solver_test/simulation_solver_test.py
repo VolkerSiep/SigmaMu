@@ -9,8 +9,6 @@ from simu.core.utilities import assert_reproduction
 from simu.examples.material_model import Source
 
 
-
-
 def test_instantiate():
     numeric = NumericHandler(Source.top())
     _ = SimulationSolver(numeric)
