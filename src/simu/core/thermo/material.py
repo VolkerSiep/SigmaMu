@@ -7,7 +7,8 @@ from ..utilities import (
 from ..utilities.types import Map, MutMap, NestedMap
 
 from . import (
-    ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB, ThermoFactory)
+    ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB,
+    ThermoFactory, SpeciesDefinition)
 
 
 class MaterialSpec:
@@ -152,7 +153,11 @@ class Material(MutMap[Quantity]):
     @property
     def species(self) -> Collection[str]:
         """The species names"""
-        return self.definition.frame.species
+        return self.definition.species
+
+    @property
+    def species_definitions(self) -> Map[SpeciesDefinition]:
+        return self.definition.species_definitions
 
     @property
     def sym_state(self) -> Map[Quantity]:
@@ -234,6 +239,15 @@ class MaterialDefinition:
     @property
     def store(self) -> ThermoParameterStore:
         return self.__store
+
+    @property
+    def species(self) -> Collection[str]:
+        """The species names"""
+        return self.frame.species
+
+    @property
+    def species_definitions(self) -> Map[SpeciesDefinition]:
+        return self.frame.species_definitions
 
     @property
     def initial_state(self):

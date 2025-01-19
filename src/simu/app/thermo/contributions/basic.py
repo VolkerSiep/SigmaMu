@@ -2,11 +2,11 @@
 
 # stdlib modules
 from copy import copy
+from typing import Sequence
 
 # internal modules
-from simu import (
-    ThermoContribution, R_GAS, log, qsum, ParameterDictionary, base_magnitude,
-)
+from simu import ThermoContribution, R_GAS, log, qsum, base_magnitude, qvertcat
+from simu.core.utilities.types import Map
 
 
 class H0S0ReferenceState(ThermoContribution):
@@ -313,3 +313,15 @@ class ConstantGibbsVolume(ThermoContribution):
         res["V"] = v_n.T @ n
 
 
+class MolecularWeight(ThermoContribution):
+    """This contribution defines the molecular weights as a species vector,
+    based on the underlying :class:`simu.SpeciesDefinition` definitions."""
+    provides = ["mw"]
+
+    def define(self, res, bounds, par):
+        mw = qvertcat(*[s.molecular_weight
+                        for s in self.species_definitions.values()])
+        res["mw"] = mw
+
+    def declare_vector_keys(self):
+        return {"mw": self.species}

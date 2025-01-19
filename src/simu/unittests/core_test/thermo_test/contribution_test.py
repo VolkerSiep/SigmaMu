@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Test module for ideal contributions"""
+"""Test module for basic contributions"""
 
 # internal modules
 from simu.core.thermo import InitialState
 from simu.app.thermo.contributions import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
-    LinearHeatCapacity, ConstantGibbsVolume)
+    LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight)
 from simu.core.utilities import (
     ParameterDictionary, Quantity, SymbolQuantity, assert_reproduction,
     base_unit)
-from simu.unittests.core_test.thermo_test.conftest import species_definitions_ab
 
 
 # auxiliary functions
@@ -138,3 +137,12 @@ def test_constant_gibbs_volume(species_definitions_ab):
     cont.define(res, bounds, ParameterDictionary())
     result = {i: str(res[i]).split(", ") for i in "V mu".split()}
     assert_reproduction(result)
+
+
+def test_molecular_weight(species_definitions_ab):
+    """Test definition of molecular weights"""
+    res, bounds = {}, {}
+    cont = MolecularWeight(species_definitions_ab, {})
+    cont.define(res, bounds, ParameterDictionary())
+    mw = res["mw"].to("g/mol").magnitude
+    assert_reproduction(str(mw))
