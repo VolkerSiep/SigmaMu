@@ -116,7 +116,6 @@ Likewise, the frame can be queried for the properties that will be calculated:
            'V': 'm ** 3',
            '_state': '',
            'mu': 'J / mol',
-           'mw': 'kg / mol',
            'n': 'mol',
            'p': 'Pa',
            'p_ref': 'Pa'}}
@@ -150,7 +149,6 @@ T_ref: 298.15 K
 V: 0.033258 m ** 3
 _state: [400 1e+05 1]
 mu: -1.5092e+05 J / mol
-mw: 0.016043 kg / mol
 n: 1 mol
 p: 1e+05 Pa
 p_ref: 1e+05 Pa

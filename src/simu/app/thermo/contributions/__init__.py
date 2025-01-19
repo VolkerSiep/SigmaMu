@@ -1,4 +1,4 @@
-from .ideal import (
+from .basic import (
     H0S0ReferenceState, LinearHeatCapacity, StandardState, IdealMix,
     GibbsIdealGas, HelmholtzIdealGas, ConstantGibbsVolume)
 from .cubic import (

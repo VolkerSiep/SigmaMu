@@ -7,7 +7,6 @@
     "V": "m ** 3 / s",
     "mu/H2O": "J / mol",
     "mu_std/H2O": "J / mol",
-    "mw/H2O": "kg / mol",
     "n/H2O": "mol / s",
     "p": "Pa",
     "p_ref": "Pa",
@@ -21,7 +20,6 @@
     "V",
     "mu",
     "mu_std",
-    "mw",
     "n",
     "p",
     "p_ref",
@@ -105,10 +103,6 @@
               "H2O": "J / mol",
               "NO2": "J / mol"
             },
-            "mw": {
-              "H2O": "kg / mol",
-              "NO2": "kg / mol"
-            },
             "n": {
               "H2O": "mol / s",
               "NO2": "mol / s"
@@ -131,10 +125,6 @@
           "mu_std": {
             "H2O": "J / mol",
             "NO2": "J / mol"
-          },
-          "mw": {
-            "H2O": "kg / mol",
-            "NO2": "kg / mol"
           },
           "n": {
             "H2O": "mol / s",
@@ -229,10 +219,6 @@
               "H2O": "J / mol",
               "NO2": "J / mol"
             },
-            "mw": {
-              "H2O": "kg / mol",
-              "NO2": "kg / mol"
-            },
             "n": {
               "H2O": "mol / s",
               "NO2": "mol / s"
@@ -254,10 +240,6 @@
             "mu_std": {
               "H2O": "J / mol",
               "NO2": "J / mol"
-            },
-            "mw": {
-              "H2O": "kg / mol",
-              "NO2": "kg / mol"
             },
             "n": {
               "H2O": "mol / s",
@@ -281,10 +263,6 @@
           "mu_std": {
             "H2O": "J / mol",
             "NO2": "J / mol"
-          },
-          "mw": {
-            "H2O": "kg / mol",
-            "NO2": "kg / mol"
           },
           "n": {
             "H2O": "mol / s",
@@ -415,10 +393,6 @@
     "mu_std": {
       "H2O": "J / mol",
       "NO2": "J / mol"
-    },
-    "mw": {
-      "H2O": "kg / mol",
-      "NO2": "kg / mol"
     },
     "n": {
       "H2O": "mol / s",
@@ -571,10 +545,6 @@
             "CH3-(CH2)2-CH3": "J / mol",
             "CH3-CH2-CH3": "J / mol"
           },
-          "mw": {
-            "CH3-(CH2)2-CH3": "kg / mol",
-            "CH3-CH2-CH3": "kg / mol"
-          },
           "n": {
             "CH3-(CH2)2-CH3": "mol / s",
             "CH3-CH2-CH3": "mol / s"
@@ -609,8 +579,6 @@
     "thermo_props/local/mu/CH3-CH2-CH3": "2275.958715 J / mol",
     "thermo_props/local/mu_std/CH3-(CH2)2-CH3": "-37.614242 J / mol",
     "thermo_props/local/mu_std/CH3-CH2-CH3": "-28.786410 J / mol",
-    "thermo_props/local/mw/CH3-(CH2)2-CH3": "0.058124 kg / mol",
-    "thermo_props/local/mw/CH3-CH2-CH3": "0.044097 kg / mol",
     "thermo_props/local/n/CH3-(CH2)2-CH3": "1.000000 mol / s",
     "thermo_props/local/n/CH3-CH2-CH3": "1.000000 mol / s",
     "thermo_props/local/p": "1000000.000000 Pa",

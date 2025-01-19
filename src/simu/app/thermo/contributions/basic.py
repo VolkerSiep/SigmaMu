@@ -54,9 +54,9 @@ class H0S0ReferenceState(ThermoContribution):
         res["T_ref"] = par.register_scalar("T_ref", "K")
         res["p_ref"] = par.register_scalar("p_ref", "Pa")
 
+    def declare_vector_keys(self):
+        return {"mu": self.species}
 
-    def declare_vector_keys(self, species):
-        return {"mu": list(species.keys())}
 
 class LinearHeatCapacity(ThermoContribution):
     r"""This contribution implements a simple heat capacity, being linear
@@ -144,8 +144,8 @@ class StandardState(ThermoContribution):
         res["p_std"] = copy(res["p_ref"])
         res["mu_std"] = copy(res["mu"])
 
-    def declare_vector_keys(self, species):
-        return {"mu_std": list(species.keys())}
+    def declare_vector_keys(self):
+        return {"mu_std": self.species}
 
 
 class IdealMix(ThermoContribution):

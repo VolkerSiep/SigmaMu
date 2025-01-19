@@ -2,15 +2,8 @@
 
 import logging
 from simu import Model
-from simu.core.thermo import InitialState
-from simu.core.thermo.material import MaterialSpec, MaterialDefinition
-from simu.core.thermo.species import SpeciesDefinition
-from simu.app.thermo.factories import ExampleThermoFactory
-from simu.core.thermo import ThermoParameterStore, StringDictThermoSource
-from simu.core.utilities import SymbolQuantity, Quantity
-
-
-RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
+from simu.core.thermo.material import MaterialSpec
+from simu.core.utilities import SymbolQuantity
 
 
 class SimpleParameterTestModel(Model):
@@ -89,17 +82,6 @@ class HierarchyTestModel2(Model):
         self.properties["volume"] = volume
 
 
-class MaterialTestModel(Model):
-    def interface(self):
-        spec = MaterialSpec(["H2O", "*"])
-        self.materials.define_port("inlet", spec)
-
-    def define(self):
-        test_material = define_a_material(["H2O", "NO2"])
-        _ = self.materials["inlet"]
-        _ = self.materials.create_flow("local", test_material)
-
-
 class MaterialTestModel2(Model):
     def interface(self):
         spec = MaterialSpec(["H2O", "*"])
@@ -108,25 +90,6 @@ class MaterialTestModel2(Model):
     def define(self):
         inlet = self.materials["inlet"]
         _ = self.materials.create_state("local", inlet.definition)
-
-
-class MaterialTestModel3(Model):
-    def interface(self):
-        pass
-
-    def define(self):
-        test_material = define_a_material(["H2O", "NO2"])
-        self.materials.create_flow("local", test_material)
-
-
-class  MaterialTestModel4(Model):
-    def interface(self):
-        pass
-
-    def define(self):
-        test_material = define_a_material_with_parameters()
-        self.materials.create_flow("flow1", test_material)
-        self.materials.create_flow("flow2", test_material)
 
 
 class ResidualTestModel(Model):
@@ -149,78 +112,3 @@ class ResidualTestModel2(Model):
         res = SymbolQuantity("Hubert", "K")
         self.residuals.add("Hubert", res, "degC")
 
-
-class SquareTestModel(Model):
-    def __init__(self):
-        super().__init__()
-        self.no2sol = define_a_material(["CH3-CH2-CH3", "CH3-(CH2)2-CH3"])
-
-    def interface(self):
-        with self.parameters as p:
-            p.define("T", 10, "degC")
-            p.define("p", 10, "bar")
-            p.define("N", 1, "mol/s")
-            p.define("x_c3", 10, "%")
-
-    def define(self):
-        flow = self.materials.create_flow("local", self.no2sol)  # 4 DOF
-        flow["N"] = flow["n"].sum()
-        flow["x"] = flow["n"] / flow["N"]
-
-        param, radd = self.parameters, self.residuals.add
-        radd("N", flow["N"] - param["N"], "mol/s")
-        res = flow["N"] * param["x_c3"] - flow["n"]["CH3-CH2-CH3"]
-        radd("x", res, "mol/s")
-        radd("T", flow["T"] - param["T"], "K")
-        radd("p", flow["p"] - param["p"], "bar")
-
-
-class MaterialParentTestModel(Model):
-
-    class Child(Model):
-        def __init__(self, mat_def):
-            super().__init__()
-            self.mat_def = mat_def
-
-        def interface(self):
-            self.materials.define_port("port")
-
-        def define(self):
-            self.materials.create_flow("m_child", self.mat_def)
-
-    def define(self):
-        mat_def = define_a_material(["H2O", "NO2"])
-        flow = self.materials.create_flow("m_parent", mat_def)
-        with self.hierarchy.add("child", self.Child, mat_def) as child:
-            child.materials.connect("port", flow)
-
-
-def define_a_material(species) -> MaterialDefinition:
-    """Defines a material to use. Normally, this would be a singleton somewhere
-    in the project."""
-
-    factory = ExampleThermoFactory()
-    species_db = {s: SpeciesDefinition(s) for s in species}
-    frame = factory.create_frame(species_db, RK_LIQ)
-    store = ThermoParameterStore()
-    initial_state = InitialState.from_cbar(10.0, 10.0, [1.0] * len(species))
-    return MaterialDefinition(frame, initial_state, store)
-
-
-def define_a_material_with_parameters() -> MaterialDefinition:
-    factory = ExampleThermoFactory()
-    species_db = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species_db, "Ideal-Solid")
-    store = ThermoParameterStore()
-
-    source = StringDictThermoSource({
-        'H0S0ReferenceState': {
-            's_0': {'H2O': '0 J / K / mol '},
-            'dh_form': {'H2O': '0 J / mol '},
-            'T_ref': '298.15 K', 'p_ref': '1 bar'},
-        'LinearHeatCapacity': {'cp_a': {'H2O': '50.0 J / K / mol '},
-                               'cp_b': {'H2O': '0 J / K ** 2 / mol '}},
-        'ConstantGibbsVolume': {'v_n': {'H2O': '18 ml / mol '}}})
-    store.add_source("default", source)
-    initial_state = InitialState.from_std(1)
-    return MaterialDefinition(frame, initial_state, store)
