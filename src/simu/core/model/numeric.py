@@ -380,6 +380,8 @@ class NumericHandler:
 
         def fetch_bounds(model: ModelProxy) -> MutMap[Quantity]:
             mat_proxy = model.materials
+            # TODO: fetch bounds from boundhandler of model
+            # TODO: make sure the unit is converted to offset-less unit
             return {k: m.bounds for k, m in mat_proxy.handler.items()
                     if k not in mat_proxy}
 
