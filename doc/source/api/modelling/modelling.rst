@@ -10,6 +10,7 @@ This group of classes are used to define the actual process models.
    parameters
    properties
    residuals
+   bounds
    materials
    hierarchy
    numeric

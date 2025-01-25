@@ -1,8 +1,10 @@
 from ..utilities import Quantity
 from ..utilities.types import Map
 
+BoundProxy = Map["Quantity"]
 
-class BoundHandler(Map[Quantity]):
+
+class BoundHandler(BoundProxy):
     """The boundary handler keeps process model properties that must be strictly
     positive in order to remain within the model's mathematical domain.
 
@@ -38,10 +40,32 @@ class BoundHandler(Map[Quantity]):
 
     def add(self, name: str, bound: Quantity):
         """Add a quantity to the bound handler to signal the solver that its
-        value must remain strictly positive."""
+        value must remain strictly positive.
+
+        If the unit includes an offset, such as ``degC`` or ``barg``, this
+        offset is eliminated:
+
+        >>> from simu import SymbolQuantity
+        >>> # in a real case, this better be a dependent property
+        >>> b = SymbolQuantity("T", "degC")
+        >>> handler = BoundHandler()
+        >>> handler.add("T", b)
+        >>> print(f"{handler["T"]}")
+        T delta_degree_Celsius
+
+        If the intention is really to define a bound at a given absolute value,
+        this must explicitly be done as follows:
+
+        >>> from simu import Quantity
+        >>> handler.add("T2", b - Quantity(31.4159, "degC"))
+        >>> print(f"{handler["T2"]}")
+        (T-31.4159) delta_degree_Celsius
+        """
         if name in self.__bounds:
             raise KeyError(f"Bound {name} already defined")
-        self.__bounds[name] = bound
+
+        # eliminate impact of offset in units like degC and barg
+        self.__bounds[name] = bound - Quantity(0.0, bound.units)
 
     def __getitem__(self, key: str):
         return self.__bounds[key]
@@ -52,4 +76,6 @@ class BoundHandler(Map[Quantity]):
     def __iter__(self):
         return iter(self.__bounds)
 
-
+    def create_proxy(self) -> BoundProxy:
+        """Create a proxy object"""
+        return self

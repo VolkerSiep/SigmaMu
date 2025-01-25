@@ -9,7 +9,7 @@ from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 from .material import MaterialHandler, MaterialProxy
 from .residual import ResidualHandler, ResidualProxy
-
+from .bound import BoundHandler, BoundProxy
 
 class Model(ABC):
     """This is the base class for all process models to be implemented.
@@ -43,6 +43,9 @@ class Model(ABC):
     residuals: ResidualHandler = None
     """The handler object that takes care of residuals"""
 
+    bounds: BoundHandler = None
+    """The handler object that takes care of domain boundaries"""
+
     def __init__(self):
         """The constructor is parameterless but still needs to be called by the
          subclass constructors (if implemented) to initialise the object.
@@ -56,6 +59,7 @@ class Model(ABC):
         self.hierarchy = HierarchyHandler(self)
         self.interface()
         self.residuals = ResidualHandler()
+        self.bounds = BoundHandler()
 
     @classmethod
     def top(cls, name: str = "model") -> "ModelProxy":
@@ -175,7 +179,7 @@ class ModelProxy:
     The ``Model`` class deals with the implementation of the model, while the
     ``ModelProxy`` class offers its access to connect to it as a client. This
     client is most likely a parent ``Model`` or, if it is a top level model,
-    a :class:`NumericHandler <simu.core.model.numeric.NumericHandler>` object.
+    a :class:`~simu.NumericHandler` object.
 
     ``ModelProxy`` objects are created from within the :class:`Model` class,
     and do not need to be instantiated directly by `SiMu` client code.
@@ -197,9 +201,12 @@ class ModelProxy:
     """A handler object that takes care of residuals. This is really just a
     non-mutable mapping of residuals, as the client code is not supposed to
     temper with the definition of the child model. The residuals are still
-    browsable, as required for instance by the
-    :class:`NumericHandler <simu.core.model.numeric.NumericHandler>` object
-    for obvious reasons."""
+    browsable, as required for instance by the :class:`~simu.NumericHandler`
+    object for obvious reasons."""
+
+    bounds: BoundProxy
+    """The non-mutable proxy of the bound handler, to be queried by the 
+    :class:`~simu.NumericHandler`."""
 
     def __init__(self, model: Model, name: str):
         self.parameters = model.parameters.create_proxy()
@@ -207,6 +214,7 @@ class ModelProxy:
         self.hierarchy = model.hierarchy.create_proxy()
         self.materials = model.materials.create_proxy()
         self.residuals = model.residuals.create_proxy()
+        self.bounds = model.bounds.create_proxy()
         self.__model = model
         self.__set_name(name)
 

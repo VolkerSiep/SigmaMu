@@ -11,9 +11,9 @@ class Source(Model):
 
     def define(self):
         src = self.materials.create_flow("source", ch4_ideal_gas)
-        self.residuals.add( "T", self.parameters["T"] - src["T"], "K")
-        self.residuals.add( "p", self.parameters["p"] - src["p"], "bar")
-        self.residuals.add( "V", self.parameters["V"] - src["V"], "m^3/h")
+        self.residuals.add("T", self.parameters["T"] - src["T"], "K")
+        self.residuals.add("p", self.parameters["p"] - src["p"], "bar")
+        self.residuals.add("V", self.parameters["V"] - src["V"], "m^3/h")
 
 
 

@@ -149,6 +149,9 @@ def square_test_model():
             radd("T", flow["T"] - param["T"], "K")
             radd("p", flow["p"] - param["p"], "bar")
 
+            d_n = 2 * flow["n"]["CH3-(CH2)2-CH3"] - flow["n"]["CH3-CH2-CH3"]
+            self.bounds.add("delta n", d_n)
+
     return SquareTestModel
 
 
