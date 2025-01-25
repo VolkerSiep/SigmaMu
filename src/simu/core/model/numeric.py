@@ -380,8 +380,15 @@ class NumericHandler:
 
         def fetch_bounds(model: ModelProxy) -> MutMap[Quantity]:
             mat_proxy = model.materials
-            return {k: m.bounds for k, m in mat_proxy.handler.items()
-                    if k not in mat_proxy}
+            res = {k: m.bounds for k, m in mat_proxy.handler.items()
+                   if k not in mat_proxy}
+            clash = set(res.keys()) & set(model.bounds.keys())
+            if clash:
+                clash = ", ".join(clash)
+                msg = "Overlapping names of bounds and child modules: {clash}"
+                raise ValueError(msg)
+            res.update(model.bounds)
+            return res
 
         def fetch_normed_residuals(model: ModelProxy) -> MutMap[Quantity]:
             """fetch normed residuals from a specific model"""
@@ -494,7 +501,7 @@ class NumericHandler:
             path: Optional[Sequence[str]] = None) -> NestedMutMap[Quantity]:
         """Drill recursively into child models to collect all data. The result
         is a nested dictionary, such that name clashes between child models and
-        parameters are not permitted and will raise a ``KeyError``.
+        parameters are not permitted and will raise a ``ValueError``.
         """
         call_self = NumericHandler.__fetch
         if path is None:
@@ -505,7 +512,7 @@ class NumericHandler:
                 context = ".".join(path)
                 msg = f"Child model / {typ} name clash:" \
                     f"'{name}' in {context}"
-                raise KeyError(msg)
+                raise ValueError(msg)
             result[name] = call_self(proxy, func, typ, path + [name])
         return result
 

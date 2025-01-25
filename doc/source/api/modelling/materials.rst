@@ -1,3 +1,6 @@
+Handler classes related to materials
+====================================
+
 MaterialHandler
 ---------------
 .. autoclass:: simu.core.model.material.MaterialHandler

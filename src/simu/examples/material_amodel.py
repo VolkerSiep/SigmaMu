@@ -11,9 +11,9 @@ class Source(AModel):
 
     def define(self):
         src = self.mcf("source", ch4_ideal_gas)
-        self.ra( "T", self.pa["T"] - src["T"], "K")
-        self.ra( "p", self.pa["p"] - src["p"], "bar")
-        self.ra( "V", self.pa["V"] - src["V"], "m^3/h")
+        self.ra("T", self.pa["T"] - src["T"], "K")
+        self.ra("p", self.pa["p"] - src["p"], "bar")
+        self.ra("V", self.pa["V"] - src["V"], "m^3/h")
 
 
 
