@@ -497,3 +497,4 @@ def extract_sub_structure(source: NestedMap[Quantity],
             return src[key]
         return {k: prepare(name, k, q, src[key]) for k, q in items}
     return {k: prepare("", k, s, source) for k, s in structure.items()}
+

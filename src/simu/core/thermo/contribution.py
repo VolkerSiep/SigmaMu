@@ -11,6 +11,7 @@ from typing import Any
 from .species import SpeciesDefinition
 from .state import InitialState
 from ..utilities import Quantity, ParameterDictionary
+from ..utilities.residual import ResidualHandler, ResidualProxy
 from ..utilities.types import Map, MutMap
 
 
@@ -47,6 +48,7 @@ class ThermoContribution(ABC):
     def __init__(self, species: Map[SpeciesDefinition], options):
         self.species_definitions: Map[SpeciesDefinition] = species
         self.options = options
+        self.__residuals = ResidualHandler()
 
     @property
     def species(self) -> Sequence[str]:
@@ -104,6 +106,19 @@ class ThermoContribution(ABC):
         .. seealso:: :meth:`ThermoFrame.initial_state`
         """
         ...
+
+    def add_residual(self, name: str, residual: Quantity,
+                     tol_unit: str, tol: float = 1e-7):
+        """Define a residual that represents an implicit constraint in the
+        thermodynamic model itself. Typical examples are equilibrium
+        constraints on apparent species systems and any implicit thermodynamic
+        models."""
+        self.__residuals.add(name, residual, tol_unit,  tol)
+
+    @property
+    def residuals(self) -> ResidualProxy:
+        """Return the defined residuals of this contribution"""
+        return self.__residuals
 
     def declare_vector_keys(self) -> Map[Sequence[str]]:
         """Declare the keys of newly introduced vectorial properties. In most

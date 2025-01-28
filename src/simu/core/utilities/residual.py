@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from collections.abc import Iterator
 
-from ..utilities.quantity import Quantity
-from ..utilities.types import Map
-from ..utilities.errors import DimensionalityError
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.types import Map
+from simu.core.utilities.errors import DimensionalityError
 
 
 @dataclass

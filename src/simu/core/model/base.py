@@ -2,14 +2,15 @@
 
 """
 from abc import ABC, abstractmethod
-from typing import Self, Optional
+from typing import Self
 
 from .parameter import ParameterHandler, ParameterProxy
 from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 from .material import MaterialHandler, MaterialProxy
-from .residual import ResidualHandler, ResidualProxy
 from .bound import BoundHandler, BoundProxy
+from simu.core.utilities.residual import ResidualHandler, ResidualProxy
+
 
 class Model(ABC):
     """This is the base class for all process models to be implemented.

@@ -325,3 +325,20 @@ class MolecularWeight(ThermoContribution):
 
     def declare_vector_keys(self):
         return {"mw": self.species}
+
+
+class ChargeBalance(ThermoContribution):
+    """This contribution defines a charge balance residual, if there are charged
+    species. A ValueError is raised if only either positive or negative charged
+    species exist"""
+
+    def define(self, res, bounds, par):
+        charges = [s.charge for s in self.species_definitions.values()]
+        pos = len([c for c in charges if c > 0])
+        neg = len([c for c in charges if c < 0])
+        if pos == 0 and neg == 0:
+            return
+        if pos == 0 or neg == 0:
+            raise ValueError("Charges of only one sign cannot be balanced")
+        residual = res["n"]  @ charges
+        self.add_residual("balance", residual, "e")

@@ -23,8 +23,8 @@ class SpeciesDefinition:
     >>> a.elements
     {'H': 3, 'P': 1, 'O': 4}
     >>> a = SpeciesDefinition("PO4:3-")
-    >>> a.charge
-    -3
+    >>> print(f"{a.charge:~}")
+    -3 e
     """
     formula: str
     """The formula as it was given in the constructor. The admitted formula 
@@ -34,7 +34,7 @@ class SpeciesDefinition:
     molecular_weight: Quantity = field(init=False)
     """The molecular weight determined by summing up the atomic weights of 
     the contained atoms; quantum effects and electron masses are neglected."""
-    charge: int = field(init=False)
+    charge: Quantity = field(init=False)
     """The electronic charge of the species' molecule"""
     elements: Map[int] = field(init=False)
     """A dictionary, mapping the occurring atoms to their amount in the 

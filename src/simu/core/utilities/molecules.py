@@ -146,24 +146,22 @@ class FormulaParser:
         w_0 = Quantity(0, "g/mol")
         return sum((weights[sym] * nu for sym, nu in elements.items()), w_0)
 
-    def charge(self, formula: str) -> int:
+    def charge(self, formula: str) -> Quantity:
         """Return the charge associated to the given formula.
 
             >>> parser = FormulaParser()
-            >>> parser.charge("H2SO4")
-            0
-            >>> parser.charge("SO4:2-")
-            -2
-            >>> parser.charge("Al:3+")
-            3
-            >>> parser.charge("S6:12-")
-            -12
+            >>> for n in "H2SO4 SO4:2- Al:3+ S6:12-".split():
+            ...     print(f"{n}: {parser.charge(n):~}")
+            H2SO4: 0 e
+            SO4:2-: -2 e
+            Al:3+: 3 e
+            S6:12-: -12 e
         """
         if self.VALID_REG.match(formula) is None:
             raise ValueError(f"Invalid syntax of formula: {formula}")
 
         match = self.CHARGE_REG.search(formula)
         if match is None:
-            return 0
+            return Quantity(0, "e")
         raw = match.group(0)
-        return int(f"{raw[-1]}{raw[1:-1]}")
+        return Quantity(int(f"{raw[-1]}{raw[1:-1]}"), "e")
