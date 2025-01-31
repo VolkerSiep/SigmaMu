@@ -152,16 +152,16 @@ class FormulaParser:
             >>> parser = FormulaParser()
             >>> for n in "H2SO4 SO4:2- Al:3+ S6:12-".split():
             ...     print(f"{n}: {parser.charge(n):~}")
-            H2SO4: 0 e
-            SO4:2-: -2 e
-            Al:3+: 3 e
-            S6:12-: -12 e
+            H2SO4: 0 e / mol
+            SO4:2-: -2 e / mol
+            Al:3+: 3 e / mol
+            S6:12-: -12 e / mol
         """
         if self.VALID_REG.match(formula) is None:
             raise ValueError(f"Invalid syntax of formula: {formula}")
 
         match = self.CHARGE_REG.search(formula)
         if match is None:
-            return Quantity(0, "e")
+            return Quantity(0, "e / mol")
         raw = match.group(0)
-        return Quantity(int(f"{raw[-1]}{raw[1:-1]}"), "e")
+        return Quantity(int(f"{raw[-1]}{raw[1:-1]}"), "e / mol")

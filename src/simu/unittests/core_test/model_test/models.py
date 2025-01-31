@@ -112,3 +112,4 @@ class ResidualTestModel2(Model):
         res = SymbolQuantity("Hubert", "K")
         self.residuals.add("Hubert", res, "degC")
 
+

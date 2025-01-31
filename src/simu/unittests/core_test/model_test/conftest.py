@@ -203,3 +203,25 @@ def simple_material_definition_function(species) -> MaterialDefinition:
     store = ThermoParameterStore()
     initial_state = InitialState.from_cbar(10.0, 10.0, [1.0] * len(species))
     return MaterialDefinition(frame, initial_state, store)
+
+@fixture(scope="session")
+def model_with_residual():
+    def material_definition():
+        ideal_liq = "Ideal-Liquid"
+        factory = ExampleThermoFactory()
+        species_db = {s: SpeciesDefinition(s)
+                      for s in "H2O Na:1+ Cl:1-".split()}
+        frame = factory.create_frame(species_db, ideal_liq)
+        store = ThermoParameterStore()
+        initial_state = InitialState.from_cbar(10.0, 1.0, [1.0, 0.1, 0.1])
+        return MaterialDefinition(frame, initial_state, store)
+
+    class ModelWithThermoResidual(Model):
+        def interface(self):
+            pass
+
+        def define(self):
+            definition = material_definition()
+            self.materials.create_flow("liq", definition)
+
+    return ModelWithThermoResidual

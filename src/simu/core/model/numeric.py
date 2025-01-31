@@ -8,7 +8,8 @@ from casadi import vertcat, SX
 from pint import Unit
 
 from ..utilities import (
-    flatten_dictionary, quantity_dict_to_strings, parse_quantities_in_struct)
+    flatten_dictionary, quantity_dict_to_strings,
+    parse_quantities_in_struct, nested_map)
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction, jacobian
 from ..utilities.structures import FLATTEN_SEPARATOR
@@ -374,9 +375,27 @@ class NumericHandler:
         All the data is to be collected from the model and all child model
         proxies.
         """
-        def fetch_residuals(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_residuals(model: ModelProxy,
+                            normed: bool = False) -> NestedMutMap[Quantity]:
             """fetch residuals from a specific model"""
-            return {k: r.value for k, r in model.residuals.items()}
+            def extract(entity):
+                if normed:
+                    return (entity.value / entity.tolerance).to("")
+                return entity.value
+
+            # find residuals of materials
+            mat_proxy = model.materials
+            res = {k: m.residuals(normed) for k, m in mat_proxy.handler.items()
+                   if k not in mat_proxy}
+            # add residuals of model (detect name clashes)
+            clash = set(res.keys()) & set(model.residuals.keys())
+            if clash:
+                clash = ", ".join(clash)
+                msg = f"Name clash of residuals and child modules: {clash}"
+                raise ValueError(msg)
+
+            res.update({k: extract(v) for k, v in model.residuals.items()})
+            return res
 
         def fetch_bounds(model: ModelProxy) -> MutMap[Quantity]:
             mat_proxy = model.materials
@@ -385,15 +404,10 @@ class NumericHandler:
             clash = set(res.keys()) & set(model.bounds.keys())
             if clash:
                 clash = ", ".join(clash)
-                msg = "Overlapping names of bounds and child modules: {clash}"
+                msg = f"Name clash of bounds and child modules: {clash}"
                 raise ValueError(msg)
             res.update(model.bounds)
             return res
-
-        def fetch_normed_residuals(model: ModelProxy) -> MutMap[Quantity]:
-            """fetch normed residuals from a specific model"""
-            return {k: (r.value / r.tolerance).to("")
-                    for k, r in model.residuals.items()}
 
         def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
             """fetch model properties from a specific model"""
@@ -410,7 +424,7 @@ class NumericHandler:
         fetch = self.__fetch
         to_vector = self.__to_vector
 
-        residual_structure = fetch(mod, fetch_normed_residuals,
+        residual_structure = fetch(mod, lambda x: fetch_residuals(x, True),
                                    "normalised residual")
         bounds_structure = fetch(mod, fetch_bounds, "bound")
         residuals, residual_names = to_vector(residual_structure)
@@ -421,7 +435,8 @@ class NumericHandler:
             self.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
             self.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
-            self.RESIDUALS: fetch(mod, fetch_residuals, "residual"),
+            self.RESIDUALS: fetch(mod, lambda x: fetch_residuals(x, False),
+                                  "residual"),
             self.VECTORS: {
                 self.RES_VEC: residuals,
                 self.BOUND_VEC: bounds

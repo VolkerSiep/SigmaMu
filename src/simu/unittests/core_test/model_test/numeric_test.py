@@ -182,6 +182,10 @@ def test_retain_and_args(thermo_param, square_test_model):
     new_state  = squeeze(numeric.arguments["vectors"]["states"].magnitude)
     assert_allclose(new_state, state)
 
+def test_thermo_residual(model_with_residual):
+    numeric = NumericHandler(model_with_residual.top())
+    rs = numeric.function.result_structure
+    assert rs[numeric.RESIDUALS]["liq"]["ChargeBalance"]["balance"] == "A"
 
 def check_same_keys(dic1, dic2):
     """Check whether the two nested dictionaries have the same keys"""

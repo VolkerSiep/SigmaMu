@@ -107,7 +107,7 @@ The following model is a *hello world* example for using such material:
    :lines: 1-16
    :linenos:
 
-Here we first define the three parameters ``T``, ``p`` and ``V`` that determine our system. These three parameters also constitute the interface of our model. The definition creates a methane flow :class:`simu.Material` object from our definition. Finally, lines 15-17 constrain the system to the direct specifications of the parameter variables.
+Here we first define the three parameters ``T``, ``p`` and ``V`` that determine our system. These three parameters also constitute the interface of our model. The definition creates a methane flow :class:`simu.Material` object from our definition. Finally, lines 14-16 constrain the system to the direct specifications of the parameter variables.
 
 Well, the above syntax is very verbose, but might get into the way with regards to coding efficiency and the ambitions to keep lines short and to the point. For this reason, we define a subclass to :class:`simu.Model`, namely :class:`simu.AModel` that does nothing but defining abbreviations. As such, we can reduce the above model to:
 
@@ -156,7 +156,7 @@ Further, we can query the result by calling the function with this argument:
                              'n': {'Methane': <Quantity(1.0, 'mole / second')>},
                              'p': <Quantity(200000.0, 'pascal')>,
                              'p_ref': <Quantity(100000.0, 'pascal')>}},
- 'vectors': {'bounds': <Quantity([4.e+02 1.e+00 2.e+05], 'dimensionless')>,
+ 'vectors': {'bounds': <Quantity([2.e+05 1.e+00 4.e+02], 'dimensionless')>,
              'residuals': <Quantity([-1.01850000e+09 -4.98641309e+08 -1.00000000e+07], 'dimensionless')>}}
 
 Here we see the residuals as physical quantities, but also converted to a dimensionless vector, representing the quotient of residuals and their tolerances. Thermodynamic properties are included, and model properties would, if there were any.

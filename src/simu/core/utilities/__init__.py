@@ -3,7 +3,7 @@ functions that are not specific to particular objects, but have a certain
 general purpose."""
 
 from .structures import (
-    MCounter, flatten_dictionary, unflatten_dictionary)
+    MCounter, flatten_dictionary, unflatten_dictionary, nested_map)
 from .quantity import (
     QFunction, Quantity, SymbolQuantity, base_magnitude, base_unit,
     conditional, jacobian, qpow, qvertcat, qsqrt, qsum, unit_registry,

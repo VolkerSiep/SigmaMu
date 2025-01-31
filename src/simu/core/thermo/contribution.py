@@ -48,6 +48,11 @@ class ThermoContribution(ABC):
     def __init__(self, species: Map[SpeciesDefinition], options):
         self.species_definitions: Map[SpeciesDefinition] = species
         self.options = options
+        self.reset()
+
+    def reset(self):
+        """Reset the object's state by clearing defined residuals."""
+        # TODO: also move bounds and parameters!?
         self.__residuals = ResidualHandler()
 
     @property

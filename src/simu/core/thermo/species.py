@@ -24,7 +24,7 @@ class SpeciesDefinition:
     {'H': 3, 'P': 1, 'O': 4}
     >>> a = SpeciesDefinition("PO4:3-")
     >>> print(f"{a.charge:~}")
-    -3 e
+    -3 e / mol
     """
     formula: str
     """The formula as it was given in the constructor. The admitted formula 

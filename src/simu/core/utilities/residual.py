@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from collections.abc import Iterator
+from casadi import DM
 
 from simu.core.utilities.quantity import Quantity
 from simu.core.utilities.types import Map
@@ -60,7 +61,7 @@ class ResidualHandler(ResidualProxy):
         """Define a residual"""
         if name in self.__residuals:
             raise KeyError(f"Residual {name} already defined")
-        self.__residuals[name] = Residual(residual, Quantity(tol, tol_unit))
+        self.__residuals[name] = Residual(residual, Quantity(DM(tol), tol_unit))
 
     def __getitem__(self, key: str) -> Residual:
         return self.__residuals[key]

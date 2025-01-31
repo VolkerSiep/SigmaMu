@@ -6,7 +6,7 @@ from typing import Sequence
 
 # internal modules
 from simu import ThermoContribution, R_GAS, log, qsum, base_magnitude, qvertcat
-from simu.core.utilities.types import Map
+from simu.core.utilities.errors import DimensionalityError
 
 
 class H0S0ReferenceState(ThermoContribution):
@@ -330,7 +330,25 @@ class MolecularWeight(ThermoContribution):
 class ChargeBalance(ThermoContribution):
     """This contribution defines a charge balance residual, if there are charged
     species. A ValueError is raised if only either positive or negative charged
-    species exist"""
+    species exist.
+
+    Given the presents of opposite charged species, the residual defined, based
+    on the molar quantities :math:`n_i` is
+
+    .. math:: \sum_i n_i \cdot c_i = 0
+
+    Here, the charges :math:`c_i` are extracted from the species
+    definition.
+
+    By default, the unit for the residual is ``e`` for states and ``e / s`` for
+    flows. This can be altered by the following options:
+
+      - The option ``state_unit`` defines the unit used for states. If
+        ``flow_unit`` is not given, it will be defined as ``state_unit / s``.
+      - The option ``flow_unit`` defines the unit used for flows. It does not
+        impact the ``state_unit`` value.
+
+    """
 
     def define(self, res, bounds, par):
         charges = [s.charge for s in self.species_definitions.values()]
@@ -340,5 +358,12 @@ class ChargeBalance(ThermoContribution):
             return
         if pos == 0 or neg == 0:
             raise ValueError("Charges of only one sign cannot be balanced")
-        residual = res["n"]  @ charges
-        self.add_residual("balance", residual, "e")
+        charges = qvertcat(*charges)
+        residual = res["n"].T  @ charges
+
+        state_unit = self.options.get("state_unit", "e")
+        flow_unit = self.options.get("flow_unit", f"{state_unit} / s")
+        try:
+            self.add_residual("balance", residual, flow_unit)
+        except DimensionalityError:
+            self.add_residual("balance", residual, state_unit)

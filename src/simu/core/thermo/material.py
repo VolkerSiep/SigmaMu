@@ -126,8 +126,9 @@ class Material(MutMap[Quantity]):
 
         self.__properties = {n: convert(n, p) for n, p in props["props"].items()
                              if not n.startswith("_")}
-        self.__bounds = {n: convert(n, p) for n, p in props["bounds"].items()
-                         if not n.startswith("_")}
+        self.__bounds = props.get("bounds", {})
+        self.__residuals = props.get("residuals", {})
+        self.__normed_residuals = props.get("normed_residuals", {})
         self.__flow = flow
 
         # create a QFunction to map a state and parameters into a new initial
@@ -136,8 +137,6 @@ class Material(MutMap[Quantity]):
         props = frame(self.__state, params, squeeze_results=False, flow=flow)
         res = {n: props["props"][n] for n in "Tpn"}
         self.__ini_func = QFunction(args, res, "ini_func")
-
-        # TODO: apply augmenters as required in definition
 
     def retain_initial_state(self, state: Sequence[float],
                              parameters: NestedMap[Quantity]):
@@ -166,8 +165,25 @@ class Material(MutMap[Quantity]):
         return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
 
     @property
-    def bounds(self):
+    def bounds(self) -> NestedMap[Quantity]:
+        """Return the bounds of the material as a nested mapping. The top
+        level keys will be the names of the original contributions, while the
+        second level keys will be the names of the bounds. The mapping will
+        only have these two levels.
+        """
         return self.__bounds
+
+    def residuals(self, normed: bool = False) -> NestedMap[Quantity]:
+        """Return the residuals of the material as a nested mapping. The top
+        level keys will be the names of the original contributions, while the
+        second level keys will be the names of the residuals. The mapping will
+        only have these two levels.
+
+        If ``normed`` is ``true``, return the dimensionless ratio of residual
+        values and their tolerances instead.
+        """
+        return self.__normed_residuals if normed else self.__residuals
+
 
     def __getitem__(self, key: str) -> Quantity:
         """Return a (symbolic) property that is calculated by the underlying

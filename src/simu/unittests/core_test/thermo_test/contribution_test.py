@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Test module for basic contributions"""
 
+from pytest import raises
+
 # internal modules
-from simu.core.thermo import InitialState
+from simu.core.thermo import InitialState, SpeciesDefinition
 from simu.app.thermo.contributions import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
-    LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight)
+    LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight, ChargeBalance)
 from simu.core.utilities import (
     ParameterDictionary, Quantity, SymbolQuantity, assert_reproduction,
     base_unit)
@@ -146,3 +148,27 @@ def test_molecular_weight(species_definitions_ab):
     cont.define(res, bounds, ParameterDictionary())
     mw = res["mw"].to("g/mol").magnitude
     assert_reproduction(str(mw))
+
+
+def test_charge_balance():
+    species = {"A": SpeciesDefinition("Na:1+"),
+               "B": SpeciesDefinition("Cl:1-")}
+    res, bounds = {"n": vec("n", 2, "mol")}, {}
+    cont = ChargeBalance(species, {})
+    cont.define(res, bounds, ParameterDictionary())
+    res_str = str(cont.residuals["balance"].value.m)
+    assert res_str == "(n_0-n_1)"
+
+def test_charge_balance_only_positive():
+    species = {"A": SpeciesDefinition("Na:1+"),
+               "B": SpeciesDefinition("K:1+")}
+    res, bounds = {"n": vec("n", 2, "mol")}, {}
+    cont = ChargeBalance(species, {})
+    with raises(ValueError):
+        cont.define(res, bounds, ParameterDictionary())
+
+def test_no_charge_balance(species_definitions_ab):
+    res, bounds = {"n": vec("n", 2, "mol")}, {}
+    cont = ChargeBalance(species_definitions_ab, {})
+    cont.define(res, bounds, ParameterDictionary())
+    assert not cont.residuals
