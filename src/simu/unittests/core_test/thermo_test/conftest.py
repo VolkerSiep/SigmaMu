@@ -33,9 +33,8 @@ def boston_mathias_alpha_function(species_definitions_ab):
         "_T_c": vec("T_c", 2, "K"),
         "T": sym("T", "K")
     }
-    par = ParameterDictionary()
     cont = BostonMathiasAlphaFunction(species_definitions_ab, {})
-    cont.define(res, {},  par)
-    return res, par
+    cont.define(res)
+    return res, cont.parameters
 
 

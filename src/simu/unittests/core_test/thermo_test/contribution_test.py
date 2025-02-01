@@ -32,11 +32,11 @@ def test_h0s0_reference_state(species_definitions_ab):
     par = ParameterDictionary()
 
     cont = H0S0ReferenceState(species_definitions_ab, {})
-    cont.define(res, bounds, par)
+    cont.define(res)
     to_reproduce = {
         "res": {i: str(res[i])
                 for i in "S mu".split()},
-        "par_names": list(par.keys())
+        "par_names": list(cont.parameters.keys())
     }
     assert_reproduction(to_reproduce)
 
@@ -53,7 +53,7 @@ def test_linear_heat_capacity(species_definitions_ab):
     bounds = {}
     cont = LinearHeatCapacity(species_definitions_ab, {})
     par = ParameterDictionary()
-    cont.define(res, bounds, par)
+    cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
@@ -68,7 +68,7 @@ def test_ideal_mix(species_definitions_ab):
     }
     bounds = {}
     cont = IdealMix(species_definitions_ab, {})
-    cont.define(res, bounds, ParameterDictionary())
+    cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
@@ -83,9 +83,8 @@ def test_gibbs_ideal_gas(species_definitions_ab):
         "S": sym("S_im", "J/K"),
         "mu": vec("mu_im", 2, "J/mol")
     }
-    bounds = {}
     cont = GibbsIdealGas(species_definitions_ab, {})
-    cont.define(res, bounds, ParameterDictionary())
+    cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
     assert_reproduction(result)
 
@@ -107,7 +106,7 @@ def test_helmholtz_ideal_gas(species_definitions_ab):
     }
     bounds = {}
     cont = HelmholtzIdealGas(species_definitions_ab, {})
-    cont.define(res, bounds, ParameterDictionary())
+    cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S p mu".split()}
     assert_reproduction(result)
 
@@ -136,7 +135,7 @@ def test_constant_gibbs_volume(species_definitions_ab):
     }
     bounds = {}
     cont = ConstantGibbsVolume(species_definitions_ab, {})
-    cont.define(res, bounds, ParameterDictionary())
+    cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "V mu".split()}
     assert_reproduction(result)
 
@@ -145,7 +144,7 @@ def test_molecular_weight(species_definitions_ab):
     """Test definition of molecular weights"""
     res, bounds = {}, {}
     cont = MolecularWeight(species_definitions_ab, {})
-    cont.define(res, bounds, ParameterDictionary())
+    cont.define(res)
     mw = res["mw"].to("g/mol").magnitude
     assert_reproduction(str(mw))
 
@@ -155,7 +154,7 @@ def test_charge_balance():
                "B": SpeciesDefinition("Cl:1-")}
     res, bounds = {"n": vec("n", 2, "mol")}, {}
     cont = ChargeBalance(species, {})
-    cont.define(res, bounds, ParameterDictionary())
+    cont.define(res)
     res_str = str(cont.residuals["balance"].value.m)
     assert res_str == "(n_0-n_1)"
 
@@ -165,10 +164,10 @@ def test_charge_balance_only_positive():
     res, bounds = {"n": vec("n", 2, "mol")}, {}
     cont = ChargeBalance(species, {})
     with raises(ValueError):
-        cont.define(res, bounds, ParameterDictionary())
+        cont.define(res)
 
 def test_no_charge_balance(species_definitions_ab):
     res, bounds = {"n": vec("n", 2, "mol")}, {}
     cont = ChargeBalance(species_definitions_ab, {})
-    cont.define(res, bounds, ParameterDictionary())
+    cont.define(res)
     assert not cont.residuals

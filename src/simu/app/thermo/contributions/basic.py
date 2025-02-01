@@ -44,15 +44,15 @@ class H0S0ReferenceState(ThermoContribution):
 
     provides = ["T_ref", "p_ref", "S", "mu"]
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         species = self.species
 
-        s_0 = par.register_vector("s_0", species, "J/(mol*K)")
-        dh_form = par.register_vector("dh_form", species, "J/mol")
+        s_0 = self.par_vector("s_0", species, "J/(mol*K)")
+        dh_form = self.par_vector("dh_form", species, "J/mol")
         res["S"] = s_0.T @ res["n"]
         res["mu"] = dh_form - res["T"] * s_0
-        res["T_ref"] = par.register_scalar("T_ref", "K")
-        res["p_ref"] = par.register_scalar("p_ref", "Pa")
+        res["T_ref"] = self.par_scalar("T_ref", "K")
+        res["p_ref"] = self.par_scalar("p_ref", "Pa")
 
     def declare_vector_keys(self):
         return {"mu": self.species}
@@ -105,19 +105,19 @@ class LinearHeatCapacity(ThermoContribution):
     due to a logarithmic contribution to entropy.
     """
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         T, n = res["T"], res["n"]
         T_ref = res["T_ref"]
         d_T, f_T = T - T_ref, T / T_ref
-        cp_a = par.register_vector("cp_a", self.species, "J/(mol*K)")
-        cp_b = par.register_vector("cp_b", self.species, "J/(mol*K**2)")
+        cp_a = self.par_vector("cp_a", self.species, "J/(mol*K)")
+        cp_b = self.par_vector("cp_b", self.species, "J/(mol*K**2)")
 
         d_h = (cp_a + 0.5 * d_T * cp_b) * d_T
         d_s = (cp_a - cp_b * T_ref) * log(f_T) + cp_b * d_T
         res["S"] += d_s.T @ n
         res["mu"] += d_h - T * d_s
 
-        bounds["T"] = T  # logarithm taken
+        self.add_bound("T", T)  # logarithm taken
 
 
 class StandardState(ThermoContribution):
@@ -137,7 +137,7 @@ class StandardState(ThermoContribution):
 
     provides = ["S_std", "p_std", "mu_std"]
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         # tag current chemical potential and entropy as standard state
         # create copy, such that tagged objects will not be mutated.
         res["S_std"] = copy(res["S"])
@@ -170,7 +170,7 @@ class IdealMix(ThermoContribution):
     domains has proven to be challenging in terms of solver robustness.
     """
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         T, n = res["T"], res["n"]
         N = qsum(n)
         x = n / N
@@ -178,7 +178,7 @@ class IdealMix(ThermoContribution):
         res["S"] -= n.T @ gtn
         res["mu"] += T * gtn
 
-        bounds["n"] = n
+        self.add_bound("n", n)
 
 
 class GibbsIdealGas(ThermoContribution):
@@ -208,7 +208,7 @@ class GibbsIdealGas(ThermoContribution):
 
     provides = ["V"]
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         T, p, n, p_ref = res["T"], res["p"], res["n"], res["p_ref"]
         N = qsum(n)
         gtn = R_GAS * log(p / p_ref)
@@ -217,7 +217,7 @@ class GibbsIdealGas(ThermoContribution):
         res["V"] = N * R_GAS * T / p
         res["mu"] += T * gtn
 
-        bounds["p"] = p
+        self.add_bound("p", p)
 
 
 class HelmholtzIdealGas(ThermoContribution):
@@ -247,7 +247,7 @@ class HelmholtzIdealGas(ThermoContribution):
     limited to positive volumes.
     """
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]
         N = qsum(n)
         p = N * R_GAS * T / V
@@ -257,7 +257,7 @@ class HelmholtzIdealGas(ThermoContribution):
         res["p"] = p
         res["mu"] += T * gtn
 
-        bounds["V"] = V
+        self.add_bound("V", V)
 
     def initial_state(self, state, properties):
         volume = qsum(state.mol_vector) * R_GAS * \
@@ -306,9 +306,9 @@ class ConstantGibbsVolume(ThermoContribution):
     """
     provides = ["V"]
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         n, p, p_ref = res["n"], res["p"], res["p_ref"]
-        v_n = par.register_vector("v_n", self.species, "m**3/mol")
+        v_n = self.par_vector("v_n", self.species, "m**3/mol")
         res["mu"] += v_n * (p - p_ref)
         res["V"] = v_n.T @ n
 
@@ -318,7 +318,7 @@ class MolecularWeight(ThermoContribution):
     based on the underlying :class:`simu.SpeciesDefinition` definitions."""
     provides = ["mw"]
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         mw = qvertcat(*[s.molecular_weight
                         for s in self.species_definitions.values()])
         res["mw"] = mw
@@ -350,7 +350,7 @@ class ChargeBalance(ThermoContribution):
 
     """
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         charges = [s.charge for s in self.species_definitions.values()]
         pos = len([c for c in charges if c > 0])
         neg = len([c for c in charges if c < 0])

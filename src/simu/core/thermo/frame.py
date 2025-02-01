@@ -88,16 +88,14 @@ class ThermoFrame:
             state_definition.prepare(result, flow)
             self.__vectors.update(state_definition.declare_vector_keys(species))
             for name, c in contribs.items():
-                bnds = {}  # TODO: put bounds and parameters into contribution class
-                new_params = ParameterDictionary()
                 c.reset()
-                c.define(result, bnds, new_params)
+                c.define(result)
                 self.__vectors.update(c.declare_vector_keys())
                 logger.debug(f"Defining contribution '{name}'")
-                if bnds:
-                    bounds[name] = bnds
-                if new_params:
-                    params[name] = new_params
+                if c.bounds:
+                    bounds[name] = c.bounds
+                if c.parameters:
+                    params[name] = c.parameters
                 if c.residuals:
                     residuals[name] = {k: v.value
                                        for k, v in c.residuals.items()}

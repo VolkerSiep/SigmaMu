@@ -52,8 +52,9 @@ class ThermoContribution(ABC):
 
     def reset(self):
         """Reset the object's state by clearing defined residuals."""
-        # TODO: also move bounds and parameters!?
         self.__residuals = ResidualHandler()
+        self.__parameters = ParameterDictionary()
+        self.__bounds = {}
 
     @property
     def species(self) -> Sequence[str]:
@@ -61,9 +62,7 @@ class ThermoContribution(ABC):
         return list(self.species_definitions.keys())
 
     @abstractmethod
-    def define(self, res: MutMap[Quantity],
-               bounds: MutMap[Quantity],
-               par: ParameterDictionary):
+    def define(self, res: MutMap[Quantity]):
         """Abstract method to implement the ``casadi`` expressions
         that make up this contribution.
 
@@ -87,7 +86,7 @@ class ThermoContribution(ABC):
 
         .. todo::
 
-            - describe in dedicated section the standard property names
+            - refer to dedicated section the standard property names
 
         """
 
@@ -119,6 +118,46 @@ class ThermoContribution(ABC):
         constraints on apparent species systems and any implicit thermodynamic
         models."""
         self.__residuals.add(name, residual, tol_unit,  tol)
+
+    def add_bound(self, name: str, bound: Quantity):
+        """Add a domain bound to the contribution. This is a property that
+        is required to be truly positive."""
+        self.__bounds[name] = bound
+
+    @property
+    def par_scalar(self):
+        """Shortcut method for ``self.parameters.register_scalar``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_scalar
+
+    @property
+    def par_vector(self):
+        """Shortcut method for ``self.parameters.register_vector``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_vector
+
+    @property
+    def par_sparse_matrix(self):
+        """Shortcut method for ``self.parameters.register_sparse_matrix``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_sparse_matrix
+
+    @property
+    def bounds(self) -> Map[Quantity]:
+        return self.__bounds
+
+    @property
+    def parameters(self) -> ParameterDictionary:
+        return self.__parameters
 
     @property
     def residuals(self) -> ResidualProxy:

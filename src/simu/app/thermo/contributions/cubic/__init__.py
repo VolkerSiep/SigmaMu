@@ -25,7 +25,7 @@ class LinearMixingRule(ThermoContribution):
         will be generated as the target name with ``_i`` appended.
     """
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         target = self.options["target"]
         source = self.options.get("source", target + "_i")
         res[target] = res[source].T @ res["n"]
@@ -79,14 +79,14 @@ class NonSymmetricMixingRule(ThermoContribution):
           = \left (\sum_i \sqrt{a_i(T)}\,n_i \right )^2
     """
 
-    def define(self, res, bounds, par):
+    def define(self, res):
         target = self.options["target"]
 
         def extract():
             source = self.options.get("source", target + "_i")
 
             temp, n, a_i = res["T"], res["n"], res[source]
-            tau = temp / par.register_scalar("T_ref", "K")
+            tau = temp / self.par_scalar("T_ref", "K")
             tau_1, tau_2 = 1 - tau, 1 - 1 / tau
             a_n = sqrt(a_i) * n
             N = qsum(n)
@@ -118,7 +118,7 @@ class NonSymmetricMixingRule(ThermoContribution):
                     pairs = self.options[name]
                 except KeyError:
                     continue
-                coeff = par.register_sparse_matrix(name, pairs, "dimless")
+                coeff = self.par_sparse_matrix(name, pairs, "dimless")
                 if coeff:
                     term = sum(c_1(i, j) * c for i, j, c in coeff.pair_items())
                     contributions.append(factor * term)
@@ -131,7 +131,7 @@ class NonSymmetricMixingRule(ThermoContribution):
                     pairs = self.options[name]
                 except KeyError:
                     continue
-                coeff = par.register_sparse_matrix(name, pairs, "dimless")
+                coeff = self.par_sparse_matrix(name, pairs, "dimless")
                 if coeff:
                     term = sum(c_2(i, j) * c for i, j, c in coeff.pair_items())
                     contributions.append(factor * term)
@@ -144,7 +144,8 @@ class NonSymmetricMixingRule(ThermoContribution):
             res[target] += sym
         if asym is not None:
             res[target] += asym
-        bounds["T"] = res["T"]
+
+        self.add_bound("T", res["T"])
 
 
 class CriticalParameters(ThermoContribution):
@@ -168,10 +169,10 @@ class CriticalParameters(ThermoContribution):
 
     provides = ["_T_c", "_p_c", "_omega"]
 
-    def define(self, res, bounds, par):
-        res["_T_c"] = par.register_vector("T_c", self.species, "K")
-        res["_p_c"] = par.register_vector("p_c", self.species, "bar")
-        res["_omega"] = par.register_vector("omega", self.species, "dimless")
+    def define(self, res):
+        res["_T_c"] = self.par_vector("T_c", self.species, "K")
+        res["_p_c"] = self.par_vector("p_c", self.species, "bar")
+        res["_omega"] = self.par_vector("omega", self.species, "dimless")
 
 
 class VolumeShift(ThermoContribution):
@@ -189,8 +190,8 @@ class VolumeShift(ThermoContribution):
 
     provides = ["_ceos_c_i"]
 
-    def define(self, res, bounds, par):
-        res["_ceos_c_i"] = par.register_vector("c_i", self.species, "m**3/mol")
+    def define(self, res):
+        res["_ceos_c_i"] = self.par_vector("c_i", self.species, "m**3/mol")
 
 
 class BostonMathiasAlphaFunction(ThermoContribution):
@@ -259,8 +260,8 @@ class BostonMathiasAlphaFunction(ThermoContribution):
 
     provides = ["_alpha"]
 
-    def define(self, res, bounds, par):
-        eta = par.register_vector("eta", self.species, "dimless")
+    def define(self, res):
+        eta = self.par_vector("eta", self.species, "dimless")
         temp, critical_temp, m_fac = res["T"], res["_T_c"], res["_m_factor"]
         tau = temp / critical_temp
         stau = sqrt(tau)
