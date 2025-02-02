@@ -32,16 +32,16 @@ class SimulationSolverIterationReport:
     :class:`SimulationSolver` run.
     """
     max_err: float
-    r"""For each :class:`~simu.core.model.residual.Residual`, the quotient of
-    residual value :math:`r_i` and tolerance :math:`t_i` is calculated.
-    ``max_err`` is the maximum absolute value of these quotients:
+    r"""For each :class:`~simu.core.utilities.residual.Residual`, the 
+    quotient of residual value :math:`r_i` and tolerance :math:`t_i` is 
+    calculated. ``max_err`` is the maximum absolute value of these quotients:
     
     .. math:: \mathrm{MET} = \max_i \frac{r_i}{t_i}
     """
 
     max_res_name: str
-    """The name of the :class:`~simu.core.model.residual.Residual` which causes
-    the value of :attr:`max_err`"""
+    """The name of the :class:`~simu.core.utilities.residual.Residual` which
+    causes the value of :attr:`max_err`"""
 
     relax_factor: float
     """The applied relaxation factor to stay within the domain of the process
@@ -66,7 +66,7 @@ class SimulationSolverIterationReport:
 
     The offset is introduced to not cause ``NaN`` values for the lucky case in
     which all residuals are exactly zero. This can however easily happen for
-    linear systems. Otherwise, :math:`\mathrm{LMET} < 1` is already a sufficient
+    linear systems. Anyhow, :math:`\mathrm{LMET} < 1` is already a sufficient
     condition for convergence.    
     """
 
@@ -96,8 +96,17 @@ class SimulationSolverReport:
         :meth:`~simu.NumericHandler.retain_state`.
     """
 
-    result: NestedMap[Quantity]
-    """A nested dictionary of all calculated model properties"""
+    prop_func: Callable[[Sequence[float]], NestedMap[Quantity]]
+    """The function to calculate all properties of the model as function of
+    the state."""
+
+    @property
+    def properties(self) -> NestedMap[Quantity]:
+        """This property returns all properties of the model, evaluated on
+        the :attr:`final_state` attribute. For larger models, this causes
+        noticeable computational effort. For this reason, this evaluation is
+        only done on demand."""
+        return self.prop_func(self.final_state)
 
 
 SimulationSolverCallback = Callable[
@@ -323,7 +332,7 @@ class SimulationSolver(Configurable):
         return SimulationSolverReport(
             iterations=reports,
             final_state=x,
-            result=funcs["f_y"]({"x": Quantity(x)})
+            prop_func=lambda z: funcs["f_y"]({"x": Quantity(z)})
         )
 
     def _prepare_functions(self) -> Map[Callable]:

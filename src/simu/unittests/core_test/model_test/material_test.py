@@ -12,10 +12,6 @@ from simu.app import all_contributions, GibbsState
 from simu.app.thermo.factories import ExampleThermoFactory
 
 
-# class BigNAugmentor(Augmentor):
-#     def define(self, material):
-#         material["N"] = sum(material["n"])
-
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
 

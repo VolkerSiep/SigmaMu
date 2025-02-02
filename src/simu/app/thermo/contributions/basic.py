@@ -328,9 +328,9 @@ class MolecularWeight(ThermoContribution):
 
 
 class ChargeBalance(ThermoContribution):
-    """This contribution defines a charge balance residual, if there are charged
-    species. A ValueError is raised if only either positive or negative charged
-    species exist.
+    r"""This contribution defines a charge balance residual, if there are
+    charged species. A ValueError is raised if only either positive or negative
+    charged species exist.
 
     Given the presents of opposite charged species, the residual defined, based
     on the molar quantities :math:`n_i` is

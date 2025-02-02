@@ -52,12 +52,14 @@ SimulationSolver
 SimulationSolverIterationReport
 -------------------------------
 .. autoclass:: simu.core.solver.simulation.SimulationSolverIterationReport
-   :members:
+  :exclude-members: __init__
+  :members:
 
 SimulationSolverReport
 ----------------------
 .. autoclass:: simu.core.solver.simulation.SimulationSolverReport
-   :members:
+  :exclude-members: __init__
+  :members:
 
 SimulationSolverCallback
 ------------------------
