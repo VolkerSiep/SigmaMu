@@ -1,7 +1,8 @@
 from numpy import squeeze
 from numpy.testing import assert_allclose
 
-from simu import NumericHandler, flatten_dictionary, Quantity
+from simu import NumericHandler, flatten_dictionary, Quantity, jacobian
+from simu.examples.material_model import Source
 from simu.core.utilities import assert_reproduction
 
 from .models import *
@@ -187,6 +188,33 @@ def test_thermo_residual(model_with_residual):
     rs = numeric.function.result_structure
     assert rs[numeric.RESIDUALS]["liq"]["ChargeBalance"]["balance"] == "A"
 
+
+def test_query_bounds():
+    numeric = NumericHandler(Source.top())
+    res = numeric.vector_res_names(numeric.BOUND_VEC)
+    assert_reproduction(res)
+
+
+def test_bound_sensitivity():
+    numeric = NumericHandler(Source.top())
+    args = numeric.arguments
+    names = numeric.vector_arg_names(numeric.STATE_VEC)
+    state = SymbolQuantity("x", "", names)
+    args[numeric.VECTORS][numeric.STATE_VEC] = state
+    res = numeric.function(args, squeeze_results=False)
+    res = res[numeric.VECTORS][numeric.BOUND_VEC]
+    jac = jacobian(res, state).magnitude
+    assert_reproduction(str(jac))
+
+
+def test_vector_bound(square_test_model):
+    numeric = NumericHandler(square_test_model.top())
+    res = numeric.vector_res_names(numeric.BOUND_VEC)
+    res = [r for r in res if r.startswith("local/IdealMix/")]
+    ref = ["local/IdealMix/n/CH3-(CH2)2-CH3", "local/IdealMix/n/CH3-CH2-CH3"]
+    assert res == ref
+
+
 def check_same_keys(dic1, dic2):
     """Check whether the two nested dictionaries have the same keys"""
     def is_it(d):
@@ -202,3 +230,4 @@ def check_same_keys(dic1, dic2):
     assert set(dic1.keys()) == set(dic2.keys())
     for key, child in dic1.items():
         check_same_keys(child, dic2[key])
+

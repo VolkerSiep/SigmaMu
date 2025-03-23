@@ -70,7 +70,7 @@ def test_change_parameters():
     param = solver.model_parameters["model_params"]
     param["p"] = Quantity(2, "MPa")
     res = solver.solve(max_iter=5)
-    p = res.result["thermo_props"]["source"]["p"]
+    p = res.properties["thermo_props"]["source"]["p"]
     assert abs(p - param["p"]) < Quantity(1e-7, "bar")
 
 
@@ -89,7 +89,7 @@ def test_change_parameters():
     #     try:
     #         unit = default_units[str(q.dimensionality)]
     #     except KeyError:
-    #         print(k, q.dimensionality)
+    #         pass  # print(k, q.dimensionality)
     #     else:
     #         q = q.to(unit)
     #     print(f"{k:20s} {q:.3g~}")

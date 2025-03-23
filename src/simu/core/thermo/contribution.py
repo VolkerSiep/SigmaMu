@@ -122,6 +122,7 @@ class ThermoContribution(ABC):
     def add_bound(self, name: str, bound: Quantity):
         """Add a domain bound to the contribution. This is a property that
         is required to be truly positive."""
+        # TODO: split bound into dictionary
         self.__bounds[name] = bound
 
     @property

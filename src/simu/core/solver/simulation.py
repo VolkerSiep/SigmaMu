@@ -308,7 +308,7 @@ class SimulationSolver(Configurable):
             ))
             if opt["call_back_iter"] is not None:
                 cb_result = opt["call_back_iter"](
-                    iteration, reports[-1], x,
+                    iteration, reports[-1], x.magnitude,
                     lambda x_arg: funcs["f_y"]({"x": Quantity(x_arg)})
                 )
                 if not cb_result:

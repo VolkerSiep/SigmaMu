@@ -92,4 +92,34 @@ Let's modify the input:
 >>> print(result.properties["thermo_props"]["source"]["n"]["Methane"].to("kmol/day"))
 7.3420... kilomole / day
 
-As a result of increasing the temperature, the molar flow at constant volume flow becomes less. In the same manner, we could change thermodynamic parameters -- only that due to the applied ideal gas law, none of them has impact on the calculated molar flow.
+As a result of increasing the temperature, the molar flow at constant volume flow becomes less. We could also change thermodynamic parameters at this point -- only that due to the applied ideal gas law, none of them has impact on the calculated molar flow.
+
+In above call, we also omitted the output by setting the ``output`` stream to ``None``.
+
+Using the callback function
+---------------------------
+Sometimes, for instance for debugging, it is useful to assess the model's state during the solving process in each iteration, and possibly even decide to stop the iterations based on custom conditions. The :class:`~simu.SimulationSolver` object offers to install a callback function:
+
+>>> def my_callback(iter, iter_report, state, prop_func):
+...     props = prop_func(state)
+...     print(iter, props["thermo_props"]["source"]["n"]["Methane"].to("kmol/day"))
+...     return True
+
+>>> solver = SimulationSolver(numeric, call_back_iter=my_callback, output=None)
+>>> result = solver.solve()
+0 8.6400... kilomole / day
+1 9.9151... kilomole / day
+2 9.6814... kilomole / day
+
+Here we observe the calculated molar flow for each iteration. The callback function returns ``True`` to proceed with the iterations until convergence is obtained.
+
+Handling starting values
+------------------------
+The model hosts its initial state, defined through the :class:`~simu.MaterialDefinition` objects. For our example model, this is
+
+>>> pprint(numeric.export_state())
+{'non-canonical': {},
+ 'thermo': {'source': {'T': '400 K',
+                       'n': {'Methane': '1 mol'},
+                       'p': '200000 Pa'}}}
+
