@@ -25,6 +25,7 @@
     "p_ref",
     "p_std"
   ],
+  "numeric_test.py::test_bound_sensitivity": "@1=1, \n[[00, @1, 00], \n [00, 00, @1], \n [@1, 00, 00]]",
   "numeric_test.py::test_collect_hierarchy_material_false": {
     "args": {
       "thermo_params": {
@@ -455,6 +456,11 @@
       }
     }
   },
+  "numeric_test.py::test_query_bounds": [
+    "source/GibbsIdealGas/p",
+    "source/IdealMix/n/Methane",
+    "source/LinearHeatCapacity/T"
+  ],
   "numeric_test.py::test_square_model": {
     "args": {
       "model_params": {

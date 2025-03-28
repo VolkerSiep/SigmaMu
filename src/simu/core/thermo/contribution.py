@@ -10,7 +10,7 @@ from typing import Any
 # internal modules
 from .species import SpeciesDefinition
 from .state import InitialState
-from ..utilities import Quantity, ParameterDictionary
+from ..utilities import Quantity, ParameterDictionary, QuantityDict
 from ..utilities.residual import ResidualHandler, ResidualProxy
 from ..utilities.types import Map, MutMap
 
@@ -55,6 +55,7 @@ class ThermoContribution(ABC):
         self.__residuals = ResidualHandler()
         self.__parameters = ParameterDictionary()
         self.__bounds = {}
+        self.__vector_props = {}
 
     @property
     def species(self) -> Sequence[str]:
@@ -119,11 +120,28 @@ class ThermoContribution(ABC):
         models."""
         self.__residuals.add(name, residual, tol_unit,  tol)
 
-    def add_bound(self, name: str, bound: Quantity):
+    def add_bound(self, name: str, bound: Quantity,
+                  keys: Sequence[str] = None):
         """Add a domain bound to the contribution. This is a property that
-        is required to be truly positive."""
-        # TODO: split bound into dictionary
-        self.__bounds[name] = bound
+        is required to be truly positive.
+
+        If ``bound`` is a vectorial property, its keys must first be registered
+        under given ``name`` via :meth:`declare_vector_keys`.
+
+        :param name: Name of the bounded variable
+        :param bound: A Scalar or vectorial quantity to remain truly positive
+        :param keys: If the quantity is vectorial or ``keys`` are given, they
+           will be used to identify the individual element(s). If ``keys`` are
+           not given, the vector quantity will use any previously defined
+           :meth:`declare_vector_keys` definition instead. If that entry also
+           does not exist, species names are assumed to be keys.
+        """
+        if bound.magnitude.size()[0] == 1 and keys is None:
+            self.__bounds[name] = bound
+        else:
+            if keys is None:
+                keys = self.__vector_props.get(name, self.species)
+            self.__bounds[name] = QuantityDict.from_vector_quantity(bound, keys)
 
     @property
     def par_scalar(self):
@@ -165,13 +183,17 @@ class ThermoContribution(ABC):
         """Return the defined residuals of this contribution"""
         return self.__residuals
 
-    def declare_vector_keys(self) -> Map[Sequence[str]]:
-        """Declare the keys of newly introduced vectorial properties. In most
-        cases, this will be the species names for the mole vector, and the
-        implementation will look as follows::
+    @property
+    def vectors(self) -> Map[Sequence[str]]:
+        return self.__vector_props
 
-            def declare_vector_keys(self):
-                return {"my_vector_property": self.species}
-
+    def declare_vector_keys(self, name: str, keys: Sequence[str] = None):
         """
-        return {}
+        Register a property as a vector property with given keys.
+        This way it can be handled correctly by the numeric handler.
+
+        :param name: The name of the property
+        :param keys: The names of the keys. If ``None`` (default), the species
+          names are used.
+        """
+        self.__vector_props[name] = self.species if keys is None else keys

@@ -201,6 +201,13 @@ class QuantityDict(dict[str, Quantity]):
         B: 2 m
         C: 3 m
         """
+        try:
+            l_magnitude = len(quantity.magnitude)
+        except TypeError:
+            l_magnitude = quantity.magnitude.size1()
+        if l_magnitude != len(keys):
+            raise ValueError("Dimension mismatch in resolving vector quantity: "
+                             f"{l_magnitude} != {len(keys)}")
         return cls({key: quantity[k] for k, key in enumerate(keys)})
 
     def __add__(self, other: _OType) -> Self:

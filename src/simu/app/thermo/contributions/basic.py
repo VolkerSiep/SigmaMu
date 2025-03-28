@@ -54,8 +54,7 @@ class H0S0ReferenceState(ThermoContribution):
         res["T_ref"] = self.par_scalar("T_ref", "K")
         res["p_ref"] = self.par_scalar("p_ref", "Pa")
 
-    def declare_vector_keys(self):
-        return {"mu": self.species}
+        self.declare_vector_keys("mu")
 
 
 class LinearHeatCapacity(ThermoContribution):
@@ -144,8 +143,7 @@ class StandardState(ThermoContribution):
         res["p_std"] = copy(res["p_ref"])
         res["mu_std"] = copy(res["mu"])
 
-    def declare_vector_keys(self):
-        return {"mu_std": self.species}
+        self.declare_vector_keys("mu_std")  # self.species can be default
 
 
 class IdealMix(ThermoContribution):
@@ -178,7 +176,7 @@ class IdealMix(ThermoContribution):
         res["S"] -= n.T @ gtn
         res["mu"] += T * gtn
 
-        self.add_bound("n", n)
+        self.add_bound("n", n, self.species)
 
 
 class GibbsIdealGas(ThermoContribution):
@@ -322,9 +320,7 @@ class MolecularWeight(ThermoContribution):
         mw = qvertcat(*[s.molecular_weight
                         for s in self.species_definitions.values()])
         res["mw"] = mw
-
-    def declare_vector_keys(self):
-        return {"mw": self.species}
+        self.declare_vector_keys("mw")
 
 
 class ChargeBalance(ThermoContribution):

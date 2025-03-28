@@ -147,7 +147,10 @@
         "V": "m ** 3"
       },
       "IdealMix": {
-        "n": "mol"
+        "n": {
+          "N2": "mol",
+          "O2": "mol"
+        }
       },
       "LinearHeatCapacity": {
         "T": "K"

@@ -19,12 +19,12 @@ def test_solve(sim_result):
 
 
 def test_solve_res_small(sim_result):
-    res = sim_result.result[NumericHandler.VECTORS][NumericHandler.RES_VEC]
+    res = sim_result.properties[NumericHandler.VECTORS][NumericHandler.RES_VEC]
     assert (abs(res.m_as("")) < 1).all()
 
 
 def test_reproduce_result(sim_result):
-    n = sim_result.result["thermo_props"]["source"]["n"]["Methane"]
+    n = sim_result.properties["thermo_props"]["source"]["n"]["Methane"]
     assert abs(n.m_as("mol/s") - 0.112054293180843) < 1e-7
 
 

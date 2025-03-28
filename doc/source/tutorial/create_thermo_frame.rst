@@ -110,7 +110,7 @@ Likewise, the frame can be queried for the properties that will be calculated:
 
 >>> pprint(frame.property_structure)
 {'bounds': {'GibbsIdealGas': {'p': 'Pa'},
-            'IdealMix': {'n': 'mol'},
+            'IdealMix': {'n': {'Methane': 'mol'}},
             'LinearHeatCapacity': {'T': 'K'}},
  'props': {'S': 'J / K',
            'T': 'K',

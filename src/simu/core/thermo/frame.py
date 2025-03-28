@@ -88,17 +88,18 @@ class ThermoFrame:
             state_definition.prepare(result, flow)
             self.__vectors.update(state_definition.declare_vector_keys(species))
             for name, c in contribs.items():
+                logger.debug(f"Defining contribution '{name}'")
                 c.reset()
                 c.define(result)
-                self.__vectors.update(c.declare_vector_keys())
-                logger.debug(f"Defining contribution '{name}'")
+                if c.vectors:
+                    self.__vectors.update(c.vectors)
                 if c.bounds:
                     bounds[name] = c.bounds
                 if c.parameters:
                     params[name] = c.parameters
                 if c.residuals:
-                    residuals[name] = {k: v.value
-                                       for k, v in c.residuals.items()}
+                    residuals[name] = {
+                        k: v.value for k, v in c.residuals.items()}
                     normed_residuals[name] = {
                         k: (v.value / v.tolerance).to("")
                         for k, v in c.residuals.items()}
