@@ -194,6 +194,11 @@ def test_query_bounds():
     res = numeric.vector_res_names(numeric.BOUND_VEC)
     assert_reproduction(res)
 
+def test_model_bounds():
+    numeric = NumericHandler(BoundTestModel.top())
+    res = numeric.vector_res_names(numeric.BOUND_VEC)
+    assert_reproduction(res)
+
 
 def test_bound_sensitivity():
     numeric = NumericHandler(Source.top())

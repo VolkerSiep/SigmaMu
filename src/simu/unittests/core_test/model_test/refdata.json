@@ -456,6 +456,9 @@
       }
     }
   },
+  "numeric_test.py::test_model_bounds": [
+    "length"
+  ],
   "numeric_test.py::test_query_bounds": [
     "source/GibbsIdealGas/p",
     "source/IdealMix/n/Methane",

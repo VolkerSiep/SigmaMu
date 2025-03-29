@@ -3,7 +3,7 @@ These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes), or
 numeric."""
 
 # stdlib modules
-from typing import Union
+from typing import Union, Self
 
 # external modules
 # need to import entire casadi module to distinguish functions of same name
@@ -37,6 +37,7 @@ __DERIVED_UNITS = \
     "siemens weber tesla henry lumen lux".split()
 
 
+
 class Quantity(_Q):
     """Proper quantity base-class for sub-classing.
 
@@ -57,6 +58,37 @@ class Quantity(_Q):
             return f"{self:~.16g}"
         except TypeError:  # magnitude cannot be formatted, probably symbol
             return f"{self:~}"
+
+    # operators needed for proper type checking in Pycharm (so long at least)
+    def __add__(self, other) -> Self:
+        return super().__add__(self, other)
+
+    def __radd__(self, other) -> Self:
+        return super().__radd__(self, other)
+
+    def __sub__(self, other) -> Self:
+        return super().__sub__(self, other)
+
+    def __rsub__(self, other) -> Self:
+        return super().__rsub__(self, other)
+
+    def __mul__(self, other) -> Self:
+        return super().__mul__(self, other)
+
+    def __rmul__(self, other) -> Self:
+        return super().__rmul__(self, other)
+
+    def __truediv__(self, other) -> Self:
+        return super().__truediv__(self, other)
+
+    def __rtruediv__(self, other) -> Self:
+        return super().__rtruediv__(self, other)
+
+    def __pow__(self, other) -> Self:
+        return super().__pow__(self, other)
+
+    def __rpow__(self, other) -> Self:
+        return super().__rpow__(self, other)
 
 
 # write back class, so it's used as result of quantity operations
