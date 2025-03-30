@@ -2,7 +2,7 @@ from typing import cast
 from pytest import fixture, raises
 
 from simu import NumericHandler, SimulationSolver, Quantity
-from simu.core.model.residual import ResidualHandler
+from simu.core.utilities.residual import ResidualHandler
 from simu.core.utilities.errors import NonSquareSystem
 from simu.core.utilities.qstructures import quantity_dict_to_strings
 from simu.core.utilities import assert_reproduction
@@ -19,12 +19,12 @@ def test_solve(sim_result):
 
 
 def test_solve_res_small(sim_result):
-    res = sim_result.result[NumericHandler.VECTORS][NumericHandler.RES_VEC]
+    res = sim_result.properties[NumericHandler.VECTORS][NumericHandler.RES_VEC]
     assert (abs(res.m_as("")) < 1).all()
 
 
 def test_reproduce_result(sim_result):
-    n = sim_result.result["thermo_props"]["source"]["n"]["Methane"]
+    n = sim_result.properties["thermo_props"]["source"]["n"]["Methane"]
     assert abs(n.m_as("mol/s") - 0.112054293180843) < 1e-7
 
 
@@ -70,7 +70,7 @@ def test_change_parameters():
     param = solver.model_parameters["model_params"]
     param["p"] = Quantity(2, "MPa")
     res = solver.solve(max_iter=5)
-    p = res.result["thermo_props"]["source"]["p"]
+    p = res.properties["thermo_props"]["source"]["p"]
     assert abs(p - param["p"]) < Quantity(1e-7, "bar")
 
 
@@ -89,7 +89,7 @@ def test_change_parameters():
     #     try:
     #         unit = default_units[str(q.dimensionality)]
     #     except KeyError:
-    #         print(k, q.dimensionality)
+    #         pass  # print(k, q.dimensionality)
     #     else:
     #         q = q.to(unit)
     #     print(f"{k:20s} {q:.3g~}")

@@ -1,9 +1,9 @@
 {
-  "relaxation_test.py::test_bound_sensitivity": "@1=1, \n[[@1, 00, 00], \n [00, 00, @1], \n [00, @1, 00]]",
+  "relaxation_test.py::test_bound_sensitivity": "@1=1, \n[[00, @1, 00], \n [00, 00, @1], \n [@1, 00, 00]]",
   "relaxation_test.py::test_query_bounds": [
-    "source/T",
-    "source/n/Methane",
-    "source/p"
+    "source/GibbsIdealGas/p",
+    "source/IdealMix/n",
+    "source/LinearHeatCapacity/T"
   ],
   "simulation_solver_test.py::test_model_parameters": {
     "T": "25 \u00b0C",

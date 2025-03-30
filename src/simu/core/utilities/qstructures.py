@@ -52,7 +52,8 @@ class ParameterDictionary(dict):
         self[key] = quantity
         return quantity
 
-    def register_vector(self, key: str, sub_keys: Iterable[str], unit: str):
+    def register_vector(self, key: str, sub_keys: Iterable[str],
+                        unit: str) -> Quantity:
         """Create a quantity vector with symbols and add the structure to
         the dictionary. The given unit is converted to base units before being
         applied. Calling the method returns the created quantity
@@ -73,8 +74,8 @@ class ParameterDictionary(dict):
         self[key] = {s: SymbolQuantity(f"{key}.{s}", unit) for s in sub_keys}
         return qvertcat(*self[key].values())
 
-    def register_sparse_matrix(self, key: str,
-                               pairs: Iterable[tuple[str, str]], unit: str):
+    def register_sparse_matrix(self, key: str, pairs: Iterable[tuple[str, str]],
+                               unit: str) -> NestedMap[Quantity]:
         """Create a sparse matrix quantity and add the structure to the
         dictionary. The given unit is converted to base units before being
         applied.
@@ -200,6 +201,13 @@ class QuantityDict(dict[str, Quantity]):
         B: 2 m
         C: 3 m
         """
+        try:
+            l_magnitude = len(quantity.magnitude)
+        except TypeError:
+            l_magnitude = quantity.magnitude.size1()
+        if l_magnitude != len(keys):
+            raise ValueError("Dimension mismatch in resolving vector quantity: "
+                             f"{l_magnitude} != {len(keys)}")
         return cls({key: quantity[k] for k, key in enumerate(keys)})
 
     def __add__(self, other: _OType) -> Self:
@@ -497,3 +505,4 @@ def extract_sub_structure(source: NestedMap[Quantity],
             return src[key]
         return {k: prepare(name, k, q, src[key]) for k, q in items}
     return {k: prepare("", k, s, source) for k, s in structure.items()}
+

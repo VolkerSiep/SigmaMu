@@ -143,9 +143,18 @@
   },
   "frame_test.py::test_property_structure": {
     "bounds": {
-      "T": "K",
-      "V": "m ** 3",
-      "n": "mol"
+      "HelmholtzIdealGas": {
+        "V": "m ** 3"
+      },
+      "IdealMix": {
+        "n": {
+          "N2": "mol",
+          "O2": "mol"
+        }
+      },
+      "LinearHeatCapacity": {
+        "T": "K"
+      }
     },
     "props": {
       "S": "J / K",

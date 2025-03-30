@@ -17,7 +17,7 @@ Hearing about an *ideal gas*, the famous equation
 
 will flash in bright colors within the brain of most readers, accompanied by a slight scent of vanilla -- or is that only me? Indeed, above equation is the *ideal gas law*, and by that the most primitive equation that one might call an *equation of state* (EOS). However, it does not contain any standard state information as such, that is enthalpy, entropy, and heat capacity.
 
-To start with, we need a **reference state**, describing the enthalpy and entropy of the species :math:`i` at a fixed reference temperature :math:`T_\mathrm{ref}` and pressure :math:`T_\mathrm{ref}`. This is expressed as
+To start with, we need a **reference state**, describing the enthalpy and entropy of the species :math:`i` at a fixed reference temperature :math:`T_\mathrm{ref}` and pressure :math:`p_\mathrm{ref}`. This is expressed as
 
 .. math::
     \mu_{i, \mathrm{ref}} = (T_\mathrm{ref}, p_\mathrm{ref}) = \Delta_f h_i - T\,s_{0,i}
@@ -109,7 +109,9 @@ We receive the structure above, indicating the required physical dimension as a 
 Likewise, the frame can be queried for the properties that will be calculated:
 
 >>> pprint(frame.property_structure)
-{'bounds': {'T': 'K', 'n': 'mol', 'p': 'Pa'},
+{'bounds': {'GibbsIdealGas': {'p': 'Pa'},
+            'IdealMix': {'n': {'Methane': 'mol'}},
+            'LinearHeatCapacity': {'T': 'K'}},
  'props': {'S': 'J / K',
            'T': 'K',
            'T_ref': 'K',

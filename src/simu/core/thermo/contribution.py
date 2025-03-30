@@ -10,7 +10,8 @@ from typing import Any
 # internal modules
 from .species import SpeciesDefinition
 from .state import InitialState
-from ..utilities import Quantity, ParameterDictionary
+from ..utilities import Quantity, ParameterDictionary, QuantityDict
+from ..utilities.residual import ResidualHandler, ResidualProxy
 from ..utilities.types import Map, MutMap
 
 
@@ -47,6 +48,14 @@ class ThermoContribution(ABC):
     def __init__(self, species: Map[SpeciesDefinition], options):
         self.species_definitions: Map[SpeciesDefinition] = species
         self.options = options
+        self.reset()
+
+    def reset(self):
+        """Reset the object's state by clearing defined residuals."""
+        self.__residuals = ResidualHandler()
+        self.__parameters = ParameterDictionary()
+        self.__bounds = {}
+        self.__vector_props = {}
 
     @property
     def species(self) -> Sequence[str]:
@@ -54,9 +63,7 @@ class ThermoContribution(ABC):
         return list(self.species_definitions.keys())
 
     @abstractmethod
-    def define(self, res: MutMap[Quantity],
-               bounds: MutMap[Quantity],
-               par: ParameterDictionary):
+    def define(self, res: MutMap[Quantity]):
         """Abstract method to implement the ``casadi`` expressions
         that make up this contribution.
 
@@ -80,7 +87,7 @@ class ThermoContribution(ABC):
 
         .. todo::
 
-            - describe in dedicated section the standard property names
+            - refer to dedicated section the standard property names
 
         """
 
@@ -105,13 +112,88 @@ class ThermoContribution(ABC):
         """
         ...
 
-    def declare_vector_keys(self) -> Map[Sequence[str]]:
-        """Declare the keys of newly introduced vectorial properties. In most
-        cases, this will be the species names for the mole vector, and the
-        implementation will look as follows::
+    def add_residual(self, name: str, residual: Quantity,
+                     tol_unit: str, tol: float = 1e-7):
+        """Define a residual that represents an implicit constraint in the
+        thermodynamic model itself. Typical examples are equilibrium
+        constraints on apparent species systems and any implicit thermodynamic
+        models."""
+        self.__residuals.add(name, residual, tol_unit,  tol)
 
-            def declare_vector_keys(self):
-                return {"my_vector_property": self.species}
+    def add_bound(self, name: str, bound: Quantity,
+                  keys: Sequence[str] = None):
+        """Add a domain bound to the contribution. This is a property that
+        is required to be truly positive.
 
+        If ``bound`` is a vectorial property, its keys must first be registered
+        under given ``name`` via :meth:`declare_vector_keys`.
+
+        :param name: Name of the bounded variable
+        :param bound: A Scalar or vectorial quantity to remain truly positive
+        :param keys: If the quantity is vectorial or ``keys`` are given, they
+           will be used to identify the individual element(s). If ``keys`` are
+           not given, the vector quantity will use any previously defined
+           :meth:`declare_vector_keys` definition instead. If that entry also
+           does not exist, species names are assumed to be keys.
         """
-        return {}
+        if bound.magnitude.size()[0] == 1 and keys is None:
+            self.__bounds[name] = bound
+        else:
+            if keys is None:
+                keys = self.__vector_props.get(name, self.species)
+            self.__bounds[name] = QuantityDict.from_vector_quantity(bound, keys)
+
+    @property
+    def par_scalar(self):
+        """Shortcut method for ``self.parameters.register_scalar``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_scalar
+
+    @property
+    def par_vector(self):
+        """Shortcut method for ``self.parameters.register_vector``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_vector
+
+    @property
+    def par_sparse_matrix(self):
+        """Shortcut method for ``self.parameters.register_sparse_matrix``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_sparse_matrix
+
+    @property
+    def bounds(self) -> Map[Quantity]:
+        return self.__bounds
+
+    @property
+    def parameters(self) -> ParameterDictionary:
+        return self.__parameters
+
+    @property
+    def residuals(self) -> ResidualProxy:
+        """Return the defined residuals of this contribution"""
+        return self.__residuals
+
+    @property
+    def vectors(self) -> Map[Sequence[str]]:
+        return self.__vector_props
+
+    def declare_vector_keys(self, name: str, keys: Sequence[str] = None):
+        """
+        Register a property as a vector property with given keys.
+        This way it can be handled correctly by the numeric handler.
+
+        :param name: The name of the property
+        :param keys: The names of the keys. If ``None`` (default), the species
+          names are used.
+        """
+        self.__vector_props[name] = self.species if keys is None else keys

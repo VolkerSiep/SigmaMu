@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from collections.abc import Iterator
+from casadi import DM
 
-from ..utilities.quantity import Quantity
-from ..utilities.types import Map
-from ..utilities.errors import DimensionalityError
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.types import Map
+from simu.core.utilities.errors import DimensionalityError
 
 
 @dataclass
@@ -57,10 +58,22 @@ class ResidualHandler(ResidualProxy):
 
     def add(self, name: str, residual: Quantity,
             tol_unit: str, tol: float = 1e-7):
-        """Define a residual"""
+        """Define a residual, to approach zero withing its tolerance when the
+        model is solved.
+
+        :param name: A unique name within the local context
+        :param residual: The residual to be zero.
+        :param tol_unit: The unit of the tolerance, which must be compatible
+          with the unit of the residual quantity.
+        :param tol: The tolerance value. A normal recommendation is to give
+          ``1e-7`` for a typical unit of measurement, which for extensive
+          variables is largely problem size dependent. An industrial flow is
+          typically characterized by ``kg/h``, while a lab scale experiment
+          can operate with ``g/h``.
+        """
         if name in self.__residuals:
             raise KeyError(f"Residual {name} already defined")
-        self.__residuals[name] = Residual(residual, Quantity(tol, tol_unit))
+        self.__residuals[name] = Residual(residual, Quantity(DM(tol), tol_unit))
 
     def __getitem__(self, key: str) -> Residual:
         return self.__residuals[key]

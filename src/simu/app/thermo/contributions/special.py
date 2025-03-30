@@ -21,9 +21,13 @@ class Derivative(ThermoContribution):
     ``f"d{options['y']}_d{options['x']}"``.
     """
 
-    def define(self, res, bound, par):
+    def define(self, res):
         independent = self.options["x"]
         dependent = self.options["y"]
         name = f"d{dependent}_d{independent}"
         if name not in res:
             res[name] = jacobian(res[dependent], res[independent])
+
+        # TODO: what do I do if one or even both of these are vectors?
+        #  if one is a vector, I can still use the normal declare_vector_keys,
+        #  but if both are vectors, I need to generalize that routine.

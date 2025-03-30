@@ -12,7 +12,7 @@ def sym(name: str, units: str) -> SymbolQuantity:
 
 
 def vec(name: str, size: int, units: str) -> SymbolQuantity:
-    "define a vector symbolic quantity"
+    """define a vector symbolic quantity"""
     return SymbolQuantity(name, base_unit(units), size)
 
 
@@ -24,5 +24,5 @@ def test_derivative():
     res = {"T": tau, "poly": poly}
     opt = {"y": "poly", "x": "T"}
     deri = Derivative(["A", "B"], opt)
-    deri.define(res, {}, {})
+    deri.define(res)
     assert_reproduction(str(res["dpoly_dT"]))

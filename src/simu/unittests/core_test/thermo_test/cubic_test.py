@@ -35,7 +35,7 @@ def test_critical_parameters(species_definitions_ab):
     res = {}
     par = ParameterDictionary()
     cont = CriticalParameters(species_definitions_ab, {})
-    cont.define(res, {}, par)
+    cont.define(res)
     assert_reproduction(res)
 
 
@@ -44,8 +44,8 @@ def test_volume_shift(species_definitions_ab):
     res = {}
     par = ParameterDictionary()
     cont = VolumeShift(species_definitions_ab, {})
-    cont.define(res, {}, par)
-    assert_reproduction([res, par])
+    cont.define(res)
+    assert_reproduction([res, cont.parameters])
 
 
 def test_linear_mixing_rule(species_definitions_ab):
@@ -55,7 +55,7 @@ def test_linear_mixing_rule(species_definitions_ab):
     par = ParameterDictionary()
     opt = {"target": "c"}
     cont = LinearMixingRule(species_definitions_ab, opt)
-    cont.define(res, {}, par)
+    cont.define(res)
     assert_reproduction(res["c"])
 
 
@@ -80,7 +80,7 @@ def test_redlich_kwong_eos(species_definitions_ab):
         vec("x", 4, "dimless")
     })
     cont = RedlichKwongEOSLiquid(species_definitions_ab, {})
-    cont.define(res, {}, {})
+    cont.define(res)
     keys = "S p mu _ceos_a_T _ceos_b_T".split()
     result = {k: res[k] for k in keys}
     assert_reproduction(result)
@@ -88,10 +88,10 @@ def test_redlich_kwong_eos(species_definitions_ab):
 
 def test_abstract_class_init(species_definitions_ab):
     """Check that abstract RedlichKwongEOS class cannot be instantiated"""
-    with raises(TypeError) as excinfo:
+    with raises(TypeError) as exception_info:
         # pylint: disable=abstract-class-instantiated
         RedlichKwongEOS(species_definitions_ab, {})
-    assert "abstract" in str(excinfo.value)
+    assert "abstract" in str(exception_info.value)
 
 
 def test_non_symmetric_mixing_rule(species_definitions_abc):
@@ -109,7 +109,7 @@ def test_non_symmetric_mixing_rule(species_definitions_abc):
     }
     cont = NonSymmetricMixingRule(species_definitions_abc, options)
     par = ParameterDictionary()
-    cont.define(res, {}, par)
+    cont.define(res)
     assert_reproduction(res["a"])
 
 
@@ -128,7 +128,7 @@ def test_non_symmetric_mixing_rule_no_interaction(species_definitions_abc):
     }
     cont = NonSymmetricMixingRule(species_definitions_abc, options)
     par = ParameterDictionary()
-    cont.define(res, {}, par)
+    cont.define(res)
 
 
 def test_redlich_kwong_a_function(species_definitions_ab):
@@ -139,7 +139,7 @@ def test_redlich_kwong_a_function(species_definitions_ab):
         "_p_c": vec('p_c', 2, "bar")
     }
     cont = RedlichKwongAFunction(species_definitions_ab, {})
-    cont.define(res, {}, {})
+    cont.define(res)
     assert_reproduction(res["_ceos_a_i"])
 
 
@@ -147,7 +147,7 @@ def test_redlich_kwong_b_function(species_definitions_ab):
     """Test definition of RedlichKwongBFunction contribution"""
     res = {"_T_c": vec('T_c', 2, "K"), "_p_c": vec('p_c', 2, "bar")}
     cont = RedlichKwongBFunction(species_definitions_ab, {})
-    cont.define(res, {}, {})
+    cont.define(res)
     assert_reproduction(res["_ceos_b_i"])
 
 
@@ -155,7 +155,7 @@ def test_rk_m_factor(species_definitions_ab):
     """Test definition of RedlichKwongMFactor contribution"""
     res = {"_omega": vec('w', 2, "dimless")}
     cont = RedlichKwongMFactor(species_definitions_ab, {})
-    cont.define(res, {}, {})
+    cont.define(res)
     assert_reproduction(res["_m_factor"])
 
 
@@ -244,7 +244,7 @@ def test_initialise_rk2(cls, species_definitions_ab):
 
     res.update(ideal)
     cont = cls(species_definitions_ab, {})
-    cont.define(res, {}, {})  # now the ideal part in res is overwritten
+    cont.define(res)  # now the ideal part in res is overwritten
 
     # now with number quantities
     T, p, n = Q("100 degC"), Q("1 bar"), Q([0.5, 0.5], "mol")

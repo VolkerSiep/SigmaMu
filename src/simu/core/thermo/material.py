@@ -21,7 +21,6 @@ class MaterialSpec:
 
     def __init__(self, species: Optional[Iterable[str]] = None,
                  flow: bool = True):
-        #        augmenters: Optional[Iterable[Type[Augmenter]]] = None):
         """Create an instance based on the arguments as follows:
 
         :species: If ``None`` (default), allow any species. If containing
@@ -34,7 +33,6 @@ class MaterialSpec:
         self.__flow = flow
         self.__locked = not (species is None or "*" in species)
         self.__species = set() if species is None else set(species) - set("*")
-        # self.__augmenters = set() if augmenters is None else set(augmenters)
 
     @classmethod
     @property
@@ -79,11 +77,6 @@ class MaterialSpec:
         flow_comp = self.is_flow() == material.is_flow()
         return flow_comp and not ((spe - mspe) or (locked and (mspe - spe)))
 
-    # @property
-    # def augmenters(self) -> set[Type[Augmenter]]:
-    #     """The set of required augmentor classes"""
-    #     return set(self.__augmenters)
-
 
 class Material(MutMap[Quantity]):
     """This class represents a material"""
@@ -126,8 +119,9 @@ class Material(MutMap[Quantity]):
 
         self.__properties = {n: convert(n, p) for n, p in props["props"].items()
                              if not n.startswith("_")}
-        self.__bounds = {n: convert(n, p) for n, p in props["bounds"].items()
-                         if not n.startswith("_")}
+        self.__bounds = props.get("bounds", {})
+        self.__residuals = props.get("residuals", {})
+        self.__normed_residuals = props.get("normed_residuals", {})
         self.__flow = flow
 
         # create a QFunction to map a state and parameters into a new initial
@@ -137,18 +131,17 @@ class Material(MutMap[Quantity]):
         res = {n: props["props"][n] for n in "Tpn"}
         self.__ini_func = QFunction(args, res, "ini_func")
 
-        # TODO: apply augmenters as required in definition
-
     def retain_initial_state(self, state: Sequence[float],
                              parameters: NestedMap[Quantity]):
         param_struct = self.definition.frame.parameter_structure
-        parameters = extract_sub_structure(parameters, param_struct)
+        store_name = self.definition.store.name
+        parameters = extract_sub_structure(parameters[store_name], param_struct)
         args = {"state": Quantity(state), "param": parameters}
         res = self.__ini_func(args)
         self.initial_state = InitialState(
             temperature=res["T"],
             pressure=res["p"],
-            mol_vector=res["n"])
+            mol_vector=res["n"].reshape(-1))  # make sure it's a vector
 
     @property
     def species(self) -> Collection[str]:
@@ -166,8 +159,25 @@ class Material(MutMap[Quantity]):
         return {f"x_{k:03d}": Quantity(x_k) for k, x_k in enumerate(state)}
 
     @property
-    def bounds(self):
+    def bounds(self) -> NestedMap[Quantity]:
+        """Return the bounds of the material as a nested mapping. The top
+        level keys will be the names of the original contributions, while the
+        second level keys will be the names of the bounds. The mapping will
+        only have these two levels.
+        """
         return self.__bounds
+
+    def residuals(self, normed: bool = False) -> NestedMap[Quantity]:
+        """Return the residuals of the material as a nested mapping. The top
+        level keys will be the names of the original contributions, while the
+        second level keys will be the names of the residuals. The mapping will
+        only have these two levels.
+
+        If ``normed`` is ``true``, return the dimensionless ratio of residual
+        values and their tolerances instead.
+        """
+        return self.__normed_residuals if normed else self.__residuals
+
 
     def __getitem__(self, key: str) -> Quantity:
         """Return a (symbolic) property that is calculated by the underlying
@@ -178,10 +188,6 @@ class Material(MutMap[Quantity]):
         """Supplement the material with another property. The ``symbol``
         argument must be a symbolic quantity, and it is highly immoral to supply
         a symbol that is a function of more than prior material properties.
-
-        Normally, this operator is only to be used by :class:`Augmentor`
-        classes, intending to equip all materials of the same type with the
-        given extra property.
         """
         if key in self.__properties:
             raise KeyError(f"Property '{key}' already exists in material")
@@ -201,10 +207,6 @@ class Material(MutMap[Quantity]):
         """Return if the material represents a flow (``True``) or not
         (``False``)"""
         return self.__flow
-
-    # @property
-    # def augmenters(self) -> set[Type[Augmenter]]:
-    #     pass
 
 
 class MaterialDefinition:
@@ -292,15 +294,3 @@ class MaterialLab:
         species_map = {s: self.__species_db[s] for s in species}
         frame = self.__factory.create_frame(species_map, structure)
         return MaterialDefinition(frame, initial_state, self.__param_store)
-
-
-class Augmenter(ABC):
-    """An Augmenter is a specific class to extend the physical properties
-    calculated on a material instance."""
-    def __init__(self, frame: ThermoFrame):
-        self.species = frame.species
-
-    @abstractmethod
-    def define(self, material: "Material"):
-        """Method to extend the properties of a material object"""
-        ...

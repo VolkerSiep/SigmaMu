@@ -47,3 +47,9 @@ MolecularWeight
 .. autoclass:: simu.app.MolecularWeight
   :show-inheritance:
   :exclude-members: __init__, __new__
+
+ChargeBalance
+-------------
+.. autoclass:: simu.app.ChargeBalance
+  :show-inheritance:
+  :exclude-members: __init__, __new__

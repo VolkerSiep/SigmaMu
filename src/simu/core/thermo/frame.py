@@ -68,7 +68,6 @@ class ThermoFrame:
         with given species and contributions.
         """
         # need to instantiate the contributions
-        # species_list = list(species.keys())
         contribs: Map[ThermoContribution] = {
             name: cls_(species, options)
             for name, (cls_, options) in contributions.items()
@@ -82,22 +81,32 @@ class ThermoFrame:
             # define thermodynamic state (th, mc, [ch])
             state = SymbolQuantity("x", "dimless", len(species) + 2)
             # call the contributions; build up result dictionary
-            # mw = qvertcat(*[s.molecular_weight for s in species.values()])
             result = {"_state": state}
             bounds = {}
-            # self.__vectors.update({"mw": species_list})
+            residuals = {}
+            normed_residuals = {}
             state_definition.prepare(result, flow)
             self.__vectors.update(state_definition.declare_vector_keys(species))
-            for name, contribution in contribs.items():
-                new_params = ParameterDictionary()
-                contribution.define(result, bounds, new_params)
-                self.__vectors.update(contribution.declare_vector_keys())
+            for name, c in contribs.items():
                 logger.debug(f"Defining contribution '{name}'")
-                if new_params:
-                    params[name] = new_params
+                c.reset()
+                c.define(result)
+                if c.vectors:
+                    self.__vectors.update(c.vectors)
+                if c.bounds:
+                    bounds[name] = c.bounds
+                if c.parameters:
+                    params[name] = c.parameters
+                if c.residuals:
+                    residuals[name] = {
+                        k: v.value for k, v in c.residuals.items()}
+                    normed_residuals[name] = {
+                        k: (v.value / v.tolerance).to("")
+                        for k, v in c.residuals.items()}
             # create function
             args = {"state": state, "parameters": params}
-            res = {"props": result, "bounds": bounds}
+            res = {"props": result, "bounds": bounds,
+                   "residuals": residuals, "normed_residuals": normed_residuals}
             return QFunction(args, res, "thermo_frame"), params
 
         self.__function, parameters = create_function(flow=False)
@@ -167,7 +176,23 @@ class ThermoFrame:
     @property
     def property_structure(self) -> NestedMap[str]:
         """Returns a recursive structure properties, defining the calculated
-        properties from :meth:`__call__` """
+        properties, bounds, and residuals as follows:
+
+        .. code-block::
+
+            {"props": ...,
+             "bounds": ...,
+             "residuals": ...,
+             "normed_residuals": ...
+             }
+
+         The ``props`` sub-structure represents all calculated properties.
+         The ``bounds`` sub-structure contains all bounds, represented as
+           variables that need to be truly positive.
+         The ``residuals`` structure contains the residuals in their given
+           unit, while the ``normed_residuals`` structure contains the
+           dimensionless ratios of residual values and tolerances.
+         """
         return self.__function.result_structure
 
     @property

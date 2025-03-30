@@ -12,10 +12,6 @@ from simu.app import all_contributions, GibbsState
 from simu.app.thermo.factories import ExampleThermoFactory
 
 
-# class BigNAugmentor(Augmentor):
-#     def define(self, material):
-#         material["N"] = sum(material["n"])
-
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
 
@@ -47,7 +43,8 @@ def test_create_material(material_h2o_rk_liq):
 
 def test_retain_initial_state_material(material_def_h2o_with_param):
     material = material_def_h2o_with_param.create_flow()
-    param = material_def_h2o_with_param.store.get_all_values()
+    store = material_def_h2o_with_param.store
+    param = {store.name: store.get_all_values()}
     x = [300, 2e5, 10]
     material.retain_initial_state(x, param)
     ini = material.initial_state

@@ -106,7 +106,8 @@ mathjax3_config = {
         "macros": {
             "emul": r'{\stackrel{E}{\cdot}}',
             "vec": [r'{\mathbf{\boldsymbol{#1}}}', 1],
-            "standard": r'{\circ\hspace{-1.45ex}-}'
+            "standard": r'{\circ\hspace{-1.45ex}-}',
+            "pade": [r"\left .\frac{\partial #1}{\partial #2} \right |_{#3}", 3]
         }
     }
 }
@@ -114,7 +115,9 @@ mathjax3_config = {
 rst_prolog = r"""
 .. |m3| replace:: m\ :sup:`3`
 .. |degC| replace:: °C
+.. |SigmaMu| replace:: :math:`\color{blue}\mathrm{SigmaMu}`
 """
+
 rst_epilog = r"""
 .. _pytest: https://docs.pytest.org/
 .. _CasADi: https://web.casadi.org

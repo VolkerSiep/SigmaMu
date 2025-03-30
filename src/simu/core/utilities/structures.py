@@ -3,13 +3,14 @@ This module contains general helper functions that are useful on several
 levels, while relying to maximal degree on standard python structures.
 """
 from re import escape, split
-from typing import TypeVar
+from typing import TypeVar, Callable
 from collections import Counter
 
 # internal modules
 from .types import NestedMap, MutMap, Map, NestedMutMap
 
 _V = TypeVar("_V")
+_R = TypeVar("_R")
 FLATTEN_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 
@@ -92,3 +93,19 @@ def unflatten_dictionary(flat_structure: Map[_V]) -> NestedMap[_V]:
         ]
         insert(result, keys, value)
     return result
+
+
+def nested_map(structure: NestedMap[_V],
+               function: Callable[[_V], _R]) -> NestedMap[_R]:
+    """Apply a unary function to each leaf values of the given nested
+    dictionary, and return the same structure with the function's values as
+    leafs.
+    >>> a = {'a': {'b': 1, 'c': 2}, 'd': {'e/f': 3}}
+    >>> nested_map(a, lambda x: 2 * x)
+    {'a': {'b': 2, 'c': 4}, 'd': {'e/f': 6}}
+    """
+    try:
+        items = structure.items()
+    except AttributeError:
+        return function(structure)
+    return {k: nested_map(v, function) for k, v in items}

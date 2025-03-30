@@ -25,6 +25,7 @@
     "p_ref",
     "p_std"
   ],
+  "numeric_test.py::test_bound_sensitivity": "@1=1, \n[[00, @1, 00], \n [00, 00, @1], \n [@1, 00, 00]]",
   "numeric_test.py::test_collect_hierarchy_material_false": {
     "args": {
       "thermo_params": {
@@ -455,6 +456,14 @@
       }
     }
   },
+  "numeric_test.py::test_model_bounds": [
+    "length"
+  ],
+  "numeric_test.py::test_query_bounds": [
+    "source/GibbsIdealGas/p",
+    "source/IdealMix/n/Methane",
+    "source/LinearHeatCapacity/T"
+  ],
   "numeric_test.py::test_square_model": {
     "args": {
       "model_params": {
@@ -586,7 +595,7 @@
     "thermo_props/local/p_std": "101325.000000 Pa",
     "thermo_props/local/x/CH3-(CH2)2-CH3": "0.500000",
     "thermo_props/local/x/CH3-CH2-CH3": "0.500000",
-    "vectors/bounds": "[1.000000 0.000053 283.150000 0.000197 949263768680.530884 1.000000 1.000000 1000000.000000]",
+    "vectors/bounds": "[1.000000 0.000197 1.000000 1.000000 283.150000 283.150000 0.000053 0.000197 949263768680.530884 1000000.000000]",
     "vectors/residuals": "[10000000.000000 0.000000 0.000003 -8000000.000000]"
   }
 }

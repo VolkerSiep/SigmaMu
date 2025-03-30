@@ -2,7 +2,7 @@ from pytest import raises
 
 from simu.core.utilities import Quantity
 from simu.core.utilities.errors import DimensionalityError
-from simu.core.model.residual import ResidualHandler
+from simu.core.utilities.residual import ResidualHandler
 
 
 def test_create_residuals():

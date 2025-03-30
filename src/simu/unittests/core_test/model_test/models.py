@@ -76,7 +76,7 @@ class HierarchyTestModel2(Model):
         # # later shortcut syntax proposal:
         # with self.child("square", SquareTestModel) as child:
         with self.hierarchy.add("square", PropertyTestModel) as child:
-            child.parameters.provide(length=length)  # TODO: Why type error?
+            child.parameters.provide(length=length)
 
         volume = self.parameters["depth"] * child.properties["area"]
         self.properties["volume"] = volume
@@ -94,7 +94,6 @@ class MaterialTestModel2(Model):
 
 class ResidualTestModel(Model):
     """A simple model to test residuals"""
-
     def interface(self):
         self.parameters.define("length", 10, "m")
         self.parameters.define("area_spec", 50, "m**2")
@@ -112,3 +111,11 @@ class ResidualTestModel2(Model):
         res = SymbolQuantity("Hubert", "K")
         self.residuals.add("Hubert", res, "degC")
 
+
+class BoundTestModel(Model):
+    def interface(self):
+        self.parameters.define("length", 10, "m")
+
+    def define(self):
+        length = self.parameters["length"]
+        self.bounds.add("length", length)
