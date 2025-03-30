@@ -165,7 +165,7 @@ def test_retain_initial_values(thermo_param, square_test_model):
     numeric = NumericHandler(model.create_proxy().finalise())
     material = model.materials["local"]
     material.definition.store.add_source("default", thermo_param)
-    params = numeric.arguments["thermo_params"]["default"]
+    params = numeric.arguments["thermo_params"]
     state = [283.15, 2 * 0.000196732, 2, 2]
     numeric.retain_state(state, params)
     pressure = material.initial_state.pressure
@@ -177,7 +177,7 @@ def test_retain_and_args(thermo_param, square_test_model):
     numeric = NumericHandler(model.create_proxy().finalise())
     material = model.materials["local"]
     material.definition.store.add_source("default", thermo_param)
-    params = numeric.arguments["thermo_params"]["default"]
+    params = numeric.arguments["thermo_params"]
     state = [283.15, 2 * 0.000196732, 2, 2]
     numeric.retain_state(state, params)
     new_state  = squeeze(numeric.arguments["vectors"]["states"].magnitude)

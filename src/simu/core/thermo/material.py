@@ -134,13 +134,14 @@ class Material(MutMap[Quantity]):
     def retain_initial_state(self, state: Sequence[float],
                              parameters: NestedMap[Quantity]):
         param_struct = self.definition.frame.parameter_structure
-        parameters = extract_sub_structure(parameters, param_struct)
+        store_name = self.definition.store.name
+        parameters = extract_sub_structure(parameters[store_name], param_struct)
         args = {"state": Quantity(state), "param": parameters}
         res = self.__ini_func(args)
         self.initial_state = InitialState(
             temperature=res["T"],
             pressure=res["p"],
-            mol_vector=res["n"])
+            mol_vector=res["n"].reshape(-1))  # make sure it's a vector
 
     @property
     def species(self) -> Collection[str]:

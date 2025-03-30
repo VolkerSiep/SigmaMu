@@ -61,34 +61,34 @@ class Quantity(_Q):
 
     # operators needed for proper type checking in Pycharm (so long at least)
     def __add__(self, other) -> Self:
-        return super().__add__(self, other)
+        return super().__add__(other)
 
     def __radd__(self, other) -> Self:
-        return super().__radd__(self, other)
+        return super().__radd__(other)
 
     def __sub__(self, other) -> Self:
-        return super().__sub__(self, other)
+        return super().__sub__(other)
 
     def __rsub__(self, other) -> Self:
-        return super().__rsub__(self, other)
+        return super().__rsub__(other)
 
     def __mul__(self, other) -> Self:
-        return super().__mul__(self, other)
+        return super().__mul__(other)
 
     def __rmul__(self, other) -> Self:
-        return super().__rmul__(self, other)
+        return super().__rmul__(other)
 
     def __truediv__(self, other) -> Self:
-        return super().__truediv__(self, other)
+        return super().__truediv__(other)
 
     def __rtruediv__(self, other) -> Self:
-        return super().__rtruediv__(self, other)
+        return super().__rtruediv__(other)
 
     def __pow__(self, other) -> Self:
-        return super().__pow__(self, other)
+        return super().__pow__(other)
 
     def __rpow__(self, other) -> Self:
-        return super().__rpow__(self, other)
+        return super().__rpow__(other)
 
 
 # write back class, so it's used as result of quantity operations

@@ -27,7 +27,7 @@ class AModel(Model, ABC):
     mcf          :meth:`materials.create_flow <material.MaterialHandler.create_flow>`
     mcs          :meth:`materials.create_state <material.MaterialHandler.create_state>`
     r            :attr:`residuals <simu.Model.residuals>`
-    ra           :meth:`residuals.add <residual.ResidualHandler.add>`
+    ra           :meth:`residuals.add <simu.core.utilities.residual.ResidualHandler.add>`
     ============ ==============================================================
     """
 

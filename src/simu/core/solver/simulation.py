@@ -3,7 +3,7 @@ from typing import Callable, Sequence, Any
 from copy import deepcopy
 from dataclasses import dataclass, field
 from time import time
-from sys import stdout
+import sys
 from io import TextIOBase
 
 from casadi import MX, jacobian, jtimes, Function
@@ -162,8 +162,9 @@ class SimulationSolver(Configurable):
                  max_iter: int = 30,
                  gamma: float = 0.9,
                  wall: float = 1e-20,
-                 output: TextIOBase|None = stdout,
-                 call_back_iter: SimulationSolverCallback = None):
+                 output: TextIOBase|str = "stdout",
+                 call_back_iter: SimulationSolverCallback = None,
+                 retain_solution: bool = True):
         r"""On construction, the solver object requires a
         :class:`~simu.NumericHandler` object. The solver object can then be
         reused for multiple solver runs, for instance with variable parameter
@@ -196,8 +197,11 @@ class SimulationSolver(Configurable):
           and closer to the domain boundary and not revert. At some point,
           :math:`\gamma` becomes ridiculously small, and we need to give up.
           This threshold value is defined by ``wall`` (default ``1e-20``).
-        :param output: The io-stream to direct the solver output to (default
-          ``sys.stdout``). If set to ``None``, no output will be printed.
+        :param output: The io-stream to direct the solver output to, or a
+          descriptive string (case-insensitive):
+
+          - ``"stdout"``: The output will be written to standard out (default)
+          - ``"none"``: No output will be printed.
 
           .. note::
 
@@ -210,6 +214,11 @@ class SimulationSolver(Configurable):
           see :data:`~simu.core.solver.simulation.SimulationSolverCallback`,
           to intercept the solving process. The returned boolean variable
           determines whether the solver iteration is continued or not.
+
+        :param retain_solution: Whether the solver shall, on success, retain the
+          obtained state in the model, such that it can be exported via
+          :meth:`~simu.NumericHandler.export_state` and be reused as the initial
+          values for the next solving process.
         """
         super().__init__(exclude=["model"])
         self._model = model
@@ -254,13 +263,15 @@ class SimulationSolver(Configurable):
         bound_names = model.vector_res_names(_BOUND)
         reports = []
 
+        output = self.__find_output()
+
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
             "duration": ("Time", "{:6.1g}"),
             "min_alpha_name": ("Limit on bound", "{:>40s}"),
             "max_res_name": ("Max residual", "{:>40s}")
-        }, row_dig=5, row_head="Iter", stream=opt["output"])
+        }, row_dig=5, row_head="Iter", stream=output)
 
         funcs = self._prepare_functions()
         x = self.initial_state
@@ -329,11 +340,26 @@ class SimulationSolver(Configurable):
             duration=duration
         ))
         table.row(reports[-1], iteration)
+
+        # retain state if desired
+        if opt["retain_solution"]:
+            model.retain_state(x, self.model_parameters["thermo_params"])
+
         return SimulationSolverReport(
             iterations=reports,
             final_state=x,
             prop_func=lambda z: funcs["f_y"]({"x": Quantity(z)})
         )
+
+    def __find_output(self) -> TextIOBase|None:
+        output = self.options["output"]
+        if isinstance(output, str):
+            opts = {"stdout": sys.stdout, "none": None}
+            try:
+                return opts[output.lower()]
+            except KeyError:
+                raise ValueError(f"Invalid stream name '{output}'")
+        return output
 
     def _prepare_functions(self) -> Map[Callable]:
         # prepare
@@ -378,7 +404,7 @@ class SimulationSolver(Configurable):
                 "msg": "must be callable",
             },
             "output": {
-                "f": lambda x: x is None or isinstance(x, TextIOBase),
-                "msg": "must be a stream"
+                "f": lambda x: isinstance(x, str)  or isinstance(x, TextIOBase),
+                "msg": "must be a stream or a qualified string"
             }
         }
