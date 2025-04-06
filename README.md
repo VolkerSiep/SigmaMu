@@ -4,6 +4,14 @@
 
 <img src="doc/source/figures/simu_logo.jpeg" alt="SigmaMu logo" style="display: block; margin-left: auto; margin-right: auto; width: 400pt">
 
+![Logo](https://raw.githubusercontent.com/VolkerSiep/SigmaMu/doc/source/figures/simu_logo.jpeg)
+
+Installation is easily done via `pip` from `pypi` via
+
+```
+   pip install SigmaMu
+```
+
 **Once public, the detailed documentation will be on [readthedocs](https://docs.readthedocs.io) and linked from here. Also, the package will be registered in [PyPi](https://pypi.org/).**
 
 With focus on **rigorous thermodynamic models**, the first layer provides functionality to flexibly define, combine thermodynamic and parameterize model contributions into accurate descriptions of the processed materials. One can use pre-defined model structures, exchange single contributions, such as the &alpha;-function in equations of states, or implement entirely new contributions and model structures.
