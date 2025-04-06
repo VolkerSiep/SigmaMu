@@ -40,7 +40,7 @@ def test_non_square():
 
 def test_model_parameters():
     numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output=None)
+    solver = SimulationSolver(numeric, output="None")
     param = quantity_dict_to_strings(solver.model_parameters["model_params"])
     assert_reproduction(param)
 
@@ -66,7 +66,7 @@ def test_invalid_option_set_option():
 
 def test_change_parameters():
     numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output=None)
+    solver = SimulationSolver(numeric, output="None")
     param = solver.model_parameters["model_params"]
     param["p"] = Quantity(2, "MPa")
     res = solver.solve(max_iter=5)
@@ -98,5 +98,5 @@ def test_change_parameters():
 @fixture(scope="module")
 def sim_result():
     numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output=None)
+    solver = SimulationSolver(numeric, output="None")
     return solver.solve()
