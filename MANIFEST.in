@@ -1,2 +1,3 @@
 recursive-include src/simu *.yml
+recursive-include src/simu refdata.json
 include src/simu/core/data/uom_definitions.txt
