@@ -38,7 +38,6 @@ Name                    What for
 `matplotlib`_           In examples, we like to plot results sometimes
 `Sphinx`_               The documentation is built with it.
 `sphinxcontrib-bibtex`_ Handling of bibliographies in documentation
-`matplotlib`_           Used in some example scripts for plotting
 `sphinx-licenseinfo`_   For including the license file into the docs
 `sphinx_copybutton`_    For the fancy copy buttons on the scripts in the docs
 `pytest-doctestplus`_   To run doctest elements in rst-files
