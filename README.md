@@ -2,9 +2,13 @@
 
 ***SigmaMu* is a python library for first principle steady-state modelling of chemical processes.**
 
-<img src="doc/source/figures/simu_logo.jpeg" alt="SigmaMu logo" style="display: block; margin-left: auto; margin-right: auto; width: 400pt">
+<img src="https://github.com/VolkerSiep/SigmaMu/blob/main/doc/source/figures/simu_logo.jpeg?raw=true" alt="SigmaMu logo" style="display: block; margin-left: auto; margin-right: auto; width: 400pt">
 
-**Once public, the detailed documentation will be on [readthedocs](https://docs.readthedocs.io) and linked from here. Also, the package will be registered in [PyPi](https://pypi.org/).**
+Links:
+
+- Detailed documentation is available [here on readthedocs](https://sigmamu.readthedocs.io/en/latest/). 
+- The package is registered [here in PyPi](https://pypi.org/project/SigmaMu/).
+- The repository is hosted [here on github](https://github.com/VolkerSiep/SigmaMu).
 
 With focus on **rigorous thermodynamic models**, the first layer provides functionality to flexibly define, combine thermodynamic and parameterize model contributions into accurate descriptions of the processed materials. One can use pre-defined model structures, exchange single contributions, such as the &alpha;-function in equations of states, or implement entirely new contributions and model structures.
 
