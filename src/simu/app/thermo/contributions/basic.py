@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 # stdlib modules
 from copy import copy
-from typing import Sequence
 
 # internal modules
 from simu import ThermoContribution, R_GAS, log, qsum, base_magnitude, qvertcat

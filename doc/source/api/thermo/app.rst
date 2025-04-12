@@ -17,4 +17,5 @@ Thermodynamic contributions
 
    ideal
    cubic
+   iapws
    special
