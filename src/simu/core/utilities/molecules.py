@@ -3,8 +3,12 @@ generic element balances, and to calculate molecular weights."""
 
 from re import compile as re_compile
 from yaml import safe_load
+from ast import (AST, expr, parse, BinOp, UnaryOp, Constant, Name, dump,
+                 Add, Mult, UAdd)
+from operator import add, mul
+from typing import Type, Callable
 
-from .structures import MCounter
+from .structures import MCounter, Map
 from .quantity import Quantity
 from ..data import DATA_DIR
 
@@ -19,6 +23,7 @@ class FormulaParser:
     CRYSTAL_REG = re_compile(r"·(\d+)?([^·]+)")
     STRUC_REG = re_compile(r"[=\-<>≡|+]")
     CHARGE_REG = re_compile(r":\d+[+-]$")
+    OPERATORS: dict[Type, Callable] = {Add: add, Mult: mul}
 
     def __init__(self):
         filename = DATA_DIR / "atomic_weights.yml"
@@ -34,12 +39,12 @@ class FormulaParser:
         }
 
     @property
-    def atomic_weights(self) -> dict[str, Quantity]:
+    def atomic_weights(self) -> Map[Quantity]:
         """Return a dictionary with all elements mapped to their molecular
         weight"""
         return self._atomic_weights
 
-    def parse(self, formula: str) -> dict[str, int]:
+    def parse(self, formula: str) -> MCounter:
         """Parse a formula and return a Counter object with the atomic symbols
         as keys and the number of occurances as values:
 
@@ -126,7 +131,7 @@ class FormulaParser:
         # now it can just be evaluated.
         scope = self._element_counters
         try:
-            return eval(f_mod, {}, scope)  # pylint: disable=eval-used
+            return self._evaluate(f_mod, scope)
         except NameError as err:
             raise ValueError(
                 f"Formula contains invalid element: {err}") from None
@@ -165,3 +170,21 @@ class FormulaParser:
             return Quantity(0, "e / mol")
         raw = match.group(0)
         return Quantity(int(f"{raw[-1]}{raw[1:-1]}"), "e / mol")
+
+    @staticmethod
+    def _evaluate(expression: str, variables: Map[MCounter]) -> MCounter:
+        def _eval(node: AST | expr):
+            match node:
+                case BinOp(left=left, op=op, right=right):
+                    ops = FormulaParser.OPERATORS
+                    return ops[type(op)](_eval(left), _eval(right))
+                case UnaryOp(op=UAdd(), operand=child):
+                    return _eval(child)
+                case Constant(value=value):
+                    return value
+                case Name(id=name):
+                    return variables[name]
+            raise ValueError(f"Unsupported node: {dump(node)}")
+
+        tree = parse(expression, mode="eval")
+        return _eval(tree.body)
