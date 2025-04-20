@@ -1,5 +1,5 @@
 # internal modules
-from simu import ThermoContribution, R_GAS, log, exp
+from simu import ThermoContribution, R_GAS, log, exp, qsum
 
 
 class ReducedStateIAPWS(ThermoContribution):
@@ -50,14 +50,59 @@ class ReducedStateIAPWS(ThermoContribution):
 
 
 class StandardStateIAPWS(ThermoContribution):
-    """
-    - requires _tau and mw
-    - does not separate out reference state
-    - requires parameters n_1 to n_8 and g_4 to g_8
-    - defines standard state as ideal gas pure component standard state
-      at the critical pressure of the individual species.
-      This is why we need a special ideal gas contribution, to pick up each
-      species at that pressure.
+    r"""
+    With previously defined :math:`\tau` (``_tau``) and  :math:`\varrho`
+    (``_rho``), the standard state of the IAPWS model according to
+    :cite:`Wagner_2002` is defined via the chemical potential. With
+
+    .. math::
+
+      \eta_i = \exp(-\gamma_{k,i}^0\,\tau_i)
+
+    we write
+
+    .. math::
+
+        \phi_i = n_{1, i}^0 + n_{2, i}^0\,\tau_i + n_{3, i}^0\,\ln \tau_i
+          + \sum_{k=4}^{8}\,n_{k, i}^0\,\ln(1 - \eta_i)
+
+    As such, the chemical potential is
+
+    .. math:: \mu_i = R\,T\,\phi_i.
+
+    The entropy contribution is calculated as
+
+    .. math::
+
+        S = \sum_i n_i\, \left .
+              \frac{\partial \mu_i}{\partial T} \right |_p
+          = R\,\sum_i n_i\, \left [
+              \phi_i - \tau_i\, \left .
+                \frac{\partial \phi_i}{\partial \tau_i} \right |_p
+            \right ]
+
+    The derivative is implemented as
+
+    .. math::
+
+        \tau_i\, \left . \frac{\partial \phi_i}{\partial \tau_i} \right |_p
+        = n_{2, i}^0\,\tau_i + n_{3, i}^0 +
+          \sum_{k=4}^{8}\,n_{k, i}^0\,\gamma_{k, i}^0\,\tau_i\,
+          \frac{\eta_i}{1-\eta_i}
+
+
+    As such, the contribution requires the following standard state parameters
+
+    ========= ============================== ========= ======================
+    Parameter Symbol                         Parameter Symbol
+    ========= ============================== ========= ======================
+    ``n_1``   :math:`n_{1,i}^0\hspace{3cm}`  ``g_4``   :math:`\gamma_{4,i}^0`
+    ...                                      ...
+    ``n_8``   :math:`n_{8,i}^0`              ``g_8``   :math:`\gamma_{8,i}^0`
+    ========= ============================== ========= ======================
+
+    The standard state is technically an ideal gas pure component standard state
+    at the critical point of the individual species.
     """
 
     provides = ["mu", "S"]
@@ -73,13 +118,54 @@ class StandardStateIAPWS(ThermoContribution):
         phi_0 = pn[0] + pn[1] * tau + pn[2] * log(tau)
         t_exp = [exp(-pg_i * tau) for pg_i in pg]
         t_log = [log(1 - t_exp_i) for t_exp_i in t_exp]
-        phi_0 += [pn_i * t_log_i for pn_i, t_log_i in zip(pn[4:], t_log)]
+        phi_0 += sum(pn_i * t_log_i for pn_i, t_log_i in zip(pn[4:], t_log))
         res["mu"] = rt * phi_0
 
         # construct entropy as -dmu/dT * n
-        mu_tau = pn[1] + pn[2] / tau
-        mu_tau += [pn_i * g_i * e_i / (1 - e_i)
-                   for pn_i, g_i, e_i in zip(pn[4:], pg, t_exp)]
+        mu_tau = pn[1] * tau + pn[2]
+        mu_tau += sum(pn_i * g_i * tau * e_i / (1 - e_i)
+                      for pn_i, g_i, e_i in zip(pn[4:], pg, t_exp))
         res["S"] = R_GAS * (phi_0 - tau * mu_tau).T @ n
 
         self.declare_vector_keys("mu")
+
+
+class IdealGasIAPWS(ThermoContribution):
+    r"""The standard state :class:`StandardStateIAPWS` is defined with a
+    reference to the critical density of the individual species. This
+    contribution adds the ideal gas and ideal mix contribution based on this
+    reference. Due to the individual nature, it is not efficient to distinguish
+    between the ideal mix and ideal gas contribution.
+
+    The IAPWS ideal gas contribution in terms of Helmholtz energy is
+
+    .. math::
+
+        \Delta A^\mathrm{ig} =
+        \sum_k n_k\,R\,T\,\ln \varrho_k
+        = \sum_k n_k\,R\,T\,\ln \frac{M_k\,n_j}{V\,\rho_{c, k}}
+
+    This yields a chemical potential update
+
+    .. math::
+
+        \mu_i \leftarrow \mu_i +
+          R\,T\,\left (\ln \frac{M_i\,n_i}{V\,\rho_{c, i}} + 1 \right )
+          = \mu_i + R\,T\,(\ln \varrho_i + 1)
+
+    And for the entropy:
+
+    .. math::
+
+        S \leftarrow S -
+          \sum_k n_k\,R\,\ln \varrho_k
+
+
+    As such, this contribution does not require further parameters.
+    """
+    def define(self, res):
+        T, n, rho = res["T"], res["n"], res["_rho"]
+        ln_rho = log(rho)
+        N = qsum(n)
+        res["mu"] += R_GAS * T * (ln_rho + 1)
+        res["S"] -= R_GAS * N * ln_rho
