@@ -39,7 +39,7 @@ class ReducedStateIAPWS(ThermoContribution):
 
     def define(self, res):
         T, V, n, mw = res["T"], res["V"], res["n"], res["mw"]
-        rho_c = self.par_vector("_rho_c", self.species, "bar")
+        rho_c = self.par_vector("_rho_c", self.species, "kg/m^3")
         t_c = self.par_vector("_t_c", self.species, "K")
 
         res["_tau"] = t_c / T
@@ -160,12 +160,21 @@ class IdealGasIAPWS(ThermoContribution):
         S \leftarrow S -
           \sum_k n_k\,R\,\ln \varrho_k
 
+    Finally, pressure is defined here as
+
+    .. math:: p = \frac{\sum_k n_k\,R\,T}{V}
 
     As such, this contribution does not require further parameters.
     """
+
+    provides = ["p"]
+
     def define(self, res):
-        T, n, rho = res["T"], res["n"], res["_rho"]
+        temperature, n, rho, volume = res["T"], res["n"], res["_rho"], res["V"]
         ln_rho = log(rho)
-        N = qsum(n)
-        res["mu"] += R_GAS * T * (ln_rho + 1)
-        res["S"] -= R_GAS * N * ln_rho
+        n_total = qsum(n)
+        r_t = R_GAS * temperature
+        n_r_t = n_total * r_t
+        res["mu"] += r_t * (ln_rho + 1)
+        res["S"] -= R_GAS * n_total * ln_rho
+        res["p"] = n_r_t / volume

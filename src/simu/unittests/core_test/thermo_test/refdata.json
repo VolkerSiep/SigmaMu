@@ -171,6 +171,10 @@
       "p_std": "Pa"
     }
   },
+  "iapws_test.py::test_reduced_state_iapws": {
+    "rho": "[(((mw_0*n_0)/V)/_rho_c.A), (((mw_1*n_1)/V)/_rho_c.B)]",
+    "tau": "[(_t_c.A/T), (_t_c.B/T)]"
+  },
   "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless",
   "store_test.py::test_create_frame": {
     "BostonMathiasAlphaFunction": {

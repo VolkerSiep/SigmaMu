@@ -9,28 +9,14 @@ from simu.app.thermo.contributions import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
     LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight, ChargeBalance)
 from simu.core.utilities import (
-    ParameterDictionary, Quantity, SymbolQuantity, assert_reproduction,
-    base_unit)
+    ParameterDictionary, Quantity, assert_reproduction)
 
-
-# auxiliary functions
-def sym(name, units):
-    """Return a scalar symbol of given name and units"""
-    return SymbolQuantity(name, base_unit(units))
-
-
-def vec(name, size, units):
-    """Return a vector symbol of given name, units, and size"""
-    return SymbolQuantity(name, base_unit(units), size)
-
+from utils import sym, vec
 
 def test_h0s0_reference_state(species_definitions_ab):
     """Test definition of H0S0ReferenceState contribution"""
 
     res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
-    bounds = {}
-    par = ParameterDictionary()
-
     cont = H0S0ReferenceState(species_definitions_ab, {})
     cont.define(res)
     to_reproduce = {

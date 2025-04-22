@@ -242,6 +242,8 @@ class HelmholtzIdealGas(ThermoContribution):
     limited to positive volumes.
     """
 
+    provides = ["p"]
+
     def define(self, res):
         T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]
         N = qsum(n)
