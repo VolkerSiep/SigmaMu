@@ -45,7 +45,7 @@ class ThermoContribution(ABC):
     options: Map[Any]
     """The map of species definition objects"""
 
-    def __init__(self, species: Map[SpeciesDefinition], options):
+    def __init__(self, species: Map[SpeciesDefinition], options=None):
         self.species_definitions: Map[SpeciesDefinition] = species
         self.options = options
         self.reset()

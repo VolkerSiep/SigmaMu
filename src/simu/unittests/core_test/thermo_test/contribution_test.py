@@ -11,7 +11,7 @@ from simu.app.thermo.contributions import (
 from simu.core.utilities import (
     ParameterDictionary, Quantity, assert_reproduction)
 
-from utils import sym, vec
+from .utils import sym, vec
 
 def test_h0s0_reference_state(species_definitions_ab):
     """Test definition of H0S0ReferenceState contribution"""

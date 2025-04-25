@@ -18,7 +18,7 @@ from simu.app.thermo.contributions import (
     RedlichKwongBFunction, RedlichKwongMFactor, VolumeShift)
 from simu.app.thermo.contributions.cubic.rk import RedlichKwongEOS
 
-from utils import sym, vec
+from .utils import sym, vec
 
 
 def test_critical_parameters(species_definitions_ab):

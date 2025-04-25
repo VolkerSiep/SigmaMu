@@ -1,14 +1,16 @@
+from numpy.testing import assert_allclose
+
 from simu.app.thermo.contributions.iapws.standard import (
     ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS)
 from simu.core.utilities.testing import assert_reproduction
-# from simu.core.thermo import InitialState, SpeciesDefinition
+from simu.core.utilities.quantity import jacobian, QFunction, Quantity
 
 from .utils import sym, vec
 
 def test_reduced_state_iapws(species_definitions_ab):
     res = {"T": sym("T", "K"), "V": sym("V", "m^3"), "n": vec("n", 2, "mol"),
            "mw": vec("mw", 2, "kg/mol")}
-    cont = ReducedStateIAPWS(species_definitions_ab, {})
+    cont = ReducedStateIAPWS(species_definitions_ab)
     cont.define(res)
     reference = {
         "tau": f"{res["_tau"]:~}",
@@ -16,7 +18,68 @@ def test_reduced_state_iapws(species_definitions_ab):
     }
     assert_reproduction(reference)
 
-# TODO:
-#   -  test standard state
-#   -  test ideal gas state
-#   -  parameterize standard state and check enthalpy of steam at low pressure
+def test_standard_state_iapws(species_definitions_h2o):
+    res = {"T": sym("T", "K"), "n": vec("n", 1, "mol"),
+           "_tau": sym("tau", "")}
+    cont = StandardStateIAPWS(species_definitions_h2o)
+    cont.define(res)
+
+    assert f"{res["mu"].units:~}" == "J / mol"
+    assert f"{res["S"].units:~}" == "J / K"
+
+def test_standard_state_iapws_deri(species_definitions_h2o):
+    res_0 = {"T": sym("T", "K"), "V": sym("V", "m^3"), "n": vec("n", 1, "mol"),
+             "mw": vec("mw", 1, "kg/mol")}
+    res = dict(res_0)
+
+    r_state = ReducedStateIAPWS(species_definitions_h2o)
+    s_state = StandardStateIAPWS(species_definitions_h2o)
+    r_state.define(res)
+    s_state.define(res)
+    param = r_state.parameters | s_state.parameters
+    residual = jacobian(res["mu"], res["T"]) + jacobian(res["S"], res["n"])
+    f = QFunction({"param": param, "state": res_0}, {"r": residual})
+
+    # I put some T, V, n and then permutate unity for all n_i to check equality
+    args = {
+        "param": {
+            "rho_c": {"H2O": Quantity("322 kg/m**3")},
+            "t_c": {"H2O": Quantity("647.096 K")}},
+        "state": {
+            "T": Quantity("300.0 K"),
+            "V": Quantity("0.024 m**3"),
+            "n": Quantity([2.0], "mol"),
+            "mw": Quantity([0.018], "kg/mol")}
+    }
+
+    def evaluate(k):
+        for i in range(1, 9):
+            p = 1 if i == k else 0
+            args["param"][f"n_{i}"] = {"H2O": Quantity(p)}
+            if i > 3:
+                args["param"][f"g_{i}"] = {"H2O": Quantity(2.345)}
+        return float(f(args)["r"].magnitude)
+
+    result = [evaluate(k) for k in range(1, 9)]
+    assert_allclose(result, [0.0] * len(result), atol=1e-13)
+
+
+def test_ideal_gas_iapws(species_definitions_ab):
+    res = {"T": sym("T", "K"), "V": sym("V", "m**3"), "n": vec("n", 2, "mol"),
+           "_rho": vec("rho", 2, ""), "mu": vec("mu0", 2, "J/mol"),
+           "S": sym("S0", "J/K")}
+    cont = IdealGasIAPWS(species_definitions_ab)
+    cont.define(res)
+    reference = {
+        "mu": f"{res["mu"]:~}",
+        "S": f"{res["S"]:~}",
+        "p": f"{res["p"]:~}"
+    }
+    assert_reproduction(reference)
+
+def test_iapws_low_pressure_enthalpy():
+    # implement some tests to validate ideal gas properties
+    # create frame via fixture first
+    assert False
+
+

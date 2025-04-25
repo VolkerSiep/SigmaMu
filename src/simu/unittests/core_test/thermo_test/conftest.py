@@ -1,8 +1,16 @@
 from pytest import fixture
-from simu import (SpeciesDefinition, SymbolQuantity, base_unit,
-                  ParameterDictionary)
-from simu.app import BostonMathiasAlphaFunction
+from simu import SpeciesDefinition, SymbolQuantity, base_unit, ThermoFactory
+from simu.app import (BostonMathiasAlphaFunction, H0S0ReferenceState,
+                      LinearHeatCapacity, StandardState, IdealMix,
+                      HelmholtzIdealGas, HelmholtzState)
 from simu.core.utilities.types import Map
+from simu.core.data import DATA_DIR
+
+
+@fixture(scope="session")
+def species_definitions_h2o() -> Map[SpeciesDefinition]:
+    """A simple example species definition map with 1 species, H2O"""
+    return {"H2O": SpeciesDefinition("H2O")}
 
 
 @fixture(scope="session")
@@ -37,4 +45,29 @@ def boston_mathias_alpha_function(species_definitions_ab):
     cont.define(res)
     return res, cont.parameters
 
+@fixture(scope="session")
+def frame_factory():
+    """Create a ThermoFactory and register standard state contributions"""
+    fac = ThermoFactory()
+    fac.register(H0S0ReferenceState, LinearHeatCapacity, StandardState,
+                 IdealMix, HelmholtzIdealGas)
+    fac.register_state_definition(HelmholtzState)
+    return fac
 
+
+@fixture(scope="session")
+def simple_frame(frame_factory):
+    """Create a ThermoFrame based on just standard state contributions"""
+    config = {
+        "species": ["N2", "O2"],
+        "state": "HelmholtzState",
+        "contributions": [
+            "H0S0ReferenceState", "LinearHeatCapacity", "StandardState",
+            "IdealMix", "HelmholtzIdealGas"
+        ],
+    }
+    species = {"N2": SpeciesDefinition("N2"), "O2": SpeciesDefinition("O2")}
+    return frame_factory.create_frame(species, config)
+
+
+# def iapws_ideal_gas_model() -> ThermoFrame:

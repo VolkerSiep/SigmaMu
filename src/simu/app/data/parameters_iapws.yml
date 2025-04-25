@@ -1,0 +1,39 @@
+meta:
+  source: 'W. Wagner… and A. Pruß, "The IAPWS Formulation 1995 for the
+    Thermodynamic Properties of Ordinary Water Substance for General and 
+    Scientific Use", J. Phys. Chem. Ref. Data, Vol. 31, No. 2, 2002'
+data:
+  formulae:
+    H2O: H2O
+  ReducedStateIAPWS:
+    T c:
+      H2O: 647.096 K
+    rho_c:
+      H2O: 322.0 kg m**3
+  StandardStateIAPWS:
+    n_1:
+      H2O: -8.32044648201
+    n_2:
+      H2O: 6.6832105268
+    n_3:
+      H2O: 3.00632
+    n_4:
+      H2O: 0.012436
+    n_5:
+      H2O: 0.97315
+    n_6:
+      H2O: 1.27950
+    n_7:
+      H2O: 0.96956
+    n_8:
+      H2O: 0.24873
+    g_4:
+      H2O: 1.287289675
+    g_5:
+      H2O: 3.53734222
+    g_6:
+      H2O: 7.74073708
+    g_7:
+      H2O: 9.24437796
+    g_8:
+      H2O: 27.5075105

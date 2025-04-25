@@ -38,15 +38,15 @@ class ReducedStateIAPWS(ThermoContribution):
     provides = ["_tau", "_rho"]
 
     def define(self, res):
-        T, V, n, mw = res["T"], res["V"], res["n"], res["mw"]
-        rho_c = self.par_vector("_rho_c", self.species, "kg/m^3")
-        t_c = self.par_vector("_t_c", self.species, "K")
+        temp, vol, n, mw = res["T"], res["V"], res["n"], res["mw"]
+        rho_c = self.par_vector("rho_c", self.species, "kg/m^3")
+        t_c = self.par_vector("t_c", self.species, "K")
 
-        res["_tau"] = t_c / T
-        res["_rho"] = mw * n / V / rho_c
+        res["_tau"] = t_c / temp
+        res["_rho"] = mw * n / vol / rho_c
 
-        self.add_bound("T", T)  # it is divided by T and V
-        self.add_bound("V", V)
+        self.add_bound("T", temp)  # it is divided by T and V
+        self.add_bound("V", vol)
 
 
 class StandardStateIAPWS(ThermoContribution):
@@ -110,8 +110,8 @@ class StandardStateIAPWS(ThermoContribution):
     def define(self, res):
         species = self.species
         T, tau, n = res["T"], res["_tau"], res["n"]
-        pn = [self.par_vector(f"n_{i:d}", species, "-") for i in range(1, 9)]
-        pg = [self.par_vector(f"g_{i:d}", species, "-") for i in range(4, 9)]
+        pn = [self.par_vector(f"n_{i:d}", species, "") for i in range(1, 9)]
+        pg = [self.par_vector(f"g_{i:d}", species, "") for i in range(4, 9)]
         rt = R_GAS * T
 
         # construct chemical potential as d(NRT*phi)/dn) = RT * phi
@@ -122,10 +122,10 @@ class StandardStateIAPWS(ThermoContribution):
         res["mu"] = rt * phi_0
 
         # construct entropy as -dmu/dT * n
-        mu_tau = pn[1] * tau + pn[2]
-        mu_tau += sum(pn_i * g_i * tau * e_i / (1 - e_i)
-                      for pn_i, g_i, e_i in zip(pn[4:], pg, t_exp))
-        res["S"] = R_GAS * (phi_0 - tau * mu_tau).T @ n
+        phi_tau = pn[1] * tau + pn[2]
+        phi_tau += sum(pn_i * g_i * tau * e_i / (1 - e_i)
+                       for pn_i, g_i, e_i in zip(pn[4:], pg, t_exp))
+        res["S"] = -R_GAS * (phi_0 - phi_tau).T @ n
 
         self.declare_vector_keys("mu")
 
@@ -176,5 +176,5 @@ class IdealGasIAPWS(ThermoContribution):
         r_t = R_GAS * temperature
         n_r_t = n_total * r_t
         res["mu"] += r_t * (ln_rho + 1)
-        res["S"] -= R_GAS * n_total * ln_rho
+        res["S"] -= R_GAS * (n.T @ ln_rho)
         res["p"] = n_r_t / volume

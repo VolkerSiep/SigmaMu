@@ -171,9 +171,14 @@
       "p_std": "Pa"
     }
   },
+  "iapws_test.py::test_ideal_gas_iapws": {
+    "S": "(S0-(8.31446*((n_0*log(rho_0))+(n_1*log(rho_1))))) kg * m ** 2 / K / s ** 2",
+    "mu": "@1=(8.31446*T), @2=1, [(mu0_0+(@1*(log(rho_0)+@2))), (mu0_1+(@1*(log(rho_1)+@2)))] kg * m ** 2 / mol / s ** 2",
+    "p": "(((n_0+n_1)*(8.31446*T))/V) J / m ** 3"
+  },
   "iapws_test.py::test_reduced_state_iapws": {
-    "rho": "[(((mw_0*n_0)/V)/_rho_c.A), (((mw_1*n_1)/V)/_rho_c.B)]",
-    "tau": "[(_t_c.A/T), (_t_c.B/T)]"
+    "rho": "[(((mw_0*n_0)/V)/rho_c.A), (((mw_1*n_1)/V)/rho_c.B)]",
+    "tau": "[(t_c.A/T), (t_c.B/T)]"
   },
   "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless",
   "store_test.py::test_create_frame": {
