@@ -118,13 +118,13 @@ class StandardStateIAPWS(ThermoContribution):
         phi_0 = pn[0] + pn[1] * tau + pn[2] * log(tau)
         t_exp = [exp(-pg_i * tau) for pg_i in pg]
         t_log = [log(1 - t_exp_i) for t_exp_i in t_exp]
-        phi_0 += sum(pn_i * t_log_i for pn_i, t_log_i in zip(pn[4:], t_log))
+        phi_0 += sum(pn_i * t_log_i for pn_i, t_log_i in zip(pn[3:], t_log))
         res["mu"] = rt * phi_0
 
         # construct entropy as -dmu/dT * n
         phi_tau = pn[1] * tau + pn[2]
         phi_tau += sum(pn_i * g_i * tau * e_i / (1 - e_i)
-                       for pn_i, g_i, e_i in zip(pn[4:], pg, t_exp))
+                       for pn_i, g_i, e_i in zip(pn[3:], pg, t_exp))
         res["S"] = -R_GAS * (phi_0 - phi_tau).T @ n
 
         self.declare_vector_keys("mu")
