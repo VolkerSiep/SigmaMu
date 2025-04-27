@@ -40,7 +40,7 @@ class ReducedStateIAPWS(ThermoContribution):
     def define(self, res):
         temp, vol, n, mw = res["T"], res["V"], res["n"], res["mw"]
         rho_c = self.par_vector("rho_c", self.species, "kg/m^3")
-        t_c = self.par_vector("t_c", self.species, "K")
+        t_c = self.par_vector("T_c", self.species, "K")
 
         res["_tau"] = t_c / temp
         res["_rho"] = mw * n / vol / rho_c

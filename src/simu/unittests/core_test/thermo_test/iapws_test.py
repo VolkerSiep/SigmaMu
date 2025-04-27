@@ -44,7 +44,7 @@ def test_standard_state_iapws_deri(species_definitions_h2o):
     args = {
         "param": {
             "rho_c": {"H2O": Quantity("322 kg/m**3")},
-            "t_c": {"H2O": Quantity("647.096 K")}},
+            "T_c": {"H2O": Quantity("647.096 K")}},
         "state": {
             "T": Quantity("300.0 K"),
             "V": Quantity("0.024 m**3"),
@@ -77,9 +77,10 @@ def test_ideal_gas_iapws(species_definitions_ab):
     }
     assert_reproduction(reference)
 
-def test_iapws_low_pressure_enthalpy():
-    # implement some tests to validate ideal gas properties
-    # create frame via fixture first
-    assert False
 
+def test_iapws_call_ideal_gas(iapws_ideal_gas_model):
+    frame, param = iapws_ideal_gas_model
+    state = [373.15, 1e-2, 1.0]
+    res = frame(state, param)
+    assert f"{res["props"]["p"]:.1f~}" == "310254.2 Pa"
 

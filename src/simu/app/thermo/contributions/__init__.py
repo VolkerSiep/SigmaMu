@@ -7,6 +7,9 @@ from .cubic import (
     CriticalParameters, RedlichKwongEOSLiquid, RedlichKwongEOSGas,
     RedlichKwongAFunction, RedlichKwongBFunction, RedlichKwongMFactor,
     VolumeShift)
+
+from .iapws import ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS
+
 from .special import Derivative
 
 all_contributions = [H0S0ReferenceState, LinearHeatCapacity, StandardState,
@@ -16,4 +19,6 @@ all_contributions = [H0S0ReferenceState, LinearHeatCapacity, StandardState,
                      BostonMathiasAlphaFunction, CriticalParameters,
                      RedlichKwongEOSLiquid, RedlichKwongEOSGas,
                      RedlichKwongAFunction, RedlichKwongBFunction,
-                     RedlichKwongMFactor, VolumeShift, Derivative]
+                     RedlichKwongMFactor, VolumeShift,
+                     ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS,
+                     Derivative]

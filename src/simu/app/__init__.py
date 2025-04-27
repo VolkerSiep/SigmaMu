@@ -4,6 +4,8 @@ from .thermo.contributions import (
     NonSymmetricMixingRule, LinearMixingRule, BostonMathiasAlphaFunction,
     CriticalParameters, RedlichKwongEOSLiquid, RedlichKwongEOSGas,
     RedlichKwongAFunction, RedlichKwongBFunction, RedlichKwongMFactor,
-    VolumeShift, Derivative, ChargeBalance, all_contributions)
+    VolumeShift, Derivative, ChargeBalance,
+    ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS,
+    all_contributions)
 
 from .thermo.state import all_states, HelmholtzState, GibbsState

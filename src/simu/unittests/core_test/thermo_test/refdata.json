@@ -178,7 +178,7 @@
   },
   "iapws_test.py::test_reduced_state_iapws": {
     "rho": "[(((mw_0*n_0)/V)/rho_c.A), (((mw_1*n_1)/V)/rho_c.B)]",
-    "tau": "[(t_c.A/T), (t_c.B/T)]"
+    "tau": "[(T_c.A/T), (T_c.B/T)]"
   },
   "special_test.py::test_derivative": "(((tau*C_2)+C_1)+(C_2*tau)) dimensionless",
   "store_test.py::test_create_frame": {

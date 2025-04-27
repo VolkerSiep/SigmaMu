@@ -3,13 +3,11 @@ meta:
     Thermodynamic Properties of Ordinary Water Substance for General and 
     Scientific Use", J. Phys. Chem. Ref. Data, Vol. 31, No. 2, 2002'
 data:
-  formulae:
-    H2O: H2O
   ReducedStateIAPWS:
-    T c:
+    T_c:
       H2O: 647.096 K
     rho_c:
-      H2O: 322.0 kg m**3
+      H2O: 322.0 kg/m**3
   StandardStateIAPWS:
     n_1:
       H2O: -8.32044648201

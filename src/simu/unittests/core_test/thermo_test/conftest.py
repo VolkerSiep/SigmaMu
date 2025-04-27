@@ -1,10 +1,14 @@
+from yaml import safe_load
 from pytest import fixture
-from simu import SpeciesDefinition, SymbolQuantity, base_unit, ThermoFactory
+
+from simu import (SpeciesDefinition, SymbolQuantity, base_unit, ThermoFactory,
+                  parse_quantities_in_struct)
+from simu.core.utilities.types import Map
 from simu.app import (BostonMathiasAlphaFunction, H0S0ReferenceState,
                       LinearHeatCapacity, StandardState, IdealMix,
-                      HelmholtzIdealGas, HelmholtzState)
-from simu.core.utilities.types import Map
-from simu.core.data import DATA_DIR
+                      HelmholtzIdealGas, HelmholtzState, MolecularWeight,
+                      ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS)
+from simu.app.data import DATA_DIR
 
 
 @fixture(scope="session")
@@ -70,4 +74,21 @@ def simple_frame(frame_factory):
     return frame_factory.create_frame(species, config)
 
 
-# def iapws_ideal_gas_model() -> ThermoFrame:
+@fixture(scope="session")
+def iapws_ideal_gas_model(species_definitions_h2o):
+    fac = ThermoFactory()
+    fac.register(MolecularWeight, ReducedStateIAPWS,
+                 StandardStateIAPWS, IdealGasIAPWS)
+    fac.register_state_definition(HelmholtzState)
+    config = {
+        "species": ["H2O"],
+        "state": "HelmholtzState",
+        "contributions": [
+            "MolecularWeight", "ReducedStateIAPWS",
+            "StandardStateIAPWS", "IdealGasIAPWS"
+        ]
+    }
+    frame = fac.create_frame(species_definitions_h2o, config)
+    with open(DATA_DIR / "parameters_iapws.yml") as file:
+        params = parse_quantities_in_struct(safe_load(file)["data"])
+    return frame, params
