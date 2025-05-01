@@ -116,3 +116,6 @@ def test_iapws_ideal_gas_entropy(iapws_ideal_gas_model):
     s_ref = [194.13, 195.80, 197.37, 198.86, 200.28, 201.62, 202.91, 204.15,
              205.34, 206.48]  # from NIST at same volume
     assert_allclose(s, s_ref, rtol=1e-4)
+
+# TODO:
+#  - test IAPWS model against table 6.6 and some NIST data
