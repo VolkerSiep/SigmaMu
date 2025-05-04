@@ -8,7 +8,9 @@ from .cubic import (
     RedlichKwongAFunction, RedlichKwongBFunction, RedlichKwongMFactor,
     VolumeShift)
 
-from .iapws import ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS
+from .iapws import (
+    ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS, Residual1IAPWS,
+    Residual2IAPWS, Residual3IAPWS, Residual4IAPWS)
 
 from .special import Derivative
 
@@ -21,4 +23,5 @@ all_contributions = [H0S0ReferenceState, LinearHeatCapacity, StandardState,
                      RedlichKwongAFunction, RedlichKwongBFunction,
                      RedlichKwongMFactor, VolumeShift,
                      ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS,
-                     Derivative]
+                     Residual1IAPWS, Residual2IAPWS, Residual3IAPWS,
+                     Residual4IAPWS, Derivative]

@@ -117,5 +117,36 @@ def test_iapws_ideal_gas_entropy(iapws_ideal_gas_model):
              205.34, 206.48]  # from NIST at same volume
     assert_allclose(s, s_ref, rtol=1e-4)
 
-# TODO:
-#  - test IAPWS model against table 6.6 and some NIST data
+def test_iapws_call(iapws_model):
+    frame, param = iapws_model
+    state = [373.15, 1e-2, 1.0]
+    res = frame(state, param)["props"]
+    z = (res["p"] * res["V"] /
+         (R_GAS * res["T"] * res["n"]))
+    assert 0.93 < z < 0.94
+
+def test_iapws_equilibrium(iapws_model):
+    frame, param = iapws_model
+    #  T [K], p [bar], v_liq [m3/mol], v_gas [m3/mol]
+    data = [[280, 0.0099182, 1.80177506655e-05, 2.34538300736    ],
+            [320, 0.10546,   1.82085116938e-05, 0.251393930184   ],
+            [360, 0.62194,   1.86226241854e-05, 0.0475863956041  ],
+            [400, 2.4577,    1.92165720267e-05, 0.0131555197854  ],
+            [440, 7.3367,    2.00025466829e-05, 0.00470022678841 ],
+            [480, 17.905,    2.10326720414e-05, 0.00199861350523 ],
+            [520, 37.690,    2.24200269195e-05, 0.000953183621502],
+            [560, 71.062,    2.44165151521e-05, 0.000484973339996],
+            [600, 123.45,    2.77409171258e-05, 0.000247318711111],
+            [640, 202.65,    3.74128552478e-05, 0.000101697603486]]
+
+    # Liquid pressures are off due to slight differences to NIST,
+    # This is no problem however - if I would iterate on volume,
+    # the relative deviation in volume would be ~1e-5.
+
+    for temp, pres, l_vol, g_vol in data:
+        p_liq = frame([temp, l_vol, 1.0], param)["props"]
+        p_gas = frame([temp, g_vol, 1.0], param)["props"]
+        dmu = (p_liq["mu"] - p_gas["mu"]).to("J/mol").m
+        dp_rel = 1 - p_gas["p"].to("bar").m / pres
+        assert abs(dmu) < 1, f"T = {temp} K"
+        assert abs(dp_rel) < 1e-4,  f"T = {temp} K"

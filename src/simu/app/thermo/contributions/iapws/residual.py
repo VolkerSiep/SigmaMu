@@ -2,7 +2,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 
 # internal modules
-from simu import ThermoContribution, R_GAS, qvertcat, Quantity, exp
+from simu import ThermoContribution, R_GAS, qvertcat, Quantity, exp, qpow
 from simu.core.utilities.types import Map
 from simu.core.utilities.quantity import jacobian
 
@@ -50,8 +50,6 @@ class ResidualBaseIAPWS(ThermoContribution):
         species = [s for s in species if s in self.species]
         number_of_terms = self.options.get("number_of_terms",
                                            self.default_number_of_terms())
-        num_range = range(1, number_of_terms + 1)
-
         props = "T V _tau _rho n".split()
         temp, vol, tau, rho, n = [res[i] for i in props]
 
@@ -63,11 +61,14 @@ class ResidualBaseIAPWS(ThermoContribution):
 
         p_names = self.parameter_names()
         params = {n: [self.par_vector(f"{n}_{i:02d}", species, "")
-                      for i in num_range]
+                      for i in range(1, number_of_terms + 1)]
                   for n in p_names}
         phi = self.define_phi(tau, rho, params)
         a_res = R_GAS * temp * (n_sub.T @ phi)
 
+        # TODO: maybe better define phi as function, take local derivatives,
+        #  and then add contributions? But first prove that this is wrong,
+        #  if it is!!
         res["mu"] += jacobian(a_res, n)
         res["S"] -= jacobian(a_res, temp)
         res["p"] -= jacobian(a_res, vol)
@@ -131,7 +132,7 @@ class Residual1IAPWS(ResidualBaseIAPWS):
     def define_phi(tau, rho, parameters):
         param = [parameters[i] for i in Residual1IAPWS.parameter_names()]
         return sum(
-            n_i * rho ** d_i * tau ** t_i
+            n_i * qpow(rho, d_i) * qpow(tau, t_i)
             for d_i, t_i, n_i in zip(*param)
         )
 
@@ -159,7 +160,7 @@ class Residual2IAPWS(ResidualBaseIAPWS):
     def define_phi(tau, rho, parameters):
         param = [parameters[i] for i in Residual2IAPWS.parameter_names()]
         return sum(
-            n_i * rho ** d_i * tau ** t_i * exp(-rho ** c_i)
+            n_i * qpow(rho, d_i) * qpow(tau, t_i) * exp(-qpow(rho, c_i))
             for c_i, d_i, t_i, n_i in zip(*param)
         )
 
@@ -188,9 +189,9 @@ class Residual3IAPWS(ResidualBaseIAPWS):
 
     @staticmethod
     def define_phi(tau, rho, parameters):
-        param = [parameters[i] for i in Residual2IAPWS.parameter_names()]
+        param = [parameters[i] for i in Residual3IAPWS.parameter_names()]
         return sum(
-            n_i * rho ** d_i * tau ** t_i * exp(
+            n_i * qpow(rho, d_i) * qpow(tau, t_i) * exp(
                 -a_i * (rho  - e_i) ** 2 - b_i * (tau - g_i) ** 2
             ) for d_i, t_i, n_i, a_i, b_i, g_i, e_i in zip(*param)
         )
@@ -227,15 +228,15 @@ class Residual4IAPWS(ResidualBaseIAPWS):
     @staticmethod
     def define_phi(tau, rho, parameters):
         a, b, B, n, C, D, A, beta = \
-            [parameters[i] for i in Residual2IAPWS.parameter_names()]
-        rho_hat = (1 - rho) ** 2
+            [parameters[i] for i in Residual4IAPWS.parameter_names()]
+        rho_hat = (rho - 1) ** 2
         psi = [exp(-C_i * rho_hat - D_i * (tau - 1) ** 2)
                for C_i, D_i in zip(C, D)]
-        theta = [1 - tau + A_i * rho_hat ** (1 / (2 * beta_i))
+        theta = [1 - tau + A_i * qpow(rho_hat, 1 / (2 * beta_i))
                  for A_i, beta_i in zip(A, beta)]
-        delta = [theta_i ** 2 + B_i * rho_hat ** a_i
+        delta = [theta_i ** 2 + B_i * qpow(rho_hat, a_i)
                  for theta_i, B_i, a_i in zip(theta, B, a)]
         return sum(
-            n_i * delta_i ** b_i * rho * psi_i
+            n_i * qpow(delta_i, b_i) * rho * psi_i
             for n_i, delta_i, b_i, psi_i  in zip(n, delta, b, psi)
         )
