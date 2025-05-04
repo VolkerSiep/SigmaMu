@@ -109,7 +109,7 @@ class ResidualBaseIAPWS(ThermoContribution):
     def default_number_of_terms() -> int:
         """Return the default number of terms for this contribution.
         This can be over-defined by the option data given to the contribution
-        on instantiation."""
+        object on instantiation."""
         ...
 
     @staticmethod
@@ -135,14 +135,21 @@ class Residual1IAPWS(ResidualBaseIAPWS):
     .. math::
 
         \phi_i^{\mathrm{res}, 1} =
-        \sum_{k=1}^{7} n_{k, i}^\mathrm{res}\,
+        \sum_{k=1}^{m} n_{k, i}\,
           \varrho_i^{d_{k, i}}\,
           \tau_i^{t_{k, i}}\,
 
-    Here, :math:`d_{k, i}` and :math:`t_{k, i}` are mostly integer coefficients
-    or simple fractions, while :math:`n_{k, i}^\mathrm{res}` are the real tuning
-    parameters.
+    The parameters are defined as follows, the indices formatted with two
+    digits. The default number of terms :math:`m` for this contribution is 44.
 
+    ==================== ==================================
+    Parameter            Symbol
+    ==================== ==================================
+    ``n_01`` to ``n_mm`` :math:`n_{1,i}^\mathrm{res,1}` to
+                         :math:`n_{m,i}^\mathrm{res,1}`
+    ``d_01`` to ``d_mm`` :math:`d_{1,i}` to :math:`d_{m,i}`
+    ``t_01`` to ``t_mm`` :math:`t_{1,i}` to :math:`t_{m,i}`
+    ==================== ==================================
     """
     @staticmethod
     def parameter_names():
@@ -167,10 +174,22 @@ class Residual2IAPWS(ResidualBaseIAPWS):
     .. math::
 
         \phi_i^{\mathrm{res}, 2} =
-           \sum_{k=1}^{44} n_{k, i}^\mathrm{res}\,
+           \sum_{k=1}^{m} n_{k, i}\,
               \varrho_i^{d_{k, i}}\,
               \tau_i^{t_{k, i}}\,
               \exp \left ( -\varrho_i^{c_{k, i}}\right )
+
+    The parameters are defined as follows, the indices formatted with two
+    digits. The default number of terms :math:`m` for this contribution is 44.
+
+    ==================== ==================================
+    Parameter            Symbol
+    ==================== ==================================
+    ``n_01`` to ``n_mm`` :math:`n_{1,i}` to :math:`n_{m,i}`
+    ``d_01`` to ``d_mm`` :math:`d_{1,i}` to :math:`d_{m,i}`
+    ``t_01`` to ``t_mm`` :math:`t_{1,i}` to :math:`t_{m,i}`
+    ``c_01`` to ``c_mm`` :math:`c_{1,i}` to :math:`c_{m,i}`
+    ==================== ==================================
     """
     @staticmethod
     def parameter_names():
@@ -194,14 +213,29 @@ class Residual3IAPWS(ResidualBaseIAPWS):
 
     .. math::
 
-        \phi_i^{\mathrm{res}, 2} =
-           \sum_{k=1}^{3} n_{k, i}^\mathrm{res}\,
+        \phi_i^{\mathrm{res}, 3} =
+           \sum_{k=1}^{m} n_{k, i}^\mathrm{res}\,
               \varrho_i^{d_{k, i}}\,
               \tau_i^{t_{k, i}}\,
               \exp \left [
-                -\alpha_i\,(\varrho_i - \epsilon_i)^2
-                -\beta_i\,(\tau_i - \gamma_i)^2
+                -\alpha_{k,i}\,(\varrho_i - \epsilon_{k,i})^2
+                -\beta_{k,i}\,(\tau_i - \gamma_{k,i})^2
               \right ]
+
+    The parameters are defined as follows, the indices formatted with two
+    digits. The default number of terms :math:`m` for this contribution is 3.
+
+    ==================== ================================================
+    Parameter            Symbol
+    ==================== ================================================
+    ``n_01`` to ``n_mm`` :math:`n_{1,i}` to :math:`n_{m,i}`
+    ``d_01`` to ``d_mm`` :math:`d_{1,i}` to :math:`d_{m,i}`
+    ``t_01`` to ``t_mm`` :math:`t_{1,i}` to :math:`t_{m,i}`
+    ``a_01`` to ``a_mm`` :math:`\alpha_{1,i}` to :math:`\alpha_{m,i}`
+    ``b_01`` to ``b_mm`` :math:`\beta_{1,i}` to :math:`\beta_{m,i}`
+    ``g_01`` to ``g_mm`` :math:`\gamma_{1,i}` to :math:`\gamma_{m,i}`
+    ``e_01`` to ``e_mm`` :math:`\epsilon_{1,i}` to :math:`\epsilon_{m,i}`
+    ==================== ================================================
     """
     @staticmethod
     def parameter_names():
@@ -226,20 +260,37 @@ class Residual4IAPWS(ResidualBaseIAPWS):
 
     .. math::
 
-        \phi_i^{\mathrm{res}, 2} =
-           \sum_{k=1}^{3} n_{k, i}^\mathrm{res}\,
-            \Delta_i^{b_i}\,\varrho\,\psi_i
+        \phi_i^{\mathrm{res}, 4} =
+           \sum_{k=1}^{m} n_{k, i}^\mathrm{res}\,
+            \Delta_{k,i}^{b_{k,i}}\,\varrho_i\,\psi_{k,i}
 
     with
 
     .. math::
 
-        \Delta_i &= \theta_i^2 + B_i\,\hat\varrho_i^{a_i}\\
-        \theta &= 1 - \tau_i + A_i\,\hat\varrho_i^{1/(2\,\beta_i)}\\
+        \Delta_{k,i} &= \theta_{k,i}^2 + B_i\,\hat\varrho_i^{a_{k,i}}\\
+        \theta_{k,i} &= 1-\tau_i + A_{k,i}\,\hat\varrho_i^{1/(2\,\beta_{k,i})}\\
         \psi_i &= \exp \left [
-          -C_i\,\hat\varrho_i - D_i\,(\tau_i - 1)^2
+          -C_{k,i}\,\hat\varrho_i - D_{k,i}\,(\tau_i - 1)^2
           \right ]\\
         \hat \varrho_i &= (\varrho_i - 1)^2
+
+    The parameters are defined as follows, the indices formatted with two
+    digits. The default number of terms :math:`m` for this contribution is 2.
+
+    ========================== ================================================
+    Parameter                  Symbol
+    ========================== ================================================
+    ``n_01`` to ``n_mm``       :math:`n_{1,i}` to :math:`n_{m,i}`
+    ``a_01`` to ``a_mm``       :math:`a_{1,i}` to :math:`a_{m,i}`
+    ``b_01`` to ``b_mm``       :math:`b_{1,i}` to :math:`b_{m,i}`
+    ``B_01`` to ``B_mm``       :math:`B_{1,i}` to :math:`B_{m,i}`
+    ``C_01`` to ``C_mm``       :math:`C_{1,i}` to :math:`C_{m,i}`
+    ``D_01`` to ``D_mm``       :math:`D_{1,i}` to :math:`D_{m,i}`
+    ``A_01`` to ``A_mm``       :math:`A_{1,i}` to :math:`A_{m,i}`
+    ``beta_01`` to ``beta_mm`` :math:`\beta_{1,i}` to :math:`\beta_{m,i}`
+    ========================== ================================================
+
     """
     @staticmethod
     def parameter_names():

@@ -151,6 +151,26 @@ def test_iapws_equilibrium(iapws_model):
         assert abs(dmu) < 1, f"T = {temp} K"
         assert abs(dp_rel) < 1e-4,  f"T = {temp} K"
 
-def test_iapws_simplify(iapws_model):
+def test_iapws_derivatives(iapws_model):
     frame, param = iapws_model
-    assert False, "Test derivatives, as I now manually coded them"
+    eps = 1e-5
+    prop = frame([640, 1e-4, 1.0], param)["props"]
+    s, p, mu = prop["S"], prop["p"], prop["mu"]
+    a_base = mu * prop["n"] - p * prop["V"]
+    prop = frame([640 + eps, 1e-4, 1.0], param)["props"]
+    a_dis = prop["mu"] * prop["n"] - prop["p"] * prop["V"]
+    da_dt = (a_dis - a_base).to("J").m / eps
+    assert abs(da_dt + s.to("J/K").m) < 1e-5
+
+    eps = 1e-12
+    prop = frame([640, 1e-4 + eps, 1.0], param)["props"]
+    a_dis = prop["mu"] * prop["n"] - prop["p"] * prop["V"]
+    da_dv = (a_dis - a_base).to("J").m / eps
+    assert abs(da_dv + p.to("Pa").m) < 10  # unit is Pa, 10 Pa is little here
+
+    eps = 1e-7
+    prop = frame([640, 1e-4, 1.0 + eps], param)["props"]
+    a_dis = prop["mu"] * prop["n"] - prop["p"] * prop["V"]
+    da_dn = (a_dis - a_base).to("J").m / eps
+    assert abs(da_dn - mu.to("J/mol").m) < 1e-4
+
