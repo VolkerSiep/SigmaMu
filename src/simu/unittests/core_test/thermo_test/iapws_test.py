@@ -1,7 +1,7 @@
 from numpy import linspace
 from numpy.testing import assert_allclose
 
-from simu import R_GAS
+from simu import R_GAS, SymbolQuantity
 from simu.app.thermo.contributions.iapws.standard import (
     ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS)
 from simu.core.utilities.testing import assert_reproduction
@@ -150,3 +150,7 @@ def test_iapws_equilibrium(iapws_model):
         dp_rel = 1 - p_gas["p"].to("bar").m / pres
         assert abs(dmu) < 1, f"T = {temp} K"
         assert abs(dp_rel) < 1e-4,  f"T = {temp} K"
+
+def test_iapws_simplify(iapws_model):
+    frame, param = iapws_model
+    assert False, "Test derivatives, as I now manually coded them"

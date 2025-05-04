@@ -2,7 +2,9 @@ from abc import abstractmethod
 from collections.abc import Sequence
 
 # internal modules
-from simu import ThermoContribution, R_GAS, qvertcat, Quantity, exp, qpow
+from simu import (
+    ThermoContribution, R_GAS, qvertcat, Quantity, exp, qpow,
+    SymbolQuantity, QFunction)
 from simu.core.utilities.types import Map
 from simu.core.utilities.quantity import jacobian
 
@@ -60,18 +62,40 @@ class ResidualBaseIAPWS(ThermoContribution):
         n_sub = qvertcat(*[n[i] for i in idx])
 
         p_names = self.parameter_names()
+        num_terms_rng = range(1, number_of_terms + 1)
         params = {n: [self.par_vector(f"{n}_{i:02d}", species, "")
-                      for i in range(1, number_of_terms + 1)]
+                      for i in num_terms_rng]
                   for n in p_names}
-        phi = self.define_phi(tau, rho, params)
-        a_res = R_GAS * temp * (n_sub.T @ phi)
+        phi = self._get_phi(tau, rho, params, species, number_of_terms)
 
-        # TODO: maybe better define phi as function, take local derivatives,
-        #  and then add contributions? But first prove that this is wrong,
-        #  if it is!!
-        res["mu"] += jacobian(a_res, n)
-        res["S"] -= jacobian(a_res, temp)
-        res["p"] -= jacobian(a_res, vol)
+        # use chain rule to construct derivatives
+        # Doesn't make a big difference to brute force derivatives, however :(
+        s_res = -R_GAS * (n_sub.T @ (phi["phi"] - tau.T @ phi["phi_tau"]))
+        p_res = R_GAS * temp / vol * (n_sub.T @ phi["phi_rho"] @ rho)
+        mu_res = R_GAS * temp * (phi["phi"] + rho @ phi["phi_rho"])
+
+        res["mu"] += mu_res
+        res["S"] += s_res
+        res["p"] += p_res
+
+    def _get_phi(self, tau: Quantity, rho: Quantity,
+                 params: Map[Sequence[Quantity]], species: Sequence[str],
+                 number_of_terms: int) -> Map[Quantity]:
+        """Define phi as a casadi function and evaluate the derivatives
+        with respect to tau and rho."""
+        tau_independent = SymbolQuantity("tau", "", species)
+        rho_independent = SymbolQuantity("rho", "", species)
+        phi = self.define_phi(tau_independent, rho_independent, params)
+        phi_tau = jacobian(phi, tau_independent)
+        phi_rho = jacobian(phi, rho_independent)
+        p_struct = {n: {f"{i:02d}": p_n[i] for i in range(number_of_terms)}
+                    for n, p_n in params.items()}
+        args = {"tau": tau_independent, "rho": rho_independent,
+                "params": p_struct}
+        result = {"phi": phi, "phi_rho": phi_rho, "phi_tau": phi_tau}
+        f = QFunction(args, result)
+        result = f({"tau": tau, "rho": rho, "params": p_struct})
+        return result
 
     @staticmethod
     @abstractmethod

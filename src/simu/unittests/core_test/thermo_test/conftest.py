@@ -110,12 +110,4 @@ def iapws_model(species_definitions_h2o):
     frame = fac.create_frame(species_definitions_h2o, config)
     with open(DATA_DIR / "parameters_iapws.yml") as file:
         params = parse_quantities_in_struct(safe_load(file)["data"])
-    # just for a test
-    params2 = {k: v for k, v in params.items()
-              if not (
-                k.startswith("Residual1") or
-                k.startswith("Residual2") or
-                k.startswith("Residual3") or
-                k.startswith("Residual4")
-    )}
     return frame, params
