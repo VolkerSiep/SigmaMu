@@ -3,9 +3,9 @@ from collections.abc import Sequence
 
 # internal modules
 from simu import (
-    ThermoContribution, R_GAS, qvertcat, Quantity, exp, qpow,
-    SymbolQuantity, QFunction)
-from simu.core.utilities.types import Map
+    ThermoContribution, R_GAS, qvertcat, Quantity, exp, qpow, qsum,
+    SymbolQuantity, QFunction, base_magnitude)
+from simu.core.utilities.types import Map, MutMap
 from simu.core.utilities.quantity import jacobian
 
 # TODO:
@@ -315,3 +315,42 @@ class Residual4IAPWS(ResidualBaseIAPWS):
             n_i * qpow(delta_i, b_i) * rho * psi_i
             for n_i, delta_i, b_i, psi_i  in zip(n, delta, b, psi)
         )
+
+
+class GasIAPWS(ThermoContribution):
+    def define(self, res):
+        pass
+
+    def initial_state(self, state, properties):
+        # TODO: calculate saturated gas volume v_sat at  given temperature
+        #   Also pressure, then return v_sat * p_sat / p
+        #   For that, define required parameters in "define" method.
+        #   I need e.g. ln (p_sat/p_c) = f(tau) and
+        #     z_sat = f(tau)
+        #  The development should be part of the repo, but not part of the
+        #  package. I need a new folder on root level, "development/iapws" !?
+        volume = qsum(state.mol_vector) * R_GAS * \
+                 state.temperature / state.pressure
+        return ([base_magnitude(state.temperature),
+                 base_magnitude(volume)] +
+                list(base_magnitude(state.mol_vector)))
+
+
+class LiquidIAPWS(ThermoContribution):
+    def define(self, res):
+        pass
+
+    def initial_state(self, state, properties):
+        # TODO: calculate saturated gas volume v_sat at  given temperature
+        #   Also pressure, then return v_sat * p_sat / p
+        volume = qsum(state.mol_vector) * R_GAS * \
+                 state.temperature / state.pressure
+        return ([base_magnitude(state.temperature),
+                 base_magnitude(volume)] +
+                list(base_magnitude(state.mol_vector)))
+
+# TODO: Initialisation of liquid and gas phase
+#  - make own contribution for each
+#  - for liquid, use saturation volume
+#  - for gas, also use saturation volume, but compensate for temperature
+#    and pressure
