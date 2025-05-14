@@ -35,12 +35,17 @@ class ReducedStateIAPWS(ThermoContribution):
         the reciprocal value is used here.
 
     """
-    provides = ["_tau", "_rho"]
+    provides = ["_tau", "_rho", "_t_c", "_p_c", "_rho_c"]
 
     def define(self, res):
         temp, vol, n, mw = res["T"], res["V"], res["n"], res["mw"]
         rho_c = self.par_vector("rho_c", self.species, "kg/m^3")
         t_c = self.par_vector("T_c", self.species, "K")
+        p_c = self.par_vector("p_c", self.species, "bar")
+
+        res["_t_c"] = t_c
+        res["_p_c"] = t_c
+        res["_rho_c"] = rho_c
 
         res["_tau"] = t_c / temp
         res["_rho"] = mw * n / vol / rho_c

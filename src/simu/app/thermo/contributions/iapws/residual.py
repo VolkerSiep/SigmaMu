@@ -317,40 +317,54 @@ class Residual4IAPWS(ResidualBaseIAPWS):
         )
 
 
-class GasIAPWS(ThermoContribution):
+class GasIAPWSIdealMix(ThermoContribution):
+    """This contribution does not add any terms to the state function itself,
+    but prepares and provides the initialization if the IAPWS model gas phase
+    based on empirical expressions for the pure species, paired with ideal
+    mixing rules for multi-component mixtures.
+
+
+
+    """
     def define(self, res):
-        pass
+        props = "T n _tau _p_c, _rho_c mw".split()
+        temp, n, tau, p_c, rho_c, mw = [res[i] for i in props]
+        number_of_terms = self.options.get("number_of_terms", 6)
+        ntr = range(1, number_of_terms + 1)
+        a, e, c, f = [[self.par_vector(f"{n}_{i:02d}", self.species, "")
+                       for i in ntr] for n in ("a", "e", "c", "f")]
+        theta = 1 - tau
+        x = n / qsum(n)  # Raoult's law
+        expr_p = tau * sum(a_i * qpow(theta, e_i) for a_i, e_i in zip(a, e))
+        res["_p_sat"] = p_c * (x.T @ exp(expr_p))
+
+        expr_r = sum(c_i * qpow(theta, f_i) for c_i, f_i in zip(c, f))
+        rho = rho_c * exp(expr_r)
+        res["_v_sat"] = qsum(n * mw / rho)  # no mixing volume
 
     def initial_state(self, state, properties):
-        # TODO: calculate saturated gas volume v_sat at  given temperature
-        #   Also pressure, then return v_sat * p_sat / p
-        #   For that, define required parameters in "define" method.
-        #   I need e.g. ln (p_sat/p_c) = f(tau) and
-        #     z_sat = f(tau)
-        #  The development should be part of the repo, but not part of the
-        #  package. I need a new folder on root level, "development/iapws" !?
-        volume = qsum(state.mol_vector) * R_GAS * \
-                 state.temperature / state.pressure
+        p_sat, v_sat = properties["_p_sat"], properties["_v_sat"]
+        volume = p_sat / state.pressure * v_sat
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))
 
 
-class LiquidIAPWS(ThermoContribution):
+class LiquidIAPWSIdealMix(ThermoContribution):
     def define(self, res):
-        pass
+        props = "T n _tau _p_c, _rho_c mw".split()
+        temp, n, tau, p_c, rho_c, mw = [res[i] for i in props]
+        number_of_terms = self.options.get("number_of_terms", 6)
+        ntr = range(1, number_of_terms + 1)
+        b, f = [[self.par_vector(f"{n}_{i:02d}", self.species, "")
+                for i in ntr] for n in ("b", "f")]
+        theta = 1 - tau
+        expr_r = 1 + sum(b_i * qpow(theta, f_i) for b_i, f_i in zip(b, f))
+        rho = rho_c * exp(expr_r)
+        res["_v_sat"] = qsum(n * mw / rho)
 
     def initial_state(self, state, properties):
-        # TODO: calculate saturated gas volume v_sat at  given temperature
-        #   Also pressure, then return v_sat * p_sat / p
-        volume = qsum(state.mol_vector) * R_GAS * \
-                 state.temperature / state.pressure
+        volume = properties["_p_sat"]
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))
-
-# TODO: Initialisation of liquid and gas phase
-#  - make own contribution for each
-#  - for liquid, use saturation volume
-#  - for gas, also use saturation volume, but compensate for temperature
-#    and pressure
