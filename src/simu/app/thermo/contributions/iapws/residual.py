@@ -318,13 +318,55 @@ class Residual4IAPWS(ResidualBaseIAPWS):
 
 
 class GasIAPWSIdealMix(ThermoContribution):
-    """This contribution does not add any terms to the state function itself,
+    r"""This contribution does not add any terms to the state function itself,
     but prepares and provides the initialization if the IAPWS model gas phase
     based on empirical expressions for the pure species, paired with ideal
     mixing rules for multi-component mixtures.
 
+    To find the gas volume, we calculate the saturation volume according to the
+    empirical formula in :cite:p:`Wagner_2002`:
 
+    .. math::
 
+        \ln \varrho_i^* = \sum_{j=1}^m c_{j,i}\,\vartheta_i^{f_{j,i}}
+        \quad\text{with}\quad
+        \vartheta_i = 1 - \tau_i
+
+    The total saturation volume according to Raoult's law is then
+
+    .. math:: V^* = \sum_i \frac{n_i\, M_i}{\varrho_i\,\rho_{c,i}}
+
+    Instead of initialising with the saturation volume itself, we compensate
+    proportionally with any pressure departure. For that, the saturation
+    pressure is evaluated according to :cite:p:`Wagner_2002` as
+
+    .. math::
+
+        \ln \frac{p^*_i}{p_{c,i}} = \tau_i\,\sum_{j=1}^{m}
+          a_{j,i}\,\vartheta_i^{e_{j,i}}
+
+    The total saturation pressure is the mole-fraction weighted sum of partial
+    pressures:
+
+    .. math:: p^* = \frac{1}{N}\sum_i n_i\,p^*_i
+
+    As such, the volume estimate is calculated to
+
+    .. math:: V^\mathrm{est} = \frac{p^*}{p}\,V^*
+
+    This contribution requires the following parameters
+
+    ========================== ================================================
+    Parameter                  Symbol
+    ========================== ================================================
+    ``a_01`` to ``e_mm``       :math:`a_{1,i}` to :math:`a_{m,i}`
+    ``e_01`` to ``e_mm``       :math:`e_{1,i}` to :math:`e_{m,i}`
+    ``c_01`` to ``c_mm``       :math:`c_{1,i}` to :math:`c_{m,i}`
+    ``f_01`` to ``f_mm``       :math:`f_{1,i}` to :math:`f_{m,i}`
+    ========================== ================================================
+
+    By default, the number of terms is :math:`m = 6`, but this can be altered
+    by the ``number_of_terms`` option.
     """
     def define(self, res):
         props = "T n _tau _p_c, _rho_c mw".split()

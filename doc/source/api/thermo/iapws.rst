@@ -49,3 +49,15 @@ Residual4IAPWS
 .. autoclass:: simu.app.thermo.contributions.iapws.residual.Residual4IAPWS
   :show-inheritance:
   :exclude-members: __init__, __new__
+
+GasIAPWSIdealMix
+................
+.. autoclass:: simu.app.thermo.contributions.iapws.residual.GasIAPWSIdealMix
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
+LiquidIAPWSIdealMix
+...................
+.. autoclass:: simu.app.thermo.contributions.iapws.residual.LiquidIAPWSIdealMix
+  :show-inheritance:
+  :exclude-members: __init__, __new__
