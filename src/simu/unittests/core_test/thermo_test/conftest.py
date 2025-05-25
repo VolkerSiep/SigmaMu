@@ -100,11 +100,8 @@ def iapws_model(species_definitions_h2o):
         "state": "HelmholtzState",
         "contributions": [
             "MolecularWeight", "ReducedStateIAPWS", "StandardStateIAPWS",
-            "IdealGasIAPWS",
-            "Residual1IAPWS",
-            "Residual2IAPWS",
-            "Residual3IAPWS",
-            "Residual4IAPWS"
+            "IdealGasIAPWS", "Residual1IAPWS", "Residual2IAPWS",
+            "Residual3IAPWS", "Residual4IAPWS"
         ]
     }
     frame = fac.create_frame(species_definitions_h2o, config)

@@ -328,13 +328,11 @@ class GasIAPWSIdealMix(ThermoContribution):
 
     .. math::
 
-        \ln \varrho_i^* = \sum_{j=1}^m c_{j,i}\,\vartheta_i^{f_{j,i}}
-        \quad\text{with}\quad
-        \vartheta_i = 1 - \tau_i
+        \ln \varrho_i^* = \sum_{j=1}^m c_{j,i}\,(1-\tau_i)^{f_{j,i}}
 
     The total saturation volume according to Raoult's law is then
 
-    .. math:: V^* = \sum_i \frac{n_i\, M_i}{\varrho_i\,\rho_{c,i}}
+    .. math:: V^* = \sum_i \frac{n_i\, M_i}{\varrho_i^*\,\rho_{c,i}}
 
     Instead of initialising with the saturation volume itself, we compensate
     proportionally with any pressure departure. For that, the saturation
@@ -343,7 +341,7 @@ class GasIAPWSIdealMix(ThermoContribution):
     .. math::
 
         \ln \frac{p^*_i}{p_{c,i}} = \tau_i\,\sum_{j=1}^{m}
-          a_{j,i}\,\vartheta_i^{e_{j,i}}
+          a_{j,i}\,(1-\tau_i)^{e_{j,i}}
 
     The total saturation pressure is the mole-fraction weighted sum of partial
     pressures:
@@ -393,6 +391,37 @@ class GasIAPWSIdealMix(ThermoContribution):
 
 
 class LiquidIAPWSIdealMix(ThermoContribution):
+    r"""This contribution does not add any terms to the state function itself,
+    but prepares and provides the initialization if the IAPWS model liquid phase
+    based on empirical expressions for the pure species, paired with ideal
+    mixing rules for multi-component mixtures.
+
+    To find the liquid volume, we calculate the saturation volume according to
+    the empirical formula in :cite:p:`Wagner_2002`:
+
+    .. math::
+
+        \varrho_i^* = 1 + \sum_{j=1}^m b_{j,i}\,(1-\tau_i)^{f_{j,i}}
+
+    The total saturation volume is then
+
+    .. math::
+
+       V^\mathrm{est} = V^* = \sum_i \frac{n_i\, M_i}{\varrho_i^*\,\rho_{c,i}}
+
+    Unlike for initialising the gas phase (:class:`GasIAPWSIdealMix`), we do not
+    pressure-compensate the saturation volume.
+
+    ========================== ================================================
+    Parameter                  Symbol
+    ========================== ================================================
+    ``b_01`` to ``b_mm``       :math:`b_{1,i}` to :math:`b_{m,i}`
+    ``f_01`` to ``f_mm``       :math:`f_{1,i}` to :math:`f_{m,i}`
+    ========================== ================================================
+
+    By default, the number of terms is :math:`m = 6`, but this can be altered
+    by the ``number_of_terms`` option.
+    """
     def define(self, res):
         props = "T n _tau _p_c, _rho_c mw".split()
         temp, n, tau, p_c, rho_c, mw = [res[i] for i in props]
@@ -402,7 +431,7 @@ class LiquidIAPWSIdealMix(ThermoContribution):
                 for i in ntr] for n in ("b", "f")]
         theta = 1 - tau
         expr_r = 1 + sum(b_i * qpow(theta, f_i) for b_i, f_i in zip(b, f))
-        rho = rho_c * exp(expr_r)
+        rho = rho_c * expr_r
         res["_v_sat"] = qsum(n * mw / rho)
 
     def initial_state(self, state, properties):
