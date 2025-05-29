@@ -1,7 +1,7 @@
 from numpy import linspace
 from numpy.testing import assert_allclose
 
-from simu import R_GAS, SymbolQuantity
+from simu import R_GAS, InitialState
 from simu.app.thermo.contributions.iapws.standard import (
     ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS)
 from simu.core.utilities.testing import assert_reproduction
@@ -46,7 +46,8 @@ def test_standard_state_iapws_deri(species_definitions_h2o):
     args = {
         "param": {
             "rho_c": {"H2O": Quantity("322 kg/m**3")},
-            "T_c": {"H2O": Quantity("647.096 K")}},
+            "T_c": {"H2O": Quantity("647.096 K")},
+            "p_c": {"H2O": Quantity("22.064 MPa")}},
         "state": {
             "T": Quantity("300.0 K"),
             "V": Quantity("0.024 m**3"),
@@ -174,3 +175,9 @@ def test_iapws_derivatives(iapws_model):
     da_dn = (a_dis - a_base).to("J").m / eps
     assert abs(da_dn - mu.to("J/mol").m) < 1e-4
 
+
+def test_iapws_liquid(iapws_model_liquid):
+    frame, param = iapws_model_liquid
+    state = InitialState.from_cbar(25.0, 1.0, [1e6 / 18])
+    volume = frame.initial_state(state, param)[1]
+    assert 0.99 < volume < 1.01

@@ -10,7 +10,8 @@ from .cubic import (
 
 from .iapws import (
     ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS, Residual1IAPWS,
-    Residual2IAPWS, Residual3IAPWS, Residual4IAPWS)
+    Residual2IAPWS, Residual3IAPWS, Residual4IAPWS, LiquidIAPWSIdealMix,
+    GasIAPWSIdealMix)
 
 from .special import Derivative
 
@@ -24,4 +25,5 @@ all_contributions = [H0S0ReferenceState, LinearHeatCapacity, StandardState,
                      RedlichKwongMFactor, VolumeShift,
                      ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS,
                      Residual1IAPWS, Residual2IAPWS, Residual3IAPWS,
-                     Residual4IAPWS, Derivative]
+                     Residual4IAPWS, LiquidIAPWSIdealMix, GasIAPWSIdealMix,
+                     Derivative]

@@ -357,7 +357,7 @@ class GasIAPWSIdealMix(ThermoContribution):
     ========================== ================================================
     Parameter                  Symbol
     ========================== ================================================
-    ``a_01`` to ``e_mm``       :math:`a_{1,i}` to :math:`a_{m,i}`
+    ``a_01`` to ``a_mm``       :math:`a_{1,i}` to :math:`a_{m,i}`
     ``e_01`` to ``e_mm``       :math:`e_{1,i}` to :math:`e_{m,i}`
     ``c_01`` to ``c_mm``       :math:`c_{1,i}` to :math:`c_{m,i}`
     ``f_01`` to ``f_mm``       :math:`f_{1,i}` to :math:`f_{m,i}`
@@ -373,7 +373,7 @@ class GasIAPWSIdealMix(ThermoContribution):
         ntr = range(1, number_of_terms + 1)
         a, e, c, f = [[self.par_vector(f"{n}_{i:02d}", self.species, "")
                        for i in ntr] for n in ("a", "e", "c", "f")]
-        theta = 1 - tau
+        theta = 1 - 1 / tau
         x = n / qsum(n)  # Raoult's law
         expr_p = tau * sum(a_i * qpow(theta, e_i) for a_i, e_i in zip(a, e))
         res["_p_sat"] = p_c * (x.T @ exp(expr_p))
@@ -423,19 +423,19 @@ class LiquidIAPWSIdealMix(ThermoContribution):
     by the ``number_of_terms`` option.
     """
     def define(self, res):
-        props = "T n _tau _p_c, _rho_c mw".split()
+        props = "T n _tau _p_c _rho_c mw".split()
         temp, n, tau, p_c, rho_c, mw = [res[i] for i in props]
         number_of_terms = self.options.get("number_of_terms", 6)
         ntr = range(1, number_of_terms + 1)
         b, f = [[self.par_vector(f"{n}_{i:02d}", self.species, "")
                 for i in ntr] for n in ("b", "f")]
-        theta = 1 - tau
+        theta = 1 - 1 / tau
         expr_r = 1 + sum(b_i * qpow(theta, f_i) for b_i, f_i in zip(b, f))
         rho = rho_c * expr_r
         res["_v_sat"] = qsum(n * mw / rho)
 
     def initial_state(self, state, properties):
-        volume = properties["_p_sat"]
+        volume = properties["_v_sat"]
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))

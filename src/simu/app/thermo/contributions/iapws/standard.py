@@ -27,6 +27,7 @@ class ReducedStateIAPWS(ThermoContribution):
     ======== ============== =========================
     T_c      :math:`T_c`    Critical temperatures [K]
     rho_c    :math:`\rho_c` Critical density [kg/m3]
+    p_c      :math:`p_c`    Critical pressure [Pa]
     ======== ============== =========================
 
     .. note::
@@ -44,7 +45,7 @@ class ReducedStateIAPWS(ThermoContribution):
         p_c = self.par_vector("p_c", self.species, "bar")
 
         res["_t_c"] = t_c
-        res["_p_c"] = t_c
+        res["_p_c"] = p_c
         res["_rho_c"] = rho_c
 
         res["_tau"] = t_c / temp
