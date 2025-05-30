@@ -367,7 +367,7 @@ class GasIAPWSIdealMix(ThermoContribution):
     by the ``number_of_terms`` option.
     """
     def define(self, res):
-        props = "T n _tau _p_c, _rho_c mw".split()
+        props = "T n _tau _p_c _rho_c mw".split()
         temp, n, tau, p_c, rho_c, mw = [res[i] for i in props]
         number_of_terms = self.options.get("number_of_terms", 6)
         ntr = range(1, number_of_terms + 1)

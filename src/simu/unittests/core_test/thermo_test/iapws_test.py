@@ -181,3 +181,11 @@ def test_iapws_liquid(iapws_model_liquid):
     state = InitialState.from_cbar(25.0, 1.0, [1e6 / 18])
     volume = frame.initial_state(state, param)[1]
     assert 0.99 < volume < 1.01
+
+
+def test_iapws_gas(iapws_model_gas):
+    frame, param = iapws_model_gas
+    state = InitialState.from_cbar(350.0, 165.3, [1e6 / 18])
+    volume = frame.initial_state(state, param)[1]
+    assert 8.80 < volume < 8.82
+
