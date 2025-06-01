@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 # stdlib modules
 from copy import copy
-from typing import Sequence
 
 # internal modules
 from simu import ThermoContribution, R_GAS, log, qsum, base_magnitude, qvertcat
@@ -244,6 +241,8 @@ class HelmholtzIdealGas(ThermoContribution):
     Due to the logarithmic term in entropy, the contribution model domain is
     limited to positive volumes.
     """
+
+    provides = ["p"]
 
     def define(self, res):
         T, V, n, p_ref = res["T"], res["V"], res["n"], res["p_ref"]

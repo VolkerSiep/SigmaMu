@@ -8,7 +8,7 @@ from matplotlib import pyplot
 
 # internal modules
 from simu.core.utilities import (
-    assert_reproduction, base_unit, ParameterDictionary, SymbolQuantity,
+    assert_reproduction, ParameterDictionary,
     jacobian, QFunction, Quantity as Q, base_magnitude, qsum, unit_registry)
 from simu.core.utilities.constants import R_GAS
 from simu.core.thermo import InitialState
@@ -18,16 +18,7 @@ from simu.app.thermo.contributions import (
     RedlichKwongBFunction, RedlichKwongMFactor, VolumeShift)
 from simu.app.thermo.contributions.cubic.rk import RedlichKwongEOS
 
-
-# auxiliary functions
-def sym(name: str, units: str) -> SymbolQuantity:
-    """Define a scalar symbolic quantity"""
-    return SymbolQuantity(name, base_unit(units))
-
-
-def vec(name: str, size: int, units: str) -> SymbolQuantity:
-    "define a vector symbolic quantity"
-    return SymbolQuantity(name, base_unit(units), size)
+from .utils import sym, vec
 
 
 def test_critical_parameters(species_definitions_ab):
