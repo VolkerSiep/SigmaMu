@@ -62,6 +62,7 @@ class AModel(Model, ABC):
     def hd(self):
         return self.hierarchy.declare
 
+    @property
     def ha(self):
         return self.hierarchy.add
 

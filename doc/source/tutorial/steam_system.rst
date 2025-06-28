@@ -1,0 +1,30 @@
+Modelling a small steam generation with a turbine
+=================================================
+
+The process to model
+--------------------
+Let us say, we have 10 MW of heat available at a sufficiently high temperature level to produce high pressure steam. The task is to sketch a steam boiler system consisting of a boiler feed water source, a steam drum, a boiler and a superheater, as well as a condensing turbine with downstream total condensation. One interesting question is, how much mechanical power can be harvested for a given steam pressure, turbine efficiency, and achievable condenser temperature.
+
+.. image:: figures/steam_system.svg
+    :align: center
+
+Stream ``c1`` is slightly subcooled boiler feed water, mixed with saturated steam and water in the steam drum, from which a condensate flow ``c2`` is extracted to the boiler and partially evaporated into return flow ``c3/s3``. A small bleed, approximately 1 % of the boiler feed water flow, is removed as stream ``c4`` to avoid accumulation of impurities that otherwise would potentially scale or corrode the boiler coils. The produced saturated steam exits as stream ``s5`` into the steam superheater, continuing as superheated stream ``s6`` into the turbine. The turbine causes partial condensation into stream ``c7/s7``, before the entire stream is condensed into the saturated condensate stream ``s8``.
+
+We could, but do not consider the return of ``s8`` towards the boiler feed water, as this normally involves buffer tanks and initial heat exchangers, exploiting low level waste heat to raise the BFW temperature.
+
+May the system be specified by
+
+  - constant and specified pressure level of 100 bar upstream of the turbine
+  - no pressure drop in condenser
+  - given BFW feed temperature
+  - The blowdown ``c4`` is 1% of the feed flow ``c1``
+  - The boiler circulation yields 12 % evaporation in stream ``c3/s3``
+  - Total duty in boiler and superheater is 10 MW
+  - The turbine has an isentropic efficiency of 80 %
+  - There is 10 % condensation in the turbine
+  - Given temperature of condenser outlet ``c8``
+
+As such, we expect the duty distribution to yield the desired condensation in the turbine, and the boiler duty to determine the BFW flow. The condenser temperature determines the turbine discharge pressure. This is hence a typical process that is still simple (and simplified), but includes a large recycle and multiple implicit specifications.
+
+The process model
+-----------------

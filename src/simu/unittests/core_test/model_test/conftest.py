@@ -82,7 +82,7 @@ def thermo_param():
 
 @fixture(scope="session")
 def material_test_model_4(material_def_h2o_with_param):
-    """Need to make a fixture for this model, as it needs another fixture
+    """Needed to make a fixture for this model, as it needs another fixture
     for the material definition"""
     class  MaterialTestModel4(Model):
         def interface(self):
@@ -225,3 +225,23 @@ def model_with_residual():
             self.materials.create_flow("liq", definition)
 
     return ModelWithThermoResidual
+
+@fixture(scope="session")
+def model_with_material_hierarchy(material_def_h2o_with_param):
+    """Create a model including a child module with a port and connect it from
+    parent context."""
+    class Child(Model):
+        def interface(self):
+            spec = MaterialSpec(["H2O"])
+            self.materials.define_port("inlet", spec)
+
+        def define(self):
+            pass
+
+    class Parent(Model):
+        def define(self):
+            s1 = self.materials.create_flow("s1", material_def_h2o_with_param)
+            with self.hierarchy.add("child", Child) as child:
+                child.materials.connect("inlet", s1)
+
+    return Parent

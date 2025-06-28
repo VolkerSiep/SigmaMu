@@ -108,6 +108,7 @@ class ThermoParameterStore:
         self.__sources: MutMap[AbstractThermoSource] = {}
         self.name = "default"
 
+
     def get_symbols(self, parameter_struct: NestedMap[str]) \
             -> NestedMap[Quantity]:
         """Query the nested structure of parameter symbols from the store.
@@ -123,7 +124,6 @@ class ThermoParameterStore:
         ``DimensionalityError`` is raised if such previously defined symbol
         is incompatible with respect to the physical dimension.
         """
-
         def prepare(name: str, key: str, query: NestedMap[str],
                     stored: NestedMutMap[Quantity]):
             """Helper function to recursively retrieve and define symbols"""
@@ -175,6 +175,16 @@ class ThermoParameterStore:
                            "'get_missing_symbols' to find out which")
         return found
 
+    def get_values(self, parameter_struct: NestedMap[str]) \
+            -> NestedMap[Quantity]:
+        """Query a specific substructure of values from the connected data
+        sources."""
+        found, missing, sources = self.__get_values(parameter_struct)
+        if missing:
+            raise KeyError("Missing parameter values. Use " 
+                           "'get_missing_symbols' to find out which")
+        return found
+
     def get_missing_symbols(self) -> NestedMap[str]:
         """This method tries to collect values for all previously prepared
         symbols and returns a nested dictionary of quantities with those not
@@ -193,13 +203,15 @@ class ThermoParameterStore:
             raise KeyError(f"Source '{name}' already defined")
         self.__sources[name] = source
 
-    def __get_values(self) -> _RT:
+    def __get_values(self, parameter_struct: NestedMap[str] = None) -> _RT:
         """Return a tuple of
 
           a. values found for previously defined symbols, and
           b. symbols for those entries where values are not found.
           c. names of the sources where the values are found
         """
+        check_dim = lambda a, b: a.to(b)
+
         def get_value(path: Collection[str],
                       qty: Quantity) -> tuple[Quantity, str]:
             """Query the sources for value"""
@@ -209,7 +221,7 @@ class ThermoParameterStore:
                 except KeyError:
                     continue
                 try:
-                    result.to(qty.units)
+                    check_dim(result, qty)
                 except DimensionalityError as err:
                     err.extra_msg = \
                         " - Error fetching thermodynamic property " + \
@@ -247,4 +259,7 @@ class ThermoParameterStore:
 
             return found, missing, source
 
-        return extract([], self.__provided_parameters)
+        if parameter_struct is None:
+            check_dim = lambda a, b: a.to(b.units)
+            parameter_struct = self.__provided_parameters
+        return extract([], parameter_struct)

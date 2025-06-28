@@ -467,14 +467,20 @@ class NumericHandler:
             """Fetch the initial state variables from the materials of a
             specific model"""
             result = {}
-            for k, m in model.materials.handler.items():
+            mat_proxy = model.materials
+            for k, m in mat_proxy.handler.items():
+                if k in mat_proxy:
+                    continue  # this is a connected port, don't collect twice
+
                 init = m.initial_state
+                frame = m.definition.frame
+                param_struct = frame.parameter_structure
                 try:
-                    params = m.definition.store.get_all_values()
+                    params = m.definition.store.get_values(param_struct)
                 except KeyError:
                     msg = "Missing values for thermodynamic parameters"
                     raise DataFlowError(msg)
-                state = m.definition.frame.initial_state(init, params)
+                state = frame.initial_state(init, params)
                 dic = {f"x_{i:03d}": Quantity(x) for i, x in enumerate(state)}
                 result[k] = dic
             return result

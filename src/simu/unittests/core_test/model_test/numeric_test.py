@@ -220,6 +220,12 @@ def test_vector_bound(square_test_model):
     assert res == ref
 
 
+def test_hierarchy_port(model_with_material_hierarchy):
+    numeric = NumericHandler(model_with_material_hierarchy.top())
+    x = numeric.arguments["vectors"]["states"].magnitude.nonzeros()
+    assert_allclose(x, [298.15, 101325, 1])
+
+
 def check_same_keys(dic1, dic2):
     """Check whether the two nested dictionaries have the same keys"""
     def is_it(d):

@@ -383,6 +383,8 @@ class GasIAPWSIdealMix(ThermoContribution):
         res["_v_sat"] = qsum(n * mw / rho)  # no mixing volume
 
     def initial_state(self, state, properties):
+        # TODO: check if super-critical, as then there is no v_sat or p_sat
+        #  then, just initialize with ideal gas (there should only be one root)
         p_sat, v_sat = properties["_p_sat"], properties["_v_sat"]
         volume = p_sat / state.pressure * v_sat
         return ([base_magnitude(state.temperature),
