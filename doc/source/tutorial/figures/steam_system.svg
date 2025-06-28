@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg viewBox="-10 30 480 240" height="230" width="500" xmlns="http://www.w3.org/2000/svg"
+     style="fill:none;stroke:black;stroke-width:1;background-color:white">
+  <defs>
+    <marker id="surface" markerWidth="20" markerHeight="20" refX="10" refY="10" orient="auto">
+      <path d = "M1 1 h18 l-9 9 -9 -9 M3 13 h14 M6 16 h8 M8 19 h4" stroke-width="1"/>
+    </marker>
+    <marker id="arrow" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+      <path d="M 0 0 L 6 3 L 0 6 z" fill="black"/>
+    </marker>
+    <symbol id="bfw_feed">
+      <polyline points="0,0 50,0 60,10 50,20 0,20 0,0"/>
+      <text x="5" y="15" stroke="none" fill="blue">BFW</text>
+      <circle r="2" cx="58" cy="10" fill="blue" />
+    </symbol>
+    <symbol id="drum">
+      <path d="M10 20 h50 c10 -20 40 -20 50 0 h10 c10 10 10 40 0 50 h-110 c-10 -10 -10 -40 0 -50" />
+      <path d="M5 50 h80 h40" stroke-width="0.5" marker-mid="url(#surface)"/>
+      <circle r="2" cx="7" cy="60" fill="red" />
+      <circle r="2" cx="123" cy="30" fill="red" />
+      <circle r="2" cx="30" cy="68" fill="blue" />
+      <circle r="2" cx="90" cy="68" fill="blue" />
+      <circle r="2" cx="85" cy="7" fill="blue" />
+    </symbol>
+    <symbol id="heater">
+      <circle r="19" cx="20" cy="25"/>
+      <path d="M10 0 v35 l10 -10 10 10 v-35"/>
+      <circle r="2" cx="10" cy="3" fill="red" />
+      <circle r="2" cx="30" cy="3" fill="blue" />
+    </symbol>
+    <symbol id="turbine">
+      <path d="M10 20 v25 l30 10 v5 -45 l-30 10"/>
+      <circle r="2" cx="10" cy="18" fill="red" />
+      <circle r="2" cx="40" cy="62" fill="blue" />
+    </symbol>
+  </defs>
+  <!-- Unit operations -->
+  <use href="#bfw_feed" x="0" y="130"/>
+
+  <use href="#drum" x="120" y="80"/>
+  <text x="130" y="120" stroke="none" fill="blue">Steam drum</text>
+
+  <use href="#heater" x="200" y="180"/>
+  <text x="220" y="240" stroke="none" fill="blue" text-anchor="middle">Boiler</text>
+
+  <use href="#heater" x="290" y="80"/>
+  <text x="310" y="140" stroke="none" fill="blue" text-anchor="middle">Superheater</text>
+
+  <use href="#turbine" x="360" y="80"/>
+  <text x="405" y="115" stroke="none" fill="blue" >Turbine</text>
+
+  <use href="#heater" x="390" y="180"/>
+  <text x="410" y="240" stroke="none" fill="blue" text-anchor="middle">Condenser</text>
+
+  <!-- Streams -->
+  <path d="M60 140 L125 140" marker-end="url(#arrow)"/>
+  <text x="80" y="135" stroke="none" fill="green">c1</text>
+
+  <path d="M210 150 L210 180" marker-end="url(#arrow)"/>
+  <text x="190" y="170" stroke="none" fill="green">c2</text>
+
+  <path d="M230 180 L230 170 260 170 260 110 245 110" marker-end="url(#arrow)"/>
+  <text x="235" y="185" stroke="none" fill="green">c3/s3</text>
+
+  <path d="M150 150 v30" marker-end="url(#arrow)"/>
+  <text x="130" y="170" stroke="none" fill="green">c4</text>
+
+  <path d="M205 85 L205 70 300 70 300 80" marker-end="url(#arrow)"/>
+  <text x="220" y="65" stroke="none" fill="green">s5</text>
+
+  <path d="M320 80 L320 70 370 70 370 95" marker-end="url(#arrow)"/>
+  <text x="340" y="65" stroke="none" fill="green">s6</text>
+
+  <path d="M400 145 L400 180" marker-end="url(#arrow)"/>
+  <text x="360" y="165" stroke="none" fill="green">c7/s7</text>
+
+  <path d="M420 180 L420 170 450 170" marker-end="url(#arrow)"/>
+  <text x="420" y="165" stroke="none" fill="green">c8</text>
+</svg>
