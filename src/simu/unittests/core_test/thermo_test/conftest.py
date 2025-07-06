@@ -87,6 +87,7 @@ def iapws_ideal_gas_model(species_definitions_h2o):
     frame = fac.create_frame(species_definitions_h2o, config)
     with open(DATA_DIR / "parameters_iapws.yml") as file:
         params = parse_quantities_in_struct(safe_load(file)["data"])
+    del params["LiquidIAPWSIdealMix"], params["GasIAPWSIdealMix"]
     params = {k: v for k, v in params.items() if not k.startswith("Residual")}
     return frame, params
 

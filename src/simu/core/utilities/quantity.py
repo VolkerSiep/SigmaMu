@@ -32,9 +32,11 @@ unit_registry = _create_registry()
 _Q = unit_registry.Quantity
 del _create_registry
 
+#  variables to simplify units of measurements
 __DERIVED_UNITS = \
     "joule watt newton pascal coulomb volt farad ohm " \
     "siemens weber tesla henry lumen lux".split()
+__simplify_quantity_cache = {}
 
 
 
@@ -272,6 +274,12 @@ def simplify_quantity(quantity: Quantity) -> Quantity:
         return sum(1 + abs(e) for e in dimensionality.values())
 
     quantity = quantity.to_base_units()
+    original_dim = tuple(quantity.dimensionality.items())
+    try:
+        new_unit = __simplify_quantity_cache[original_dim]
+        return quantity.to(new_unit)
+    except KeyError:
+        pass
     count = weight_factors(quantity.dimensionality)
     for unit in __DERIVED_UNITS:
         trial = Quantity(1, unit)
@@ -280,6 +288,7 @@ def simplify_quantity(quantity: Quantity) -> Quantity:
         if new_count < count:
                 quantity = candidate * trial
                 count = new_count
+    __simplify_quantity_cache[original_dim] = quantity.units
     return quantity
 
 
@@ -340,10 +349,12 @@ class QFunction:
     """
 
     def __init__(self, args: NestedMap[Quantity], results: NestedMap[Quantity],
-                 func_name: str = "f"):
+                 func_name: str = "f", simplify_units: bool = True):
         args_flat = flatten_dictionary(args)
-        results_flat = flatten_dictionary(results)
         arg_sym = cas.vertcat(*[v.magnitude for v in args_flat.values()])
+        results_flat = flatten_dictionary(results).items()
+        if simplify_units:
+            results_flat = {k: simplify_quantity(v) for k, v in results_flat}
 
         self.__res_shapes = {}
         res_sym = []
@@ -377,7 +388,7 @@ class QFunction:
         result = self.__unpack(result)
         if squeeze_results:
             result = {k: squeeze(v) for k, v in result.items()}
-        result = {k: simplify_quantity(Quantity(v, self.res_units[k]))
+        result = {k: Quantity(v, self.res_units[k])
                   for k, v in result.items()}
         return unflatten_dictionary(result)
 

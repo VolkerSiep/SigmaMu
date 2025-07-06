@@ -343,7 +343,8 @@ class SimulationSolver(Configurable):
 
         # retain state if desired
         if opt["retain_solution"]:
-            model.retain_state(x, self.model_parameters["thermo_params"])
+            model.retain_state(x.nonzeros(),
+                               self.model_parameters["thermo_params"])
 
         return SimulationSolverReport(
             iterations=reports,

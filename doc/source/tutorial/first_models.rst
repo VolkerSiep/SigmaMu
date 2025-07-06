@@ -145,19 +145,19 @@ Firstly, we can recognize the model parameters, the thermodynamic parameters, an
 Further, we can query the result by calling the function with this argument:
 
 >>> pprint(numeric.function(args))
-{'residuals': {'T': <Quantity(-101.85, 'kelvin')>,
-               'V': <Quantity(-0.0138511475, 'meter ** 3 / second')>,
+{'residuals': {'T': <Quantity(-101.85..., 'kelvin')>,
+               'V': <Quantity(-0.0138..., 'meter ** 3 / second')>,
                'p': <Quantity(-100000.0, 'pascal')>},
- 'thermo_props': {'source': {'S': <Quantity(194.096662, 'watt / kelvin')>,
+ 'thermo_props': {'source': {'S': <Quantity(194.09666..., 'watt / kelvin')>,
                              'T': <Quantity(400.0, 'kelvin')>,
                              'T_ref': <Quantity(298.15, 'kelvin')>,
-                             'V': <Quantity(0.01662892523630648, 'meter ** 3 / second')>,
-                             'mu': {'Methane': <Quantity(-148614.303, 'joule / mole')>},
+                             'V': <Quantity(0.01662..., 'meter ** 3 / second')>,
+                             'mu': {'Methane': <Quantity(-148614.30..., 'joule / mole')>},
                              'n': {'Methane': <Quantity(1.0, 'mole / second')>},
                              'p': <Quantity(200000.0, 'pascal')>,
                              'p_ref': <Quantity(100000.0, 'pascal')>}},
  'vectors': {'bounds': <Quantity([2.e+05 1.e+00 4.e+02], 'dimensionless')>,
-             'residuals': <Quantity([-1.01850000e+09 -4.98641309e+08 -1.00000000e+07], 'dimensionless')>}}
+             'residuals': <Quantity([-1.018...e+09 -4.986...e+08 -1.00000000e+07], 'dimensionless')>}}
 
 Here we see the residuals as physical quantities, but also converted to a dimensionless vector, representing the quotient of residuals and their tolerances. Thermodynamic properties are included, and model properties would, if there were any.
 

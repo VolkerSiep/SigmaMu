@@ -46,7 +46,7 @@ The solving process returns a :class:`~simu.core.solver.simulation.SimulationSol
 
 >>> from pprint import pprint
 >>> pprint(result.properties["thermo_props"]["source"])
-{'S': <Quantity(21.140163, 'watt / kelvin')>,
+{'S': <Quantity(21.1401..., 'watt / kelvin')>,
  'T': <Quantity(298.15, 'kelvin')>,
  'T_ref': <Quantity(298.15, 'kelvin')>,
  'V': <Quantity(0.002777777777777777, 'meter ** 3 / second')>,

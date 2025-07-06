@@ -8,8 +8,7 @@ from casadi import vertcat, SX
 from pint import Unit
 
 from ..utilities import (
-    flatten_dictionary, quantity_dict_to_strings,
-    parse_quantities_in_struct, nested_map)
+    flatten_dictionary, quantity_dict_to_strings, parse_quantities_in_struct)
 from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from ..utilities.quantity import Quantity, QFunction, jacobian
 from ..utilities.structures import FLATTEN_SEPARATOR
@@ -51,9 +50,9 @@ class NumericHandler:
         self.__vec_res_names: MutMap[Sequence[str]] = {}
 
         # the symbolic argument structure
-        self.__symargs: NestedMutMap[Quantity] = self.__collect_arguments()
+        self.__sym_args: NestedMutMap[Quantity] = self.__collect_arguments()
         # the symbolic result structure
-        self.__symres: NestedMutMap[Quantity] = self.__collect_results()
+        self.__sym_res: NestedMutMap[Quantity] = self.__collect_results()
         # the numerical argument structure with initial values
         self.__arguments: MutMap[Quantity] = {}
 
@@ -61,7 +60,7 @@ class NumericHandler:
     def function(self) -> QFunction:
         """Create a Function object based on currently available argument
         and result structures."""
-        return QFunction(self.__symargs, self.__symres, "model")
+        return QFunction(self.__sym_args, self.__sym_res, "model")
 
     def vector_arg_names(self, key: str) -> Sequence[str]:
         """Return the names for the argument vector of given ``key``"""
@@ -186,18 +185,27 @@ class NumericHandler:
         temperature, pressure and molar quantities back into the internal
         representations of the initial thermodynamic states.
         """
-        def fetch_retain_initial_state(model: ModelProxy):
+        def fetch_retain_initial_state(model: ModelProxy,
+                                       states: NestedMap[float]):
             """retain initial states for a specific model"""
-            nonlocal index
-            for m in model.materials.handler.values():
-                state_length = 2 + len(m.species)
-                state_part = state[index:index + state_length]
+            mat_proxy = model.materials
+            for k, m in mat_proxy.handler.items():
+                if k in mat_proxy:
+                    continue
+                state_part = states[k].values()
                 m.retain_initial_state(state_part, parameters)
-                index += state_length
 
-        index = 0  # mutable index
+        def traverse(model: ModelProxy, states: NestedMap[float]):
+            fetch_retain_initial_state(model, states)
+            for name, proxy in model.hierarchy.handler.items():
+                if name in states:
+                    fetch_retain_initial_state(model, states[name])
+
+        state_struct = unflatten_dictionary(
+            dict(zip(self.__vec_arg_names[self.STATE_VEC], state)))
+
         self.__arguments = {}  # force reread
-        self.__traverse(self.model, fetch_retain_initial_state)
+        traverse(self.model, state_struct)
 
         # todo: if there are non-canonical states, treat them now.
 
@@ -255,16 +263,16 @@ class NumericHandler:
                     args.extend(v)
             return nams, syms, args
 
-        if key in self.__symargs[NumericHandler.VECTORS]:
+        if key in self.__sym_args[NumericHandler.VECTORS]:
             msg = f"A parameter vector of name '{key}' is already used."
             raise KeyError(msg)
 
         if not self.__arguments:
             self.__arguments = self.__collect_argument_values()
-        nam, sym, arg = traverse(definition, self.__symargs, self.__arguments)
+        nam, sym, arg = traverse(definition, self.__sym_args, self.__arguments)
 
         result = Quantity(vertcat(*sym))
-        self.__symargs[NumericHandler.VECTORS][key] = result
+        self.__sym_args[NumericHandler.VECTORS][key] = result
         values = Quantity(arg)
         self.__arguments[NumericHandler.VECTORS][key] = values
         self.__vec_arg_names[key] = nam
@@ -297,14 +305,14 @@ class NumericHandler:
                     syms.extend(s)
             return nams, syms
 
-        if key in self.__symres[NumericHandler.VECTORS]:
+        if key in self.__sym_res[NumericHandler.VECTORS]:
             msg = f"A property vector of name '{key}' is already used."
             raise KeyError(msg)
 
-        nam, sym = traverse(definition, self.__symres)
+        nam, sym = traverse(definition, self.__sym_res)
 
         result = Quantity(vertcat(*sym))
-        self.__symres[NumericHandler.VECTORS][key] = result
+        self.__sym_res[NumericHandler.VECTORS][key] = result
         self.__vec_res_names[key] = nam
         return result
 
@@ -313,11 +321,11 @@ class NumericHandler:
         be a function of the arguments, or else the function cannot be
         created. The key must be unique.
         """
-        dep = self.__symres[self.VECTORS][dependent]
-        ind = self.__symargs[self.VECTORS][independent]
+        dep = self.__sym_res[self.VECTORS][dependent]
+        ind = self.__sym_args[self.VECTORS][independent]
         jac = jacobian(dep, ind)
         key = f"d_({dependent})/d_({independent})"
-        self.__symres[self.JACOBIANS][key] = jac
+        self.__sym_res[self.JACOBIANS][key] = jac
         return key
 
     def __collect_arguments(self) -> NestedMutMap[Quantity]:
@@ -354,7 +362,7 @@ class NumericHandler:
             return {store.name: store.get_all_symbols() for store in stores}
 
         states_struct = fetch(mod, fetch_material_states, "state")
-        states, state_names = to_vector(states_struct)
+        states,  state_names = to_vector(states_struct)
         self.__vec_arg_names[self.STATE_VEC] = state_names
 
         return {
@@ -510,9 +518,9 @@ class NumericHandler:
 
     @staticmethod
     def __to_vector(struct: NestedMap[Quantity]) -> (Quantity, Sequence[str]):
-        raw = [v.magnitude for v in flatten_dictionary(struct).values()]
-        names = list(flatten_dictionary(struct).keys())
-        return Quantity(vertcat(*raw)), names
+        flat = flatten_dictionary(struct)
+        raw = [v.magnitude for v in flat.values()]
+        return Quantity(vertcat(*raw)), list(flat.keys())
 
     @staticmethod
     def __fetch(
