@@ -53,6 +53,7 @@ class ReducedStateIAPWS(ThermoContribution):
 
         self.add_bound("T", temp)  # it is divided by T and V
         self.add_bound("V", vol)
+        self.add_bound("n", n)  # TODO: not really necessary here.
 
 
 class StandardStateIAPWS(ThermoContribution):

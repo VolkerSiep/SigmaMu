@@ -10,14 +10,8 @@ def main():
 
     solver = SimulationSolver(numeric)
     result = solver.solve()
-    pprint(result.properties["thermo_props"])
+    # pprint(result.properties["thermo_props"])
     result = solver.solve()
-
-# TODO:
-#  check: Do I actually solve for volume when initializing Helmholtz?
-#  .. or do I simply use the volume from the initializer as initial value for
-#     entire simulation?
-
 
 
 if __name__ == '__main__':

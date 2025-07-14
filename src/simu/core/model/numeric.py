@@ -489,6 +489,9 @@ class NumericHandler:
                     msg = "Missing values for thermodynamic parameters"
                     raise DataFlowError(msg)
                 state = frame.initial_state(init, params)
+                # TODO: can I ask for proper state names from  frame?
+                #  to do this, I had to get it from StateDefinition and add
+                #  query functionality there.
                 dic = {f"x_{i:03d}": Quantity(x) for i, x in enumerate(state)}
                 result[k] = dic
             return result

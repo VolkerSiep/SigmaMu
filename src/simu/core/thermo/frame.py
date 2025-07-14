@@ -14,15 +14,17 @@ from collections.abc import Mapping, Sequence
 from logging import getLogger
 
 # external modules
-from casadi import SX
+from casadi import SX, jacobian, Function, vertcat
 
 # internal modules
 from .contribution import ThermoContribution
 from .state import StateDefinition, InitialState
 from .species import SpeciesDefinition
+from ..solver.volume_solver import VolumeSolver
 from ..utilities import (Quantity, ParameterDictionary, QFunction, qvertcat,
                          SymbolQuantity, extract_units_dictionary)
 from ..utilities.types import NestedMap, Map, MutMap
+from ... import flatten_dictionary
 
 ThermoContributionDict = Map[tuple[Type[ThermoContribution], Map]]
 """
@@ -214,14 +216,17 @@ class ThermoFrame:
 
     def initial_state(self, state: InitialState,
                       parameters: NestedMap[Quantity]) -> Sequence[float]:
-        """Return a state estimate for given temperature, pressure and
-        molar quantities - at given parameter set.
+        """Return the state for given temperature, pressure and molar
+        quantities - at given parameter set.
 
         This method queries all contributions top-down for an implementation
         of the initialise method. If not overwritten by any (and thus returning
         a state), the model is expected to be in Gibbs coordinates already,
         and (T, p, n) is the initial state.
 
+        For non-Gibbs coordinates, the method refines the initial state
+        estimate by the contribution by iteration. The given initial state is
+        supposed to be sufficiently accurate to allow finding the solution.
         """
         st_def = self.__state_definition
         state_flat: Sequence[float] = st_def.reverse(state)
@@ -233,13 +238,17 @@ class ThermoFrame:
         # calculate all properties ... accept NaNs, by calling own function
         properties = self(state_flat, parameters)["props"]
 
-        # start from top and call contributions to try to initialise,
-        #  based on results that might contain NaNs (if they depend on non-given state parts).
-        for cont in reversed(self.__contributions.values()):
-            result = cont.initial_state(state, properties)
-            if result:
-                result[0] = float(result[0])
-                result[1] = float(result[1])
-                return result
-        msg = "No initialisation found for non-Gibbs surface"
-        raise NotImplementedError(msg)
+        def find_initial_state_from_contributions():
+            """start from top and call contributions to try to initialise,
+            based on results that might contain NaNs
+            (if they depend on non-given state parts)."""
+            for cont in reversed(self.__contributions.values()):
+                result = cont.initial_state(state, properties)
+                if result:
+                    return list(map(float, result))
+            msg = "No initialisation found for non-Gibbs surface"
+            raise NotImplementedError(msg)
+
+        state_estimate = find_initial_state_from_contributions()
+        solver = VolumeSolver(self, state, parameters)
+        return solver(state_estimate)
