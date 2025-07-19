@@ -1,5 +1,6 @@
 """This module defines types of complex data structures"""
 
+# stdlib
 from typing import Union, TypeVar, Self
 from collections.abc import Mapping, MutableMapping
 

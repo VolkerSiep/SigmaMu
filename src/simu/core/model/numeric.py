@@ -1,23 +1,26 @@
 """This module implements functionality concerning the numerical handling
 of the top model instance."""
 
+# std lib
 from typing import Optional
 from collections.abc import Callable, Sequence, Collection
 from copy import deepcopy
+
+# external
 from casadi import vertcat, SX
 from pint import Unit
 
-from ..utilities import (
-    flatten_dictionary, quantity_dict_to_strings, parse_quantities_in_struct)
-from ..utilities.types import NestedMap, NestedMutMap, Map, MutMap
-from ..utilities.quantity import Quantity, QFunction, jacobian
-from ..utilities.structures import FLATTEN_SEPARATOR
-from ..utilities.errors import DataFlowError
-
+# internal
+from simu.core.utilities.quantity import Quantity, QFunction, jacobian
+from simu.core.utilities.structures import (
+    flatten_dictionary, unflatten_dictionary, FLATTEN_SEPARATOR)
+from simu.core.utilities.qstructures import (
+    quantity_dict_to_strings, parse_quantities_in_struct)
+from simu.core.utilities.types import NestedMap, NestedMutMap, Map, MutMap
+from simu.core.utilities.errors import DataFlowError
+from simu.core.thermo.parameters import ThermoParameterStore
+from simu.core.thermo.state import InitialState
 from .base import ModelProxy
-from ..thermo import ThermoParameterStore
-from ... import unflatten_dictionary, InitialState
-
 
 # TODO:
 #  - set parameters and get parameters

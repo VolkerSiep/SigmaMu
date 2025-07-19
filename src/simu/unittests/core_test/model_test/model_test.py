@@ -2,6 +2,7 @@
 
 from pytest import raises, mark
 
+from simu import SymbolQuantity
 from simu.core.utilities.errors import DataFlowError, DimensionalityError
 from .models import *
 

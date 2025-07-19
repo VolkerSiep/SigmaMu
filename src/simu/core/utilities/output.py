@@ -1,6 +1,8 @@
+# stdlib
 from sys import stdout
 from typing import Tuple
 
+# internal
 from .types import Map
 
 

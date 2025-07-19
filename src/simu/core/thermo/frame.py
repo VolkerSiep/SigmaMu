@@ -17,14 +17,17 @@ from logging import getLogger
 from casadi import SX, jacobian, Function, vertcat
 
 # internal modules
+from simu.core.solver.volume_solver import VolumeSolver
+from simu.core.utilities.quantity import (
+    Quantity, QFunction, SymbolQuantity, qvertcat, extract_units_dictionary)
+from simu.core.utilities.qstructures import ParameterDictionary
+from simu.core.utilities.types import NestedMap, Map, MutMap
+from simu.core.utilities.structures import flatten_dictionary
+
 from .contribution import ThermoContribution
 from .state import StateDefinition, InitialState
 from .species import SpeciesDefinition
-from ..solver.volume_solver import VolumeSolver
-from ..utilities import (Quantity, ParameterDictionary, QFunction, qvertcat,
-                         SymbolQuantity, extract_units_dictionary)
-from ..utilities.types import NestedMap, Map, MutMap
-from ... import flatten_dictionary
+
 
 ThermoContributionDict = Map[tuple[Type[ThermoContribution], Map]]
 """
@@ -250,5 +253,5 @@ class ThermoFrame:
             raise NotImplementedError(msg)
 
         state_estimate = find_initial_state_from_contributions()
-        solver = VolumeSolver(self, state, parameters)
+        solver = VolumeSolver(self, parameters, state)
         return solver(state_estimate)

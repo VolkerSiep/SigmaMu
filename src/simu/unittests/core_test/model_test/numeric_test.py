@@ -3,7 +3,7 @@ from numpy.testing import assert_allclose
 
 from simu import NumericHandler, flatten_dictionary, Quantity, jacobian
 from simu.examples.material_model import Source
-from simu.core.utilities import assert_reproduction
+from simu.core.utilities.testing import assert_reproduction
 
 from .models import *
 

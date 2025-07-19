@@ -2,6 +2,7 @@
 This module contains general helper functions that are useful on several
 levels, while relying to maximal degree on standard python structures.
 """
+# stdlib
 from re import escape, split
 from typing import TypeVar, Callable
 from collections import Counter
@@ -11,6 +12,7 @@ from .types import NestedMap, MutMap, Map, NestedMutMap
 
 _V = TypeVar("_V")
 _R = TypeVar("_R")
+
 FLATTEN_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 

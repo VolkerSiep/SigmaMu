@@ -2,11 +2,9 @@ from simu import (
     ThermoFactory, SpeciesDefinition, parse_quantities_in_struct,
     InitialState
 )
-from simu.app.thermo import all_contributions, GibbsState
+from simu.app import RegThermoFactory
 
-factory = ThermoFactory()
-factory.register_state_definition(GibbsState)
-factory.register(*all_contributions)
+factory = RegThermoFactory()
 
 config = {
     "state": "GibbsState",

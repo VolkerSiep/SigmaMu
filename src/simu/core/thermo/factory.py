@@ -1,6 +1,8 @@
+# stdlib
 from typing import Type
 from collections.abc import Mapping, Collection
 
+# internal
 from .state import StateDefinition
 from .species import SpeciesDefinition
 from .frame import ThermoFrame

@@ -1,11 +1,13 @@
+# stdlib
+import sys
 from symtable import Function
 from typing import Callable, Sequence, Any
 from copy import deepcopy
 from dataclasses import dataclass, field
 from time import time
-import sys
 from io import TextIOBase
 
+# external
 from casadi import MX, jacobian, jtimes, Function
 from numpy import array, argmin, argmax, abs, squeeze, log10
 from scipy.sparse import csc_array
@@ -15,12 +17,14 @@ try:  # use pypardiso if installed
 except ImportError:  # use scipy if not
     from scipy.sparse.linalg import spsolve
 
-from ..model.numeric import NumericHandler
-from ..utilities import Quantity, QFunction
-from ..utilities.output import ProgressTableOutput
-from ..utilities.types import Map, NestedMutMap, NestedMap
-from ..utilities.configurable import Configurable
-from ..utilities.errors import IterativeProcessInterrupted, NonSquareSystem
+# internal
+from simu.core.model.numeric import NumericHandler
+from simu.core.utilities.quantity import Quantity, QFunction
+from simu.core.utilities.output import ProgressTableOutput
+from simu.core.utilities.types import Map, NestedMutMap, NestedMap
+from simu.core.utilities.configurable import Configurable
+from simu.core.utilities.errors import (
+    IterativeProcessInterrupted, NonSquareSystem)
 
 _VEC, _STATE = NumericHandler.VECTORS, NumericHandler.STATE_VEC
 _RES, _BOUND = NumericHandler.RES_VEC, NumericHandler.BOUND_VEC

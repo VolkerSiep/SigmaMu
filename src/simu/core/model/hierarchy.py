@@ -2,8 +2,8 @@
 from typing import TYPE_CHECKING, Type, Any
 from collections.abc import Mapping, Iterator
 
-from ..utilities.types import Map, MutMap
-from ..utilities.errors import DataFlowError
+from simu.core.utilities.types import Map, MutMap
+from simu.core.utilities.errors import DataFlowError
 
 if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import Model, ModelProxy

@@ -6,10 +6,13 @@ from casadi import SX
 from numpy import roots
 
 # internal modules
-from simu import (
-    InitialState, base_magnitude, jacobian, log, qsum, R_GAS,
-    ThermoContribution, Quantity
-)
+from simu.core.thermo.state import InitialState
+from simu.core.thermo.contribution import ThermoContribution, register
+from simu.core.utilities.quantity import (
+    base_magnitude, jacobian, qsum, Quantity)
+from simu.core.utilities.constants import R_GAS
+from simu.core.utilities.qstructures import log
+from simu.core.utilities.types import MutMap
 
 
 class RedlichKwongEOS(ThermoContribution, ABC):
@@ -191,6 +194,7 @@ class RedlichKwongEOS(ThermoContribution, ABC):
         ...
 
 
+@register
 class RedlichKwongEOSLiquid(RedlichKwongEOS):
     """As a subclass of
     :class:`~simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS`, this
@@ -204,6 +208,7 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
                 list(base_magnitude(state.mol_vector)))
 
 
+@register
 class RedlichKwongEOSGas(RedlichKwongEOS):
     """As a subclass of
     :class:`~simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS`, this
@@ -217,6 +222,7 @@ class RedlichKwongEOSGas(RedlichKwongEOS):
                 list(base_magnitude(state.mol_vector)))
 
 
+@register
 class RedlichKwongAFunction(ThermoContribution):
     r"""Given critical temperature ``T_c`` (:math:`T_{c,i}`) and pressure
     ``p_c`` (:math:`p_{c,i}`), this contribution scales the
@@ -239,6 +245,7 @@ class RedlichKwongAFunction(ThermoContribution):
         res["_ceos_a_i"] = omega_r2 * alpha * (T_c * T_c) / p_c
 
 
+@register
 class RedlichKwongBFunction(ThermoContribution):
     r"""Given critical temperature ``T_c`` (:math:`T_{c,i}`) and pressure
     ``p_c`` (:math:`p_{c,i}`), this contribution calculates the
@@ -259,6 +266,7 @@ class RedlichKwongBFunction(ThermoContribution):
         res["_ceos_b_i"] = omega_r * T_c / p_c
 
 
+@register
 class RedlichKwongMFactor(ThermoContribution):
     r"""This contribution calculates the Redlich Kwong m-factor that is used
     in various alpha-functions. Based on provided acentric factors ``omega``

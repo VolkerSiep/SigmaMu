@@ -5,21 +5,44 @@ from typing import Iterable
 from yaml import safe_load
 
 # internal
-from . import all_contributions, all_states
-from ..data import DATA_DIR
-from ... import ThermoFactory
+from simu.app.data import DATA_DIR
+from simu.core.thermo.factory import ThermoFactory
 
 
-class ExampleThermoFactory(ThermoFactory):
+class RegThermoFactory(ThermoFactory):
+    """This :cls:`ThermoFactory` subclass already registers the current content
+    of :attr:`all_contributions` and :attr:`all_states, making any further
+    registration redundant as long as the definition of the contribution and
+    states is loaded, and the entities are decorated with the appropriate
+    ``register`` decorator.
+
+    All states and contributions of the ``simu.app`` submodule are automatically
+    imported here.
+    """
+    def __init__(self):
+        super().__init__()
+        # following imports are needed to trigger registration
+        from .state import HelmholtzState, GibbsState
+        from .contributions import basic, special
+        from .contributions.iapws import standard, residual
+        from .contributions.cubic import core, rk
+        from simu.core.thermo.contribution import all_contributions
+        from simu.core.thermo.state import all_states
+
+        self.register(*all_contributions)
+        for state in all_states:
+            self.register_state_definition(state)
+
+
+class ExampleThermoFactory(RegThermoFactory):
     """This ThermoFactory subclass is capable of creating frames from the base
     SiMu installation, hence thermodynamic models that are found in open
     literature."""
     def __init__(self):
         """Default and only constructor"""
-        ThermoFactory.__init__(self)
-        self.register(*all_contributions)
-        for state in all_states:
-            self.register_state_definition(state)
+        super().__init__()
+        from simu.core.thermo.contribution import all_contributions
+        from simu.core.thermo.state import all_states
 
         with open(DATA_DIR / "structures.yml", encoding='UTF-8') as file:
             self.__structures = safe_load(file)

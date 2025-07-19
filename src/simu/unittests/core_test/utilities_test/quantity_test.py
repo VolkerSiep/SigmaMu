@@ -1,10 +1,12 @@
 from pytest import raises as pt_raises
 from casadi import SX
 
-from simu.core.utilities import (Quantity, SymbolQuantity, assert_reproduction,
-                                 jacobian, qsum, log, exp, qsqrt, qpow, conditional,
-                                 base_unit, QFunction, flatten_dictionary,
-                                 unflatten_dictionary, extract_units_dictionary)
+from simu import (
+    Quantity, SymbolQuantity, jacobian, qsum, log, exp, qpow, conditional,
+    base_unit, QFunction, flatten_dictionary, unflatten_dictionary)
+from simu.core.utilities.testing import assert_reproduction
+
+from simu.core.utilities.quantity import qsqrt, extract_units_dictionary
 
 
 def test_symbol_quantity():
@@ -19,12 +21,13 @@ def test_symbol_quantity():
 
 def test_quantity():
     """Test instantiation of quantities"""
+    one_cm = Quantity(1, "cm")
     x = [
-        Quantity(1, "cm"),
+        one_cm,
         Quantity("1 cm"),
-        Quantity(1, "J/mol").to_base_units()
+        Quantity(1, "J/mol").to_base_units(),
+        Quantity(one_cm)
     ]
-    x.append(Quantity(x[0]))
     assert_reproduction(x)
 
 

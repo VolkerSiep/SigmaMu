@@ -1,6 +1,6 @@
 from pytest import raises
 
-from simu.core.utilities import Quantity
+from simu import Quantity
 from simu.core.utilities.errors import DimensionalityError
 from simu.core.utilities.residual import ResidualHandler
 

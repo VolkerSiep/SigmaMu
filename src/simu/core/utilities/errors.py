@@ -1,5 +1,6 @@
 """This module defines exception types"""
 
+# external
 from pint.errors import DimensionalityError, UndefinedUnitError
 
 

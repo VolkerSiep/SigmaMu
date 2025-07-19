@@ -1,14 +1,18 @@
 """module containing classes to obtain thermodynamic parameters from various
 sources."""
 
+# stdlib
 from typing import Iterable, Collection
 from abc import ABC, abstractmethod
 
+# external
 from pint import DimensionalityError
 
-from simu.core.utilities import (
-    Quantity, parse_quantities_in_struct, SymbolQuantity)
+# internal
+from simu.core.utilities.quantity import Quantity, SymbolQuantity
+from simu.core.utilities.qstructures import parse_quantities_in_struct
 from simu.core.utilities.types import NestedMap, NestedMutMap, MutMap
+
 
 _RT = tuple[Quantity | NestedMap[Quantity],
             str | NestedMap[str],

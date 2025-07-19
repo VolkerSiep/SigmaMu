@@ -6,9 +6,9 @@ from typing import Optional
 from collections.abc import Iterator, Collection
 
 # internal modules
-from ..thermo.material import MaterialSpec, Material, MaterialDefinition
-from ..utilities.types import Map, MutMap
-from ..utilities.errors import DataFlowError
+from simu.core.thermo.material import MaterialSpec, Material, MaterialDefinition
+from simu.core.utilities.types import Map, MutMap
+from simu.core.utilities.errors import DataFlowError
 
 
 class MaterialHandler(Map[Material]):

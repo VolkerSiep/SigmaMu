@@ -1,15 +1,16 @@
 """This module contains the base classes to represent (process) models.
 
 """
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Self
 
+from simu.core.utilities.residual import ResidualHandler, ResidualProxy
 from .parameter import ParameterHandler, ParameterProxy
 from .hierarchy import HierarchyHandler, HierarchyProxy
 from .property import PropertyHandler, PropertyProxy
 from .material import MaterialHandler, MaterialProxy
 from .bound import BoundHandler, BoundProxy
-from simu.core.utilities.residual import ResidualHandler, ResidualProxy
 
 
 class Model(ABC):
@@ -63,7 +64,7 @@ class Model(ABC):
         self.bounds = BoundHandler()
 
     @classmethod
-    def top(cls, name: str = "model") -> "ModelProxy":
+    def top(cls, name: str = "model") -> ModelProxy:
         """Define this model as top level model, hence instantiate,
         create proxy, and finalise it.
 
@@ -84,7 +85,7 @@ class Model(ABC):
         return cls.proxy(name).finalise()
 
     @classmethod
-    def proxy(cls, name: str = "model") -> "ModelProxy":
+    def proxy(cls, name: str = "model") -> ModelProxy:
         """Instantiate and create proxy of this model.
 
         This is a helper method called by the
@@ -143,7 +144,7 @@ class Model(ABC):
     # following the two methods finalise and create_proxy for explicit use,
     # if the context manager is not used.
 
-    def create_proxy(self, name: str = "model") -> "ModelProxy":
+    def create_proxy(self, name: str = "model") -> ModelProxy:
         """Create a proxy object for configuration in hierarchy context. This
         is the instance variant of the :meth:`proxy` class method.
         """

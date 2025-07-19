@@ -1,16 +1,21 @@
+# stdlib
+from __future__ import annotations
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
 from casadi import SX, vertcat, jacobian, Function
-from ..utilities import flatten_dictionary
+
+# internal
+from simu.core.utilities.structures import flatten_dictionary
 
 if TYPE_CHECKING:
-    from ..thermo import ThermoFrame, InitialState
-    from ..utilities import Quantity
-    from ..utilities.structures import NestedMap
+    from simu.core.thermo.frame import ThermoFrame
+    from simu.core.thermo.state import InitialState
+    from simu.core.utilities.quantity import Quantity
+    from simu.core.utilities.types import NestedMap
 
 
 class VolumeSolver:
-    def __init__(self, frame, parameters: NestedMap[Quantity],
+    def __init__(self, frame: ThermoFrame, parameters: NestedMap[Quantity],
                  initial_state: InitialState):
         x = SX.sym("x", len(frame.species) + 2)
         z = SX.sym("z", len(frame.species) + 2)  # initial state (T, p, n)
@@ -30,17 +35,17 @@ class VolumeSolver:
 
         db_dx = jacobian(bounds, x)
         dr_dx = jacobian(residuals, x)
-        self.__function = Function("f", [x], [residuals, bounds, dr_dx, dr_dx],
-                                   ["x"], ["r", "b", "dr_dx", db_dx])
+        self.__function = Function("f", [x], [residuals, bounds, dr_dx, db_dx],
+                                   ["x"], ["r", "b", "dr_dx", "db_dx"])
 
 
     def __call__(self, estimate: Sequence[float]) -> Sequence[float]:
-        return estimate
         # TODO: refine result by iteration here.
-        #  1. make flat state x as SX, call function with paramters as above.
+        #  1. make flat state x as SX, call function with parameters as above.
         #  2. concatenate y = [res["T"]/state.temperature, p/p_ini, n/n_ini]
-        #  3. J = jacobain(y, x)
+        #  3. J = jacobian(y, x)
         #  4. I might also need jacobian of the bounds with respect to state.
         #  5. And I need the residuals actually!
         #  5. solve system, limiting steps to stay within bounds.
-        return internal_estimate
+
+        return estimate

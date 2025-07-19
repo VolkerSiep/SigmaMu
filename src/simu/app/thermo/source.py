@@ -1,7 +1,7 @@
 from yaml import safe_load
 
-from ...core.thermo.parameters import StringDictThermoSource
-from ..data import DATA_DIR
+from simu.core.thermo.parameters import StringDictThermoSource
+from simu.app.data import DATA_DIR
 
 
 class ExampleThermoSource(StringDictThermoSource):

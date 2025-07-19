@@ -1,11 +1,9 @@
 from yaml import safe_load
 
 from simu import (
-    ThermoFactory, InitialState, MaterialDefinition, ThermoParameterStore,
-    SpeciesDefinition, StringDictThermoSource, ThermoContribution, Quantity,
-    qsum)
-from simu.app import all_contributions, HelmholtzState
-from simu.app.data import DATA_DIR
+    InitialState, MaterialDefinition, ThermoParameterStore, SpeciesDefinition,
+    StringDictThermoSource, ThermoContribution, Quantity, qsum)
+from simu.app import DATA_DIR, RegThermoFactory
 from simu.core.utilities.types import MutMap
 
 
@@ -24,10 +22,8 @@ class StreamProperties(ThermoContribution):
 
 class MaterialFactory:
     def __init__(self):
-        self.factory = ThermoFactory()
-        self.factory.register(*all_contributions)
+        self.factory = RegThermoFactory()
         self.factory.register(StreamProperties)
-        self.factory.register_state_definition(HelmholtzState)
 
         self.store = ThermoParameterStore()
         with open(DATA_DIR / "parameters_iapws.yml") as file:

@@ -2,10 +2,14 @@
 from copy import copy
 
 # internal modules
-from simu import ThermoContribution, R_GAS, log, qsum, base_magnitude, qvertcat
+from simu.core.thermo.contribution import ThermoContribution, register
+from simu.core.utilities.constants import R_GAS
+from simu.core.utilities.quantity import qsum, base_magnitude, qvertcat
+from simu.core.utilities.qstructures import log
 from simu.core.utilities.errors import DimensionalityError
 
 
+@register
 class H0S0ReferenceState(ThermoContribution):
     r"""This contribution defines the reference state based on enthalpy of
     formation and standard entropy. It requires the following parameters:
@@ -54,6 +58,7 @@ class H0S0ReferenceState(ThermoContribution):
         self.declare_vector_keys("mu")
 
 
+@register
 class LinearHeatCapacity(ThermoContribution):
     r"""This contribution implements a simple heat capacity, being linear
     in temperature. It normally builds on a reference state and yields the
@@ -116,6 +121,7 @@ class LinearHeatCapacity(ThermoContribution):
         self.add_bound("T", T)  # logarithm taken
 
 
+@register
 class StandardState(ThermoContribution):
     """This contribution assumes the current state to be the standard state
     and tags the following properties:
@@ -143,6 +149,7 @@ class StandardState(ThermoContribution):
         self.declare_vector_keys("mu_std")  # self.species can be default
 
 
+@register
 class IdealMix(ThermoContribution):
     r"""This contribution supplies the ideal mix entropy contribution,
     applicable for both liquid and gas phases. It does not require any
@@ -176,6 +183,7 @@ class IdealMix(ThermoContribution):
         self.add_bound("n", n, self.species)
 
 
+@register
 class GibbsIdealGas(ThermoContribution):
     r"""This contribution supplements the ideal gas entropy contribution and
     defines the volume property in Gibbs coordinates, i.e. with volume as a
@@ -215,6 +223,7 @@ class GibbsIdealGas(ThermoContribution):
         self.add_bound("p", p)
 
 
+@register
 class HelmholtzIdealGas(ThermoContribution):
     r"""This contribution supplements the ideal gas entropy contribution and
     defines the pressure property in Helmholtz coordinates, i.e. with pressure
@@ -264,6 +273,7 @@ class HelmholtzIdealGas(ThermoContribution):
                 list(base_magnitude(state.mol_vector)))
 
 
+@register
 class ConstantGibbsVolume(ThermoContribution):
     r"""This contribution defines a mixture with constant molar volumes and
     hence zero compressibility and thermal expansion. This is an easy and
@@ -310,6 +320,7 @@ class ConstantGibbsVolume(ThermoContribution):
         res["V"] = v_n.T @ n
 
 
+@register
 class MolecularWeight(ThermoContribution):
     """This contribution defines the molecular weights as a species vector,
     based on the underlying :class:`simu.SpeciesDefinition` definitions."""
@@ -322,6 +333,7 @@ class MolecularWeight(ThermoContribution):
         self.declare_vector_keys("mw")
 
 
+@register
 class ChargeBalance(ThermoContribution):
     r"""This contribution defines a charge balance residual, if there are
     charged species. A ValueError is raised if only either positive or negative

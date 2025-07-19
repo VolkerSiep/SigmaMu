@@ -11,12 +11,12 @@ import casadi as cas
 from numpy import squeeze
 from pint import UnitRegistry, set_application_registry, Unit
 from pint.util import UnitsContainer
-from pint.errors import DimensionalityError
 
 # internal modules
-from . import flatten_dictionary, unflatten_dictionary
+from simu.core.data import DATA_DIR
+from .structures import flatten_dictionary, unflatten_dictionary
 from .types import NestedMap, Map, MutMap
-from ..data import DATA_DIR
+from .errors import DimensionalityError
 
 
 def _create_registry() -> UnitRegistry:

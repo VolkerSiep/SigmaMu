@@ -6,6 +6,6 @@ MINOR = 0  #: Minor version
 FLAG = "alpha"  #: Version flag (None if release, else alpha or beta)
 BUILD = 4  #: Build flag
 
-VERSION = f"{MAJOR}.{MINOR}"
+version = f"{MAJOR}.{MINOR}"
 if FLAG is not None:
-    VERSION = f"{VERSION}-{FLAG[0]}{BUILD}"
+    version = f"{version}-{FLAG[0]}{BUILD}"

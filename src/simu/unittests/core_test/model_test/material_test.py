@@ -7,9 +7,8 @@ from simu import (
     MaterialSpec, SpeciesDefinition, SpeciesDB, flatten_dictionary, Quantity)
 from simu.core.model.material import MaterialHandler
 from simu.core.thermo.material import MaterialLab
-from simu.core.utilities import assert_reproduction
-from simu.app import all_contributions, GibbsState
-from simu.app.thermo.factories import ExampleThermoFactory
+from simu.core.utilities.testing import assert_reproduction
+from simu.app.thermo.factories import ExampleThermoFactory, RegThermoFactory
 
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
@@ -60,9 +59,7 @@ def test_species_db():
 def test_material_lab():
     species= SpeciesDB({"Water": "H2O", "Ethanol": "C2H5OH"})
     store = ThermoParameterStore()
-    factory = ThermoFactory()
-    factory.register_state_definition(GibbsState)
-    factory.register(*all_contributions)
+    factory = RegThermoFactory()
     lab = MaterialLab(factory, species, store)
 
     structure = {

@@ -1,5 +1,5 @@
-from ..utilities import Quantity
-from ..utilities.types import Map
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.types import Map
 
 BoundProxy = Map["Quantity"]
 

@@ -1,6 +1,7 @@
 """This module defines a parser for formulae that can be used to establish
 generic element balances, and to calculate molecular weights."""
 
+# stdlib
 from re import compile as re_compile
 from yaml import safe_load
 from ast import (AST, expr, parse, BinOp, UnaryOp, Constant, Name, dump,
@@ -8,9 +9,10 @@ from ast import (AST, expr, parse, BinOp, UnaryOp, Constant, Name, dump,
 from operator import add, mul
 from typing import Type, Callable
 
+# internal
+from simu.core.data import DATA_DIR
 from .structures import MCounter, Map
 from .quantity import Quantity
-from ..data import DATA_DIR
 
 
 class FormulaParser:

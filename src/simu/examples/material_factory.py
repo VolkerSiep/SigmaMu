@@ -2,9 +2,9 @@ from yaml import safe_load
 from pathlib import Path
 
 from simu import (
-    ThermoFactory, InitialState, MaterialDefinition, ThermoParameterStore,
+    InitialState, MaterialDefinition, ThermoParameterStore,
     StringDictThermoSource, SpeciesDB)
-from simu.app.thermo import all_contributions, all_states
+from simu.app import RegThermoFactory
 
 CURRENT_DIR = Path(__file__).parent
 
@@ -25,11 +25,7 @@ class MaterialFactory:
         self.store = ThermoParameterStore()
         self.store.add_source("my_source", parameter_source)
 
-        factory = ThermoFactory()
-        for state in all_states:
-            factory.register_state_definition(state)
-        factory.register(*all_contributions)
-        self.factory = factory
+        self.factory = RegThermoFactory()
 
     def create(self, model_name, species):
         frame = self.factory.create_frame(

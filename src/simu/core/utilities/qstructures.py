@@ -6,11 +6,11 @@ from collections.abc import Callable, Iterable, Mapping
 
 # external libs
 import casadi as cas
-from pint.errors import DimensionalityError
 
 # internal libs
-from . import base_unit, Quantity, SymbolQuantity, qvertcat, qpow, qsqrt
+from .quantity import Quantity, SymbolQuantity, base_unit, qvertcat, qpow, qsqrt
 from .types import NestedMap
+from .errors import DimensionalityError
 
 
 class ParameterDictionary(dict):

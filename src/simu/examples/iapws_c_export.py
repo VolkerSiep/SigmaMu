@@ -1,18 +1,15 @@
 from yaml import safe_load
 from casadi import SX, vertcat, jacobian, Function
 
-from simu import (ThermoFactory, SpeciesDefinition, parse_quantities_in_struct,
+from simu import (SpeciesDefinition, parse_quantities_in_struct,
                   flatten_dictionary)
-from simu.app import all_contributions, HelmholtzState
-from simu.app.data import DATA_DIR
+from simu.app import RegThermoFactory, DATA_DIR
 
 PHASE = "Gas"
 
 
 def create_iapws(phase: str):
-    fac = ThermoFactory()
-    fac.register(*all_contributions)
-    fac.register_state_definition(HelmholtzState)
+    fac = RegThermoFactory()
     contributions = [
         "MolecularWeight", "ReducedStateIAPWS", "StandardStateIAPWS",
         "IdealGasIAPWS", "Residual1IAPWS", "Residual2IAPWS",

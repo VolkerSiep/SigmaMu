@@ -1,11 +1,13 @@
 """This module implements functionality related to property handling"""
 
+# stdlib
 from collections.abc import Mapping, Iterator
 from typing import Self
 
-from ..utilities.quantity import Quantity
-from ..utilities.errors import DataFlowError
-from ..utilities.types import Map, MutMap
+# internal
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.types import Map, MutMap
+from simu.core.utilities.errors import DataFlowError
 
 
 class PropertyHandler(Mapping[str, Quantity]):
