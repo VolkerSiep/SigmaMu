@@ -203,16 +203,17 @@ class ThermoContribution(ABC):
 
 
 all_contributions : list[Type[ThermoContribution]] = []
-"""List of all contributions that are registered via :func:`register`"""
+"""List of all contributions that are registered via 
+:func:`simu.register_contribution`"""
 
 
 T = TypeVar("T", bound=ThermoContribution)
 
 
-def register(cls: Type[T]) -> Type[T]:
-    """A class decorator to be applied to :cls:`ThermoContribution`.
+def registered_contribution(cls: Type[T]) -> Type[T]:
+    """A class decorator to be applied to :class:`simu.ThermoContribution`.
     All classes registered this way can be received as the list
-    :attr:`all_contributions`.
+    ``simu.all_contributions``.
     """
     all_contributions.append(cls)
     return cls

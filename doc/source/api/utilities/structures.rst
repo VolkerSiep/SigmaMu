@@ -13,7 +13,7 @@ QuantityDict
 
 ParameterDictionary
 -------------------
-.. autoclass:: simu.core.utilities.qstructures.ParameterDictionary
+.. autoclass:: simu.ParameterDictionary
    :members:
 
 Formula parser

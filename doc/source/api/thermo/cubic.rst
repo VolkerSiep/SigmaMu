@@ -5,63 +5,67 @@ Redlich Kwong EOS
 -----------------
 The base-class is specialised into two sub-classes to address in particular liquid and gas phases. As such, the base-class is disabled from direct instantiation.
 
+
 Base class
 ..........
-.. autoclass:: simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS
+.. currentmodule:: simu.app.thermo.contributions.cubic.rk
+.. autoclass:: RedlichKwongEOS
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 Liquid root
 ...........
-.. autoclass:: simu.app.thermo.contributions.cubic.RedlichKwongEOSLiquid
+.. autoclass:: RedlichKwongEOSLiquid
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 Gas root
 ........
-.. autoclass:: simu.app.thermo.contributions.cubic.RedlichKwongEOSGas
+.. autoclass:: RedlichKwongEOSGas
   :show-inheritance:
   :exclude-members: __init__, __new__
 
+A-function
+..........
+ .. autoclass:: RedlichKwongAFunction
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
+B-function
+..........
+ .. autoclass:: RedlichKwongBFunction
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
+m-factor
+........
+ .. autoclass:: RedlichKwongMFactor
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
+
 Critical parameters
 -------------------
-.. autoclass:: simu.app.thermo.contributions.cubic.CriticalParameters
+.. currentmodule:: simu.app.thermo.contributions.cubic.core
+.. autoclass:: CriticalParameters
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 Non-symmetric mixing rule
 -------------------------
- .. autoclass:: simu.app.thermo.contributions.cubic.NonSymmetricMixingRule
+ .. autoclass:: NonSymmetricMixingRule
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 Linear mixing rule
 -------------------------
- .. autoclass:: simu.app.thermo.contributions.cubic.LinearMixingRule
-  :show-inheritance:
-  :exclude-members: __init__, __new__
-
-Redich Kwong A-function
------------------------
- .. autoclass:: simu.app.thermo.contributions.cubic.RedlichKwongAFunction
-  :show-inheritance:
-  :exclude-members: __init__, __new__
-
-Redich Kwong B-function
------------------------
- .. autoclass:: simu.app.thermo.contributions.cubic.RedlichKwongBFunction
+ .. autoclass:: LinearMixingRule
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 Mathias Boston-Mathias alpha-function
 -------------------------------------
- .. autoclass:: simu.app.thermo.contributions.cubic.BostonMathiasAlphaFunction
-  :show-inheritance:
-  :exclude-members: __init__, __new__
-
-Redlich Kwong m-factor
-----------------------
- .. autoclass:: simu.app.thermo.contributions.cubic.RedlichKwongMFactor
+ .. autoclass:: BostonMathiasAlphaFunction
   :show-inheritance:
   :exclude-members: __init__, __new__
 

@@ -41,28 +41,28 @@ Let's first import some classes and read in those files:
 
 .. exampleinclude:: ideal_gas_material.py
    :language: python
-   :lines: 1-22
+   :lines: 1-21
    :linenos:
 
 Now, as before, we can create the factory and from there the frame for our thermodynamic model:
 
 .. exampleinclude:: ideal_gas_material.py
    :language: python
-   :lines: 24-29
-   :lineno-start: 24
+   :lines: 23-25
+   :lineno-start: 23
    :linenos:
 
 Next, we go for the material definition, requiring also the initial state and a :class:`simu.ThermoParameterStore` object:
 
 .. exampleinclude:: ideal_gas_material.py
    :language: python
-   :lines: 31-34
-   :lineno-start: 31
+   :lines: 27-29
+   :lineno-start: 27
    :linenos:
 
 This parameter store can be shared among multiple -- normally all -- material definitions, and thus holds a global set of thermodynamic parameters. Multiple stores are only required if two materials containing the same chemical species need to receive distinct values for the same thermodynamic parameter.
 
-So far, we did not provide the concrete parameters, but the material definition has already told the store which parameters are required. We can query the super-set of the parameter names and units of all missing parameters required:
+So far, we did not provide the parameter values, but the material definition has already told the store which parameters are required. We can query the super-set of the parameter names and units of all missing parameters required:
 
 .. testsetup::
 
@@ -81,8 +81,8 @@ Finally, we provide the already read parameters to the store:
 
 .. exampleinclude:: ideal_gas_material.py
    :language: python
-   :lines: 36
-   :lineno-start: 36
+   :lines: 32
+   :lineno-start: 31
    :linenos:
 
 This time, there are no more missing symbols, and the print statement prints an empty dictionary:

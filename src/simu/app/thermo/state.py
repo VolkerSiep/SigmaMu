@@ -2,12 +2,12 @@
 from casadi import vertsplit, vertcat
 
 # internal modules
-from simu.core.thermo.state import StateDefinition, register
+from simu.core.thermo.state import StateDefinition, registered_state
 from simu.core.utilities.quantity import Quantity, base_magnitude, base_unit
 from simu.core.utilities.types import MutMap
 
 
-@register
+@registered_state
 class HelmholtzState(StateDefinition):
     """This definition interprets the state as being temperature, volume,
     and mole numbers. Accordingly, it defines:
@@ -36,7 +36,7 @@ class HelmholtzState(StateDefinition):
         return {"n": list(species.keys())}
 
 
-@register
+@registered_state
 class GibbsState(StateDefinition):
     """This definition interprets the state as being temperature, pressure,
     and mole numbers. Accordingly, it defines:

@@ -143,15 +143,16 @@ class StateDefinition(ABC):
 
 
 all_states: list[Type[StateDefinition]] = []
-"""List of all state definitions that are registered via :func:`register`"""
+"""List of all state definitions that are registered via 
+:func:`simu.register_state`"""
 
 T = TypeVar("T", bound=StateDefinition)
 
 
-def register(cls: Type[T]) -> Type[T]:
-    """A class decorator to be applied to :cls:`StateDefinition`.
+def registered_state(cls: Type[T]) -> Type[T]:
+    """A class decorator to be applied to :class:`simu.StateDefinition`.
     All classes registered this way can be received as the list
-    :attr:`all_states`.
+    ``simu.all_states``.
     """
     all_states.append(cls)
     return cls

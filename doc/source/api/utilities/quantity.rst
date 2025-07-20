@@ -5,22 +5,23 @@ Quantity related functionality
 
 Objects
 -------
+.. currentmodule:: simu
 
 Quantity
 ^^^^^^^^
-.. autoclass:: simu.Quantity
+.. autoclass:: Quantity
     :members:
 
 .. auto
 
 SymbolQuantity
 ^^^^^^^^^^^^^^
-.. autoclass:: simu.SymbolQuantity
+.. autoclass:: SymbolQuantity
     :members:
 
 QFunction
 ^^^^^^^^^
-.. autoclass:: simu.QFunction
+.. autoclass:: QFunction
     :members:
 
 Symbolic Functions
@@ -30,67 +31,67 @@ quantities.
 
 jacobian
 ^^^^^^^^
-.. autofunction:: simu.jacobian
+.. autofunction:: jacobian
 
 qsum
 ^^^^
-.. autofunction:: simu.qsum
+.. autofunction:: qsum
 
 log
 ^^^
-.. autofunction:: simu.log
+.. autofunction:: log
 
 sqrt
 ^^^^
-.. autofunction:: simu.sqrt
+.. autofunction:: sqrt
 
 qpow
 ^^^^
-.. autofunction:: simu.qpow
+.. autofunction:: qpow
 
 conditional
 ^^^^^^^^^^^
-.. autofunction:: simu.conditional
+.. autofunction:: conditional
 
 Utility functions
 -----------------
 
 qvertcat
 ^^^^^^^^
-.. autofunction:: simu.qvertcat
+.. autofunction:: qvertcat
 
 base_unit
 ^^^^^^^^^
-.. autofunction:: simu.base_unit
+.. autofunction:: base_unit
 
 base_magnitude
 ^^^^^^^^^^^^^^
-.. autofunction:: simu.base_magnitude
+.. autofunction:: base_magnitude
 
 flatten_dictionary
 ^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.flatten_dictionary
+.. autofunction:: flatten_dictionary
 
 unflatten_dictionary
 ^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.unflatten_dictionary
+.. autofunction:: unflatten_dictionary
 
 extract_units_dictionary
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.extract_units_dictionary
+.. autofunction:: extract_units_dictionary
 
 simplify_quantity
 ^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.simplify_quantity
+.. autofunction:: simplify_quantity
 
 parse_quantities_in_struct
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.parse_quantities_in_struct
+.. autofunction:: parse_quantities_in_struct
 
 quantity_dict_to_strings
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.quantity_dict_to_strings
+.. autofunction:: quantity_dict_to_strings
 
 extract_sub_structure
 ^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: simu.core.utilities.extract_sub_structure
+.. autofunction:: extract_sub_structure

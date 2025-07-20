@@ -1,10 +1,10 @@
 # internal modules
-from simu.core.thermo.contribution import ThermoContribution, register
+from simu.core.thermo.contribution import ThermoContribution, registered_contribution
 from simu.core.utilities.quantity import SymbolQuantity, conditional, qsum, qpow
 from simu.core.utilities.qstructures import sqrt, exp
 
 
-@register
+@registered_contribution
 class LinearMixingRule(ThermoContribution):
     r"""This linear mixing rule represents any contribution that computes a
     lumped quantity as weighted sum over the molar quantities:
@@ -27,7 +27,7 @@ class LinearMixingRule(ThermoContribution):
         res[target] = res[source].T @ res["n"]
 
 
-@register
+@registered_contribution
 class NonSymmetricMixingRule(ThermoContribution):
     r"""The mixing rule combines the pure species a-contributions ``a_i``
     (:math:`a_i`) into a lumped ``a`` property.
@@ -145,7 +145,7 @@ class NonSymmetricMixingRule(ThermoContribution):
         self.add_bound("T", res["T"])
 
 
-@register
+@registered_contribution
 class CriticalParameters(ThermoContribution):
     r"""This class does not perform any calculations, but provides the basic
     critical parameters as a basis for the typical equation of state
@@ -173,7 +173,7 @@ class CriticalParameters(ThermoContribution):
         res["_omega"] = self.par_vector("omega", self.species, "dimless")
 
 
-@register
+@registered_contribution
 class VolumeShift(ThermoContribution):
     r"""This class does not perform any calculations, but provides volume
     shift parameters to be used via mixing rules as the C-parameter in
@@ -193,7 +193,7 @@ class VolumeShift(ThermoContribution):
         res["_ceos_c_i"] = self.par_vector("c_i", self.species, "m**3/mol")
 
 
-@register
+@registered_contribution
 class BostonMathiasAlphaFunction(ThermoContribution):
     r"""This contribution represents the Mathias alpha function with the
     Boston-Mathias extrapolation for supercritical temperatures.

@@ -53,29 +53,29 @@ Surprise! We are back at the ideal gas law from above. This is simply because we
 
 How to do this in SiMu?
 -----------------------
-As indicated above, thermodynamic models can easily be chunked into contributions, and these contributions are often additive, in this case exclusively. All above introduced contributions are already defined in ``SigmaMu``. They take care of defining the required parameters and adding the contributions up in order to form a state function like the Gibbs free energy. As a first step, we do some necessary imports for this session and create a :class:`simu.ThermoFactory` object, register the Gibbs state and all thermodynamic model contributions that are available:
+As indicated above, thermodynamic models can easily be chunked into contributions, and these contributions are often additive, in this case exclusively. All above introduced contributions are already defined in ``SigmaMu``. They take care of defining the required parameters and adding the contributions up in order to form a state function like the Gibbs free energy. As a first step, we do some necessary imports for this session and create a :class:`simu.app.RegThermoFactory` object, which has already registered all available states and contributions:
 
 .. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
-   :lines: 1-9
+   :lines: 1-3
 
-Note that generic entities are imported directly from the ``SigmaMu`` root module, while specific implementations, such as thermodynamic contributions are provided by the ``simu.app`` module.
+Note that generic entities are imported directly from the ``simu`` root module, while specific objects, such as :class:`simu.app.RegThermoFactory` are provided by the ``simu.app`` module.
 
 Next, a :class:`simu.ThermoFrame` can be constructed, stacking the contributions as discussed in the previous section, based on a Gibbs thermodynamic state, that is using the state function :math:`G(T, p, n)`:
 
 .. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
-   :lineno-start: 11
-   :lines: 11-21
+   :lineno-start: 4
+   :lines: 5-17
 
 Here we decided to create an ideal gas model for methane, and used the following contributions (don't be afraid to follow the links to see their parameters, calculated properties, and mathematical formulations:
 
- - :class:`simu.app.H0S0ReferenceState`
- - :class:`simu.app.LinearHeatCapacity`
- - :class:`simu.app.IdealMix`
- - :class:`simu.app.GibbsIdealGas`
+ - :class:`~simu.app.thermo.contributions.basic.H0S0ReferenceState`
+ - :class:`~simu.app.thermo.contributions.basic.LinearHeatCapacity`
+ - :class:`~simu.app.thermo.contributions.basic.IdealMix`
+ - :class:`~simu.app.thermo.contributions.basic.GibbsIdealGas`
 
 The :class:`simu.SpeciesDefinition` defines in this simple case some basic generic properties based on the chemical formula, that is molecular weight, elementary composition and electrical charge. For fun, you can analyse some formulae, for instance
 
@@ -104,7 +104,7 @@ We receive the structure above, indicating the required physical dimension as a 
 
 ..  note::
 
-    To start with, the listed units will be based on the SI units (more precise: internal ``pint`` units), but we apply an algorithm that introduces derived SI units, such as ``Pa``, ``J`` and ``W`` if this yields simpler expressions.
+    To start with, the listed units will be based on the SI units (more precise: internal `Pint`_  units), but we apply an algorithm that introduces derived SI units, such as ``Pa``, ``J`` and ``W`` if this yields simpler expressions.
 
 Likewise, the frame can be queried for the properties that will be calculated:
 
@@ -129,8 +129,8 @@ Getting back to the parameter structure, let us fill in some values and convert 
 .. exampleinclude:: ideal_gas.py
    :language: python
    :linenos:
-   :lineno-start: 23
-   :lines: 23-32
+   :lineno-start: 17
+   :lines: 19-30
 
 Here, we use the function :func:`simu.parse_quantities_in_struct` to convert the dictionary values into quantities.
 

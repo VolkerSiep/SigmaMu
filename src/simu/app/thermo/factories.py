@@ -10,18 +10,20 @@ from simu.core.thermo.factory import ThermoFactory
 
 
 class RegThermoFactory(ThermoFactory):
-    """This :cls:`ThermoFactory` subclass already registers the current content
-    of :attr:`all_contributions` and :attr:`all_states, making any further
-    registration redundant as long as the definition of the contribution and
-    states is loaded, and the entities are decorated with the appropriate
-    ``register`` decorator.
+    """This factory class already registers the current content of
+    ``simu.all_contributions`` and ``simu.all_states``, making any
+    further registration redundant as long as the definition of the contribution
+    and states is loaded, and the entities are decorated with the appropriate
+    ``register`` decorator (:class:`simu.registered_contribution` and
+    :class:`simu.registered_state`).
 
     All states and contributions of the ``simu.app`` submodule are automatically
     imported here.
     """
     def __init__(self):
         super().__init__()
-        # following imports are needed to trigger registration
+        # following imports are needed to trigger registration, even if they
+        # are not used locally.
         from .state import HelmholtzState, GibbsState
         from .contributions import basic, special
         from .contributions.iapws import standard, residual

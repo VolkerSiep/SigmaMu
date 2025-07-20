@@ -48,7 +48,6 @@ nitpick_ignore = [
     ("py:class", "casadi.casadi.SX"),  # no clue why it tries to find this!?
 ]
 
-
 # autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 autodoc_class_signature = 'separated'
@@ -126,7 +125,6 @@ rst_epilog = r"""
 .. _Pint: https://pint.readthedocs.io
 .. _PyYAML: https://pyyaml.org/
 .. _PyPardiso: https://pypi.org/project/pypardiso/
-.. _matplotlib: https://matplotlib.org/
 .. _Sphinx: https://www.sphinx-doc.org
 .. _sphinxcontrib-bibtex: https://github.com/mcmtroffaes/sphinxcontrib-bibtex
 .. _sphinx-licenseinfo: https://sphinx-licenseinfo.readthedocs.io/

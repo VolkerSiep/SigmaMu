@@ -1,9 +1,11 @@
 GibbsState
 ----------
-.. autoclass:: simu.app.thermo.GibbsState
+.. currentmodule:: simu.app.thermo.state
+
+.. autoclass:: GibbsState
     :show-inheritance:
 
 HelmholtzState
 --------------
-.. autoclass:: simu.app.thermo.HelmholtzState
+.. autoclass:: HelmholtzState
     :show-inheritance:
