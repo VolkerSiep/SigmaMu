@@ -17,7 +17,7 @@ from logging import getLogger
 from casadi import SX, jacobian, Function, vertcat
 
 # internal modules
-from simu.core.solver.volume_solver import VolumeSolver
+from simu.core.solver.thermostate import refine_initial_state
 from simu.core.utilities.quantity import (
     Quantity, QFunction, SymbolQuantity, qvertcat, extract_units_dictionary)
 from simu.core.utilities.qstructures import ParameterDictionary
@@ -253,5 +253,4 @@ class ThermoFrame:
             raise NotImplementedError(msg)
 
         state_estimate = find_initial_state_from_contributions()
-        solver = VolumeSolver(self, parameters, state)
-        return solver(state_estimate)
+        return refine_initial_state(self, parameters, state, state_estimate)

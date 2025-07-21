@@ -5,13 +5,11 @@ from process import SteamGeneration
 
 def main():
     numeric = NumericHandler(SteamGeneration.top(), port_properties=False)
-    # print(numeric.arguments)
-    # pprint(numeric.export_state())
 
     solver = SimulationSolver(numeric)
-    result = solver.solve()
-    # pprint(result.properties["thermo_props"])
-    result = solver.solve()
+    result = solver.solve(gamma=0.5)
+
+    pprint(result.properties["thermo_props"])
 
 
 if __name__ == '__main__':
