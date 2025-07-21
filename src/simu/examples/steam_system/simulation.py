@@ -7,9 +7,11 @@ def main():
     numeric = NumericHandler(SteamGeneration.top(), port_properties=False)
 
     solver = SimulationSolver(numeric)
-    result = solver.solve(gamma=0.5)
+    result = solver.solve()
 
-    pprint(result.properties["thermo_props"])
+    props = result.properties
+    pprint(props["thermo_props"])
+    pprint(props["model_props"])
 
 
 if __name__ == '__main__':

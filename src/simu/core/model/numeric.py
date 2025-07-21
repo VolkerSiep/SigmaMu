@@ -202,7 +202,7 @@ class NumericHandler:
             fetch_retain_initial_state(model, states)
             for name, proxy in model.hierarchy.handler.items():
                 if name in states:
-                    fetch_retain_initial_state(model, states[name])
+                    fetch_retain_initial_state(proxy, states[name])
 
         state_struct = unflatten_dictionary(
             dict(zip(self.__vec_arg_names[self.STATE_VEC], state)))

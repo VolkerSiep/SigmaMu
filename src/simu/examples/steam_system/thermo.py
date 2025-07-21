@@ -58,5 +58,5 @@ factory = MaterialFactory()
 
 hp_steam = factory.create("gas", 600, 100e5, 100)
 hp_condensate = factory.create("liquid", 600, 100e5, 100)
-lp_steam = factory.create("gas", 350, 5e4, 100)
-lp_condensate = factory.create("liquid", 300, 5e4, 100)
+lp_steam = factory.create("gas", 373, 1e5, 100)
+lp_condensate = factory.create("liquid", 373, 1e5, 100)
