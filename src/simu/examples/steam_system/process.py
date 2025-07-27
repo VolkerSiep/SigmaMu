@@ -1,7 +1,28 @@
-from simu import AModel, MaterialSpec
-from thermo import hp_condensate, hp_steam, lp_condensate, lp_steam
+from simu import AModel
 
-h2o_spec = MaterialSpec(["H2O"])
+from simu.examples.steam_system.thermo import (
+    hp_condensate, hp_steam, lp_condensate, lp_steam, h2o_spec)
+
+
+class VLE(AModel):
+    r"""Constrain the given steam (:math:`s`) and condensate (:math:`c`) phases
+    to be at thermodynamic equilibrium. 3 residuals are defined as follows:
+
+    .. math::
+
+        T_s = T_c \quad p_s = p_c \quad\text{and}\quad
+        \mu_{s,\mathrm{H_2O}} = \mu_{c,\mathrm{H_2O}}
+    """
+    def interface(self):
+        self.md("steam", h2o_spec)
+        self.md("condensate", h2o_spec)
+
+    def define(self):
+        s, c = self.m["steam"], self.m["condensate"]
+        self.ra("T_eq", c["T"] - s["T"], "K")
+        self.ra("p_eq", c["p"] - s["p"], "bar")
+        self.ra("mu_eq", c["mu"]["H2O"] - s["mu"]["H2O"], "kJ/mol")
+
 
 class Boiler(AModel):
     """This boiler model assumes a condensate flow as feed, which is partially
@@ -33,9 +54,9 @@ class Boiler(AModel):
         self.ra("N_bal", c["N"] + s["N"] - f["N"] , "kmol/h")
 
         # thermodynamic equilibrium
-        self.ra("T_eq", c["T"] - s["T"], "K")
-        self.ra("p_eq", c["p"] - s["p"], "bar")
-        self.ra("mu_eq", c["mu"]["H2O"] - s["mu"]["H2O"], "kJ/mol")
+        with self.ha("vle", VLE) as unit:
+            unit.materials.connect("steam", s)
+            unit.materials.connect("condensate", c)
 
         # given duty and evaporation
         # self.ra("duty", self.pa["duty"] - (c["H"] + s["H"] - f["H"]) , "MW")
@@ -70,13 +91,13 @@ class SteamDrum(AModel):
         # drum pressure and equal pressure
         p_spec = self.pa["pressure"]
         self.ra("p_steam", p_spec - s["p"], "bar")
-        self.ra("p_c2", p_spec - bf["p"], "bar")
         self.ra("p_c4", p_spec - bd["p"], "bar")
 
         # drum equilibrium
-        self.ra("t_bf", bf["T"] - s["T"], "K")
         self.ra("t_bd", bd["T"] - s["T"], "K")
-        self.ra("eq_drum", bf["mu"]["H2O"] - s["mu"]["H2O"], "kJ/mol")
+        with self.ha("vle", VLE) as unit:
+            unit.materials.connect("steam", s)
+            unit.materials.connect("condensate", bf)
 
         # blowdown
         self.ra("blow_down", self.pa["blow_down"] * bfw["N"] - bd["N"], "mol/s")
@@ -107,8 +128,7 @@ class Turbine(AModel):
         self.md("inlet", h2o_spec)
         self.md("outlet_steam", h2o_spec)
         self.md("outlet_cond", h2o_spec)
-        self.pad("isentropic_efficiency", 78, "%")
-        # self.pad("discharge_pressure", 1, "bar")  # TODO: temporarily!
+        self.pad("isentropic_efficiency", 80, "%")
         self.prd("duty", "MW")
         self.prd("vapour_fraction", "%")
 
@@ -119,13 +139,13 @@ class Turbine(AModel):
         i_c = self.mcf("iso_cond", lp_condensate)
         i_s = self.mcf("iso_steam", lp_steam)
 
-        # equilibria
-        self.ra("outlet T VLE", o_s["T"] - o_c["T"], "K")
-        self.ra("outlet p VLE", o_s["p"] - o_c["p"], "bar")
-        self.ra("outlet VLE", o_s["mu"]["H2O"] - o_c["mu"]["H2O"], "kJ/mol")
-        self.ra("isentropic T VLE", i_s["T"] - i_c["T"], "K")
-        self.ra("isentropic p VLE", i_s["p"] - i_c["p"], "bar")
-        self.ra("isentropic VLE", i_s["mu"]["H2O"] - i_c["mu"]["H2O"], "kJ/mol")
+        # phase equilibria
+        with self.ha("vle_o", VLE) as unit:
+            unit.materials.connect("steam", o_s)
+            unit.materials.connect("condensate", o_c)
+        with self.ha("vle_i", VLE) as unit:
+            unit.materials.connect("steam", i_s)
+            unit.materials.connect("condensate", i_c)
 
         # conservations
         # p_out = self.pa["discharge_pressure"]

@@ -1,7 +1,5 @@
 meta:
-  source: 'W. Wagner… and A. Pruß, "The IAPWS Formulation 1995 for the
-    Thermodynamic Properties of Ordinary Water Substance for General and 
-    Scientific Use", J. Phys. Chem. Ref. Data, Vol. 31, No. 2, 2002'
+  source: Wagner_2002
 data:
   ReducedStateIAPWS:
     T_c:

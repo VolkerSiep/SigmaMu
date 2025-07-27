@@ -5,8 +5,15 @@ from simu import (
     ThermoParameterStore, InitialState, MaterialDefinition, Material,
     MaterialSpec)
 
-from simu.app.thermo.factories import ExampleThermoFactory
+from simu.app import RegThermoFactory, ThermoStructure
 
+@fixture(scope="session")
+def rk_h2o_frame():
+    name = "Boston-Mathias-Redlich-Kwong-Liquid"
+    factory = RegThermoFactory()
+    species = {"H2O": SpeciesDefinition("H2O")}
+    structure = ThermoStructure.from_predefined(name)
+    return factory.create_frame(species, structure)
 
 @fixture(scope="session")
 def material_model_function(material_test_model3):
@@ -19,23 +26,20 @@ def material_model_function(material_test_model3):
 
 
 @fixture(scope="session")
-def material_h2o_rk_liq() -> Material:
-    rk_liq = "Boston-Mathias-Redlich-Kwong-Liquid"
-    factory = ExampleThermoFactory()
-    species = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species, rk_liq)
+def material_h2o_rk_liq(rk_h2o_frame) -> Material:
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(1)
-    material_def = MaterialDefinition(frame, initial_state, store)
+    material_def = MaterialDefinition(rk_h2o_frame, initial_state, store)
     material = material_def.create_flow()
     return material
 
 
 @fixture(scope="session")
 def material_def_h2o_with_param() -> MaterialDefinition:
-    factory = ExampleThermoFactory()
+    factory = RegThermoFactory()
+    structure = ThermoStructure.from_predefined("Ideal-Solid")
     species_db = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species_db, "Ideal-Solid")
+    frame = factory.create_frame(species_db, structure)
     store = ThermoParameterStore()
 
     source = StringDictThermoSource({
@@ -159,7 +163,6 @@ def square_test_model():
 def material_test_model3():
     material_definition = simple_material_definition_function(["H2O", "NO2"])
 
-
     class MaterialTestModel3(Model):
         def interface(self):
             pass
@@ -197,9 +200,10 @@ def simple_material_definition_function(species) -> MaterialDefinition:
     """Defines a material to use. Normally, this would be a singleton somewhere
     in the project."""
     rk_liq = "Boston-Mathias-Redlich-Kwong-Liquid"
-    factory = ExampleThermoFactory()
+    structure = ThermoStructure.from_predefined(rk_liq)
+    factory = RegThermoFactory()
     species_db = {s: SpeciesDefinition(s) for s in species}
-    frame = factory.create_frame(species_db, rk_liq)
+    frame = factory.create_frame(species_db, structure)
     store = ThermoParameterStore()
     initial_state = InitialState.from_cbar(10.0, 10.0, [1.0] * len(species))
     return MaterialDefinition(frame, initial_state, store)
@@ -208,10 +212,11 @@ def simple_material_definition_function(species) -> MaterialDefinition:
 def model_with_residual():
     def material_definition():
         ideal_liq = "Ideal-Liquid"
-        factory = ExampleThermoFactory()
+        structure = ThermoStructure.from_predefined(ideal_liq)
+        factory = RegThermoFactory()
         species_db = {s: SpeciesDefinition(s)
                       for s in "H2O Na:1+ Cl:1-".split()}
-        frame = factory.create_frame(species_db, ideal_liq)
+        frame = factory.create_frame(species_db, structure)
         store = ThermoParameterStore()
         initial_state = InitialState.from_cbar(10.0, 1.0, [1.0, 0.1, 0.1])
         return MaterialDefinition(frame, initial_state, store)

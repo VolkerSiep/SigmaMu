@@ -16,15 +16,21 @@ May the system be specified by
 
   - constant and specified pressure level of 100 bar upstream of the turbine
   - no pressure drop in condenser
-  - given BFW feed temperature
+  - given BFW feed temperature of 250 |degC|
   - The blowdown ``c4`` is 1% of the feed flow ``c1``
   - The boiler circulation yields 12 % evaporation in stream ``c3/s3``
   - Total duty in boiler and superheater is 10 MW
   - The turbine has an isentropic efficiency of 80 %
   - There is 10 % condensation in the turbine
-  - Given temperature of condenser outlet ``c8``
+  - Given temperature of 50 |degC| at condenser outlet ``c8``
 
 As such, we expect the duty distribution to yield the desired condensation in the turbine, and the boiler duty to determine the BFW flow. The condenser temperature determines the turbine discharge pressure. This is hence a typical process that is still simple (and simplified), but includes a large recycle and multiple implicit specifications.
 
 The process model
 -----------------
+When building up a process model in ``SiMu``, a good approach is to think hierarchically and in terms of reusable model parts.  
+.. currentmodule:: simu.examples.steam_system.process
+
+.. autoclass:: VLE
+  :show-inheritance:
+  :exclude-members: __init__, __new__

@@ -1,7 +1,7 @@
 from pprint import pprint
 
 from simu import NumericHandler, SimulationSolver
-from process import SteamGeneration
+from simu.examples.steam_system.process import SteamGeneration
 
 def main():
     numeric = NumericHandler(SteamGeneration.top(), port_properties=False)

@@ -1,62 +1,33 @@
-from yaml import safe_load
-
 from simu import (
-    InitialState, MaterialDefinition, ThermoParameterStore, SpeciesDefinition,
-    StringDictThermoSource, ThermoContribution, Quantity, qsum)
-from simu.app import DATA_DIR, RegThermoFactory
-from simu.core.utilities.types import MutMap
+    InitialState, MaterialDefinition, SpeciesDefinition,
+    MaterialSpec, ThermoFrame)
+from simu.app import RegThermoFactory, ThermoStructure, predefined_parameters
 
 
-class StreamProperties(ThermoContribution):
-    def define(self, res: MutMap[Quantity]):
-        res["G"] = res["n"].T @ res["mu"]
-        st = res["T"] * res["S"]
-        pv = res["p"] * res["V"]
-        res["H"] = res["G"] + st
-        res["A"] = res["G"] - pv
-        res["U"] = res["A"] + res["T"] * res["S"]
+def _create_frames() -> (ThermoFrame, ThermoFrame):
+    factory = RegThermoFactory()
+    species_def = {"H2O": SpeciesDefinition("H2O")}
 
-        res["N"] = qsum(res["n"])
-        res["m"] = res["n"] * res["mw"]
-        res["M"] = qsum(res["m"])
+    struct = ThermoStructure.from_predefined("IAPWS-Liquid")
+    cond = factory.create_frame(species_def, struct + "GenericProperties")
 
-class MaterialFactory:
-    def __init__(self):
-        self.factory = RegThermoFactory()
-        self.factory.register(StreamProperties)
+    struct = ThermoStructure.from_predefined("IAPWS-Gas")
+    steam = factory.create_frame(species_def, struct + "GenericProperties")
+    return cond, steam
 
-        self.store = ThermoParameterStore()
-        with open(DATA_DIR / "parameters_iapws.yml") as file:
-            data = safe_load(file)
-            parameter_source = StringDictThermoSource(data["data"])
-        self.store.add_source(data["meta"]["source"], parameter_source)
 
-        self.frames = {p: self._create_iapws(p) for p in ["gas", "liquid"]}
+def _create_material(frame: ThermoFrame,
+                     t: float, p: float, n: float) -> MaterialDefinition:
+    initial_state = InitialState.from_si(t, p, [n])
+    return MaterialDefinition(frame, initial_state, predefined_parameters)
 
-    def create(self, phase:str, t: float, p: float, n: float):
-        assert phase.lower() in ["liquid", "gas"]
-        initial_state = InitialState.from_si(t, p, [n])
-        return MaterialDefinition(self.frames[phase], initial_state, self.store)
 
-    def _create_iapws(self, phase:str):
-        assert phase.lower() in ["liquid", "gas"]
-        contributions = [
-            "MolecularWeight", "ReducedStateIAPWS", "StandardStateIAPWS",
-            "IdealGasIAPWS", "Residual1IAPWS", "Residual2IAPWS",
-            "Residual3IAPWS", "Residual4IAPWS",
-            f"{phase.capitalize()}IAPWSIdealMix", "StreamProperties"
-        ]
-        config = {
-            "species": ["H2O"],
-            "state": "HelmholtzState",
-            "contributions": contributions
-        }
-        species_def =  {"H2O": SpeciesDefinition("H2O")}
-        return self.factory.create_frame(species_def, config)
+_f_cond, _f_steam = _create_frames()
 
-factory = MaterialFactory()
+hp_steam = _create_material(_f_steam, 600, 100e5, 100)
+hp_condensate = _create_material(_f_cond, 600, 100e5, 100)
+lp_steam = _create_material(_f_steam, 373, 1e5, 100)
+lp_condensate = _create_material(_f_cond, 373, 1e5, 100)
 
-hp_steam = factory.create("gas", 600, 100e5, 100)
-hp_condensate = factory.create("liquid", 600, 100e5, 100)
-lp_steam = factory.create("gas", 373, 1e5, 100)
-lp_condensate = factory.create("liquid", 373, 1e5, 100)
+h2o_spec = MaterialSpec(["H2O"])
+

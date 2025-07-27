@@ -4,7 +4,7 @@ from pytest import fixture
 from simu import (SpeciesDefinition, SymbolQuantity, base_unit,
                   parse_quantities_in_struct)
 from simu.core.utilities.types import Map
-from simu.app import DATA_DIR, RegThermoFactory
+from simu.app import (DATA_DIR, RegThermoFactory, ThermoStructure)
 from simu.app.thermo.contributions.cubic.core import BostonMathiasAlphaFunction
 
 
@@ -79,7 +79,7 @@ def iapws_ideal_gas_model(species_definitions_h2o, frame_factory):
         ]
     }
     frame = frame_factory.create_frame(species_definitions_h2o, config)
-    with open(DATA_DIR / "parameters_iapws.yml") as file:
+    with open(DATA_DIR / "parameters" / "iapws_parameters_h2o.yml") as file:
         params = parse_quantities_in_struct(safe_load(file)["data"])
     del params["LiquidIAPWSIdealMix"], params["GasIAPWSIdealMix"]
     params = {k: v for k, v in params.items() if not k.startswith("Residual")}
@@ -101,6 +101,12 @@ def iapws_model_gas(species_definitions_h2o):
     return make_iapws_fixture(species_definitions_h2o, "GasIAPWSIdealMix")
 
 
+@fixture(scope="session")
+def rk_h2o_frame(species_definitions_h2o, frame_factory):
+    name = "Boston-Mathias-Redlich-Kwong-Liquid"
+    structure = ThermoStructure.from_predefined(name)
+    return frame_factory.create_frame(species_definitions_h2o, structure)
+
 def make_iapws_fixture(species_def, phase_contribution: str = None):
     fac = RegThermoFactory()
     contributions = [
@@ -117,7 +123,8 @@ def make_iapws_fixture(species_def, phase_contribution: str = None):
         "contributions": contributions
     }
     frame = fac.create_frame(species_def, config)
-    with open(DATA_DIR / "parameters_iapws.yml") as file:
+    with open(DATA_DIR / "parameters" / "iapws_parameters_h2o.yml") as file:
         params = parse_quantities_in_struct(safe_load(file)["data"])
     params = {n: v for n, v in params.items() if n in contributions}
     return frame, params
+

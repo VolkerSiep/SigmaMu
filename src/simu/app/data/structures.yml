@@ -80,3 +80,29 @@ Boston-Mathias-Redlich-Kwong-Liquid:
       options:
         target: _ceos_c
     - RedlichKwongEOSLiquid
+
+IAPWS-Liquid:
+  state: HelmholtzState
+  contributions:
+    - MolecularWeight
+    - ReducedStateIAPWS
+    - StandardStateIAPWS
+    - IdealGasIAPWS
+    - Residual1IAPWS
+    - Residual2IAPWS
+    - Residual3IAPWS
+    - Residual4IAPWS
+    - LiquidIAPWSIdealMix
+
+IAPWS-Gas:
+  state: HelmholtzState
+  contributions:
+    - MolecularWeight
+    - ReducedStateIAPWS
+    - StandardStateIAPWS
+    - IdealGasIAPWS
+    - Residual1IAPWS
+    - Residual2IAPWS
+    - Residual3IAPWS
+    - Residual4IAPWS
+    - GasIAPWSIdealMix
