@@ -1,18 +1,18 @@
-casadi~=3.7.0
+casadi~=3.7.1
 numpy~=2.0.2
 Pint~=0.24.4
-pytest~=8.3.5
+pytest~=8.4.1
 PyYAML~=6.0.2
-setuptools~=80.4.0
+setuptools~=80.9.0
 matplotlib~=3.9.4
 scipy~=1.13
 pypardiso~=0.4.6
 
 docutils~=0.21.2
 Sphinx~=8.2.3
-sphinxcontrib-bibtex~=2.6.3
+sphinxcontrib-bibtex~=2.6.5
 sphinx-copybutton~=0.5.2
-pytest~=8.3.5
+pytest~=8.4.1
 pytest-doctestplus~=1.4.0
 
 
