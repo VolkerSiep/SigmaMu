@@ -13,6 +13,14 @@ ThermoFrame Factory
 .. autodecorator:: simu.registered_contribution
 .. autodecorator:: simu.registered_state
 
+ThermoStructure
+---------------
+
+.. autoclass:: simu.app.ThermoStructure
+  :members:
+  :exclude-members: __init__, __new__
+
+
 Pre-defined data
 ----------------
 .. rubric:: all_states (simu.core)

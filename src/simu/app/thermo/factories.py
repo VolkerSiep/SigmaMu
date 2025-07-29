@@ -40,39 +40,23 @@ class RegThermoFactory(ThermoFactory):
         for state in all_states:
             self.register_state_definition(state)
 
-# TODO: I still use this in some tests, right? Use ThermoStructure instead!
-
-# class ExampleThermoFactory(RegThermoFactory):
-#     """This ThermoFactory subclass is capable of creating frames from the base
-#     SiMu installation, hence example thermodynamic models that are found in open
-#     literature."""
-#     def __init__(self):
-#         """Default and only constructor"""
-#         super().__init__()
-#         with open(DATA_DIR / "structures.yml", encoding='UTF-8') as file:
-#             self.__structures = safe_load(file)
-#
-#     @property
-#     def structure_names(self) -> Iterable[str]:
-#         """The names of all configurations"""
-#         return self.__structures.keys()
-#
-#     def structure(self, name: str) -> Map:
-#         """Return a copy of the contribution structure that is registered as
-#         ``name``"""
-#         return deepcopy(self.__structures[name])
-#
-#     def create_frame_from_struct(self, species: Map[SpeciesDefinition],
-#                                  structure_name: str):
-#         """Shortcut for
-#         ``factory.create_frame(species, factory.structure(structure_name))``
-#         """
-#         return super().create_frame(species, self.structure(structure_name))
-
 
 class ThermoStructure(Map):
     """This class represents the structure of a thermodynamic model,
     representing the list of contributions and holding the state definition.
+
+    In terms of data, it is holding no more than a string representing the name
+    of the :class:`~simu.StateDefinition` class and a list representing the
+    contributions as required for constructing :class:`~simu.ThermoFrame`
+    objects.
+
+    As the main additional feature, predefined configurations can be loaded via
+    :meth:`from_predefined`. Further, add-on contributions, such as augmenters,
+    can easily be added via the ``+``-operator.
+
+    To be accepted as a valid configuration struct in the
+    :meth:`~simu.ThermoFactory.create_frame` method, objects of this class
+    behave like a mapping with two keys: ``state`` and ``contributions``.
     """
 
     __predefined: dict = None
@@ -86,10 +70,6 @@ class ThermoStructure(Map):
         based on the previously existing."""
         return ThermoStructure(self.state, self.contributions + [other])
 
-    def to_dict(self):
-
-        return {"state": self.state, "contributions": self.contributions}
-
     @classmethod
     def from_predefined(cls, name: str):
         """Create a pre-defined model structure based on its identifier."""
@@ -98,7 +78,7 @@ class ThermoStructure(Map):
 
     @classmethod
     def predefined(cls) -> Iterable[str]:
-        """Return a list of pre-defined model structures."""
+        """Return a list of all pre-defined model structures."""
         cls.__assure_predefined()
         return list(cls.__predefined.keys())
 
