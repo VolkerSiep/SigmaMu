@@ -67,7 +67,7 @@ Process model development
 
 When building up a process model in |SigmaMu|, a good approach is to think hierarchically and in terms of reusable and encapsulated model parts. There is no considerable overhead in doing so, as the numerical process model representation is not impacted by the chosen level of granularity.
 
-A model part does not need to represent an entire unit operation, but it can also represent a reusable aspect of it.
+A model part does not need to represent an entire unit operation, but it can also represent a reusable aspect of it. The hierarchical modelling approach greatly reduces the development effort when scaling up the scope of a process model.
 
 Gas liquid equilibrium
 ----------------------
