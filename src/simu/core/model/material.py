@@ -99,6 +99,14 @@ class MaterialProxy(Map[MaterialSpec]):
                              "incompatible to the provided material object")
         self.__connected[name] = material
 
+    def connect_many(self, **materials: Material):
+        """Connect several materials at once, calling :meth:`connect` for each
+        specification. This method can obviously only be used if the names of
+        the ports are valid variable identifiers in python.
+        """
+        for name, material in materials.items():
+            self.connect(name, material)
+
     def free_ports(self) -> Collection[str]:
         """Return collection of all ports that are yet free"""
         return self.__ports.keys()

@@ -1,9 +1,13 @@
 from pprint import pprint
+from pathlib import Path
+from sys import path
 
 from simu import NumericHandler, SimulationSolver
-from simu.examples.steam_system.process import SteamGeneration
+from process import SteamGeneration
 
 def main():
+    path.insert(0, str(Path(__file__).parent))
+
     numeric = NumericHandler(SteamGeneration.top(), port_properties=False)
 
     solver = SimulationSolver(numeric)

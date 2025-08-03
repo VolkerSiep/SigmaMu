@@ -1,27 +1,8 @@
 from simu import AModel
 
-from simu.examples.steam_system.thermo import (
-    hp_condensate, hp_steam, lp_condensate, lp_steam, h2o_spec)
-
-
-class VLE(AModel):
-    r"""Constrain the given steam (:math:`s`) and condensate (:math:`c`) phases
-    to be at thermodynamic equilibrium. 3 residuals are defined as follows:
-
-    .. math::
-
-        T_s = T_c \quad p_s = p_c \quad\text{and}\quad
-        \mu_{s,\mathrm{H_2O}} = \mu_{c,\mathrm{H_2O}}
-    """
-    def interface(self):
-        self.md("steam", h2o_spec)
-        self.md("condensate", h2o_spec)
-
-    def define(self):
-        s, c = self.m["steam"], self.m["condensate"]
-        self.ra("T_eq", c["T"] - s["T"], "K")
-        self.ra("p_eq", c["p"] - s["p"], "bar")
-        self.ra("mu_eq", c["mu"]["H2O"] - s["mu"]["H2O"], "kJ/mol")
+from thermo import hp_condensate, hp_steam, lp_condensate, lp_steam, h2o_spec
+from models.species_balance import SpeciesBalance
+from models.vle import VLE
 
 
 class Boiler(AModel):
@@ -51,12 +32,13 @@ class Boiler(AModel):
         self.ra("p_f", f["p"] - s["p"], "bar")
 
         # material balance
-        self.ra("N_bal", c["N"] + s["N"] - f["N"] , "kmol/h")
+        with self.ha("n_balance", SpeciesBalance, num_out=2) as unit:
+            unit.materials.connect_many(in_01=f, out_01=s, out_02=c)
 
         # thermodynamic equilibrium
         with self.ha("vle", VLE) as unit:
-            unit.materials.connect("steam", s)
-            unit.materials.connect("condensate", c)
+            unit.materials.connect("gas", s)
+            unit.materials.connect("liquid", c)
 
         # given duty and evaporation
         # self.ra("duty", self.pa["duty"] - (c["H"] + s["H"] - f["H"]) , "MW")
@@ -96,15 +78,16 @@ class SteamDrum(AModel):
         # drum equilibrium
         self.ra("t_bd", bd["T"] - s["T"], "K")
         with self.ha("vle", VLE) as unit:
-            unit.materials.connect("steam", s)
-            unit.materials.connect("condensate", bf)
+            unit.materials.connect_many(gas=s, liquid=bf)
 
         # blowdown
         self.ra("blow_down", self.pa["blow_down"] * bfw["N"] - bd["N"], "mol/s")
 
         # drum balances
-        res = bfw["N"] + bc["N"] + bs["N"] - bf["N"] - bd["N"] - s["N"]
-        self.ra("n_balance", res, "mol/s")
+        with self.ha("n_balance", SpeciesBalance, num_in=3, num_out=3) as unit:
+            unit.materials.connect_many(
+                in_01=bfw, in_02=bc, in_03=bs, out_01=bd, out_02=bf, out_03=s)
+
         res = bfw["H"] + bc["H"] + bs["H"] - bf["H"] - bd["H"] - s["H"]
         self.ra("h_balance", res, "MW")
 
@@ -119,7 +102,10 @@ class SuperHeater(AModel):
     def define(self):
         i, o = self.m["inlet"], self.m["outlet"]
         self.ra("p", i["p"] - o["p"], "bar") # pressure
-        self.ra("N_bal", o["N"]  - i["N"] , "kmol/h") # material
+
+        with self.ha("n-balance", SpeciesBalance, num_out=1) as unit:
+            unit.materials.connect_many(in_01=i, out_01=o)
+
         # self.ra("duty", o["H"] - self.pa["duty"] - i["H"] , "MW") # enthalpy
         self.pr["duty"] = o["H"] - i["H"]
 
@@ -141,18 +127,22 @@ class Turbine(AModel):
 
         # phase equilibria
         with self.ha("vle_o", VLE) as unit:
-            unit.materials.connect("steam", o_s)
-            unit.materials.connect("condensate", o_c)
+            unit.materials.connect("gas", o_s)
+            unit.materials.connect("liquid", o_c)
         with self.ha("vle_i", VLE) as unit:
-            unit.materials.connect("steam", i_s)
-            unit.materials.connect("condensate", i_c)
+            unit.materials.connect("gas", i_s)
+            unit.materials.connect("liquid", i_c)
+
+        # material balances
+        with self.ha("n-balance-isentropic", SpeciesBalance, num_out=2) as unit:
+            unit.materials.connect_many(in_01=f, out_01=i_s, out_02=i_c)
+        with self.ha("n-balance-actual", SpeciesBalance, num_out=2) as unit:
+            unit.materials.connect_many(in_01=f, out_01=o_s, out_02=o_c)
 
         # conservations
         # p_out = self.pa["discharge_pressure"]
         # self.ra("outlet p", p_out - o_s["p"], "bar")
         self.ra("isentropic p", o_s["p"] - i_s["p"], "bar")
-        self.ra("outlet n", f["N"] - o_s["N"] - o_c["N"], "kmol/h")
-        self.ra("isentropic n", f["N"] - i_s["N"] - i_c["N"], "kmol/h")
         self.ra("isentropic S", f["S"] - i_s["S"] - i_c["S"], "kW/K")
 
         # duty calculation
@@ -174,7 +164,9 @@ class TotalCondenser(AModel):
         i_s, i_c = self.m["inlet_steam"], self.m["inlet_cond"]
         o = self.m["outlet"]
 
-        self.ra("n-balance", i_s["N"] + i_c["N"] - o["N"], "kmol/h")
+        with self.ha("n-balance", SpeciesBalance, num_in=2) as unit:
+            unit.materials.connect_many(in_01=i_s, in_02=i_c, out_01=o)
+
         self.ra("pressure", i_s["p"] - o["p"], "bar")
         self.ra("temperature change", i_s["T"] - o["T"], "K")
         self.ra("temperature", o["T"] - self.pa["temperature"], "K")
