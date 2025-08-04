@@ -1,45 +1,9 @@
 from simu import AModel
 
 from thermo import hp_condensate, hp_steam, lp_condensate, lp_steam, h2o_spec
+from models.heat_exchanger import Boiler, SuperHeater, TotalCondenser
 from models.species_balance import SpeciesBalance
 from models.vle import VLE
-
-
-class Boiler(AModel):
-    """This boiler model assumes a condensate flow as feed, which is partially
-    evaporated by applying the specified duty. No pressure drop is considered.
-
-    As such, the unit is fully specified - however, the constraint to fix the
-    obtained vaporization ratio is added, by that fixing the circulation feed
-    flow to the boiler.
-    """
-    def interface(self):
-        self.md("feed", h2o_spec)
-        self.md("steam", h2o_spec)
-        self.md("condensate", h2o_spec)
-
-        self.pad("vap_frac", 12, "%")
-        self.prd("duty", "MW")
-
-
-    def define(self):
-        f = self.m["feed"]
-        c = self.m["condensate"]
-        s = self.m["steam"]
-
-        # pressure from feed
-        self.ra("p_f", f["p"] - s["p"], "bar")
-
-        with self.ha("n_balance", SpeciesBalance, num_out=2) as unit:
-            unit.mcm(in_01=f, out_01=s, out_02=c)
-
-        with self.ha("vle", VLE) as unit:
-            unit.mcm(gas=s, liquid=c)
-
-        # vapour fraction from boiler
-        self.ra("vap_frac", self.pa["vap_frac"] * f["N"] - s["N"], "kmol/h")
-
-        self.pr["duty"] = c["H"] + s["H"] - f["H"]
 
 
 class SteamDrum(AModel):
@@ -85,23 +49,6 @@ class SteamDrum(AModel):
         self.ra("h_balance", res, "MW")
 
 
-class SuperHeater(AModel):
-    def interface(self):
-        self.md("inlet", h2o_spec)
-        self.md("outlet", h2o_spec)
-        # self.pad("duty", 2, "MW")
-        self.prd("duty", "MW")
-
-    def define(self):
-        i, o = self.m["inlet"], self.m["outlet"]
-        self.ra("p", i["p"] - o["p"], "bar") # pressure
-
-        with self.ha("n-balance", SpeciesBalance, num_out=1) as unit:
-            unit.mcm(in_01=i, out_01=o)
-
-        self.pr["duty"] = o["H"] - i["H"]
-
-
 class Turbine(AModel):
     def interface(self):
         self.md("inlet")
@@ -113,10 +60,10 @@ class Turbine(AModel):
 
     def define(self):
         f = self.m["inlet"]
-        o_s = self.m["outlet_steam"]
         o_c = self.m["outlet_cond"]
-        i_c = self.mcf("iso_cond", lp_condensate)
-        i_s = self.mcf("iso_steam", lp_steam)
+        o_s = self.m["outlet_steam"]
+        i_c = self.mcf("iso_cond", o_c.definition)
+        i_s = self.mcf("iso_steam", o_s.definition)
 
         with self.ha("isentropic", CompressionCondensation) as unit:
             unit.mcm(feed=f, out_steam=i_s, out_cond=i_c)
@@ -159,28 +106,6 @@ class CompressionCondensation(AModel):
         self.pr["duty"] = f["H"] - c["H"] - s["H"]
 
 
-class TotalCondenser(AModel):
-    def interface(self):
-        self.md("inlet_steam", h2o_spec)
-        self.md("inlet_cond", h2o_spec)
-        self.md("outlet", h2o_spec)
-        self.pad("temperature", 50, "degC")
-        self.prd("duty", "MW")
-
-    def define(self):
-        i_s, i_c = self.m["inlet_steam"], self.m["inlet_cond"]
-        o = self.m["outlet"]
-
-        with self.ha("n-balance", SpeciesBalance, num_in=2) as unit:
-            unit.mcm(in_01=i_s, in_02=i_c, out_01=o)
-
-        self.ra("pressure", i_s["p"] - o["p"], "bar")
-        self.ra("temperature change", i_s["T"] - o["T"], "K")
-        self.ra("temperature", o["T"] - self.pa["temperature"], "K")
-
-        self.pr["duty"] = i_s["H"] + i_c["H"] - o["H"]
-
-
 class SteamGeneration(AModel):
     def interface(self):
         self.pad("T_bfw", 250, "degC")
@@ -201,7 +126,7 @@ class SteamGeneration(AModel):
         m = self.materials
 
         with self.ha("boiler", Boiler) as unit:
-            unit.mcm(feed=m["c2"], condensate=m["c3"], steam=m["s3"])
+            unit.mcm(feed=m["c2"], cond_out=m["c3"], steam_out=m["s3"])
         q_boiler = unit.pr["duty"]
 
         with self.ha("drum", SteamDrum) as unit:
@@ -218,7 +143,7 @@ class SteamGeneration(AModel):
         vfrac_turbine = unit.pr["vapour_fraction"]
 
         with self.ha("condenser", TotalCondenser) as unit:
-            unit.mcm(inlet_steam=m["s7"], inlet_cond=m["c7"], outlet=m["c8"])
+            unit.mcm(steam_in=m["s7"], cond_in=m["c7"], outlet=m["c8"])
 
         # BFW temperature and pressure (the latter from drum)
         self.ra("T_bfw", self.pa["T_bfw"] - m["c1"]["T"], "K")

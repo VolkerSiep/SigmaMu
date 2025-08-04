@@ -114,7 +114,7 @@ mathjax3_config = {
 rst_prolog = r"""
 .. |m3| replace:: m\ :sup:`3`
 .. |degC| replace:: °C
-.. |SigmaMu| replace:: :math:`\color{blue}\mathrm{SigmaMu}`
+.. |SigmaMu| replace:: :math:`\color{#0044aa}\mathtt{SigmaMu}`
 """
 
 rst_epilog = r"""

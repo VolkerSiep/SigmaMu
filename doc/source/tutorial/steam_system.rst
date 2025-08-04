@@ -134,3 +134,98 @@ While line 17 and 18 simply collect the connected material objects, the actual c
 
 Lines 21-22 then define the constraints to force these residuals to zero, applying the before mentioned tolerance unit.
 
+Boiler
+------
+At this point, we can start to define simple unit operations, one of them being the boiler. For simplicity, the model is implemented specifically for the intended purpose without generalisation. As such, we specify zero pressure drop and the fraction of water being evaporated, while the duty is not locked, but only reported as a property. The class head and interface then looks as follows:
+
+.. exampleinclude:: steam_system/models/heat_exchanger.py
+   :language: python
+   :lines: 4-17
+   :lineno-start: 1
+   :linenos:
+
+Here, the (condensate) feed and steam and condensate outlet are defined as material ports. Further, the parameter ``vap_frac`` is declared to represent the vapour fraction, and the ``duty`` parameter to export the unit's heat duty. The model definition is
+
+.. exampleinclude:: steam_system/models/heat_exchanger.py
+   :language: python
+   :lines: 19-31
+   :lineno-start: 16
+   :linenos:
+
+Here, line 18 constraints the steam outlet pressure to be the steam pressure. No pressure constraint is explicitly given for the condensate outlet, as this is covered by the ``VLE`` sub-model. First the above developed ``MaterialBalance`` model is utilised in lines 20-21 to conserve the total amount of water, then the ``VLE`` model, included in lines 23-24, assures phase equilibrium.
+
+Line 27 specifies the vapour fraction, whereas a little trick is applied. Two alternatives to define these residuals are
+
+.. math::
+
+    \frac{\dot n_s}{\dot n_f} - \beta^\mathrm{spec} = 0 \quad\text{or}\quad
+    \dot n_s - \beta^\mathrm{spec}\cdot \dot n_f = 0
+
+While the first form may be more intuitive, the second form is linear in :math:`\dot n_i`, which might have a slight positive effect on solver convergence, and is as such a good habbit. Line 28 defines the duty as the difference in enthalpies.
+
+Superheater
+-----------
+As the superheater only deals with one-phase flow, its definition is ridiculously simple and needs no further explanation beyond what is already valid for the boiler above:
+
+.. exampleinclude:: steam_system/models/heat_exchanger.py
+   :language: python
+   :lines: 34-47
+   :lineno-start: 31
+   :linenos:
+
+TotalCondenser
+--------------
+While the superheater was simple, we might learn a thing about thermodynamics on this one, as the task is to receive a partially condensed flow, and bring it down to its exact boiling point. We could be pragmatic and define steam and condensate flows as both inlets and outlets, and so specify the vapour fraction to be small. If there were inert gases present and vacuum ejectors installed, the approach were entirely suitable, but here we stubbornly obliged ourselves to implement total condensation.
+
+To do this, we need a *trial gas phase* that does not enter the material balance, but stands in phase equilibrium with the actual outlet stream. The size of the trial gas phase is arbitrary, represented by the ``_trial_phase_size`` parameter in below definition:
+
+.. exampleinclude:: steam_system/models/heat_exchanger.py
+   :language: python
+   :lines: 50-58
+   :lineno-start: 47
+   :linenos:
+
+Further, a parameter is defined for the desired temperature, which will via the boiling point fix the pressure level. We also announce to calculate the duty of the unit.
+
+.. exampleinclude:: steam_system/models/heat_exchanger.py
+   :language: python
+   :lines: 60-74
+   :lineno-start: 57
+   :linenos:
+
+Here, line 59 creates the trial gas phase. Instead of giving a concrete :class:`~simu.MaterialDefinition` object from among the ones defined in above section on thermodynamic models, we just use the definition given for the inlet steam, thereby making our model capable of dealing with other feeds, such as steam with minor amounts of inert gases.
+
+In line 64-66, the outlet steam is brought to equilibrium with our trial phase, and the trial phase size is set. This will provide in total 4 equations, one more than the degrees of freedom introduced with the trial phase. The result is the link between temperature and pressure by the boiling point.
+
+The remaining part contains nothing new. The temperature is set to the specified value, and pressure drop is defined as zero. This means however that the upstream unit (the turbine) cannot also specify its discharge pressure, as it is now fixed to the boiling point at 50 |degC|.
+
+Steam Turbine
+-------------
+This is the last thermodynamic lecture for today -- covering entropy and isentropic efficiency. The isentropic expansion is the process described by reducing the pressure of the flow at constant entropy:
+
+.. math:: \dot H^\mathrm{out}_\mathrm{rev} = \dot H(S^\mathrm{in}, p^\mathrm{out}, \dot{\vec n})
+
+Thanks to the canonical formulation of our thermodynamic models, there is not more to it, and we do not need to start juggling adiabatic exponents and ideal gas approximations. The reversible (maximal reachable) work extraction is then simply
+
+.. math:: \dot W_\mathrm{rev} = \dot H^\mathrm{in} - \dot H^\mathrm{out}_\mathrm{rev}
+
+From here, the actual outlet enthalpy computes by removing the actual work, defined by the isentropic efficiency :math:`\eta_s`, from the inlet enthalpy:
+
+.. math::
+
+    \dot H^\mathrm{out} = H^\mathrm{in} - \dot W \quad\text{with}\quad
+    \dot W = \eta_s\,\dot W_\mathrm{rev}
+
+The only complication here is the condensing operation, requiring to calculate all output enthalpies (reversible and actual) as the sum of liquid and gas enthalpy.
+
+
+
+Steam drum
+----------
+
+Overall process model
+---------------------
+
+Degree of freedom analysis
+==========================
+
