@@ -56,7 +56,7 @@ class ParameterHandler(Map[Quantity]):
         self.__params[name] = SymbolQuantity(name, unit)
         if value is not None:
             # these have default values and don't need to be provided
-            self.__values[name] = Quantity(value, unit)
+            self.__values[name] = Quantity(float(value), unit)
 
     def static(self,
                name: str,

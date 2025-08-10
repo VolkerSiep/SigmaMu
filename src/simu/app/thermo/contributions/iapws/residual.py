@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from collections.abc import Sequence
+from numpy import isnan
 
 # internal modules
 from simu.core.thermo.contribution import ThermoContribution, registered_contribution
@@ -393,10 +394,14 @@ class GasIAPWSIdealMix(ThermoContribution):
         res["_v_sat"] = qsum(n * mw / rho)  # no mixing volume
 
     def initial_state(self, state, properties):
-        # TODO: check if super-critical, as then there is no v_sat or p_sat
-        #  then, just initialize with ideal gas (there should only be one root)
         p_sat, v_sat = properties["_p_sat"], properties["_v_sat"]
-        volume = p_sat / state.pressure * v_sat
+        # check if super-critical, as then there is no v_sat or p_sat
+        #  then, just initialize with ideal gas (there should only be one root)
+        if isnan(p_sat) or isnan(v_sat):
+            volume = (qsum(state.mol_vector) * R_GAS * state.temperature /
+                      state.pressure)
+        else:
+            volume = p_sat / state.pressure * v_sat
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))
@@ -448,7 +453,14 @@ class LiquidIAPWSIdealMix(ThermoContribution):
         res["_v_sat"] = qsum(n * mw / rho)
 
     def initial_state(self, state, properties):
-        volume = properties["_v_sat"]
+        v_sat = properties["_v_sat"]
+        # check if super-critical, as then there is no v_sat
+        #  then, just initialize with ideal gas (there should only be one root)
+        if isnan(v_sat):
+            volume = (qsum(state.mol_vector) * R_GAS * state.temperature /
+                      state.pressure)
+        else:
+            volume = v_sat
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))

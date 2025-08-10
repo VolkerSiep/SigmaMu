@@ -1,6 +1,5 @@
-from simu import (
-    InitialState, MaterialDefinition, SpeciesDefinition,
-    MaterialSpec, ThermoFrame)
+from simu import (InitialState, MaterialDefinition,
+                  SpeciesDefinition, ThermoFrame)
 from simu.app import RegThermoFactory, ThermoStructure, predefined_parameters
 
 
@@ -28,6 +27,4 @@ hp_steam = _create_material(_f_steam, 600, 100e5, 100)
 hp_condensate = _create_material(_f_cond, 600, 100e5, 100)
 lp_steam = _create_material(_f_steam, 373, 1e5, 100)
 lp_condensate = _create_material(_f_cond, 373, 1e5, 100)
-
-h2o_spec = MaterialSpec(["H2O"])
 

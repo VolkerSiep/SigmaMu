@@ -10,3 +10,4 @@ Tutorial
    first_models
    solving_models
    steam_system
+   dof_analysis
