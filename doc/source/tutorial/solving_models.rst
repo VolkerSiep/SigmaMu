@@ -67,9 +67,9 @@ The process model already defines values for each parameter. These values are ho
 For extra convenience, the solver object provides direct mutable access via :meth:`simu.SimulationSolver.model_parameters` to the model's parameters:
 
 >>> pprint(solver.model_parameters)
-    {'model_params': {'T': <Quantity(25, 'degree_Celsius')>,
-                      'V': <Quantity(10, 'meter ** 3 / hour')>,
-                      'p': <Quantity(1, 'bar')>},
+    {'model_params': {'T': <Quantity(25.0, 'degree_Celsius')>,
+                      'V': <Quantity(10.0, 'meter ** 3 / hour')>,
+                      'p': <Quantity(1.0, 'bar')>},
      'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': <Quantity(25, 'degree_Celsius')>,
                                                           'dh_form': {'Methane': <Quantity(-74.87, 'kilojoule / mole')>},
                                                           'p_ref': <Quantity(1, 'bar')>,

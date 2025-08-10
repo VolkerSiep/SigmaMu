@@ -129,9 +129,9 @@ Either way, here we are with a complete process model. By creating a :class:`sim
 >>> numeric = NumericHandler(Source.top())
 >>> args = numeric.arguments
 >>> pprint(args)
-{'model_params': {'T': <Quantity(25, 'degree_Celsius')>,
-                  'V': <Quantity(10, 'meter ** 3 / hour')>,
-                  'p': <Quantity(1, 'bar')>},
+{'model_params': {'T': <Quantity(25.0, 'degree_Celsius')>,
+                  'V': <Quantity(10.0, 'meter ** 3 / hour')>,
+                  'p': <Quantity(1.0, 'bar')>},
  'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': <Quantity(25, 'degree_Celsius')>,
                                                       'dh_form': {'Methane': <Quantity(-74.87, 'kilojoule / mole')>},
                                                       'p_ref': <Quantity(1, 'bar')>,
