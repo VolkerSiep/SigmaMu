@@ -2,12 +2,12 @@
 from casadi import vertsplit, vertcat
 
 # internal modules
-from ... import StateDefinition, Quantity
-from ...core.utilities import base_unit, base_magnitude
-from ...core.utilities.types import MutMap
+from simu.core.thermo.state import StateDefinition, registered_state
+from simu.core.utilities.quantity import Quantity, base_magnitude, base_unit
+from simu.core.utilities.types import MutMap
 
 
-
+@registered_state
 class HelmholtzState(StateDefinition):
     """This definition interprets the state as being temperature, volume,
     and mole numbers. Accordingly, it defines:
@@ -20,7 +20,6 @@ class HelmholtzState(StateDefinition):
     ``n``    Mole vector
     ======== ============================
     """
-
     def prepare(self, result: MutMap[Quantity], flow: bool = False):
         state = result["_state"].magnitude
         result["T"], result["V"], *n_vec = vertsplit(state, 1)
@@ -36,6 +35,8 @@ class HelmholtzState(StateDefinition):
     def declare_vector_keys(self, species):
         return {"n": list(species.keys())}
 
+
+@registered_state
 class GibbsState(StateDefinition):
     """This definition interprets the state as being temperature, pressure,
     and mole numbers. Accordingly, it defines:
@@ -48,7 +49,6 @@ class GibbsState(StateDefinition):
     ``n``    Mole vector
     ======== ============================
     """
-
     def prepare(self, result: MutMap[Quantity], flow: bool = False):
         state = result["_state"].magnitude
         result["T"], result["p"], *n_vec = vertsplit(state, 1)
@@ -64,6 +64,3 @@ class GibbsState(StateDefinition):
 
     def declare_vector_keys(self, species):
         return {"n": list(species.keys())}
-
-
-all_states = [GibbsState, HelmholtzState]

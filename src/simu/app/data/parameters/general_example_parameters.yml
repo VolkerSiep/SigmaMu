@@ -2,10 +2,10 @@ meta:
   source: misc. sources in open internet
 
 data:
-  formulae:
-    H2O: H2O
-    C3: CH3-CH2-CH3
-    nCH4: CH3-(CH2)2-CH3
+  # formulae:
+  #   H2O: H2O
+  #   C3: CH3-CH2-CH3
+  #   nCH4: CH3-(CH2)2-CH3
   H0S0ReferenceState:
     T_ref: 25 degC
     dh_form:  # heat of formation

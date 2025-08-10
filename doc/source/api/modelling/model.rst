@@ -20,3 +20,7 @@ AModel
     :show-inheritance:
     :members:
 
+AModelProxy
+-----------
+.. autoclass:: simu.core.model.amodel.AModelProxy
+    :members:

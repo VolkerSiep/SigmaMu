@@ -1,11 +1,10 @@
 from pathlib import Path
-from pprint import pprint
 from yaml import safe_load
 
 from simu import (
-    ThermoFactory, InitialState, MaterialDefinition, ThermoParameterStore,
+    InitialState, MaterialDefinition, ThermoParameterStore,
     StringDictThermoSource, SpeciesDB)
-from simu.app.thermo import all_contributions, GibbsState
+from simu.app import RegThermoFactory
 
 CURRENT_DIR = Path(__file__).parent
 
@@ -21,10 +20,7 @@ with open(CURRENT_DIR  / "thermo_model_structures.yml") as file:
 with open(CURRENT_DIR  / "ideal_gas_param.yml") as file:
     parameter_source = StringDictThermoSource(safe_load(file))
 
-factory = ThermoFactory()
-factory.register_state_definition(GibbsState)
-factory.register(*all_contributions)
-
+factory = RegThermoFactory()
 frame = factory.create_frame(species.get_sub_db(["Methane"]),
                              model_structures["simple_ideal_gas"])
 

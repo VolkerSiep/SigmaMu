@@ -1,15 +1,19 @@
 from abc import abstractmethod
 from collections.abc import Sequence
+from numpy import isnan
 
 # internal modules
-from simu import (
-    ThermoContribution, R_GAS, qvertcat, Quantity, exp, qpow, qsum,
-    SymbolQuantity, QFunction, base_magnitude)
-from simu.core.utilities.types import Map, MutMap
-from simu.core.utilities.quantity import jacobian
+from simu.core.thermo.contribution import ThermoContribution, registered_contribution
+from simu.core.utilities.constants import R_GAS
+from simu.core.utilities.quantity import (
+    Quantity, qsum, qpow, qvertcat, QFunction, SymbolQuantity,
+    base_magnitude, jacobian)
+from simu.core.utilities.qstructures import exp
+from simu.core.utilities.types import Map
 
 # TODO:
 #  - document parameters required for each contribution
+
 
 class ResidualBaseIAPWS(ThermoContribution):
     r"""All IAPWS residual contributions define a molar residual contribution
@@ -128,6 +132,7 @@ class ResidualBaseIAPWS(ThermoContribution):
         ...
 
 
+@registered_contribution
 class Residual1IAPWS(ResidualBaseIAPWS):
     r"""The first contribution of the IAPWS residual Helmholtz function, as
     represented by this contribution, is formulated as in :cite:p:`Wagner_2002`:
@@ -167,6 +172,7 @@ class Residual1IAPWS(ResidualBaseIAPWS):
             for d_i, t_i, n_i in zip(*param)
         )
 
+@registered_contribution
 class Residual2IAPWS(ResidualBaseIAPWS):
     r"""This contribution defines the second group of terms in the residual
     Helmholtz energy, defined as in :cite:p:`Wagner_2002`:
@@ -207,6 +213,8 @@ class Residual2IAPWS(ResidualBaseIAPWS):
             for c_i, d_i, t_i, n_i in zip(*param)
         )
 
+
+@registered_contribution
 class Residual3IAPWS(ResidualBaseIAPWS):
     r"""This contribution defines the third group of terms in the residual
     Helmholtz energy, defined as in :cite:p:`Wagner_2002`:
@@ -254,6 +262,8 @@ class Residual3IAPWS(ResidualBaseIAPWS):
             ) for d_i, t_i, n_i, a_i, b_i, g_i, e_i in zip(*param)
         )
 
+
+@registered_contribution
 class Residual4IAPWS(ResidualBaseIAPWS):
     r"""This contribution defines the forth group of terms in the residual
     Helmholtz energy, defined as in :cite:p:`Wagner_2002`:
@@ -317,6 +327,7 @@ class Residual4IAPWS(ResidualBaseIAPWS):
         )
 
 
+@registered_contribution
 class GasIAPWSIdealMix(ThermoContribution):
     r"""This contribution does not add any terms to the state function itself,
     but prepares and provides the initialization if the IAPWS model gas phase
@@ -384,12 +395,19 @@ class GasIAPWSIdealMix(ThermoContribution):
 
     def initial_state(self, state, properties):
         p_sat, v_sat = properties["_p_sat"], properties["_v_sat"]
-        volume = p_sat / state.pressure * v_sat
+        # check if super-critical, as then there is no v_sat or p_sat
+        #  then, just initialize with ideal gas (there should only be one root)
+        if isnan(p_sat) or isnan(v_sat):
+            volume = (qsum(state.mol_vector) * R_GAS * state.temperature /
+                      state.pressure)
+        else:
+            volume = p_sat / state.pressure * v_sat
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))
 
 
+@registered_contribution
 class LiquidIAPWSIdealMix(ThermoContribution):
     r"""This contribution does not add any terms to the state function itself,
     but prepares and provides the initialization if the IAPWS model liquid phase
@@ -435,7 +453,14 @@ class LiquidIAPWSIdealMix(ThermoContribution):
         res["_v_sat"] = qsum(n * mw / rho)
 
     def initial_state(self, state, properties):
-        volume = properties["_v_sat"]
+        v_sat = properties["_v_sat"]
+        # check if super-critical, as then there is no v_sat
+        #  then, just initialize with ideal gas (there should only be one root)
+        if isnan(v_sat):
+            volume = (qsum(state.mol_vector) * R_GAS * state.temperature /
+                      state.pressure)
+        else:
+            volume = v_sat
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
                 list(base_magnitude(state.mol_vector)))

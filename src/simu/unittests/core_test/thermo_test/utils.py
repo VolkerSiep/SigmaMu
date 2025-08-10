@@ -1,4 +1,4 @@
-from simu.core.utilities import SymbolQuantity, base_unit
+from simu import SymbolQuantity, base_unit
 
 
 # auxiliary functions

@@ -1,11 +1,13 @@
 """This module implements functionality related to parameter handling"""
 
+# stdlib
 from typing import Optional
 from collections.abc import Mapping, Iterable, Iterator
 
-from ..utilities import Quantity, SymbolQuantity
-from ..utilities.types import Map, MutMap
-from ..utilities.errors import DataFlowError
+# internal
+from simu.core.utilities.quantity import Quantity, SymbolQuantity
+from simu.core.utilities.types import Map, MutMap
+from simu.core.utilities.errors import DataFlowError
 
 
 class ParameterHandler(Map[Quantity]):
@@ -54,7 +56,7 @@ class ParameterHandler(Map[Quantity]):
         self.__params[name] = SymbolQuantity(name, unit)
         if value is not None:
             # these have default values and don't need to be provided
-            self.__values[name] = Quantity(value, unit)
+            self.__values[name] = Quantity(float(value), unit)
 
     def static(self,
                name: str,

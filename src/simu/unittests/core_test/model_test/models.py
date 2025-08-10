@@ -1,9 +1,7 @@
 """Test models for unit testing"""
 
 import logging
-from simu import Model
-from simu.core.thermo.material import MaterialSpec
-from simu.core.utilities import SymbolQuantity
+from simu import Model, MaterialSpec, SymbolQuantity
 
 
 class SimpleParameterTestModel(Model):

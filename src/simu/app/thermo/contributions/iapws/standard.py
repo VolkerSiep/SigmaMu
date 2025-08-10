@@ -1,7 +1,12 @@
 # internal modules
-from simu import ThermoContribution, R_GAS, log, exp, qsum
+from simu.core.thermo.contribution import ThermoContribution, registered_contribution
+from simu.core.utilities.constants import R_GAS
+from simu.core.utilities.quantity import qsum
+from simu.core.utilities.qstructures import log, exp
 
 
+
+@registered_contribution
 class ReducedStateIAPWS(ThermoContribution):
     r"""In the IAPWS EOS, all contributions are expressed in terms of
 
@@ -53,8 +58,10 @@ class ReducedStateIAPWS(ThermoContribution):
 
         self.add_bound("T", temp)  # it is divided by T and V
         self.add_bound("V", vol)
+        self.add_bound("n", n)  # TODO: not really necessary here.
 
 
+@registered_contribution
 class StandardStateIAPWS(ThermoContribution):
     r"""
     With previously defined :math:`\tau` (``_tau``) and  :math:`\varrho`
@@ -136,6 +143,7 @@ class StandardStateIAPWS(ThermoContribution):
         self.declare_vector_keys("mu")
 
 
+@registered_contribution
 class IdealGasIAPWS(ThermoContribution):
     r"""The standard state :class:`StandardStateIAPWS` is defined with a
     reference to the critical density of the individual species. This

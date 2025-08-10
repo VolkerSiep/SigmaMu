@@ -1,14 +1,16 @@
-from abc import ABC, abstractmethod
+# stdlib
 from typing import Optional
 from collections.abc import Iterable, Collection, Mapping, Sequence
 
-from ..utilities import (
-    Quantity, SymbolQuantity, QuantityDict, QFunction, extract_sub_structure)
-from ..utilities.types import Map, MutMap, NestedMap
-
-from . import (
-    ThermoFrame, InitialState, ThermoParameterStore, SpeciesDB,
-    ThermoFactory, SpeciesDefinition)
+# internal
+from simu.core.utilities.quantity import Quantity, SymbolQuantity, QFunction
+from simu.core.utilities.qstructures import extract_sub_structure, QuantityDict
+from simu.core.utilities.types import Map, MutMap, NestedMap
+from .frame import ThermoFrame
+from .factory import ThermoFactory
+from .state import InitialState
+from .parameters import ThermoParameterStore
+from .species import SpeciesDB, SpeciesDefinition
 
 
 class MaterialSpec:

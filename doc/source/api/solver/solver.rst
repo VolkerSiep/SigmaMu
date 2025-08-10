@@ -7,4 +7,5 @@ The following are classes to generally describe the solvers that are part of ``S
    :maxdepth: 2
 
    simulationsolver
+   thermostate
    linearsolvers

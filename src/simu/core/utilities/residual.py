@@ -1,10 +1,14 @@
+# stdlib
 from dataclasses import dataclass
 from collections.abc import Iterator
+
+# external
 from casadi import DM
 
-from simu.core.utilities.quantity import Quantity
-from simu.core.utilities.types import Map
-from simu.core.utilities.errors import DimensionalityError
+# internal
+from .quantity import Quantity
+from .types import Map
+from .errors import DimensionalityError
 
 
 @dataclass

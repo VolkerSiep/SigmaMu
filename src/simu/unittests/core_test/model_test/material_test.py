@@ -7,31 +7,24 @@ from simu import (
     MaterialSpec, SpeciesDefinition, SpeciesDB, flatten_dictionary, Quantity)
 from simu.core.model.material import MaterialHandler
 from simu.core.thermo.material import MaterialLab
-from simu.core.utilities import assert_reproduction
-from simu.app import all_contributions, GibbsState
-from simu.app.thermo.factories import ExampleThermoFactory
+from simu.core.utilities.testing import assert_reproduction
+from simu.app.thermo.factories import RegThermoFactory, ThermoStructure
 
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
 
-def test_create_material_definition():
-    factory = ExampleThermoFactory()
-    species = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species, RK_LIQ)
+def test_create_material_definition(rk_h2o_frame):
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(1)
-    _ = MaterialDefinition(frame, initial_state, store)
+    _ = MaterialDefinition(rk_h2o_frame, initial_state, store)
 
 
-def test_create_material_definition_wrong_init():
-    factory = ExampleThermoFactory()
-    species = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species, RK_LIQ)
+def test_create_material_definition_wrong_init(rk_h2o_frame):
     store = ThermoParameterStore()
     initial_state = InitialState.from_std(2)
     with raises(ValueError) as err:
-        _ = MaterialDefinition(frame, initial_state, store)
+        _ = MaterialDefinition(rk_h2o_frame, initial_state, store)
     assert "Incompatible initial state" in str(err.value)
 
 
@@ -60,9 +53,7 @@ def test_species_db():
 def test_material_lab():
     species= SpeciesDB({"Water": "H2O", "Ethanol": "C2H5OH"})
     store = ThermoParameterStore()
-    factory = ThermoFactory()
-    factory.register_state_definition(GibbsState)
-    factory.register(*all_contributions)
+    factory = RegThermoFactory()
     lab = MaterialLab(factory, species, store)
 
     structure = {

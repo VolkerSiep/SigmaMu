@@ -1,40 +1,28 @@
 from _pytest.python_api import raises
 from pint import DimensionalityError, UndefinedUnitError
 
-from simu.core.thermo import ThermoParameterStore
-from simu.app.thermo.factories import ExampleThermoFactory
-from simu.core.thermo.parameters import StringDictThermoSource
-from simu.core.thermo.species import SpeciesDefinition
-from simu.core.utilities import assert_reproduction
+from simu import ThermoParameterStore, StringDictThermoSource, SpeciesDefinition
+from simu.app.thermo.factories import ThermoStructure, RegThermoFactory
+from simu.core.utilities.testing import assert_reproduction
 
 
 RK_LIQ = "Boston-Mathias-Redlich-Kwong-Liquid"
 
 
-def test_create_frame():
-    factory = ExampleThermoFactory()
-    assert RK_LIQ in factory.structure_names
-    species = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species, RK_LIQ)
-    assert_reproduction(frame.parameter_structure)
+def test_create_frame(rk_h2o_frame):
+    assert_reproduction(rk_h2o_frame.parameter_structure)
 
 
-def test_get_thermo_properties():
-    factory = ExampleThermoFactory()
-    species = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species, RK_LIQ)
+def test_get_thermo_properties(rk_h2o_frame):
     store = ThermoParameterStore()
-    symbols = store.get_symbols(frame.parameter_structure)
+    symbols = store.get_symbols(rk_h2o_frame.parameter_structure)
     assert symbols["CriticalParameters"]["T_c"]["H2O"].units == "kelvin"
 
 
-def test_get_thermo_properties_twice():
-    factory = ExampleThermoFactory()
-    species = {"H2O": SpeciesDefinition("H2O")}
-    frame = factory.create_frame(species, RK_LIQ)
+def test_get_thermo_properties_twice(rk_h2o_frame):
     store = ThermoParameterStore()
-    symbols1 = store.get_symbols(frame.parameter_structure)
-    symbols2 = store.get_symbols(frame.parameter_structure)
+    symbols1 = store.get_symbols(rk_h2o_frame.parameter_structure)
+    symbols2 = store.get_symbols(rk_h2o_frame.parameter_structure)
     qty1 = symbols1["CriticalParameters"]["T_c"]["H2O"]
     qty2 = symbols2["CriticalParameters"]["T_c"]["H2O"]
     assert qty1 is qty2

@@ -3,7 +3,7 @@ from numpy.testing import assert_allclose
 
 from simu import NumericHandler, flatten_dictionary, Quantity, jacobian
 from simu.examples.material_model import Source
-from simu.core.utilities import assert_reproduction
+from simu.core.utilities.testing import assert_reproduction
 
 from .models import *
 
@@ -218,6 +218,12 @@ def test_vector_bound(square_test_model):
     res = [r for r in res if r.startswith("local/IdealMix/")]
     ref = ["local/IdealMix/n/CH3-(CH2)2-CH3", "local/IdealMix/n/CH3-CH2-CH3"]
     assert res == ref
+
+
+def test_hierarchy_port(model_with_material_hierarchy):
+    numeric = NumericHandler(model_with_material_hierarchy.top())
+    x = numeric.arguments["vectors"]["states"].magnitude.nonzeros()
+    assert_allclose(x, [298.15, 101325, 1])
 
 
 def check_same_keys(dic1, dic2):

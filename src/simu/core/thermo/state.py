@@ -1,15 +1,17 @@
 """Module defining classes related to thermodynamic state representation"""
+
 # stdlib modules
-from typing import Self
+from typing import Self, Type, TypeVar
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from pint import DimensionalityError
 
 # internal modules
-from ..utilities import Quantity, qvertcat
-from ..utilities.types import Map, NestedMap
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.types import Map, NestedMap
+from simu.core.utilities.errors import DimensionalityError
+
 from .species import SpeciesDefinition
 
 @dataclass
@@ -138,3 +140,19 @@ class StateDefinition(ABC):
         complete it. Missing elements shall be filled with None.
         """
         ...
+
+
+all_states: list[Type[StateDefinition]] = []
+"""List of all state definitions that are registered via 
+:func:`simu.register_state`"""
+
+T = TypeVar("T", bound=StateDefinition)
+
+
+def registered_state(cls: Type[T]) -> Type[T]:
+    """A class decorator to be applied to :class:`simu.StateDefinition`.
+    All classes registered this way can be received as the list
+    ``simu.all_states``.
+    """
+    all_states.append(cls)
+    return cls

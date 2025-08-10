@@ -1,13 +1,13 @@
 from numpy import linspace
 from numpy.testing import assert_allclose
 
-from simu import R_GAS, InitialState
+from simu import R_GAS, InitialState, jacobian, QFunction, Quantity
 from simu.app.thermo.contributions.iapws.standard import (
     ReducedStateIAPWS, StandardStateIAPWS, IdealGasIAPWS)
 from simu.core.utilities.testing import assert_reproduction
-from simu.core.utilities.quantity import jacobian, QFunction, Quantity
 
 from .utils import sym, vec
+
 
 def test_reduced_state_iapws(species_definitions_ab):
     res = {"T": sym("T", "K"), "V": sym("V", "m^3"), "n": vec("n", 2, "mol"),
@@ -20,14 +20,16 @@ def test_reduced_state_iapws(species_definitions_ab):
     }
     assert_reproduction(reference)
 
+
 def test_standard_state_iapws(species_definitions_h2o):
     res = {"T": sym("T", "K"), "n": vec("n", 1, "mol"),
            "_tau": sym("tau", "")}
     cont = StandardStateIAPWS(species_definitions_h2o)
     cont.define(res)
 
-    assert f"{res["mu"].units:~}" == "J / mol"
-    assert f"{res["S"].units:~}" == "J / K"
+    assert f"{res['mu'].units:~}" == "J / mol"
+    assert f"{res['S'].units:~}" == "J / K"
+
 
 def test_standard_state_iapws_deri(species_definitions_h2o):
     res_0 = {"T": sym("T", "K"), "V": sym("V", "m^3"), "n": vec("n", 1, "mol"),
@@ -118,6 +120,7 @@ def test_iapws_ideal_gas_entropy(iapws_ideal_gas_model):
              205.34, 206.48]  # from NIST at same volume
     assert_allclose(s, s_ref, rtol=1e-4)
 
+
 def test_iapws_call(iapws_model):
     frame, param = iapws_model
     state = [373.15, 1e-2, 1.0]
@@ -125,6 +128,7 @@ def test_iapws_call(iapws_model):
     z = (res["p"] * res["V"] /
          (R_GAS * res["T"] * res["n"]))
     assert 0.93 < z < 0.94
+
 
 def test_iapws_equilibrium(iapws_model):
     frame, param = iapws_model
@@ -151,6 +155,7 @@ def test_iapws_equilibrium(iapws_model):
         dp_rel = 1 - p_gas["p"].to("bar").m / pres
         assert abs(dmu) < 1, f"T = {temp} K"
         assert abs(dp_rel) < 1e-4,  f"T = {temp} K"
+
 
 def test_iapws_derivatives(iapws_model):
     frame, param = iapws_model

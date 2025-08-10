@@ -1,12 +1,12 @@
 from yaml import safe_load
 from pytest import fixture
 
-from simu import (SpeciesDefinition, SymbolQuantity, base_unit, ThermoFactory,
+from simu import (SpeciesDefinition, SymbolQuantity, base_unit,
                   parse_quantities_in_struct)
 from simu.core.utilities.types import Map
-from simu.app import (
-    all_contributions, BostonMathiasAlphaFunction, HelmholtzState)
-from simu.app.data import DATA_DIR
+from simu.app import (DATA_DIR, RegThermoFactory, ThermoStructure)
+from simu.app.thermo.contributions.cubic.core import BostonMathiasAlphaFunction
+
 
 
 @fixture(scope="session")
@@ -50,10 +50,7 @@ def boston_mathias_alpha_function(species_definitions_ab):
 @fixture(scope="session")
 def frame_factory():
     """Create a ThermoFactory and register standard state contributions"""
-    fac = ThermoFactory()
-    fac.register(*all_contributions)
-    fac.register_state_definition(HelmholtzState)
-    return fac
+    return RegThermoFactory()
 
 
 @fixture(scope="session")
@@ -72,10 +69,7 @@ def simple_frame(frame_factory):
 
 
 @fixture(scope="session")
-def iapws_ideal_gas_model(species_definitions_h2o):
-    fac = ThermoFactory()
-    fac.register(*all_contributions)
-    fac.register_state_definition(HelmholtzState)
+def iapws_ideal_gas_model(species_definitions_h2o, frame_factory):
     config = {
         "species": ["H2O"],
         "state": "HelmholtzState",
@@ -84,29 +78,37 @@ def iapws_ideal_gas_model(species_definitions_h2o):
             "StandardStateIAPWS", "IdealGasIAPWS"
         ]
     }
-    frame = fac.create_frame(species_definitions_h2o, config)
-    with open(DATA_DIR / "parameters_iapws.yml") as file:
+    frame = frame_factory.create_frame(species_definitions_h2o, config)
+    with open(DATA_DIR / "parameters" / "iapws_parameters_h2o.yml") as file:
         params = parse_quantities_in_struct(safe_load(file)["data"])
+    del params["LiquidIAPWSIdealMix"], params["GasIAPWSIdealMix"]
     params = {k: v for k, v in params.items() if not k.startswith("Residual")}
     return frame, params
+
 
 @fixture(scope="session")
 def iapws_model(species_definitions_h2o):
     return make_iapws_fixture(species_definitions_h2o)
 
+
 @fixture(scope="session")
 def iapws_model_liquid(species_definitions_h2o):
     return make_iapws_fixture(species_definitions_h2o, "LiquidIAPWSIdealMix")
+
 
 @fixture(scope="session")
 def iapws_model_gas(species_definitions_h2o):
     return make_iapws_fixture(species_definitions_h2o, "GasIAPWSIdealMix")
 
 
+@fixture(scope="session")
+def rk_h2o_frame(species_definitions_h2o, frame_factory):
+    name = "Boston-Mathias-Redlich-Kwong-Liquid"
+    structure = ThermoStructure.from_predefined(name)
+    return frame_factory.create_frame(species_definitions_h2o, structure)
+
 def make_iapws_fixture(species_def, phase_contribution: str = None):
-    fac = ThermoFactory()
-    fac.register(*all_contributions)
-    fac.register_state_definition(HelmholtzState)
+    fac = RegThermoFactory()
     contributions = [
         "MolecularWeight", "ReducedStateIAPWS", "StandardStateIAPWS",
         "IdealGasIAPWS", "Residual1IAPWS", "Residual2IAPWS",
@@ -121,7 +123,8 @@ def make_iapws_fixture(species_def, phase_contribution: str = None):
         "contributions": contributions
     }
     frame = fac.create_frame(species_def, config)
-    with open(DATA_DIR / "parameters_iapws.yml") as file:
+    with open(DATA_DIR / "parameters" / "iapws_parameters_h2o.yml") as file:
         params = parse_quantities_in_struct(safe_load(file)["data"])
     params = {n: v for n, v in params.items() if n in contributions}
     return frame, params
+

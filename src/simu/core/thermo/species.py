@@ -1,12 +1,14 @@
 """This module defines data structures to host the global species list"""
 
+# stdlib
 from typing import Self
 from dataclasses import dataclass, field
 from collections.abc import Mapping, Iterator, Sequence
 
-from ..utilities import Quantity
-from ..utilities.structures import Map
-from ..utilities.molecules import FormulaParser
+# internal
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.types import Map
+from simu.core.utilities.molecules import FormulaParser
 
 _PARSER = FormulaParser()
 

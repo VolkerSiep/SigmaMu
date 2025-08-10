@@ -5,14 +5,16 @@ the building blocks of a :class:`ThermoFrame` function object."""
 # stdlib modules
 from abc import ABC, abstractmethod
 from collections.abc import Sequence, MutableSequence
-from typing import Any
+from typing import Any, Type, TypeVar
 
 # internal modules
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.qstructures import ParameterDictionary, QuantityDict
+from simu.core.utilities.residual import ResidualHandler, ResidualProxy
+from simu.core.utilities.types import Map, MutMap
+
 from .species import SpeciesDefinition
 from .state import InitialState
-from ..utilities import Quantity, ParameterDictionary, QuantityDict
-from ..utilities.residual import ResidualHandler, ResidualProxy
-from ..utilities.types import Map, MutMap
 
 
 class ThermoContribution(ABC):
@@ -197,3 +199,21 @@ class ThermoContribution(ABC):
           names are used.
         """
         self.__vector_props[name] = self.species if keys is None else keys
+
+
+
+all_contributions : list[Type[ThermoContribution]] = []
+"""List of all contributions that are registered via 
+:func:`simu.register_contribution`"""
+
+
+T = TypeVar("T", bound=ThermoContribution)
+
+
+def registered_contribution(cls: Type[T]) -> Type[T]:
+    """A class decorator to be applied to :class:`simu.ThermoContribution`.
+    All classes registered this way can be received as the list
+    ``simu.all_contributions``.
+    """
+    all_contributions.append(cls)
+    return cls

@@ -1,7 +1,10 @@
-from ..utilities import Quantity
-from ..utilities.types import Map
+from typing import NewType
 
-BoundProxy = Map["Quantity"]
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.types import Map
+
+BoundProxy = Map[Quantity]
+"""A map of quantities, interpreted as variables to stay positive"""
 
 
 class BoundHandler(BoundProxy):

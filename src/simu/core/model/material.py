@@ -6,9 +6,9 @@ from typing import Optional
 from collections.abc import Iterator, Collection
 
 # internal modules
-from ..thermo.material import MaterialSpec, Material, MaterialDefinition
-from ..utilities.types import Map, MutMap
-from ..utilities.errors import DataFlowError
+from simu.core.thermo.material import MaterialSpec, Material, MaterialDefinition
+from simu.core.utilities.types import Map, MutMap
+from simu.core.utilities.errors import DataFlowError
 
 
 class MaterialHandler(Map[Material]):
@@ -98,6 +98,14 @@ class MaterialProxy(Map[MaterialSpec]):
             raise ValueError(f"Provided material on port {name} is "
                              "incompatible to the provided material object")
         self.__connected[name] = material
+
+    def connect_many(self, **materials: Material):
+        """Connect several materials at once, calling :meth:`connect` for each
+        specification. This method can obviously only be used if the names of
+        the ports are valid variable identifiers in python.
+        """
+        for name, material in materials.items():
+            self.connect(name, material)
 
     def free_ports(self) -> Collection[str]:
         """Return collection of all ports that are yet free"""

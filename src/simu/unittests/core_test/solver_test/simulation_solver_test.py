@@ -1,11 +1,11 @@
 from typing import cast
 from pytest import fixture, raises
 
-from simu import NumericHandler, SimulationSolver, Quantity
+from simu import (
+    NumericHandler, SimulationSolver, Quantity, quantity_dict_to_strings)
 from simu.core.utilities.residual import ResidualHandler
 from simu.core.utilities.errors import NonSquareSystem
-from simu.core.utilities.qstructures import quantity_dict_to_strings
-from simu.core.utilities import assert_reproduction
+from simu.core.utilities.testing import assert_reproduction
 from simu.examples.material_model import Source
 
 

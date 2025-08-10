@@ -7,16 +7,16 @@ from pytest import mark, raises
 from matplotlib import pyplot
 
 # internal modules
-from simu.core.utilities import (
-    assert_reproduction, ParameterDictionary,
-    jacobian, QFunction, Quantity as Q, base_magnitude, qsum, unit_registry)
-from simu.core.utilities.constants import R_GAS
-from simu.core.thermo import InitialState
-from simu.app.thermo.contributions import (
-    CriticalParameters, LinearMixingRule, RedlichKwongEOSLiquid,
-    RedlichKwongEOSGas, NonSymmetricMixingRule, RedlichKwongAFunction,
-    RedlichKwongBFunction, RedlichKwongMFactor, VolumeShift)
-from simu.app.thermo.contributions.cubic.rk import RedlichKwongEOS
+from simu import (
+    ParameterDictionary, jacobian, QFunction, base_magnitude, qsum,
+    unit_registry, InitialState, R_GAS, Quantity as Q)
+from simu.core.utilities.testing import assert_reproduction
+
+from simu.app.thermo.contributions.cubic.core import (
+    CriticalParameters, LinearMixingRule, NonSymmetricMixingRule, VolumeShift)
+from simu.app.thermo.contributions.cubic.rk import (
+    RedlichKwongEOSLiquid, RedlichKwongEOSGas, RedlichKwongAFunction,
+    RedlichKwongBFunction, RedlichKwongMFactor, RedlichKwongEOS)
 
 from .utils import sym, vec
 

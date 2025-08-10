@@ -48,7 +48,6 @@ nitpick_ignore = [
     ("py:class", "casadi.casadi.SX"),  # no clue why it tries to find this!?
 ]
 
-
 # autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 autodoc_class_signature = 'separated'
@@ -115,7 +114,7 @@ mathjax3_config = {
 rst_prolog = r"""
 .. |m3| replace:: m\ :sup:`3`
 .. |degC| replace:: °C
-.. |SigmaMu| replace:: :math:`\color{blue}\mathrm{SigmaMu}`
+.. |SigmaMu| replace:: :math:`\color{#0044aa}\mathtt{SigmaMu}`
 """
 
 rst_epilog = r"""
@@ -126,7 +125,6 @@ rst_epilog = r"""
 .. _Pint: https://pint.readthedocs.io
 .. _PyYAML: https://pyyaml.org/
 .. _PyPardiso: https://pypi.org/project/pypardiso/
-.. _matplotlib: https://matplotlib.org/
 .. _Sphinx: https://www.sphinx-doc.org
 .. _sphinxcontrib-bibtex: https://github.com/mcmtroffaes/sphinxcontrib-bibtex
 .. _sphinx-licenseinfo: https://sphinx-licenseinfo.readthedocs.io/

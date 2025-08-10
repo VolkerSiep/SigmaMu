@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
-
 # internal modules
-from simu import jacobian, ThermoContribution
+from simu.core.utilities.quantity import jacobian
+from simu.core.thermo.contribution import ThermoContribution, registered_contribution
 
 
+@registered_contribution
 class Derivative(ThermoContribution):
     r"""This auxiliary contribution provides the derivative of an arbitrary
     property with respect to an independent (state) variable. This can for

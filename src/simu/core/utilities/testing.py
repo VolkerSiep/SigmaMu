@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """auxiliary routines for unit testing"""
 
 # stdlib modules
@@ -7,6 +6,7 @@ from inspect import currentframe, getouterframes
 from pathlib import Path
 from difflib import Differ
 
+# external modules
 from casadi import SX
 
 SX.__json__ = SX.__str__

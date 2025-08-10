@@ -1,55 +1,57 @@
 Reference state, standard state, and ideal contributions
 ========================================================
 
+.. currentmodule:: simu.app.thermo.contributions.basic
+
 H0S0ReferenceState
 ------------------
-.. autoclass:: simu.app.H0S0ReferenceState
+.. autoclass:: H0S0ReferenceState
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 LinearHeatCapacity
 ------------------
-.. autoclass:: simu.app.LinearHeatCapacity
+.. autoclass:: LinearHeatCapacity
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 StandardState
 -------------
-.. autoclass:: simu.app.StandardState
+.. autoclass:: StandardState
   :exclude-members: __init__, __new__
 
 IdealMix
 --------
-.. autoclass:: simu.app.IdealMix
+.. autoclass:: IdealMix
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 GibbsIdealGas
 -------------
-.. autoclass:: simu.app.GibbsIdealGas
+.. autoclass:: GibbsIdealGas
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 HelmholtzIdealGas
 -----------------
-.. autoclass:: simu.app.HelmholtzIdealGas
+.. autoclass:: HelmholtzIdealGas
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 ConstantGibbsVolume
 -------------------
-.. autoclass:: simu.app.ConstantGibbsVolume
+.. autoclass:: ConstantGibbsVolume
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 MolecularWeight
 ---------------
-.. autoclass:: simu.app.MolecularWeight
+.. autoclass:: MolecularWeight
   :show-inheritance:
   :exclude-members: __init__, __new__
 
 ChargeBalance
 -------------
-.. autoclass:: simu.app.ChargeBalance
+.. autoclass:: ChargeBalance
   :show-inheritance:
   :exclude-members: __init__, __new__

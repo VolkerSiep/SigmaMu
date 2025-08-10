@@ -2,6 +2,7 @@
 This module contains general helper functions that are useful on several
 levels, while relying to maximal degree on standard python structures.
 """
+# stdlib
 from re import escape, split
 from typing import TypeVar, Callable
 from collections import Counter
@@ -11,6 +12,7 @@ from .types import NestedMap, MutMap, Map, NestedMutMap
 
 _V = TypeVar("_V")
 _R = TypeVar("_R")
+
 FLATTEN_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 
@@ -55,10 +57,11 @@ def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:
         return {prefix: structure}  # type: ignore
 
     result: MutMap[_V] = {}
-    # must sort to create the same sequence every time
-    # (dictionary might have content permuted)
+    # We must sort to create the same sequence each time
+    #   (dictionary might have content permuted)
     for key, value in sorted(items):
-        key = str(key).replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")  # esc. separator
+        # esc. separator
+        key = str(key).replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")
         key = f"{prefix}{FLATTEN_SEPARATOR}{key}" if prefix else key
         result.update(flatten_dictionary(value, key))
     return result

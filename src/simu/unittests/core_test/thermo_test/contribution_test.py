@@ -4,12 +4,11 @@
 from pytest import raises
 
 # internal modules
-from simu.core.thermo import InitialState, SpeciesDefinition
-from simu.app.thermo.contributions import (
+from simu import InitialState, SpeciesDefinition, Quantity, ParameterDictionary
+from simu.app.thermo.contributions.basic import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
     LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight, ChargeBalance)
-from simu.core.utilities import (
-    ParameterDictionary, Quantity, assert_reproduction)
+from simu.core.utilities.testing import assert_reproduction
 
 from .utils import sym, vec
 

@@ -1,7 +1,9 @@
+# stdlib
 from abc import abstractmethod
 from typing import Any
 from inspect import currentframe, getargvalues
 
+# internal
 from .types import Map
 
 
