@@ -1,25 +1,28 @@
 from casadi import DM
 
-from simu import ThermoContribution, qsum, registered_contribution, Quantity
+from simu import (
+    ThermoContribution, qsum, registered_contribution, Quantity,
+    SpeciesDefinition, qvertcat)
+
 
 @registered_contribution
 class GenericProperties(ThermoContribution):
     r"""Provide basic derived thermodynamic properties:
 
-    ========= ================================= ======================
-    Property  Description                               Symbol
-    ========= ================================= ======================
+    ========= ================================= ==============
+    Property  Description                       Symbol
+    ========= ================================= ==============
     ``G``     Total Gibbs free energy [J]/[W]   :math:`G`
     ``H``     Total enthalpy [J]/[W]            :math:`H`
     ``A``     Total Helmholtz energy [J]/[W]    :math:`A`
     ``U``     Total inner energy [J]/[W]        :math:`U`
     ``N``     Total moles [mol]/[mol/s]         :math:`N`
     ``M``     Total mass [kg]/[kg/s]            :math:`M`
-    ``m``     Partial mass flows [kg]/[kg/s]    :math:`m_i`
+    ``m``     Partial mass (flows) [kg]/[kg/s]  :math:`m_i`
     ``x``     Mole fractions [-]                :math:`x_i`
     ``w``     Mass fractions [-]                :math:`w_i`
     ``Mw``    Average molecular weight [kg/mol] :math:`\bar M`
-    ========= ================================= ======================
+    ========= ================================= ==============
 
     With entropy :math:`S`, chemical potential :math:`\mu_i` and molecular
     weights :math:`M_i`, it is
@@ -58,9 +61,39 @@ class GenericProperties(ThermoContribution):
             self.declare_vector_keys(name)
 
 
+@registered_contribution
 class Elemental(ThermoContribution):
-    """Provide flows or quantities per chemical element"""
-    provides = ["n_e", "x_e", "N_e"]
+    r"""Provide flows or quantities per chemical element as follows:
+
+    ========= ================================= ================
+    Property  Description                       Symbol
+    ========= ================================= ================
+    ``n_e``   Elemental moles                   :math:`n_{e,j}`
+    ``x_e``   Elemental mole fractions          :math:`x_{e,j}`
+    ``N_e``   Total elemental moles             :math:`N_{e}`
+    ``m_e``   Elemental masses                  :math:`m_{e,j}`
+    ``w_e``   Elemental mass fractions          :math:`w_{e,j}`
+    ========= ================================= ================
+
+    Based on the parsed chemical formulae of each species, the contribution
+    first determines the super-set of occurring elements
+    :math:`\mathbb E_\cup = \bigcup_{i\in\mathbb S} \mathbb E_i`.
+    The set is handled as a sorted list for reproducibility. Stoichiometric
+    coefficients :math:`\nu_{ij}` describe the occurrence of element :math:`j`
+    in species :math:`i`. Then, and with atomic weights :math:`M_j`:
+
+    .. math::
+      :nowrap:
+
+      \begin{alignat}{3}
+        n_{e,j} &= \sum_{i\in\mathbb S} \nu_{ij}\cdot n_i &\qquad
+        \dot N_e & = \sum_{j\in\mathbb E_\cup} \dot n_{e,j} &\qquad
+        x_e & = n_{e,j} / N_e\\
+        m_{e,j} &= M_j \, n_{e,j} &&&
+        w_{e,j} & =  m_{e,j} / \sum_{k\in\mathbb E_\cup} m_{e, k}
+      \end{alignat}
+    """
+    provides = ["n_e", "x_e", "N_e", "m_e", "w_e"]
 
     def define(self, res):
         n = res["n"]
@@ -70,15 +103,19 @@ class Elemental(ThermoContribution):
         for definition in self.species_definitions.values():
             all_elements |= definition.elements.keys()
         all_elements = sorted(all_elements)
+        aw = SpeciesDefinition.formula_parser.atomic_weights
+        w_e = qvertcat(*[aw[e] for e in all_elements])
 
         # create stoichiometry matrix
-        stoi = Quantity(DM(
+        stoichiometry = Quantity(DM(
             [[definition.elements.get(e, 0) for e in all_elements]
             for definition in self.species_definitions.values()]))
 
-        res["n_e"] = stoi.T @ n
+        res["n_e"] = stoichiometry.T @ n
         res["N_e"] = qsum(res["n_e"])
         res["x_e"] = res["n_e"] / res["N_e"]
+        res["m_e"] = res["n_e"] * w_e
+        res["w_e"] = res["m_e"] / qsum(res["m_e"])
 
-        for name in ["n_e", "x_e"]:
+        for name in ["n_e", "x_e", "m_e", "w_e"]:
             self.declare_vector_keys(name, all_elements)

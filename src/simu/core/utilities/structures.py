@@ -18,17 +18,18 @@ FLATTEN_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 class MCounter(Counter):
     """This is a slight extention of the ``Collections.Counter`` class
-    to also allow multiplication with integers:
+    to also allow multiplication with scalar numbers:
 
-        >>> a = MCounter({"a": 1})
-        >>> b = MCounter({"b": 1})
-        >>> a + 2 * b
-        MCounter({'b': 2, 'a': 1})
+    >>> a = MCounter({"a": 1})
+    >>> b = MCounter({"b": 1})
+    >>> a + 2.5 * b
+    MCounter({'b': 2.5, 'a': 1})
+
+    Note that we stretch the use of MCounter to allow floats. Therefore the
+    ``elements`` method is removed as a compromise in design.
     """
 
     def __mul__(self, other):
-        if not isinstance(other, int):
-            raise TypeError("Non-int factor")
         return MCounter({k: other * v for k, v in self.items()})
 
     def __rmul__(self, other):
@@ -39,6 +40,9 @@ class MCounter(Counter):
 
     def __pos__(self):
         return self
+
+    def elements(self):
+        raise NotImplemented
 
 
 def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:

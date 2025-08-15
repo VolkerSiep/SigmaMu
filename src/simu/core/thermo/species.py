@@ -10,7 +10,6 @@ from simu.core.utilities.quantity import Quantity
 from simu.core.utilities.types import Map
 from simu.core.utilities.molecules import FormulaParser
 
-_PARSER = FormulaParser()
 
 @dataclass
 class SpeciesDefinition:
@@ -28,6 +27,8 @@ class SpeciesDefinition:
     >>> print(f"{a.charge:~}")
     -3 e / mol
     """
+    formula_parser = FormulaParser()
+
     formula: str
     """The formula as it was given in the constructor. The admitted formula 
     syntax is described with examples for the
@@ -43,9 +44,10 @@ class SpeciesDefinition:
     species' molecule"""
 
     def __post_init__(self):
-        self.elements = dict(_PARSER.parse(self.formula))
-        self.molecular_weight = _PARSER.molecular_weight(self.formula)
-        self.charge = _PARSER.charge(self.formula)
+        parser = SpeciesDefinition.formula_parser
+        self.elements = dict(parser.parse(self.formula))
+        self.molecular_weight = parser.molecular_weight(self.formula)
+        self.charge = parser.charge(self.formula)
 
 
 class SpeciesDB(Mapping[str, SpeciesDefinition]):

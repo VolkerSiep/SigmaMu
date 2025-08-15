@@ -22,5 +22,12 @@ def test_elemental():
     res = {"n": vec("n", 3, "mol"), "mw": vec("mw", 3, "kg/mol")}
     cont = Elemental(species, {})
     cont.define(res)
+
+    # all vectors same?
+    for key, elem in cont.vectors.items():
+        assert elem == ["H", "Na", "O", "S"], key
+    assert cont.vectors.keys() == {"m_e", "n_e", "w_e", "x_e"}
+
+    # reproduce calculation
     props = {n: f"{res[n]:~}" for n in Elemental.provides}
-    assert_reproduction({"props": props, "vectors": cont.vectors})
+    assert_reproduction(props)

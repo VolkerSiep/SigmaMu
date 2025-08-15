@@ -86,24 +86,6 @@ class FormulaParser:
         With crystal water and another solvent:
             >>> parser.parse("CuSO4·3H2O·2(CH3)-COOH")
             MCounter({'H': 14, 'O': 11, 'C': 4, 'Cu': 1, 'S': 1})
-
-        .. warning::
-
-            This code uses the evil ``eval`` function that yields potential and
-            very real security risks in certain contexts. Here it is considered
-            safe for the following reasons.
-
-            - the expression must come from a valid formula and is modified
-                into the expression itself.
-            - global variable dictionary is set to be empty, and local
-                variables are only the element counter objects
-            - SiMu is running on the PC of the user. Even if the high level
-                models are published via network, the formulae are not part of
-                the remote user interface.
-
-        However, If this code was used to offer a web-based formula parser,
-        some evil genius might in theory find a way to harm the host system
-        this way.
         """
 
         def repl_el(arg):

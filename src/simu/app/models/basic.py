@@ -1,4 +1,4 @@
-from collections.abc import Container
+from collections.abc import Container, Iterator
 
 from abc import ABC
 from simu import AModel, QuantityDict, Quantity
@@ -10,6 +10,17 @@ class MultiNode(AModel, ABC):
 
     The inlet ports are called ``in_01``, ``in_02``, ``in_03``, etc.
     The outlet ports are called ``out_01``, ``out_02``, ``out_03``, etc.
+
+    Subclasses still need to implement the :meth:`~simu.Model.define` method.
+
+    Using this base-class is a good practice to maintain a standard naming of
+    inlet and outlet ports for models with generic character and indistinct
+    ports, such as in mixers or splitters. Please do not do this for Models
+    where ports have individual roles. In that case, individual naming, such as
+    ``cold_in`` or ``gas_out`` are preferable.
+
+    Further, the ports defined in this class do not apply specific material
+    specifications.
 
     :param num_in: The number of inlet streams to consider
     :param num_out: The number of outlet streams to consider
@@ -24,11 +35,13 @@ class MultiNode(AModel, ABC):
         for name in self.out_names():
             self.md(name)
 
-    def in_names(self):
+    def in_names(self) -> Iterator[str]:
+        """A generator to yield the names of all input ports"""
         for i in range(self._num_in):
             yield f"in_{i + 1:02d}"
 
-    def out_names(self):
+    def out_names(self) -> Iterator[str]:
+        """A generator to yield the names of all output ports"""
         for i in range(self._num_out):
             yield f"out_{i + 1:02d}"
 
