@@ -1,4 +1,6 @@
-from simu import ThermoContribution, qsum, registered_contribution
+from casadi import DM
+
+from simu import ThermoContribution, qsum, registered_contribution, Quantity
 
 @registered_contribution
 class GenericProperties(ThermoContribution):
@@ -54,3 +56,29 @@ class GenericProperties(ThermoContribution):
 
         for name in ("m", "x", "w"):
             self.declare_vector_keys(name)
+
+
+class Elemental(ThermoContribution):
+    """Provide flows or quantities per chemical element"""
+    provides = ["n_e", "x_e", "N_e"]
+
+    def define(self, res):
+        n = res["n"]
+
+        # find all elements
+        all_elements = set()
+        for definition in self.species_definitions.values():
+            all_elements |= definition.elements.keys()
+        all_elements = sorted(all_elements)
+
+        # create stoichiometry matrix
+        stoi = Quantity(DM(
+            [[definition.elements.get(e, 0) for e in all_elements]
+            for definition in self.species_definitions.values()]))
+
+        res["n_e"] = stoi.T @ n
+        res["N_e"] = qsum(res["n_e"])
+        res["x_e"] = res["n_e"] / res["N_e"]
+
+        for name in ["n_e", "x_e"]:
+            self.declare_vector_keys(name, all_elements)
