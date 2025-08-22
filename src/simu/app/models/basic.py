@@ -56,6 +56,8 @@ class SpeciesBalance(MultiNode):
     by most thermodynamic models (e.g. the ideal mix term :math:`\ln x_i` would
     diverge to negative infinity.
 
+
+
     :param num_in: The number of inlet streams to consider
     :param num_out: The number of outlet streams to consider
     :param tol_unit: The tolerance unit, representing a typical order of

@@ -143,7 +143,7 @@ class RedlichKwongEOS(ThermoContribution, ABC):
             C_n = res[f"{c_name}_n"] = jacobian(res[c_name], n).T  # jacobian transposes
         else:
             C = res[c_name] = Quantity(SX(1, 1), "m**3/mol") * n.units
-            C_t = res[f"{c_name}_T"] = Quantity(SX(1, 1), "m**3/mol/K") * n
+            C_t = res[f"{c_name}_T"] = Quantity(SX(1, 1), "m**3/mol/K") * n.units
             C_n = res[f"{c_name}_n"] = Quantity(SX(*n.shape), "m**3/mol")
 
         # common terms

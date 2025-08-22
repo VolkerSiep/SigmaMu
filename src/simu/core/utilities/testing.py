@@ -54,6 +54,12 @@ def assert_reproduction(result, suffix=None):
                 file.write(dumps(data))
         return data
 
+    def save_data(data):
+        """Save the reference data to the file"""
+        ref_data_all[func_name] = data
+        with open(filename, "w", encoding="utf-8") as file:
+            file.write(dumps(ref_data_all, sort_keys=True, indent=2))
+
     frame = getouterframes(currentframe())[1]
     caller_file = Path(frame.filename)
     filename = caller_file.absolute().parent / FILENAME
@@ -65,15 +71,9 @@ def assert_reproduction(result, suffix=None):
     func_name = f"{caller_file.name}::{func_name}"
     if suffix:
         func_name = f"{func_name}_{suffix}"
-    ref_data = ref_data_all.get(func_name, None)
-
-    def save_data(data):
-        """Save the reference data to the file"""
-        ref_data_all[func_name] = data
-        with open(filename, "w", encoding="utf-8") as file:
-            file.write(dumps(ref_data_all, sort_keys=True, indent=2))
-
-    if ref_data is None:
+    try:
+        ref_data = ref_data_all[func_name]
+    except KeyError:
         msg = (f"No reference data exists for {func_name}. " +
                "The following data is generated now:\n\n" +
                dumps(result, indent=2, sort_keys=True) +

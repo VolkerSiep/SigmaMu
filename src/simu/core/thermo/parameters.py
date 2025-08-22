@@ -234,7 +234,7 @@ class ThermoParameterStore:
                 else:
                     return result, source_name
             else:
-                raise KeyError("Parameter not found")
+                raise KeyError("Parameter not found: ", ".".join(path))
 
         def extract(path: list[str],
                     struct: Quantity | NestedMutMap[Quantity]) -> _RT:

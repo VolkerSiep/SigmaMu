@@ -80,7 +80,7 @@ class MaterialSpec:
         return flow_comp and not ((spe - mspe) or (locked and (mspe - spe)))
 
 
-class Material(MutMap[Quantity]):
+class Material(MutMap[Quantity | QuantityDict]):
     """This class represents a material"""
 
     definition: "MaterialDefinition"

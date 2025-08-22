@@ -1,10 +1,17 @@
+# TODO: I should be able to mock the thermo layer or even facilitate to create
+#  MaterialDefinition mocks in utilities.testing
+
 from yaml import safe_load
 from pytest import fixture
 
 
 from simu import (MaterialDefinition, SpeciesDB, StringDictThermoSource,
-                  InitialState, ThermoParameterStore, ThermoFrame)
+                  InitialState, ThermoParameterStore, ThermoFrame, AModel)
 from simu.app import DATA_DIR, RegThermoFactory, ThermoStructure
+
+from simu.unittests.stubs.material import MaterialDefinitionStub
+
+from simu.app.models.basic import SpeciesBalance
 
 SPECIES_FILE = DATA_DIR / "species.yml"
 PARAM_FILE = DATA_DIR/ "parameters" / "general_example_parameters.yml"
@@ -65,7 +72,38 @@ def material_h2o_c3_gas(frame_h2o_c3_gas, thermo_store) -> MaterialDefinition:
 
 
 @fixture(scope="session")
-def material_h2o_c4_gas(frame_c3_c4_gas, thermo_store) -> MaterialDefinition:
+def material_c3_c4_gas(frame_c3_c4_gas, thermo_store) -> MaterialDefinition:
     initial_state = InitialState.from_std(2)
     return MaterialDefinition(frame_c3_c4_gas, initial_state, thermo_store)
 
+@fixture(scope="session")
+def species_balance_example_model(material_h2o_c3_gas, material_c3_c4_gas):
+
+    class Process(AModel):
+        def define(self):
+            self.mcf("in_01", material_h2o_c3_gas)
+            self.mcf("in_02", material_c3_c4_gas)
+            self.mcf("out_01", material_c3_c4_gas)
+            self.mcf("out_02", material_h2o_c3_gas)
+
+            with self.ha("n_bal", SpeciesBalance, num_in=2, num_out=2) as unit:
+                unit.mcm(**self.m)
+
+    return Process
+
+@fixture(scope="session")
+def species_balance_example_model_stub():
+    material_h2o_c3_gas = MaterialDefinitionStub(["H2O", "C3"])
+    material_c3_c4_gas = MaterialDefinitionStub(["H2O", "C3"])
+
+    class Process(AModel):
+        def define(self):
+            self.mcf("in_01", material_h2o_c3_gas)
+            self.mcf("in_02", material_c3_c4_gas)
+            self.mcf("out_01", material_c3_c4_gas)
+            self.mcf("out_02", material_h2o_c3_gas)
+
+            with self.ha("n_bal", SpeciesBalance, num_in=2, num_out=2) as unit:
+                unit.mcm(**self.m)
+
+    return Process

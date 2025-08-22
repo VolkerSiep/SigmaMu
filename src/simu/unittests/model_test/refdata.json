@@ -74,12 +74,6 @@
           },
           "MixingRule_A": {
             "T_ref": "K"
-          },
-          "VolumeShift": {
-            "c_i": {
-              "H2O": "m ** 3 / mol",
-              "NO2": "m ** 3 / mol"
-            }
           }
         }
       },
@@ -190,12 +184,6 @@
           },
           "MixingRule_A": {
             "T_ref": "K"
-          },
-          "VolumeShift": {
-            "c_i": {
-              "H2O": "m ** 3 / mol",
-              "NO2": "m ** 3 / mol"
-            }
           }
         }
       },
@@ -448,12 +436,6 @@
     },
     "MixingRule_A": {
       "T_ref": "K"
-    },
-    "VolumeShift": {
-      "c_i": {
-        "H2O": "m ** 3 / mol",
-        "NO2": "m ** 3 / mol"
-      }
     }
   },
   "numeric_test.py::test_model_bounds": [
@@ -518,12 +500,6 @@
           },
           "MixingRule_A": {
             "T_ref": "K"
-          },
-          "VolumeShift": {
-            "c_i": {
-              "CH3-(CH2)2-CH3": "m ** 3 / mol",
-              "CH3-CH2-CH3": "m ** 3 / mol"
-            }
           }
         }
       },

@@ -237,11 +237,6 @@
     },
     "MixingRule_A": {
       "T_ref": "K"
-    },
-    "VolumeShift": {
-      "c_i": {
-        "H2O": "m ** 3 / mol"
-      }
     }
   }
 }
