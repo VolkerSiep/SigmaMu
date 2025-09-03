@@ -8,3 +8,4 @@ API documentation
    modelling/modelling
    solver/solver
    utilities/utilities
+   models/models.rst

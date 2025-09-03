@@ -80,6 +80,24 @@ class Quantity(_Q):
     def __rmul__(self, other) -> Self:
         return super().__rmul__(other)
 
+    def __matmul__(self, other):
+        try:
+            factor = other.magnitude
+            unit = self.units * other.units
+        except AttributeError:
+            unit = self.units
+            factor = other
+        return Quantity(self.m @ factor, unit)
+
+    def __rmatmul__(self, other):
+        try:
+            factor = other.magnitude
+            unit = self.units * other.units
+        except AttributeError:
+            factor = other
+            unit = self.units
+        return Quantity(factor @ self.m, unit)
+
     def __truediv__(self, other) -> Self:
         return super().__truediv__(other)
 
