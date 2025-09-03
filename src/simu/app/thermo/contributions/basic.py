@@ -1,12 +1,14 @@
 # stdlib modules
 from copy import copy
 
+from simu import Quantity
 # internal modules
 from simu.core.thermo.contribution import ThermoContribution, registered_contribution
 from simu.core.utilities.constants import R_GAS
 from simu.core.utilities.quantity import qsum, base_magnitude, qvertcat
 from simu.core.utilities.qstructures import log
 from simu.core.utilities.errors import DimensionalityError
+from simu.core.utilities.types import MutMap
 
 
 @registered_contribution
@@ -119,6 +121,52 @@ class LinearHeatCapacity(ThermoContribution):
         res["mu"] += d_h - T * d_s
 
         self.add_bound("T", T)  # logarithm taken
+
+
+@registered_contribution
+class BarinStandardState(ThermoContribution):
+    r"""This contribution defines the Barin standard state expression based on
+    the heat capacity expression
+
+    .. math::
+
+        c_{p,i}(T) =  a_i + b_i\,(T - T_\mathrm{ref})
+           + c_i\,(T^2 - T_\mathrm{ref}^2) + d_i\,(T^3 - T_\mathrm{ref}^3)
+           + e_i\,(T^{-1} - T_\mathrm{ref}^{-1})
+           + f_i\,(T^{-2} - T_\mathrm{ref}^{-2})
+           + g_i\,(T^{-3} - T_\mathrm{ref}^{-3})
+
+    from here, integration yields
+
+    .. math::
+
+        h_i = h_i^0 + \int_{T_\mathrm{ref}}^{T} c_{p,i}(\tau)\,\mathrm{d}\tau
+
+    and
+
+    .. math::
+
+        s_i = s_i^0 + \int_{T_\mathrm{ref}}^{T} \frac{c_{p,i}(\tau)}{\tau}\,
+          \mathrm{d}\tau
+
+    The expression for chemical potential is then
+
+    .. math::
+
+        \mu_i = h_i^0 - T\,s_i^0 +
+          \int_{T_\mathrm{ref}}^{T} c_{p,i}(\tau)\,\mathrm{d}\tau -
+          T\,\int_{T_\mathrm{ref}}^{T} \frac{c_{p,i}(\tau)}{\tau}\,
+            \mathrm{d}\tau
+
+    .. todo:: calculate all the terms, reuse formula from report
+
+    """
+
+    provides = ["T_ref", "p_ref", "S", "mu"]
+
+    def define(self, res):
+        pass
+
 
 
 @registered_contribution
