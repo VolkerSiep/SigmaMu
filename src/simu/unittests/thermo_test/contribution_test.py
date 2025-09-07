@@ -7,7 +7,8 @@ from pytest import raises
 from simu import InitialState, SpeciesDefinition, Quantity, ParameterDictionary
 from simu.app.thermo.contributions.basic import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
-    LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight, ChargeBalance)
+    LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight, ChargeBalance,
+    BarinHeatCapacity)
 from simu.core.utilities.testing import assert_reproduction
 
 from .utils import sym, vec
@@ -16,7 +17,7 @@ def test_h0s0_reference_state(species_definitions_ab):
     """Test definition of H0S0ReferenceState contribution"""
 
     res = {"T": sym("T", "K"), "n": vec("n", 2, "mol")}
-    cont = H0S0ReferenceState(species_definitions_ab, {})
+    cont = H0S0ReferenceState(species_definitions_ab)
     cont.define(res)
     to_reproduce = {
         "res": {i: str(res[i])
@@ -35,13 +36,23 @@ def test_linear_heat_capacity(species_definitions_ab):
         "S": sym("S_ref", "J/K"),
         "mu": vec("mu_ref", 2, "J/mol")
     }
-    bounds = {}
-    cont = LinearHeatCapacity(species_definitions_ab, {})
-    par = ParameterDictionary()
+    cont = LinearHeatCapacity(species_definitions_ab)
     cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
 
+def test_barin_heat_capacity(species_definitions_ab):
+    res = {
+        "T": sym("T", "K"),
+        "T_ref": sym("T_ref", "K"),
+        "n": vec("n", 2, "mol"),
+        "S": sym("S_ref", "J/K"),
+        "mu": vec("mu_ref", 2, "J/mol")
+    }
+    cont = BarinHeatCapacity(species_definitions_ab)
+    cont.define(res)
+    result = {i: str(res[i]).split(", ") for i in "S mu".split()}
+    assert_reproduction(result)
 
 def test_ideal_mix(species_definitions_ab):
     """Test definition of IdealMix contribution"""
@@ -51,8 +62,7 @@ def test_ideal_mix(species_definitions_ab):
         "S": sym("S_std", "J/K"),
         "mu": vec("mu_std", 2, "J/mol")
     }
-    bounds = {}
-    cont = IdealMix(species_definitions_ab, {})
+    cont = IdealMix(species_definitions_ab)
     cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S mu".split()}
     assert_reproduction(result)
@@ -68,7 +78,7 @@ def test_gibbs_ideal_gas(species_definitions_ab):
         "S": sym("S_im", "J/K"),
         "mu": vec("mu_im", 2, "J/mol")
     }
-    cont = GibbsIdealGas(species_definitions_ab, {})
+    cont = GibbsIdealGas(species_definitions_ab)
     cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
     assert_reproduction(result)
@@ -89,8 +99,7 @@ def test_helmholtz_ideal_gas(species_definitions_ab):
         "S": sym("S_im", "J/K"),
         "mu": vec("mu_im", 2, "J/mol")
     }
-    bounds = {}
-    cont = HelmholtzIdealGas(species_definitions_ab, {})
+    cont = HelmholtzIdealGas(species_definitions_ab)
     cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "S p mu".split()}
     assert_reproduction(result)
@@ -98,7 +107,7 @@ def test_helmholtz_ideal_gas(species_definitions_ab):
 
 def test_helmholtz_ideal_gas_initialise(species_definitions_ab):
     """Test initialisation via Helmholtz ideal gas contribution"""
-    cont = HelmholtzIdealGas(species_definitions_ab, {})
+    cont = HelmholtzIdealGas(species_definitions_ab)
     # normally, we would need to provide numeric quantities as results,
     #  but these are not used for ideal gas initialisation.
     initial_state = InitialState(temperature=Quantity("25 degC"),
@@ -118,8 +127,7 @@ def test_constant_gibbs_volume(species_definitions_ab):
         "n": vec("n", 2, "mol"),
         "mu": vec("mu_std", 2, "J/mol")
     }
-    bounds = {}
-    cont = ConstantGibbsVolume(species_definitions_ab, {})
+    cont = ConstantGibbsVolume(species_definitions_ab)
     cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "V mu".split()}
     assert_reproduction(result)
@@ -127,8 +135,8 @@ def test_constant_gibbs_volume(species_definitions_ab):
 
 def test_molecular_weight(species_definitions_ab):
     """Test definition of molecular weights"""
-    res, bounds = {}, {}
-    cont = MolecularWeight(species_definitions_ab, {})
+    res = {}
+    cont = MolecularWeight(species_definitions_ab)
     cont.define(res)
     mw = res["mw"].to("g/mol").magnitude
     assert_reproduction(str(mw))
@@ -137,22 +145,23 @@ def test_molecular_weight(species_definitions_ab):
 def test_charge_balance():
     species = {"A": SpeciesDefinition("Na:1+"),
                "B": SpeciesDefinition("Cl:1-")}
-    res, bounds = {"n": vec("n", 2, "mol")}, {}
-    cont = ChargeBalance(species, {})
+    res = {"n": vec("n", 2, "mol")}
+    cont = ChargeBalance(species)
     cont.define(res)
     res_str = str(cont.residuals["balance"].value.m)
     assert res_str == "(n_0-n_1)"
 
+
 def test_charge_balance_only_positive():
     species = {"A": SpeciesDefinition("Na:1+"),
                "B": SpeciesDefinition("K:1+")}
-    res, bounds = {"n": vec("n", 2, "mol")}, {}
-    cont = ChargeBalance(species, {})
+    res  = {"n": vec("n", 2, "mol")}
+    cont = ChargeBalance(species)
     with raises(ValueError):
         cont.define(res)
 
 def test_no_charge_balance(species_definitions_ab):
-    res, bounds = {"n": vec("n", 2, "mol")}, {}
-    cont = ChargeBalance(species_definitions_ab, {})
+    res = {"n": vec("n", 2, "mol")}
+    cont = ChargeBalance(species_definitions_ab)
     cont.define(res)
     assert not cont.residuals

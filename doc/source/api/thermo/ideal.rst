@@ -15,6 +15,12 @@ LinearHeatCapacity
   :show-inheritance:
   :exclude-members: __init__, __new__
 
+BarinHeatCapacity
+------------------
+.. autoclass:: BarinHeatCapacity
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
 StandardState
 -------------
 .. autoclass:: StandardState

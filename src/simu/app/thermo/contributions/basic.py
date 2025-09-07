@@ -124,39 +124,42 @@ class LinearHeatCapacity(ThermoContribution):
 
 
 @registered_contribution
-class BarinStandardState(ThermoContribution):
-    r"""This contribution defines the Barin standard state expression based on
-    the heat capacity expression
+class BarinHeatCapacity(ThermoContribution):
+    r"""This contribution defines the Barin heat capacity expression, slightly
+    expanded by including a :math:`T^{-1}` term. We introduce a temperature
+    scaling parameter :math:`T_s` [K] to align the physical dimension of all
+    parameters:
+
+    .. math::
+        t = \frac{T}{T_s}\quad t_\mathrm{ref} = \frac{T_\mathrm{ref}}{T_s}
 
     .. math::
 
-        c_{p,i}(T) =  a_i + b_i\,(T - T_\mathrm{ref})
-           + c_i\,(T^2 - T_\mathrm{ref}^2) + d_i\,(T^3 - T_\mathrm{ref}^3)
-           + e_i\,(T^{-1} - T_\mathrm{ref}^{-1})
-           + f_i\,(T^{-2} - T_\mathrm{ref}^{-2})
-           + g_i\,(T^{-3} - T_\mathrm{ref}^{-3})
+        c_{p,i}(T) =  a_i + b_i\,(t - t_\mathrm{ref})
+           + c_i\,(t^2 - t_\mathrm{ref}^2) + d_i\,(t^3 - t_\mathrm{ref}^3)
+           + e_i\,(t^{-1} - t_\mathrm{ref}^{-1})\\
+           + f_i\,(t^{-2} - t_\mathrm{ref}^{-2})
+           + g_i\,(t^{-3} - t_\mathrm{ref}^{-3})
 
     from here, integration yields
 
     .. math::
 
-        h_i = h_i^0 + \int_{T_\mathrm{ref}}^{T} c_{p,i}(\tau)\,\mathrm{d}\tau
+        \Delta_{c_p} h_i =
+          \int_{T_\mathrm{ref}}^{T} c_{p,i}(\tau)\,\mathrm{d}\tau
 
     and
 
     .. math::
 
-        s_i = s_i^0 + \int_{T_\mathrm{ref}}^{T} \frac{c_{p,i}(\tau)}{\tau}\,
-          \mathrm{d}\tau
+        \Delta_{c_p} s_i =
+          \int_{T_\mathrm{ref}}^{T} \frac{c_{p,i}(\tau)}{\tau}\, \mathrm{d}\tau
 
     The expression for chemical potential is then
 
     .. math::
 
-        \mu_i = h_i^0 - T\,s_i^0 +
-          \int_{T_\mathrm{ref}}^{T} c_{p,i}(\tau)\,\mathrm{d}\tau -
-          T\,\int_{T_\mathrm{ref}}^{T} \frac{c_{p,i}(\tau)}{\tau}\,
-            \mathrm{d}\tau
+        \Delta_{c_p} \mu_i= \Delta_{c_p} h_i^0 - T\,\Delta_{c_p}  s_i^0
 
     .. todo:: calculate all the terms, reuse formula from report
 
@@ -165,8 +168,34 @@ class BarinStandardState(ThermoContribution):
     provides = ["T_ref", "p_ref", "S", "mu"]
 
     def define(self, res):
-        pass
+        temp, n, temp_ref = res["T"], res["n"], res["T_ref"]
+        temp_scale = self.par_scalar("T_scale", "K")  # recommended: 1
+        c = [self.par_vector(n, self.species, "J/(mol*K)") for n in "ABCDEFG"]
 
+        # calculate reused temperature terms
+        t, t_ref = temp / temp_scale, temp_ref / temp_scale
+        log_t = log(temp / temp_ref)
+        t2, t2_ref = t * t, t_ref * t_ref
+        t3, t3_ref = t2 * t, t2_ref * t_ref
+
+        dt, dt2, dt3 = t - t_ref, t2 - t2_ref, t3 - t3_ref
+        dt4 = t2*t2 - t2_ref * t2_ref
+        dti, dti2 = 1 / t - 1 / t_ref, 1 / t2 - 1 / t2_ref
+        dti3 = 1 / t3 - 1 / t3_ref
+
+        d_h = (c[0] * dt + c[1] / 2 * dt2 + c[2] / 3 * dt3 + c[3] / 4 * dt4
+               + c[4] * dti + c[5] * dti2 + c[6] * dti3) * temp_scale
+        d_s = (c[0] * log_t + c[1] * (dt - t_ref * log_t)
+               + c[2] * (dt2 / 2 - t2_ref * log_t)
+               + c[3] * (dt3 / 3 - t3_ref * log_t)
+               - c[4] * (dti + log_t / t_ref)
+               - c[5] * (2 * dti2 + log_t / t2_ref)
+               - c[6] * (3 * dti3 + log_t / t3_ref))
+
+        res["S"] += d_s.T @ n
+        res["mu"] += d_h - temp * d_s
+
+        self.add_bound("T", temp)  # logarithm taken
 
 
 @registered_contribution

@@ -49,7 +49,7 @@ class ThermoContribution(ABC):
 
     def __init__(self, species: Map[SpeciesDefinition], options=None):
         self.species_definitions: Map[SpeciesDefinition] = species
-        self.options = options
+        self.options = {} if options is None else options
         self.reset()
 
     def reset(self):

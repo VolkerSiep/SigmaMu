@@ -15,8 +15,7 @@ sphinx:
 
 python:
   install:
-    - requirements: requirements.txt
-    - method: pip  # install simu itself
+    - method: pip  # install package itself
       path: .
       extra_requirements:
-        - dev
+        - doc
