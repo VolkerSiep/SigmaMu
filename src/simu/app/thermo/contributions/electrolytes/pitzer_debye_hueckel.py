@@ -38,7 +38,7 @@ class PitzerDebyeHueckel(ThermoContribution):
         a_gamma = (
             sqrt(2 * PI * N_A * _M0 * rho_w)
             * (EPS_0 ** 2 / (4 * PI * EPS_0 * eps_r * K_B * temp)) ** (3 / 2))
-        sq_i = sqrt(ionic_strength)
-        bsqi = b * sq_i
+        bsqi = b * (sq_i := sqrt(ionic_strength))
         res["_f_pdh"] = f = -4 / 3  * a_gamma * sq_i ** 3 * log(1 + bsqi) / bsqi
 
+        # TODO: update in mu and S, using chain rule (see iapws)
