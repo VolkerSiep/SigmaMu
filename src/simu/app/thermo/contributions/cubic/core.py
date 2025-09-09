@@ -277,4 +277,33 @@ class BostonMathiasAlphaFunction(ThermoContribution):
         # result is square of above
         res["_alpha"] = alpha * alpha
 
-        res["T"] = temp
+
+@registered_contribution
+class SRKAlphaFunction(ThermoContribution):
+    r"""This contribution represents the SRK alpha function without any
+    extrapolation for super-critical temperatures.
+
+    The following properties need to be provided upstream:
+
+    ======== ============== ===========================================
+    Property Symbol         Description
+    ======== ============== ===========================================
+    T        :math:`T`      Actual temperatures [K]
+    T_c      :math:`T_c`    Critical temperatures [K]
+    m_factor :math:`m_i`    m-factor as function of acentric factor [-]
+    ======== ============== ===========================================
+
+    .. math:: \alpha_i^{\frac12} = 1 + m_i\,(1 - \sqrt{T/T_{c,i}})
+
+    The calculated vector is provided as a property called ``alpha``
+    """
+
+    provides = ["_alpha"]
+
+    def define(self, res):
+        temp, critical_temp, m_fac = res["T"], res["_T_c"], res["_m_factor"]
+
+        # define sub and super-critical expression
+        alpha_root = 1 + m_fac * (1 - sqrt(temp / critical_temp))
+        res["_alpha"] = alpha_root * alpha_root
+

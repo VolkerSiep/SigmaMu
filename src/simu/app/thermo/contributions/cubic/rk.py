@@ -274,6 +274,25 @@ class RedlichKwongMFactor(ThermoContribution):
 
     .. math::
 
+        m_i = 0.48 + (1.57 - 0.176\,\omega_i)\,\omega_i
+    """
+
+    provides = ["_m_factor"]
+
+    def define(self, res):
+        omega = res["_omega"]
+        m = 0.48 + (1.574 - 0.176 * omega) * omega
+        res["_m_factor"] = Quantity(m)
+
+
+@registered_contribution
+class BostonMatthiasMFactor(ThermoContribution):
+    r"""This contribution calculates the Boston-Matthias m-factor that is used
+    in various alpha-functions. Based on provided acentric factors ``omega``
+    (:math:`\omega_i`), it calculates ``m_factor`` (:math:`m_i`) as
+
+    .. math::
+
         m_i = 0.48508 + (1.55171 - 0.15613\,\omega_i)\,\omega_i
     """
 
