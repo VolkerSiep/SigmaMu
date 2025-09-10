@@ -45,6 +45,11 @@ Material
    :special-members: __getitem__, __setitem__
    :members:
 
+It is possible to advise the :class:`Material` class to export also the properties with leading underscore, thus providing a valuable tool for debugging model contributions. For this purpose:
+
+.. autofunction:: simu.core.thermo.material.set_export_all_properties
+
+
 MaterialSpec
 ------------
 .. autoclass:: MaterialSpec
