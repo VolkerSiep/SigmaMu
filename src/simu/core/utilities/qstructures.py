@@ -93,7 +93,6 @@ class ParameterDictionary(dict):
             >>> pprint(pdict)
             {'K_ij': {'H2O': {'CH4': <Quantity(K_ij.H2O.CH4, 'kelvin')>,
                               'CO2': <Quantity(K_ij.H2O.CO2, 'kelvin')>}}}
-
         """
         unit = base_unit(unit)
         res = ParameterDictionary.SparseMatrix({f: {} for f, _ in pairs})

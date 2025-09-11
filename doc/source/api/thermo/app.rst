@@ -49,6 +49,7 @@ Thermodynamic contributions
 
    ideal
    cubic
+   electrolytes
    iapws
    special
    augmenters
