@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from casadi import DM
+from casadi import SX
 from simu import (ThermoContribution, registered_contribution, Quantity,
                   N_A, E_0, EPS_0, K_B, R_GAS, PI, sqrt, log, exp, qvertcat)
 from simu.core.utilities.types import Map, MutMap
@@ -107,11 +107,11 @@ class ExcessBasePitzer(ThermoContribution):
         chi_m = chi_res["chi_m"] + chi_res["chi_i"] * charge ** 2 / 2
 
         s_res = m_solvent * _M0 * R_GAS * (chi + temp * chi_t)
-        mu_res = (1 - d_is) * R_GAS * temp * chi_m
+        mu_res = (1 - d_is) * chi_m
         mu_res += (mw_solvent * _M0 * chi) * d_is
 
         res["S"] += s_res
-        res["mu"] += mu_res
+        res["mu"] += R_GAS * temp * mu_res
 
     @abstractmethod
     def define_chi(self, res: MutMap[Quantity]) -> Map[Quantity]:
@@ -206,8 +206,7 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
     .. math::
 
         \lambda_{ij}(T, I) = \beta^{(0)}_{ij}(T) +
-          \frac{\beta^{(1)}_{ij}(T)}{2I}\left [
-            1-(1+2\sqrt{I})\,\exp(-2\sqrt{I}) \right ]
+          \frac{1-(1+2\sqrt{I})\,\exp(-2\sqrt{I})}{2\,I}\,\beta^{(1)}_{ij}(T)
 
     with
 
@@ -256,6 +255,7 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
     """
     def define_chi(self, res):
         temp, molality, ionic_strength = res["T"], res["molality"], res["I"]
+        mlt = molality / _M0
         t_ref = self.par_scalar("T_ref", "K")
         tsi = 2 * sqrt(ionic_strength)
         i_factor = (1 - (1 + tsi) * exp(-tsi))/ (2 * ionic_strength)
@@ -263,24 +263,27 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
                       (2 * ionic_strength ** 2))
 
         # pre-factors for binary interactions
+        # Operations involving factors of zero are required to provide the
+        # correct unit of measurement, e.g. 0 / temp = 0 1/K.
         factors = [1, temp - t_ref, 1 / temp - 1 / t_ref, log(temp / t_ref),
                    temp ** 2 - t_ref ** 2]
-        factors = [[factors], [f_i * i_factor for f_i in factors]]
+        factors = [factors, [f_i * i_factor for f_i in factors]]
 
-        factors_t = [0, 1, -1 / temp ** 2, 1 / temp, 2 * temp]
-        factors_t = [[factors_t], [f_i * i_factor for f_i in factors]]
-        factors_i = [[0.0] * 5, [f_i * i_factor_i for f_i in factors[0]]]
+        factors_t = [0 / temp, 1, -1 / temp ** 2, 1 / temp, 2 * temp]
+        factors_t = [factors_t, [f_i * i_factor for f_i in factors_t]]
+        factors_i = [[0 * f_i for f_i in factors[0]],
+                     [f_i * i_factor_i for f_i in factors[0]]]
 
         units = ["dimless", "1/K", "K", "dimless", "K**-2"]
         cache = {}
 
         def pair(idx_i: int, idx_j: int) -> Quantity:
             if (idx_i, idx_j) not in cache:
-                cache[(idx_i, idx_j)] = molality[idx_i] * molality[idx_j]
+                cache[(idx_i, idx_j)] = mlt[idx_i] * mlt[idx_j]
             return cache[(idx_i, idx_j)]
 
         chi, chi_t, chi_i = Quantity(0), Quantity(0, "1/K"), Quantity(0)
-        chi_m = Quantity(DM.zeros(len(self.species)))
+        chi_m = Quantity(SX.zeros(len(self.species)))
 
         for k in (0, 1):
             for m in range(5):
@@ -294,12 +297,14 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
                 for i, j, c in coefficients.pair_items():
                     ii, ij = self.species.index(i), self.species.index(j)
                     term = pair(ii, ij) * c
-                    chi += term * f
+                    d_chi = term * f
+                    chi += d_chi
                     chi_t += term * f_t
                     chi_i += term * f_i
-                    chi_m[ii] += term * molality[ij]
-                    chi_m[ij] += term * molality[ii]
+                    chi_m[ii] += d_chi * mlt[ij]
+                    chi_m[ij] += d_chi * mlt[ii]
 
+        res["_pitzer_bin_chi"] = chi
         return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_m": chi_m}
 
 

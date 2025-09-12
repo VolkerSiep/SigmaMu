@@ -31,6 +31,14 @@ def species_definitions_abc() -> Map[SpeciesDefinition]:
 
 
 @fixture(scope="session")
+def species_definitions_elec() -> Map[SpeciesDefinition]:
+    """A simple example species definition map with 3 electrolyte species"""
+    return {"H2O": SpeciesDefinition("H2O"),
+            "Na+": SpeciesDefinition("Na:1+"),
+            "SO42-": SpeciesDefinition("SO4:2-")}
+
+
+@fixture(scope="session")
 def boston_mathias_alpha_function(species_definitions_ab):
     def sym(name: str, units: str) -> SymbolQuantity:
         return SymbolQuantity(name, base_unit(units))
