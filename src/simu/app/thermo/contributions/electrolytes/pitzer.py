@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from casadi import SX
+from casadi import SX, DM
 from simu import (ThermoContribution, registered_contribution, Quantity,
                   N_A, E_0, EPS_0, K_B, R_GAS, PI, sqrt, log, exp, qvertcat)
 from simu.core.utilities.types import Map, MutMap

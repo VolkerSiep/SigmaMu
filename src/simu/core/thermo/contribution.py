@@ -173,6 +173,15 @@ class ThermoContribution(ABC):
         return self.__parameters.register_sparse_matrix
 
     @property
+    def par_sparse_3d(self):
+        """Shortcut method for ``self.parameters.register_sparse_3d``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_sparse_3d
+
+    @property
     def bounds(self) -> Map[Quantity]:
         return self.__bounds
 

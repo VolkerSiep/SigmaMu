@@ -31,6 +31,26 @@ class ParameterDictionary(dict):
                 for key_2, quantity in second.items():
                     yield key_1, key_2, quantity
 
+    class Sparse3D(dict):
+        def pair_items(self):
+            """Return an iterator yielding a scalar quantity with the key
+            triple for each element in the sub-structure. The elements have
+            the shape ``(key_1, key_2, key_3, quantity)``."""
+            for key_1, second in self.items():
+                for key_2, third in second.items():
+                    for key_3, quantity in third.items():
+                        yield key_1, key_2, key_3, quantity
+
+        def set(self, value, *keys):
+            current = self
+            for k_i in keys[:-1]:
+                try:
+                    current = current[k_i]
+                except KeyError:
+                    current[k_i] = (c := {})
+                    current = c
+            current[keys[-1]] = value
+
     def register_scalar(self, key: str, unit: str):
         """Create a scalar quantity and add the structure to the dictionary.
         The given unit is converted to base units before being applied. Calling
@@ -99,6 +119,35 @@ class ParameterDictionary(dict):
         for first, second in pairs:
             quantity = SymbolQuantity(f"{key}.{first}.{second}", unit)
             res[first][second] = quantity
+        self[key] = res
+        return res
+
+    def register_sparse_3d(self, key: str,
+                           pairs: Iterable[tuple[str, str, str]],
+                           unit: str) -> NestedMap[Quantity]:
+        """Create a sparse 3d matrix quantity and add the structure to the
+        dictionary. The given unit is converted to base units before being
+        applied.
+
+            >>> pdict = ParameterDictionary()
+            >>> ternaries = [("A", "B", "C"), ("A", "C", "D")]
+            >>> from pprint import pprint
+            >>> pprint(pdict.register_sparse_3d("C", ternaries, "K"))
+            {'A': {'B': {'C': <Quantity(C.A.B.C, 'kelvin')>},
+                   'C': {'D': <Quantity(C.A.C.D, 'kelvin')>}}}
+
+        After above call, the dictionary contains the following entries:
+
+            >>> from pprint import pprint
+            >>> pprint(pdict)
+            {'C': {'A': {'B': {'C': <Quantity(C.A.B.C, 'kelvin')>},
+                            'C': {'D': <Quantity(C.A.C.D, 'kelvin')>}}}}
+        """
+        unit = base_unit(unit)
+        res = ParameterDictionary.Sparse3D()
+        for first, second, third in pairs:
+            quantity = SymbolQuantity(f"{key}.{first}.{second}.{third}", unit)
+            res.set(quantity, first, second, third)
         self[key] = res
         return res
 

@@ -21,7 +21,6 @@ M_N = _Q("1.67492750056e-27 kg")  #: Neutron mass
 M_P = _Q("1.67262192595e-27 kg")  #: Proton mass
 N_A = _Q("6.02214076e23  1/mol")  #: Avogadro constant
 R_B = _Q("5.29177210544e-11 m")  #: Bohr radius
-# R_GAS = _Q("8.3145119843087 J/(mol*K)")  #: Molar gas constant (OLD! Tore!)
 R_GAS = _Q("8.31446261815324 J/(mol*K)")
 R_INF = _Q("10973731.568157 1/m")  #: Rydberg constant
 SIGMA = _Q("5.670374419e-8 W/(m**2*K**4)")  #: Stefan-Boltzmann constant
