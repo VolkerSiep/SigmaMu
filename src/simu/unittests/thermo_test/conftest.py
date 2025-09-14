@@ -32,7 +32,7 @@ def species_definitions_abc() -> Map[SpeciesDefinition]:
 
 
 @fixture(scope="session")
-def species_definitions_elec() -> Map[SpeciesDefinition]:
+def species_definitions_electrolyte() -> Map[SpeciesDefinition]:
     """A simple example species definition map with 3 electrolyte species"""
     return {"H2O": SpeciesDefinition("H2O"),
             "Na+": SpeciesDefinition("Na:1+"),
