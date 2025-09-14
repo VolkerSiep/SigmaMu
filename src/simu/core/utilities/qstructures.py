@@ -19,6 +19,10 @@ class ParameterDictionary(dict):
     methods.
     """
     class SparseArray(dict):
+        """This helper class represents a nexted dictionary that contains
+        an arbitrary level of nested keys to address a value that is
+        represented by a quantity. """
+
         def __init__(self, order):
             super().__init__()
             self._order = order
@@ -45,39 +49,7 @@ class ParameterDictionary(dict):
                     current[k_i] = (c := {})
                     current = c
             current[keys[-1]] = value
-    #
-    #
-    # class SparseMatrix(dict):
-    #     """This helper class represents a nested dictionary that contains
-    #     two levels of keys and values representing a quantity."""
-    #
-    #     def pair_items(self):
-    #         """Return an iterator yielding a scalar quantity with the key pair
-    #         for each element in the sub-structure. The elements have the
-    #         shape ``(key_1, key_2, quantity)``."""
-    #         for key_1, second in self.items():
-    #             for key_2, quantity in second.items():
-    #                 yield key_1, key_2, quantity
-    #
-    # class Sparse3D(dict):
-    #     def pair_items(self):
-    #         """Return an iterator yielding a scalar quantity with the key
-    #         triple for each element in the sub-structure. The elements have
-    #         the shape ``(key_1, key_2, key_3, quantity)``."""
-    #         for key_1, second in self.items():
-    #             for key_2, third in second.items():
-    #                 for key_3, quantity in third.items():
-    #                     yield key_1, key_2, key_3, quantity
-    #
-    #     def set(self, value, *keys):
-    #         current = self
-    #         for k_i in keys[:-1]:
-    #             try:
-    #                 current = current[k_i]
-    #             except KeyError:
-    #                 current[k_i] = (c := {})
-    #                 current = c
-    #         current[keys[-1]] = value
+
 
     def register_scalar(self, key: str, unit: str):
         """Create a scalar quantity and add the structure to the dictionary.

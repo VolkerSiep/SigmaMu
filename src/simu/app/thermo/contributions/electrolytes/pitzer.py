@@ -243,11 +243,11 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
        \begin{align*}
         \Delta\chi_T &= m_i\,m_j\,\lambda_{ij,T}(T, I)\quad\text{with}\quad
             \lambda_{ij,T}(T, I) = \beta^{(0)}_{ij,T} +
-            \frac{\beta^{(1)}_{ij,T}}{2I}\left [
-            1-(1+2\sqrt{I})\,\exp(-2\sqrt{I}) \right ]\\
+            \frac{1-(1+2\sqrt{I})\,\exp(-2\sqrt{I})}{2\,I}\,\beta^{(1)}_{ij,T}\\
         \Delta\chi_I &= m_i\,m_j\,\lambda_{ij,I}(T, I)\quad\text{with}\quad
-          \lambda_{ij,I}(T, I) = \beta^{(1)}_{ij,T}\,
-          \frac{1 + (2\,I + 2\,\sqrt{I} - 1)\,\exp(-2\sqrt{I})}{2\,I^2}\\
+          \lambda_{ij,I}(T, I) =
+            \frac{1 + (2\,I + 2\,\sqrt{I} - 1)\,\exp(-2\sqrt{I})}{2\,I^2}\,
+            \beta^{(1)}_{ij}\\
         \Delta\boldsymbol{\chi}_m &= \lambda_{ij,T}(T, I)\,(
           m_i\,\mathbf{e}_j + m_j\,\mathbf{e}_i)
        \end{align*}
@@ -308,7 +308,38 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
         return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_m": chi_m}
 
 
+class PitzerTernaryInteraction(ExcessBasePitzer):
+    r"""The ternary interaction in the Pitzer model is dependent only on
+    temperature:
+
+    .. math:: \chi_\gamma = \gamma_{ijk}(T)\,m_i\,m_j\,m_k
+
+    The interaction coefficients are parameterized as
+
+    .. math::
+
+        \gamma_{ijk}(T) = \gamma_{ijk,1} + \gamma_{ijk,2}(T-\Theta) +
+            \gamma_{ijk,3}\left (\frac1T-\frac1{\Theta}\right ) +
+            \gamma_{ijk,4}\ln\frac{T}{\Theta} +
+            \gamma_{ijk,5}\left (T^2-\Theta^2\right )
+
+    The derivatives are coded manually with
+
+    .. math::
+
+        \gamma_{ijk,T} = \gamma_{ijk,2} - \gamma_{ijk,3} \frac1{T^2} +
+            \gamma_{ijk,4}\,\frac{1}{T} + 2\,\gamma_{ijk,5}\,T
 
 
+
+    """
+    def define_chi(self, res):
+        temp, molality = res["T"], res["molality"]
+        mlt = molality / _M0
+        t_ref = self.par_scalar("T_ref", "K")
+
+        factors = [1, temp - t_ref, 1 / temp - 1 / t_ref, log(temp / t_ref),
+                   temp ** 2 - t_ref ** 2]
+        factors_t = [0 / temp, 1, -1 / temp ** 2, 1 / temp, 2 * temp]
 
 

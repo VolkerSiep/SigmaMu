@@ -28,3 +28,9 @@ PitzerBinaryInteraction
 .. autoclass:: PitzerBinaryInteraction
   :show-inheritance:
   :exclude-members: __init__, __new__
+
+PitzerTernaryInteraction
+========================
+.. autoclass:: PitzerTernaryInteraction
+  :show-inheritance:
+  :exclude-members: __init__, __new__
