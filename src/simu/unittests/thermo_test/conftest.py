@@ -1,13 +1,14 @@
 from yaml import safe_load
 from pytest import fixture
+from casadi import DM
 
 from simu import (SpeciesDefinition, SymbolQuantity, base_unit,
-                  parse_quantities_in_struct)
-from simu.core.utilities.types import Map
+                  parse_quantities_in_struct, Quantity)
+from simu.core.utilities.types import Map, MutMap
 from simu.app import (DATA_DIR, RegThermoFactory, ThermoStructure)
 from simu.app.thermo.contributions.cubic.core import BostonMathiasAlphaFunction
 
-
+from .utils import vec, sym
 
 @fixture(scope="session")
 def species_definitions_h2o() -> Map[SpeciesDefinition]:
@@ -36,6 +37,20 @@ def species_definitions_elec() -> Map[SpeciesDefinition]:
     return {"H2O": SpeciesDefinition("H2O"),
             "Na+": SpeciesDefinition("Na:1+"),
             "SO42-": SpeciesDefinition("SO4:2-")}
+
+@fixture(scope="session")
+def res_input_electrolyte() -> tuple[MutMap[Quantity], set]:
+    d_si = DM.zeros(3)
+    d_si[0] = 1
+    c = DM([0, 1, -2])
+    res = {"T": sym("T", "K"), "n": vec("n", 3, "mol"),
+           "I": sym("I", "dimless"), "_delta_i_s": Quantity(d_si, "dimless"),
+           "charge": Quantity(c, "e/mol"), "m_solvent": sym("m_s", "kg"),
+           "mw_solvent": sym("M_s", "g/mol"),
+           "molality": vec("molality", 3, "mol/kg")}
+    inp_keys = set(res.keys())
+    res.update(mu=vec("mu", 3, "kJ/mol"), S=sym("S", "J/K"))
+    return res, inp_keys
 
 
 @fixture(scope="session")

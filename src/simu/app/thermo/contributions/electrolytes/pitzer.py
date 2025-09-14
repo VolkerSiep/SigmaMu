@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from casadi import SX
+from casadi import SX, DM
 from simu import (ThermoContribution, registered_contribution, Quantity,
                   N_A, E_0, EPS_0, K_B, R_GAS, PI, sqrt, log, exp, qvertcat)
 from simu.core.utilities.types import Map, MutMap
@@ -86,7 +86,7 @@ class ExcessBasePitzer(ThermoContribution):
     .. math::
 
         \Delta \mu_i = R\,T\,\left [\frac{\partial \chi}{\partial m_i} +
-         \left (M_s\,n_s\,\chi - \frac{\partial \chi}{\partial m_j}\,
+         \left (M_s\,m_0\,\chi - \frac{\partial \chi}{\partial m_j}\,
            \frac {n_j}{n_s} \right )\delta_{is}\right ]
 
     Here, :math:`\delta_{is}` is the Kronecker operator, being unity if
@@ -101,14 +101,14 @@ class ExcessBasePitzer(ThermoContribution):
         temp, n, ionic_strength = res["T"], res["n"], res["I"]
         molality, d_is = res["molality"], res["_delta_i_s"]
         charge = res["charge"] / _C0
-        m_solvent, mw_solvent = res["m_solvent"], res["mw_solvent"]
+        m_s, mw_s = res["m_solvent"], res["mw_solvent"]
         chi_res = self.define_chi(res)
         chi, chi_t = chi_res["chi"], chi_res["chi_t"]
         chi_m = chi_res["chi_m"] + chi_res["chi_i"] * charge ** 2 / 2
 
-        s_res = m_solvent * _M0 * R_GAS * (chi + temp * chi_t)
-        mu_res = (1 - d_is) * chi_m
-        mu_res += (mw_solvent * _M0 * chi) * d_is
+        s_res = m_s * _M0 * R_GAS * (chi + temp * chi_t)
+
+        mu_res = chi_m + d_is * mw_s * (_M0 * chi - (chi_m.T @ n) / m_s)
 
         res["S"] += s_res
         res["mu"] += R_GAS * temp * mu_res
