@@ -3,7 +3,7 @@ from casadi import DM
 from simu import Quantity, SymbolQuantity
 from simu.app.thermo.contributions.electrolytes.pitzer import (
     ElectrolyteBasics, PitzerDebyeHueckel, PitzerBinaryInteraction,
-    ExcessBasePitzer)
+    ExcessBasePitzer, PitzerTernaryInteraction)
 from simu.core.utilities.testing import assert_reproduction
 
 from .utils import vec, sym
@@ -48,6 +48,16 @@ def test_pitzer_binary(species_definitions_electrolyte, res_input_electrolyte):
     opts = {f"beta_{k}{m + 1}": [["Na+", "SO42-"]]
             for k in (0, 1) for m in range(5)}
     cont = PitzerBinaryInteraction(species_definitions_electrolyte, opts)
+    cont.define(res)
+    res = {k: f"{v:~}" for k, v in res.items() if not k in inp_keys}
+    assert_reproduction(res)
+
+
+def test_pitzer_ternary(species_definitions_electrolyte, res_input_electrolyte):
+    res, inp_keys = res_input_electrolyte
+    # in real, the solute should not be part of the interaction.
+    opts = {f"gamma_{m + 1}": [["H2O", "Na+", "SO42-"]] for m in range(5)}
+    cont = PitzerTernaryInteraction(species_definitions_electrolyte, opts)
     cont.define(res)
     res = {k: f"{v:~}" for k, v in res.items() if not k in inp_keys}
     assert_reproduction(res)

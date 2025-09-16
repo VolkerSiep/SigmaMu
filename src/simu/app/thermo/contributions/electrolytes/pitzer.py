@@ -40,7 +40,7 @@ class ElectrolyteBasics(ThermoContribution):
 
     """
 
-    provides = ["_delta_i_s", "_mw_solvent", "m_solvent",
+    provides = ["_delta_i_s", "_mw_solvent", "_m_solvent",
                 "charge", "molality", "I"]
 
     def define(self, res):
@@ -59,10 +59,10 @@ class ElectrolyteBasics(ThermoContribution):
         res["_mw_solvent"] = species_def[solvent_name].molecular_weight
         m_sol = n[solvent_idx] * res["_mw_solvent"]
 
-        res["m_solvent"] = m_sol
+        res["_m_solvent"] = m_sol
         res["charge"] = qvertcat(*[s.charge for s in species_def.values()])
-        res["molality"] = m = n / (m_sol * _M0)
-        res["I"] = m.T @ ((res["charge"] / _C0) ** 2) / 2
+        res["molality"] = m = n / m_sol
+        res["I"] = (m.T / _M0) @ ((res["charge"] / _C0) ** 2) / 2
 
 
 class ExcessBasePitzer(ThermoContribution):
@@ -101,7 +101,7 @@ class ExcessBasePitzer(ThermoContribution):
         temp, n, ionic_strength = res["T"], res["n"], res["I"]
         molality, d_is = res["molality"], res["_delta_i_s"]
         charge = res["charge"] / _C0
-        m_s, mw_s = res["m_solvent"], res["mw_solvent"]
+        m_s, mw_s = res["_m_solvent"], res["_mw_solvent"]
         chi_res = self.define_chi(res)
         chi, chi_t = chi_res["chi"], chi_res["chi_t"]
         chi_m = chi_res["chi_m"] + chi_res["chi_i"] * charge ** 2 / 2
@@ -198,7 +198,7 @@ class PitzerDebyeHueckel(ExcessBasePitzer):
             "chi_i": f / ionic_strength - a_gamma * sqi / (1 + b_sqi) / 1.5,
             "chi_m": Quantity(0.0)}
 
-
+@registered_contribution
 class PitzerBinaryInteraction(ExcessBasePitzer):
     r"""The binary interaction in the Pitzer model is dependent on temperature
     and ionic strength as:
@@ -225,7 +225,7 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
 
     .. math::
 
-        \Delta\chi = m_i\,m_j\,\lambda_{ij}(T, I)
+        \Delta_\lambda\chi = m_i\,m_j\,\lambda_{ij}(T, I)
 
     The derivatives are coded manually with
 
@@ -241,14 +241,14 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
        :nowrap:
 
        \begin{align*}
-        \Delta\chi_T &= m_i\,m_j\,\lambda_{ij,T}(T, I)\quad\text{with}\quad
+        \Delta_\lambda\chi_T &= m_i\,m_j\,\lambda_{ij,T}(T, I)\quad\text{with}\quad
             \lambda_{ij,T}(T, I) = \beta^{(0)}_{ij,T} +
             \frac{1-(1+2\sqrt{I})\,\exp(-2\sqrt{I})}{2\,I}\,\beta^{(1)}_{ij,T}\\
-        \Delta\chi_I &= m_i\,m_j\,\lambda_{ij,I}(T, I)\quad\text{with}\quad
+        \Delta_\lambda\chi_I &= m_i\,m_j\,\lambda_{ij,I}(T, I)\quad\text{with}\quad
           \lambda_{ij,I}(T, I) =
             \frac{1 + (2\,I + 2\,\sqrt{I} - 1)\,\exp(-2\sqrt{I})}{2\,I^2}\,
             \beta^{(1)}_{ij}\\
-        \Delta\boldsymbol{\chi}_m &= \lambda_{ij,T}(T, I)\,(
+        \Delta_\lambda\boldsymbol{\chi}_m &= \lambda_{ij,T}(T, I)\,(
           m_i\,\mathbf{e}_j + m_j\,\mathbf{e}_i)
        \end{align*}
 
@@ -307,12 +307,12 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
         res["_pitzer_bin_chi"] = chi
         return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_m": chi_m}
 
-
+@registered_contribution
 class PitzerTernaryInteraction(ExcessBasePitzer):
     r"""The ternary interaction in the Pitzer model is dependent only on
     temperature:
 
-    .. math:: \chi_\gamma = \gamma_{ijk}(T)\,m_i\,m_j\,m_k
+    .. math:: \Delta_\gamma \chi_{ijk} = \gamma_{ijk}(T)\,m_i\,m_j\,m_k
 
     The interaction coefficients are parameterized as
 
@@ -330,8 +330,16 @@ class PitzerTernaryInteraction(ExcessBasePitzer):
         \gamma_{ijk,T} = \gamma_{ijk,2} - \gamma_{ijk,3} \frac1{T^2} +
             \gamma_{ijk,4}\,\frac{1}{T} + 2\,\gamma_{ijk,5}\,T
 
+    The required derivatives are provided analytically:
 
+    .. math::
 
+         \Delta_{\gamma} \chi_{ijk, T} = \gamma_{ijk_T}\,m_i\,m_j\,m_k\qquad
+         \Delta_{\gamma} \chi_{ijk, I} = 0\qquad
+         \Delta_{\gamma} \chi_{ijk, m} = \gamma_{ijk}\,\left (
+            m_i\,m_j\,\mathbf{e}_k + m_i\,m_k\,\mathbf{e}_j
+            + m_j\,m_k\,\mathbf{i}_k
+         \right )
     """
     def define_chi(self, res):
         temp, molality = res["T"], res["molality"]
@@ -342,4 +350,35 @@ class PitzerTernaryInteraction(ExcessBasePitzer):
                    temp ** 2 - t_ref ** 2]
         factors_t = [0 / temp, 1, -1 / temp ** 2, 1 / temp, 2 * temp]
 
+        units = ["dimless", "1/K", "K", "dimless", "K**-2"]
+        cache = {}
 
+        def pair(idx_i: int, idx_j: int, idx_k: int) -> Quantity:
+            if (idx_i, idx_j, idx_k) not in cache:
+                cache[(idx_i, idx_j, idx_k)] = \
+                    mlt[idx_i] * mlt[idx_j] * mlt[idx_k]
+            return cache[(idx_i, idx_j, idx_k)]
+
+        chi, chi_t, chi_i = Quantity(0), Quantity(0, "1/K"), Quantity(0)
+        chi_m = Quantity(SX.zeros(len(self.species)))
+
+        for m in range(5):
+            p_name = f"gamma_{m+1}"
+            try:
+                pairs = self.options[p_name]
+            except KeyError:
+                continue
+            coefficients = self.par_sparse_3d(p_name, pairs, units[m])
+            f, f_t = factors[m], factors_t[m]
+            for i, j, k, c in coefficients.pair_items():
+                ii, ij, ik = map(self.species.index, (i, j, k))
+                term = pair(ii, ij, ik) * c
+                d_chi = term * f
+                chi += d_chi
+                chi_t += term * f_t
+                chi_m[ii] += d_chi * mlt[ij] * mlt[ik]
+                chi_m[ij] += d_chi * mlt[ii] * mlt[ik]
+                chi_m[ik] += d_chi * mlt[ii] * mlt[ij]
+
+        res["_pitzer_ternary_chi"] = chi
+        return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_m": chi_m}

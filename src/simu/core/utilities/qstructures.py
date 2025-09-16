@@ -40,7 +40,8 @@ class ParameterDictionary(dict):
                     yield from self._pairs(value, path + [key])
 
         def set(self, value, *keys):
-            assert len(keys) == self._order
+            if (lk:=len(keys)) != (o:=self._order):
+                raise ValueError(f"Parameter dimension mismatch: {lk} <-> {o}")
             current = self
             for k_i in keys[:-1]:
                 try:

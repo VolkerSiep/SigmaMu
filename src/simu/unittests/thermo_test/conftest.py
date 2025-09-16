@@ -45,8 +45,8 @@ def res_input_electrolyte() -> tuple[MutMap[Quantity], set]:
     c = DM([0, 1, -2])
     res = {"T": sym("T", "K"), "n": vec("n", 3, "mol"),
            "I": sym("I", "dimless"), "_delta_i_s": Quantity(d_si, "dimless"),
-           "charge": Quantity(c, "e/mol"), "m_solvent": sym("m_s", "kg"),
-           "mw_solvent": sym("M_s", "g/mol"),
+           "charge": Quantity(c, "e/mol"), "_m_solvent": sym("m_s", "kg"),
+           "_mw_solvent": sym("M_s", "g/mol"),
            "molality": vec("molality", 3, "mol/kg")}
     inp_keys = set(res.keys())
     res.update(mu=vec("mu", 3, "kJ/mol"), S=sym("S", "J/K"))
