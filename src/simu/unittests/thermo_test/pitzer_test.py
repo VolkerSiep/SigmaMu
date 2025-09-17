@@ -10,10 +10,10 @@ from .utils import vec, sym
 
 
 def test_basics(species_definitions_electrolyte):
-    res = {"n": vec("n", 3, "mol")}
+    res = {"n": vec("n", 3, "mol"), "mw": vec("mw", 3, "kg/mol")}
     cont = ElectrolyteBasics(species_definitions_electrolyte)
     cont.define(res)
-    del res["n"]
+    del res["n"], res["mw"]
     res = {k: f"{v:~}" for k, v in res.items()}
     assert_reproduction(res)
 
@@ -26,7 +26,7 @@ def test_excess_base_pitzer(species_definitions_electrolyte,
                 "chi": SymbolQuantity("chi", "dimless"),
                 "chi_t": SymbolQuantity("chi_t", "1/K"),
                 "chi_i": SymbolQuantity("chi_i", "dimless"),
-                "chi_m": SymbolQuantity("chi_m", "dimless", self.species)}
+                "chi_b": SymbolQuantity("chi_b", "dimless", self.species)}
 
     res, inp_keys = res_input_electrolyte
     cont = SimpleChi(species_definitions_electrolyte)

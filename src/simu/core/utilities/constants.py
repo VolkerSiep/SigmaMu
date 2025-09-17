@@ -21,8 +21,15 @@ M_N = _Q("1.67492750056e-27 kg")  #: Neutron mass
 M_P = _Q("1.67262192595e-27 kg")  #: Proton mass
 N_A = _Q("6.02214076e23  1/mol")  #: Avogadro constant
 R_B = _Q("5.29177210544e-11 m")  #: Bohr radius
-R_GAS = _Q("8.31446261815324 J/(mol*K)")
+R_GAS = _Q("8.31446261815324 J/(mol*K)")  # gas constant
 R_INF = _Q("10973731.568157 1/m")  #: Rydberg constant
 SIGMA = _Q("5.670374419e-8 W/(m**2*K**4)")  #: Stefan-Boltzmann constant
 STD_GRAVITY = _Q("9.80665 m/s**2")  #: Standard acceleration of gravity
 V_LIGHT = _Q("299792458.0 m/s")  #: Speed of light
+
+# just for a test: Tore's constants
+R_GAS = _Q("8.3145119843087 J/(mol*K)")  # gas constant
+EPS_0 = _Q("8.85418781762033e-12 F/m")  #: Vacuum electric permittivity
+N_A = _Q("6.022136736e23  1/mol")  #: Avogadro constant
+E_0 = _Q("1.6021773349e-19 C")  #: Elementary charge
+K_B = _Q("1.38065812e-23 J/K")  #: Boltzmann constant

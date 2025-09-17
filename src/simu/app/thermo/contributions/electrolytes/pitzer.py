@@ -14,111 +14,114 @@ class ElectrolyteBasics(ThermoContribution):
     r"""This contribution prepares some basic properties relevant for
     electrolyte systems.
 
-    An input option ``solvent_name`` can be used to specify the name of the
-    solvent species, which is by default ``H2O``.
+    **Molality** (:math:`b_i`) is defined as the molar quantities per mass of
+    solvent. Generalized, we consider all non-ionic species as solvent. With
+    the charge vector :math:`c_i`, the Kronecker symbol for marking solvent
+    components is
 
-    Charges and molalities are considered as dimensionless by normalizing with
-    :math:`m_0 = 1\ \mathrm{mol/kg}` and :math:`c_0 = 1\ \mathrm{e / mol}`.
+    .. math::
 
-    ``_delta_i_s`` (:math:`\delta_{is}`)
-        The Kronecker operator, being unity if :math:`i = s` and otherwise zero
+        \delta_{si} = \begin{cases}
+            1\quad\text{for}\ c_i = 0\\
+            0\quad\text{else} \end{cases}
 
-    ``_mw_solvent`` (:math:`M_s`)
-        The molecular weight of the solvent [kg/mol]
+    As such, :math:`m_s = \sum_i n_i\,M_i\,b_0\,\delta_{si}` and molalities are
+    defined as :math:`b_i = n_i / m_s`. Here, :math:`b_0 = 1` mol/kg
+    is a common factor used to yield dimensionless molalities.
 
-    ``_m_solvent`` (:math:`\hat m_s`)
-        The mass (flow) of the solvent [kg]/[kg/s]
+    Based on molality, **ionic strength** :math:`I` is defined as
 
-    ``charge`` (:math:`c_i`)
-        The charge vector [e/mol]
+    .. math:: I = \frac12\,\sum_i b_i\,\left (\frac{c_i}{c_0}\right )^2
 
-    ``molality`` (:math:`m_i`)
-       The molality vector: :math:`m_i = n_i / (\hat m_s\cdot m_0)` [-]
+    Again, to support the dimensionless mind of electro-chemists for empirical
+    freedom, the charge is normalized by :math:`c_0 = 1` e/mol.
 
-    ``I`` (:math:`I`)
-       Ionic strength: :math:`I = \sum_i m_i\,(c_i / c_0)^2` [-]
+    To derive molality-based Gibbs excess contributions with respect to molar
+    quantities, we pre-calculate the following derivatives:
 
+    .. math::
+
+       \frac{\mathrm{d} m_s}{\mathrm{d} n_k} = M_k\,b_0\,\delta_{sk}\qquad
+       \frac{\mathrm{d} I}{\mathrm{d} b_k} =
+         \frac12 \left (\frac{c_k}{c_0} \right )^2
     """
 
-    provides = ["_delta_i_s", "_mw_solvent", "_m_solvent",
-                "charge", "molality", "I"]
+    provides = ["b", "I", "_m_s", "_di_db", "_dms_dn", "charge"]
 
     def define(self, res):
-        n = res["n"]
-
-        # find index of water
+        n, mw = res["n"], res["mw"]
         species_def = self.species_definitions
-        solvent_name = self.options.get("solvent_name", "H2O")
-        solvent_idx = self.species.index(solvent_name)
+        charge_list = [s.charge for s in species_def.values()]
+        kron_s = qvertcat(*[Quantity(1 if c == 0 else 0) for c in charge_list])
+        res["charge"] = charge = qvertcat(*charge_list)  # [e/mol]
 
-        # unity vector in solvent direction
-        delta = DM.zeros(len(self.species))
-        delta[solvent_idx] = 1
-        res["_delta_i_s"] = Quantity(delta)
-
-        res["_mw_solvent"] = species_def[solvent_name].molecular_weight
-        m_sol = n[solvent_idx] * res["_mw_solvent"]
-
-        res["_m_solvent"] = m_sol
-        res["charge"] = qvertcat(*[s.charge for s in species_def.values()])
-        res["molality"] = m = n / m_sol
-        res["I"] = (m.T / _M0) @ ((res["charge"] / _C0) ** 2) / 2
+        # define molality, ionic strength, and relevant derivatives
+        res["_di_db"] = di_db = (charge / _C0) ** 2 / 2
+        res["_dms_dn"] = d_ms_dn = mw * kron_s * _M0 # [-]
+        res["_m_s"] = m_s = n.T @ d_ms_dn  # [mol (mol/s)]
+        res["b"] = b = n / m_s  # [-]
+        res["I"] = b.T @ di_db
 
 
 class ExcessBasePitzer(ThermoContribution):
     r"""The Pitzer model is formulated in terms of a reduced excess Gibbs
-    energy as follows:
+    energy contributions follows:
 
     .. math::
 
-        \frac{G^\mathrm{ex}}{R\,T\,M_s\,n_s\,m_0} = \chi(T, m_i)
-
-    Here, :math:`M_s` is the molecular weight of the solvent, :math:`n_s` the
-    molar quantity or flow of the solvent, :math:`m_0 = 1\ \mathrm{mol/kg}`,
-    and :math:`m_i = n_i/(M_s\,n_s\,m_0)` the dimensionless molalities.
+        \frac{\Delta \chi G^\mathrm{ex}}{R\,T} = m_s\,\chi(T, b_i)
 
     Both the long-range contribution (Pitzer-Debye-Hückel) and the short-range
-    contribution expressed by binary and ternary parameters are part of the
-    function :math:`\chi(T, m_i)`.
+    contribution expressed by binary and ternary parameters are expressed in
+    terms of :math:`\chi(T, b_i)`.
 
     The chemical potential is then
 
     .. math::
 
-        \Delta \mu_i = R\,T\,\left [\frac{\partial \chi}{\partial m_i} +
-         \left (M_s\,m_0\,\chi - \frac{\partial \chi}{\partial m_j}\,
-           \frac {n_j}{n_s} \right )\delta_{is}\right ]
+        \frac{\Delta_\chi \mu_i}{R\,T} = \left [
+            \chi - \left .
+              \sum_k\frac{\partial \chi}{\partial b_k}\right |_T\,\,b_k
+          \right ]\,\frac{\mathrm{d} m_s}{\mathrm{d} n_i} +
+          \left . \frac{\partial \chi}{\partial b_i} \right |_T
 
-    Here, :math:`\delta_{is}` is the Kronecker operator, being unity if
-    :math:`i = s` and otherwise zero. The entropy is
+    The entropy is
 
     .. math::
 
-        \Delta S = R\,M_s\,n_s\,m_0\,\left [
-            \chi + T\,\frac{\partial \chi}{\partial T} \right ]
+        \Delta_\chi S = R\,m_s\,\left [
+            \chi + T\,\left .\frac{\partial \chi}{\partial T} \right |_{n}
+            \right ]
+
+    From the subclasses, the :meth:`define_chi` method is to return for
+    convenience partial derivatives with respect to molalities and ionic
+    strength separately. The required combined derivative is then
+
+    .. math::
+
+        \left . \frac{\partial \chi}{\partial b_i} \right |_T
+         = \left . \frac{\partial \chi}{\partial b_i} \right |_{T, I} +
+         \left . \frac{\partial \chi}{\partial I} \right |_{T, b}\,
+        \frac{\mathrm{d} I}{\mathrm{d} b_k}
+
     """
     def define(self, res):
-        temp, n, ionic_strength = res["T"], res["n"], res["I"]
-        molality, d_is = res["molality"], res["_delta_i_s"]
-        charge = res["charge"] / _C0
-        m_s, mw_s = res["_m_solvent"], res["_mw_solvent"]
+        names = ["T", "b", "I", "_m_s", "_di_db", "_dms_dn"]
+        temp, b, ios, m_s, didb, dmsdn = [res[n] for n in names]
+
         chi_res = self.define_chi(res)
         chi, chi_t = chi_res["chi"], chi_res["chi_t"]
-        chi_m = chi_res["chi_m"] + chi_res["chi_i"] * charge ** 2 / 2
+        chi_b = chi_res["chi_b"] +  chi_res["chi_i"] * didb
 
-        s_res = m_s * _M0 * R_GAS * (chi + temp * chi_t)
-
-        mu_res = chi_m + d_is * mw_s * (_M0 * chi - (chi_m.T @ n) / m_s)
-
-        res["S"] += s_res
-        res["mu"] += R_GAS * temp * mu_res
+        res["S"] += R_GAS * m_s * (chi + temp * chi_t)
+        res["mu"] += R_GAS * temp * (chi_b + (chi - chi_b.T @ b) * dmsdn)
 
     @abstractmethod
     def define_chi(self, res: MutMap[Quantity]) -> Map[Quantity]:
         """
-        Provide dimensionless residual contribution :math:`\chi(T, I, m_i)`
-        and the partial derivatives :math:`\chi_T` (``chi_t``,
-        :math:`\chi_I` (``chi_i``) and :math:`\chi_{m_i}` (``chi_m``).
+        Provide dimensionless residual contribution :math:`\chi(T, I, b_i)`
+        and the partial derivatives :math:`\chi_T` (``chi_t``),
+        :math:`\chi_I` (``chi_i``) and :math:`\chi_{b}` (``chi_b``).
         """
         ...
 
@@ -153,19 +156,19 @@ class PitzerDebyeHueckel(ExcessBasePitzer):
 
     .. math::
 
-       f(I)=-\frac43A_\gamma I^{3/2}\,\frac{\ln (1+b\sqrt{I})}{b\sqrt{I}}
-            \quad {\rm with}\quad b=1.2
+       \chi^\mathrm{PDH}(I) = -\frac43A_\gamma I^{3/2}\,
+         \frac{\ln (1+b\sqrt{I})}{b\sqrt{I}} \quad {\rm with}\quad b=1.2
 
-    The function :math:`f` is a compatible contribution :math:`\chi` as defined
-    for the :class:`ExcessBasePitzer` base-class.
+    The function :math:`\chi^\mathrm{PDH}(I)` is a compatible dimensionless
+    contribution  as defined for the :class:`ExcessBasePitzer` base-class.
 
     The required derivatives are
 
     .. math::
-        f_T = -\frac32\,\frac{f}{T}\qquad
-        f_I = \frac{f}{I} -
+        \chi^\mathrm{PDH}_T = -\frac32\,\frac{\chi^\mathrm{PDH}}{T}\qquad
+        \chi^\mathrm{PDH}_I = \frac{\chi^\mathrm{PDH}}{I} -
           \frac23\,A_\gamma\,\frac{\sqrt{I}}{1 + b\,\sqrt{I}}\qquad
-        f_m = 0
+        \chi^\mathrm{PDH}_b = 0
 
     The contribution expects the following parameters:
 
@@ -190,13 +193,14 @@ class PitzerDebyeHueckel(ExcessBasePitzer):
             sqrt(2 * PI * N_A * _M0 * rho_sol)
             * (E_0 ** 2 / (4 * PI * EPS_0 * eps_r * K_B * temp)) ** 1.5)
         b_sqi = b * (sqi := sqrt(ionic_strength))
-        f = -4 / 3  * a_gamma * ionic_strength * log(1 + b_sqi) / b
-        res["_pdh_f"] = f
+        chi = -4 / 3  * a_gamma * ionic_strength * log(1 + b_sqi) / b
+        res["chi_pdh_f"] = chi
         return {
-            "chi": f,
-            "chi_t": -1.5 * f / temp,
-            "chi_i": f / ionic_strength - a_gamma * sqi / (1 + b_sqi) / 1.5,
-            "chi_m": Quantity(0.0)}
+            "chi": chi,
+            "chi_t": -1.5 * chi / temp,
+            "chi_i": chi / ionic_strength - a_gamma * sqi / (1 + b_sqi) / 1.5,
+            "chi_b": Quantity(0.0)}
+
 
 @registered_contribution
 class PitzerBinaryInteraction(ExcessBasePitzer):
@@ -225,7 +229,7 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
 
     .. math::
 
-        \Delta_\lambda\chi = m_i\,m_j\,\lambda_{ij}(T, I)
+        \Delta_\lambda\chi = b_i\,b_j\,\lambda_{ij}(T, I)
 
     The derivatives are coded manually with
 
@@ -241,26 +245,24 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
        :nowrap:
 
        \begin{align*}
-        \Delta_\lambda\chi_T &= m_i\,m_j\,\lambda_{ij,T}(T, I)\quad\text{with}\quad
+        \Delta_\lambda\chi_T &= b_i\,b_j\,\lambda_{ij,T}(T, I)\quad\text{with}\quad
             \lambda_{ij,T}(T, I) = \beta^{(0)}_{ij,T} +
             \frac{1-(1+2\sqrt{I})\,\exp(-2\sqrt{I})}{2\,I}\,\beta^{(1)}_{ij,T}\\
-        \Delta_\lambda\chi_I &= m_i\,m_j\,\lambda_{ij,I}(T, I)\quad\text{with}\quad
+        \Delta_\lambda\chi_I &= b_i\,b_j\,\lambda_{ij,I}(T, I)\quad\text{with}\quad
           \lambda_{ij,I}(T, I) =
             \frac{1 + (2\,I + 2\,\sqrt{I} - 1)\,\exp(-2\sqrt{I})}{2\,I^2}\,
             \beta^{(1)}_{ij}\\
-        \Delta_\lambda\boldsymbol{\chi}_m &= \lambda_{ij,T}(T, I)\,(
-          m_i\,\mathbf{e}_j + m_j\,\mathbf{e}_i)
+        \Delta_\lambda\boldsymbol{\chi}_b &= \lambda_{ij,T}(T, I)\,(
+          b_i\,\mathbf{e}_j + b_j\,\mathbf{e}_i)
        \end{align*}
 
     """
     def define_chi(self, res):
-        temp, molality, ionic_strength = res["T"], res["molality"], res["I"]
-        mlt = molality / _M0
+        temp, b, ios = res["T"], res["b"], res["I"]
         t_ref = self.par_scalar("T_ref", "K")
-        tsi = 2 * sqrt(ionic_strength)
-        i_factor = (1 - (1 + tsi) * exp(-tsi))/ (2 * ionic_strength)
-        i_factor_i = ((1 + (2 * ionic_strength + tsi - 1) * exp(-tsi)) /
-                      (2 * ionic_strength ** 2))
+        tsi = 2 * sqrt(ios)
+        i_factor = (1 - (1 + tsi) * exp(-tsi))/ (2 * ios)
+        i_factor_i = ((1 + (2 * ios + tsi - 1) * exp(-tsi)) / (2 * ios ** 2))
 
         # pre-factors for binary interactions
         # Operations involving factors of zero are required to provide the
@@ -279,11 +281,11 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
 
         def pair(idx_i: int, idx_j: int) -> Quantity:
             if (idx_i, idx_j) not in cache:
-                cache[(idx_i, idx_j)] = mlt[idx_i] * mlt[idx_j]
+                cache[(idx_i, idx_j)] = b[idx_i] * b[idx_j]
             return cache[(idx_i, idx_j)]
 
         chi, chi_t, chi_i = Quantity(0), Quantity(0, "1/K"), Quantity(0)
-        chi_m = Quantity(SX.zeros(len(self.species)))
+        chi_b = Quantity(SX.zeros(len(self.species)))
 
         for k in (0, 1):
             for m in range(5):
@@ -301,18 +303,18 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
                     chi += d_chi
                     chi_t += term * f_t
                     chi_i += term * f_i
-                    chi_m[ii] += d_chi * mlt[ij]
-                    chi_m[ij] += d_chi * mlt[ii]
+                    chi_b[ii] += d_chi * b[ij]
+                    chi_b[ij] += d_chi * b[ii]
 
         res["_pitzer_bin_chi"] = chi
-        return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_m": chi_m}
+        return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_b": chi_b}
 
 @registered_contribution
 class PitzerTernaryInteraction(ExcessBasePitzer):
     r"""The ternary interaction in the Pitzer model is dependent only on
     temperature:
 
-    .. math:: \Delta_\gamma \chi_{ijk} = \gamma_{ijk}(T)\,m_i\,m_j\,m_k
+    .. math:: \Delta_\gamma \chi_{ijk} = \gamma_{ijk}(T)\,b_i\,b_j\,b_k
 
     The interaction coefficients are parameterized as
 
@@ -334,16 +336,15 @@ class PitzerTernaryInteraction(ExcessBasePitzer):
 
     .. math::
 
-         \Delta_{\gamma} \chi_{ijk, T} = \gamma_{ijk_T}\,m_i\,m_j\,m_k\qquad
+         \Delta_{\gamma} \chi_{ijk, T} = \gamma_{ijk_T}\,b_i\,b_j\,b_k\qquad
          \Delta_{\gamma} \chi_{ijk, I} = 0\qquad
          \Delta_{\gamma} \chi_{ijk, m} = \gamma_{ijk}\,\left (
-            m_i\,m_j\,\mathbf{e}_k + m_i\,m_k\,\mathbf{e}_j
-            + m_j\,m_k\,\mathbf{i}_k
+            b_i\,b_j\,\mathbf{e}_k + b_i\,b_k\,\mathbf{e}_j
+            + b_j\,b_k\,\mathbf{i}_k
          \right )
     """
     def define_chi(self, res):
-        temp, molality = res["T"], res["molality"]
-        mlt = molality / _M0
+        temp, b = res["T"], res["b"]
         t_ref = self.par_scalar("T_ref", "K")
 
         factors = [1, temp - t_ref, 1 / temp - 1 / t_ref, log(temp / t_ref),
@@ -356,11 +357,11 @@ class PitzerTernaryInteraction(ExcessBasePitzer):
         def pair(idx_i: int, idx_j: int, idx_k: int) -> Quantity:
             if (idx_i, idx_j, idx_k) not in cache:
                 cache[(idx_i, idx_j, idx_k)] = \
-                    mlt[idx_i] * mlt[idx_j] * mlt[idx_k]
+                    b[idx_i] * b[idx_j] * b[idx_k]
             return cache[(idx_i, idx_j, idx_k)]
 
         chi, chi_t, chi_i = Quantity(0), Quantity(0, "1/K"), Quantity(0)
-        chi_m = Quantity(SX.zeros(len(self.species)))
+        chi_b = Quantity(SX.zeros(len(self.species)))
 
         for m in range(5):
             p_name = f"gamma_{m+1}"
@@ -376,9 +377,9 @@ class PitzerTernaryInteraction(ExcessBasePitzer):
                 d_chi = term * f
                 chi += d_chi
                 chi_t += term * f_t
-                chi_m[ii] += d_chi * mlt[ij] * mlt[ik]
-                chi_m[ij] += d_chi * mlt[ii] * mlt[ik]
-                chi_m[ik] += d_chi * mlt[ii] * mlt[ij]
+                chi_b[ii] += d_chi * b[ij] * b[ik]
+                chi_b[ij] += d_chi * b[ii] * b[ik]
+                chi_b[ik] += d_chi * b[ii] * b[ij]
 
         res["_pitzer_ternary_chi"] = chi
-        return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_m": chi_m}
+        return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_b": chi_b}
