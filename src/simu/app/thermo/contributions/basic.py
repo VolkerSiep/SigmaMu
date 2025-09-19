@@ -161,8 +161,6 @@ class BarinHeatCapacity(ThermoContribution):
 
         \Delta_{c_p} \mu_i= \Delta_{c_p} h_i^0 - T\,\Delta_{c_p}  s_i^0
 
-    .. todo:: calculate all the terms, reuse formula from report
-
     """
 
     provides = ["T_ref", "p_ref", "S", "mu"]
@@ -183,14 +181,21 @@ class BarinHeatCapacity(ThermoContribution):
         dti, dti2 = 1 / t - 1 / t_ref, 1 / t2 - 1 / t2_ref
         dti3 = 1 / t3 - 1 / t3_ref
 
-        d_h = (c[0] * dt + c[1] / 2 * dt2 + c[2] / 3 * dt3 + c[3] / 4 * dt4
-               + c[4] * dti + c[5] * dti2 + c[6] * dti3) * temp_scale
+        # TODO: dh is wrong in integration of reference temperature part.
+        #  example: .. c[1] * t**2/2 - t*t_ref + ...
+        d_h = (c[0] * dt + c[1] / 2 * dt ** 2
+               + c[2] * dt ** 2 * (t + 2 * t_ref) / 3
+               + c[3] * (t ** 4 + t_ref ** 3 * (3 * t_ref - 4 * t))
+               + c[4] * (log_t + 1 - t / t_ref)
+               - c[5] * dt ** 2 / (t2_ref * t)
+               + c[6] * (1.5 / t2_ref - 0.5 / t2 - t / t3_ref)) * temp_scale
+
         d_s = (c[0] * log_t + c[1] * (dt - t_ref * log_t)
                + c[2] * (dt2 / 2 - t2_ref * log_t)
                + c[3] * (dt3 / 3 - t3_ref * log_t)
                - c[4] * (dti + log_t / t_ref)
-               - c[5] * (2 * dti2 + log_t / t2_ref)
-               - c[6] * (3 * dti3 + log_t / t3_ref))
+               - c[5] * (dti2 / 2 + log_t / t2_ref)
+               - c[6] * (dti3 / 3 + log_t / t3_ref))
 
         res["S"] += d_s.T @ n
         res["mu"] += d_h - temp * d_s

@@ -52,7 +52,8 @@ class ElectrolyteBasics(ThermoContribution):
         n, mw = res["n"], res["mw"]
         species_def = self.species_definitions
         charge_list = [s.charge for s in species_def.values()]
-        kron_s = qvertcat(*[Quantity(1 if c == 0 else 0) for c in charge_list])
+        kron_s_list = [Quantity(1 if c == 0 else 0) for c in charge_list]
+        kron_s = qvertcat(*kron_s_list)
         res["charge"] = charge = qvertcat(*charge_list)  # [e/mol]
 
         # define molality, ionic strength, and relevant derivatives
@@ -61,6 +62,9 @@ class ElectrolyteBasics(ThermoContribution):
         res["_m_s"] = m_s = n.T @ d_ms_dn  # [mol (mol/s)]
         res["b"] = b = n / m_s  # [-]
         res["I"] = b.T @ di_db
+
+        self.declare_vector_keys("b")
+        self.declare_vector_keys("charge")
 
 
 class ExcessBasePitzer(ThermoContribution):
@@ -89,7 +93,9 @@ class ExcessBasePitzer(ThermoContribution):
 
     .. math::
 
-        \Delta_\chi S = R\,m_s\,\left [
+        \Delta_\chi S = \left .
+          -\frac{\partial \Delta \chi G^\mathrm{ex}}{\partial T} \right |_n
+          = -R\,m_s\,\left [
             \chi + T\,\left .\frac{\partial \chi}{\partial T} \right |_{n}
             \right ]
 
@@ -113,7 +119,7 @@ class ExcessBasePitzer(ThermoContribution):
         chi, chi_t = chi_res["chi"], chi_res["chi_t"]
         chi_b = chi_res["chi_b"] +  chi_res["chi_i"] * didb
 
-        res["S"] += R_GAS * m_s * (chi + temp * chi_t)
+        res["S"] -= R_GAS * m_s * (chi + temp * chi_t)
         res["mu"] += R_GAS * temp * (chi_b + (chi - chi_b.T @ b) * dmsdn)
 
     @abstractmethod
@@ -157,7 +163,7 @@ class PitzerDebyeHueckel(ExcessBasePitzer):
     .. math::
 
        \chi^\mathrm{PDH}(I) = -\frac43A_\gamma I^{3/2}\,
-         \frac{\ln (1+b\sqrt{I})}{b\sqrt{I}} \quad {\rm with}\quad b=1.2
+         \frac{\ln (1+b\sqrt{I})}{b\sqrt{I}}
 
     The function :math:`\chi^\mathrm{PDH}(I)` is a compatible dimensionless
     contribution  as defined for the :class:`ExcessBasePitzer` base-class.
@@ -181,7 +187,7 @@ class PitzerDebyeHueckel(ExcessBasePitzer):
     =========== ================== =========================== =======
 
     Generally, :math:`b = 1.2` is used universally. For water, normally
-    :math:`\rho_s = 980\ \mathrm{kg/m3}` and :math:`\epsilon_r = 80`.
+    :math:`\rho_s = 998\ \mathrm{kg/m3}` and :math:`\epsilon_r = 80`.
     """
     def define_chi(self, res):
         temp, ionic_strength = res["T"], res["I"]
@@ -250,7 +256,7 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
             \frac{1-(1+2\sqrt{I})\,\exp(-2\sqrt{I})}{2\,I}\,\beta^{(1)}_{ij,T}\\
         \Delta_\lambda\chi_I &= b_i\,b_j\,\lambda_{ij,I}(T, I)\quad\text{with}\quad
           \lambda_{ij,I}(T, I) =
-            \frac{1 + (2\,I + 2\,\sqrt{I} - 1)\,\exp(-2\sqrt{I})}{2\,I^2}\,
+            \frac{(2\,I + 2\,\sqrt{I} + 1)\,\exp(-2\sqrt{I}) - 1}{2\,I^2}\,
             \beta^{(1)}_{ij}\\
         \Delta_\lambda\boldsymbol{\chi}_b &= \lambda_{ij,T}(T, I)\,(
           b_i\,\mathbf{e}_j + b_j\,\mathbf{e}_i)
@@ -261,8 +267,9 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
         temp, b, ios = res["T"], res["b"], res["I"]
         t_ref = self.par_scalar("T_ref", "K")
         tsi = 2 * sqrt(ios)
-        i_factor = (1 - (1 + tsi) * exp(-tsi))/ (2 * ios)
-        i_factor_i = ((1 + (2 * ios + tsi - 1) * exp(-tsi)) / (2 * ios ** 2))
+        etsi = exp(-tsi)
+        i_factor = (1 - (1 + tsi) * etsi)/ (2 * ios)
+        i_factor_i = ((2 * ios + tsi + 1) * etsi - 1) / (2 * ios ** 2)
 
         # pre-factors for binary interactions
         # Operations involving factors of zero are required to provide the
@@ -303,10 +310,11 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
                     chi += d_chi
                     chi_t += term * f_t
                     chi_i += term * f_i
-                    chi_b[ii] += d_chi * b[ij]
-                    chi_b[ij] += d_chi * b[ii]
+                    cf = c * f
+                    chi_b[ii] += cf * b[ij]
+                    chi_b[ij] += cf * b[ii]
 
-        res["_pitzer_bin_chi"] = chi
+        res["pitzer_bin_chi"] = chi
         return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_b": chi_b}
 
 @registered_contribution
@@ -356,8 +364,7 @@ class PitzerTernaryInteraction(ExcessBasePitzer):
 
         def pair(idx_i: int, idx_j: int, idx_k: int) -> Quantity:
             if (idx_i, idx_j, idx_k) not in cache:
-                cache[(idx_i, idx_j, idx_k)] = \
-                    b[idx_i] * b[idx_j] * b[idx_k]
+                cache[(idx_i, idx_j, idx_k)] = b[idx_i] * b[idx_j] * b[idx_k]
             return cache[(idx_i, idx_j, idx_k)]
 
         chi, chi_t, chi_i = Quantity(0), Quantity(0, "1/K"), Quantity(0)
@@ -377,9 +384,10 @@ class PitzerTernaryInteraction(ExcessBasePitzer):
                 d_chi = term * f
                 chi += d_chi
                 chi_t += term * f_t
-                chi_b[ii] += d_chi * b[ij] * b[ik]
-                chi_b[ij] += d_chi * b[ii] * b[ik]
-                chi_b[ik] += d_chi * b[ii] * b[ij]
+                cf = c * f
+                chi_b[ii] += cf * b[ij] * b[ik]
+                chi_b[ij] += cf * b[ii] * b[ik]
+                chi_b[ik] += cf * b[ii] * b[ij]
 
-        res["_pitzer_ternary_chi"] = chi
+        res["pitzer_ternary_chi"] = chi
         return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_b": chi_b}
