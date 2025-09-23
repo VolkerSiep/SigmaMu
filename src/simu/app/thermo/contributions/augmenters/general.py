@@ -2,16 +2,17 @@ from casadi import DM
 
 from simu import (
     ThermoContribution, qsum, registered_contribution, Quantity,
-    SpeciesDefinition, qvertcat)
+    SpeciesDefinition, qvertcat, exp, R_GAS)
+from simu.core.utilities.types import MutMap
 
 
 @registered_contribution
 class GenericProperties(ThermoContribution):
     r"""Provide basic derived thermodynamic properties:
 
-    ========= ================================= ==============
+    ========= ================================= =================
     Property  Description                       Symbol
-    ========= ================================= ==============
+    ========= ================================= =================
     ``G``     Total Gibbs free energy [J]/[W]   :math:`G`
     ``H``     Total enthalpy [J]/[W]            :math:`H`
     ``A``     Total Helmholtz energy [J]/[W]    :math:`A`
@@ -22,7 +23,11 @@ class GenericProperties(ThermoContribution):
     ``x``     Mole fractions [-]                :math:`x_i`
     ``w``     Mass fractions [-]                :math:`w_i`
     ``Mw``    Average molecular weight [kg/mol] :math:`\bar M`
-    ========= ================================= ==============
+    ``rho``   Density [kg/m3]                   :math:`\varrho`
+    ``rho_n`` Molar density [mol/m3]            :math:`\varrho_n`
+    ``c``     Mass concentrations [kg/m3]       :math:`c_i`
+    ``c_n``   Molar concentrations [mol/m3]     :math:`c_{n,i}`
+    ========= ================================= =================
 
     With entropy :math:`S`, chemical potential :math:`\mu_i` and molecular
     weights :math:`M_i`, it is
@@ -36,10 +41,13 @@ class GenericProperties(ThermoContribution):
         N &= \sum_i n_i & m_i &= n_i\,M_i &
         M &= \sum_i m_i & \bar M &= \frac{M}{N} \\
         x_i &= \frac{n_i}{N} & w_i &= \frac{m_i}{M}
+        \varrho_n &= \frac{N}{V} & \varrho &= \frac{M}{V}\\
+        c_i &= \frac{m_i}{V} & c_{n,i} &= \frac{n_i}{V}
       \end{alignat*}
     """
 
-    provides = ["G", "H", "A", "U", "N", "m", "M", "x", "w", "Mw"]
+    provides = ["G", "H", "A", "U", "N", "m", "M", "x", "w", "Mw",
+                "rho_n", "rho", "c_n", "c"]
 
     def define(self, res):
         res["G"] = res["n"].T @ res["mu"]
@@ -57,8 +65,43 @@ class GenericProperties(ThermoContribution):
         res["x"] = res["n"] / res["N"]
         res["w"] = res["m"] / res["M"]
 
-        for name in ("m", "x", "w"):
+        res["rho_n"] = res["N"] / res["V"]
+        res["rho"] = res["M"] / res["V"]
+        res["c_n"] = res["n"] / res["V"]
+        res["c"] = res["m"] / res["V"]
+
+
+        for name in ("m", "x", "w", "c_n", "c"):
             self.declare_vector_keys(name)
+
+@registered_contribution
+class Activities(ThermoContribution):
+    r"""This contribution defines the activity coefficients ``gamma``
+    (:math:`\gamma_i`), mole-fraction-based  activities ``a_x`` (:math:`a_x`),
+    and concentration-based activities ``a_c`` (:math:`a_c`).
+
+    These properties are mainly used to describe the nonideality in the liquid
+    phase represented by Gibbs excess models.
+
+    Based on chemical potential :math:`\mu_i` and standard state chemical
+    potential :math:`\mu_i^0`, it is
+    .. math::
+
+        \gamma_i = \frac{\mu_i - \mu_i^0}{R\,T}\qquad
+        a_{x,i} = \gamma_i\,x_i\qquad a_{c,i} = \gamma_i\,c_{n,i}
+    """
+
+    provides = ["gamma", "a_x", "a_c"]
+
+    def define(self, res):
+        temp, mu, mu0 = [res[i] for i in "T mu mu_std".split()]
+
+        res["gamma"] = exp((mu - mu0) / (R_GAS * temp))
+        res["a_x"] = res["gamma"] * res["x"]
+        res["a_c"] = res["gamma"] * res["c_n"]
+
+        for n in Activities.provides:
+            self.declare_vector_keys(n)
 
 
 @registered_contribution

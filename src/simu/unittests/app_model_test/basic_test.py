@@ -8,4 +8,5 @@ def test_species_balance(species_balance_example_model_stub):
     bal = model.hierarchy.handler["n_bal"]
     for name, expr in bal.residuals.items():
         print(name, expr)
+    # TODO: turn into test
 
