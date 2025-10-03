@@ -107,11 +107,10 @@ class ThermoParameterStore:
 
     name: str
 
-    def __init__(self):
+    def __init__(self, name: str = None):
         self.__provided_parameters: NestedMutMap[Quantity] = {}
         self.__sources: MutMap[AbstractThermoSource] = {}
-        self.name = "default"
-
+        self.name = "default" if name is None else name
 
     def get_symbols(self, parameter_struct: NestedMap[str]) \
             -> NestedMap[Quantity]:

@@ -87,8 +87,8 @@ class Activities(ThermoContribution):
     potential :math:`\mu_i^0`, it is
     .. math::
 
-        \gamma_i = \frac{\mu_i - \mu_i^0}{R\,T}\qquad
-        a_{x,i} = \gamma_i\,x_i\qquad a_{c,i} = \gamma_i\,c_{n,i}
+        a_{x,i} = \frac{\mu_i - \mu_i^0}{R\,T}\qquad
+        \gamma_i = \frac{a_{x,i}}{x_i}\qquad a_{c,i} = \gamma_i\,c_{n,i}
     """
 
     provides = ["gamma", "a_x", "a_c"]
@@ -96,8 +96,8 @@ class Activities(ThermoContribution):
     def define(self, res):
         temp, mu, mu0 = [res[i] for i in "T mu mu_std".split()]
 
-        res["gamma"] = exp((mu - mu0) / (R_GAS * temp))
-        res["a_x"] = res["gamma"] * res["x"]
+        res["a_x"] = exp((mu - mu0) / (R_GAS * temp))
+        res["gamma"] = res["a_x"] / res["x"]
         res["a_c"] = res["gamma"] * res["c_n"]
 
         for n in Activities.provides:

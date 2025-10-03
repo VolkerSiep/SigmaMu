@@ -42,6 +42,10 @@ def assert_reproduction(result, suffix=None):
     (nested) dictionaries to be compared correctly.
     """
 
+    def my_dumps(data):
+        return dumps(data, cls=CustomEncoder, sort_keys=True,
+                     indent=2, ensure_ascii=False)
+
     def load_file():
         """try to open refdata file. If it doesn't exist, dump and return
         an empty dictionary"""
@@ -58,7 +62,7 @@ def assert_reproduction(result, suffix=None):
         """Save the reference data to the file"""
         ref_data_all[func_name] = data
         with open(filename, "w", encoding="utf-8") as file:
-            file.write(dumps(ref_data_all, sort_keys=True, indent=2))
+            file.write(my_dumps(ref_data_all))
 
     frame = getouterframes(currentframe())[1]
     caller_file = Path(frame.filename)
@@ -66,7 +70,7 @@ def assert_reproduction(result, suffix=None):
     ref_data_all = load_file()
 
     # to align and assure compatibility
-    result = loads(dumps(result, cls=CustomEncoder))
+    result = loads(my_dumps(result))
     func_name = frame.function  # get name of calling function
     func_name = f"{caller_file.name}::{func_name}"
     if suffix:
@@ -76,15 +80,14 @@ def assert_reproduction(result, suffix=None):
     except KeyError:
         msg = (f"No reference data exists for {func_name}. " +
                "The following data is generated now:\n\n" +
-               dumps(result, indent=2, sort_keys=True) +
-               "\n\nDo you accept this data")
+               my_dumps(result) + "\n\nDo you accept this data")
         if user_agree(msg):
             save_data(result)
         else:
             raise AssertionError("Reference data rejected by user")
     else:
-        ref = dumps(ref_data, indent=2, sort_keys=True)
-        val = dumps(result, indent=2, sort_keys=True)
+        ref = my_dumps(ref_data)
+        val = my_dumps(result)
         try:
             assert ref == val
         except AssertionError:

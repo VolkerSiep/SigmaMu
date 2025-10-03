@@ -9,7 +9,7 @@ from io import TextIOBase
 
 # external
 from casadi import MX, jacobian, jtimes, Function
-from numpy import array, argmin, argmax, abs, squeeze, log10
+from numpy import array, argmin, argmax, abs, squeeze, log10, isfinite
 from scipy.sparse import csc_array
 
 try:  # use pypardiso if installed
@@ -284,13 +284,26 @@ class SimulationSolver(Configurable):
             # evaluate system (matrix and rhs)
             r, dr_dx = funcs["f_r"](x)
             r = squeeze(array(r))
+            r_finite = isfinite(r)
+            if False in isfinite(r):
+                names = [residual_names[i]
+                         for i, f in enumerate(r_finite) if not f]
+                nf = ", ".join(names)
+                msg = f"Non-finite values in the follwing residuals: {nf}"
+                raise ValueError(msg)
+
             dr_dx = csc_array(dr_dx)
 
-            # assess error
-            max_err_idx = argmax(abs(r))
-            max_res_name = residual_names[max_err_idx]
-            max_err = abs(r[max_err_idx])
-            if max_err < 1:
+            if len(r):
+                # assess error
+                max_err_idx = argmax(abs(r))
+                max_res_name = residual_names[max_err_idx]
+                max_err = abs(r[max_err_idx])
+                if max_err < 1:
+                    break
+            else:  # trivial model, nothing to solve
+                max_err = 0
+                max_res_name = ""
                 break
 
             # calculate full update
@@ -298,13 +311,15 @@ class SimulationSolver(Configurable):
 
             # find relaxation factor
             a = squeeze(array(funcs["f_b"](x, dx)))
-            a = a[0 < a]
+            mask = (a > 0)
+            a = a[mask]
             alpha, min_alpha_name = 1, ""
             if len(a):
                 min_a_idx = int(argmin(a))
                 if a[min_a_idx] * opt["gamma"] < 1:
                     alpha = a[min_a_idx] * opt["gamma"]
-                    min_alpha_name = bound_names[min_a_idx]
+                    bn = [b for b, m in zip(bound_names, mask) if m]
+                    min_alpha_name = bn[min_a_idx]
                 if alpha < opt["wall"]:
                     msg = f"Relaxation factor is below {opt["wall"]}, " \
                           "no solution found"

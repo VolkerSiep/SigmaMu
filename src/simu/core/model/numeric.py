@@ -382,6 +382,7 @@ class NumericHandler:
             - Model Properties
             - Thermodynamic (state) properties
             - Residuals
+            - Bounds
 
         All the data is to be collected from the model and all child model
         proxies.
