@@ -54,6 +54,7 @@ class Model(ABC):
          Defining a constructor for the subclasses can be useful to pass custom
          data into the model.
          """
+        super().__init__()
         self.__proxy = None
         self.parameters = ParameterHandler(self.cls_name)
         self.properties = PropertyHandler()

@@ -97,9 +97,8 @@ def iapws_ideal_gas_model(species_definitions_h2o, frame_factory):
         "species": ["H2O"],
         "state": "HelmholtzState",
         "contributions": [
-            "MolecularWeight", "ReducedStateIAPWS",
-            "StandardStateIAPWS", "IdealGasIAPWS"
-        ]
+            "MolecularWeight", "ReducedStateIAPWS", "StandardStateIAPWS",
+            "ReferenceStateShift", "IdealGasIAPWS"]
     }
     frame = frame_factory.create_frame(species_definitions_h2o, config)
     with open(DATA_DIR / "parameters" / "iapws_parameters_h2o.yml") as file:

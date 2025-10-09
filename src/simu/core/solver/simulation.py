@@ -8,7 +8,7 @@ from time import time
 from io import TextIOBase
 
 # external
-from casadi import MX, jacobian, jtimes, Function
+from casadi import SX, jacobian, jtimes, Function
 from numpy import array, argmin, argmax, abs, squeeze, log10, isfinite
 from scipy.sparse import csc_array
 
@@ -272,9 +272,9 @@ class SimulationSolver(Configurable):
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
-            "duration": ("Time", "{:6.1g}"),
-            "min_alpha_name": ("Limit on bound", "{:>40s}"),
-            "max_res_name": ("Max residual", "{:>40s}")
+            "duration": ("Time", "{:6.2f}"),
+            "min_alpha_name": ("Limit on bound", "{:>50s}"),
+            "max_res_name": ("Max residual", "{:>50s}")
         }, row_dig=5, row_head="Iter", stream=output)
 
         funcs = self._prepare_functions()
@@ -383,19 +383,22 @@ class SimulationSolver(Configurable):
 
     def _prepare_functions(self) -> Map[Callable]:
         # prepare
-        #  - a casadi MX function x -> (r, dr/dx)
-        #  - a casadi MX function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
+        #  - a casadi function x -> (r, dr/dx)
+        #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
         # prepare a QFunction x -> (y_m, y_t)
         param = deepcopy(self.__model_parameters)
 
-        param[_VEC][_STATE] = (Quantity(x := MX.sym("x", self.__state_size)))
-        res = self._model.function(param, squeeze_results=False)
-        r, b = res[_VEC][_RES], res[_VEC][_BOUND]
-        dx = Quantity(MX.sym("x", self.__state_size))
+        # TODO: Is this faster for larger systems if I try to use MX here?
+
+        param[_VEC][_STATE] = (Quantity(x := SX.sym("x", self.__state_size)))
+        res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
+        r, b = res[_VEC][_RES].m, res[_VEC][_BOUND].m
+        dx = SX.sym("dx", self.__state_size)
+        f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
         return {
             "f_r": Function("f_r", [x], [r, jacobian(r, x)]),
             "f_b": Function("f_b", [x, dx], [-b / jtimes(b, x, dx)]),
-            "f_y": QFunction({"x": Quantity(x)}, res)
+            "f_y": f_y
         }
 
     @property
@@ -418,7 +421,7 @@ class SimulationSolver(Configurable):
         between = Configurable._validate_between
         return {
             "max_iter": between(1, 10000),
-            "gamma": between(0.1, 0.999),
+            "gamma": between(0, 0.999),
             "call_back_iter": {
                 "f": lambda x: x is None or callable(x),
                 "msg": "must be callable",

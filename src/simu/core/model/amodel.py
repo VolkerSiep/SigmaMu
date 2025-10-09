@@ -27,7 +27,6 @@ class AModelProxy(ModelProxy):
     b            :attr:`bounds <simu.core.model.base.ModelProxy.bounds>`
     ============ ===============================================================
     """
-
     @property
     def pa(self):
         return self.parameters
@@ -99,6 +98,8 @@ class AModel(Model, ABC):
     ba           :meth:`bounds.add <bound.BoundHandler.add>`
     ============ ==============================================================
     """
+    def __init__(self):
+        super().__init__()
 
     # parameter handler methods
     @property

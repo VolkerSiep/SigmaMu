@@ -35,6 +35,11 @@ data:
       H2O: 9.24437796
     g_8:
       H2O: 27.5075105
+  ReferenceStateShift:
+    dH:
+      H2O: -287.934 kJ/mol
+    dS:
+      H2O: 63.2 J/(mol*K)
   Residual1IAPWS:
     d_01:
       H2O: 1

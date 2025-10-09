@@ -87,6 +87,7 @@ IAPWS-Liquid:
     - MolecularWeight
     - ReducedStateIAPWS
     - StandardStateIAPWS
+    - ReferenceStateShift
     - IdealGasIAPWS
     - Residual1IAPWS
     - Residual2IAPWS
@@ -100,6 +101,7 @@ IAPWS-Gas:
     - MolecularWeight
     - ReducedStateIAPWS
     - StandardStateIAPWS
+    - ReferenceStateShift
     - IdealGasIAPWS
     - Residual1IAPWS
     - Residual2IAPWS

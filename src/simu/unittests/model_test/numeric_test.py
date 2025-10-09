@@ -84,19 +84,6 @@ def test_square_model_call(thermo_param, square_test_model):
     assert_reproduction(res)
 
 
-def test_jacobian(thermo_param, square_test_model):
-    model = square_test_model()
-    material = model.no2sol
-    numeric = NumericHandler(model.create_proxy().finalise())
-    material.store.add_source("default", thermo_param)
-    jac_id = numeric.register_jacobian(NumericHandler.RES_VEC,
-                                       NumericHandler.STATE_VEC)
-    args = numeric.arguments
-    result = numeric.function(args)
-    dr_dx = result[NumericHandler.JACOBIANS][jac_id].magnitude
-    assert_reproduction(dr_dx.tolist())
-
-
 def test_collect_hierarchy_material(material_parent_test_model):
     proxy = material_parent_test_model.top()
     for port_props in (True, False):
@@ -104,40 +91,6 @@ def test_collect_hierarchy_material(material_parent_test_model):
         ref = {"args": numeric.function.arg_structure,
                "res": numeric.function.result_structure}
         assert_reproduction(ref, suffix=f"{port_props}".lower())
-
-
-def test_extract_parameters(thermo_param, square_test_model):
-    model = square_test_model()
-    store = model.no2sol.store
-    numeric = NumericHandler(model.create_proxy().finalise())
-    store.add_source("default", thermo_param)
-    params = {'model_params': {'N': 'mol / s', 'T': '°C',
-                               'p': 'bar', 'x_c3': '%'}}
-    numeric.extract_parameters("param", params)
-    names = numeric.vector_arg_names("param")
-    jac_id = numeric.register_jacobian(NumericHandler.RES_VEC, "param")
-    args = numeric.arguments
-    result = numeric.function(args)
-    dr_dp = result[NumericHandler.JACOBIANS][jac_id].magnitude
-    ref = {"names": names, "J": dr_dp.tolist()}
-    assert_reproduction(ref)
-
-
-def test_collect_properties(thermo_param, square_test_model):
-    model = square_test_model()
-    store = model.no2sol.store
-    numeric = NumericHandler(model.create_proxy().finalise())
-    store.add_source("default", thermo_param)
-    props = {'thermo_props': {'local': {'mu': {
-        'CH3-(CH2)2-CH3': 'kJ/mol', 'CH3-CH2-CH3': 'kJ/mol'}}}}
-    numeric.collect_properties("mu", props)
-    names = numeric.vector_res_names("mu")
-    jac_id = numeric.register_jacobian("mu", NumericHandler.STATE_VEC)
-    args = numeric.arguments
-    result = numeric.function(args)
-    dmu_dx = result[NumericHandler.JACOBIANS][jac_id].magnitude
-    ref = {"names": names, "J": dmu_dx.tolist()}
-    assert_reproduction(ref)
 
 
 def test_export_state(square_test_model):

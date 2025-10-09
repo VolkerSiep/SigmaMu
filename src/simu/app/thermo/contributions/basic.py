@@ -59,6 +59,31 @@ class H0S0ReferenceState(ThermoContribution):
 
         self.declare_vector_keys("mu")
 
+@registered_contribution
+class ReferenceStateShift(ThermoContribution):
+    r"""The purpose of this contribution is to shift the reference state of
+    a model, normally with the purpose of aligning with other models.
+    The shift is individual per species and applies to enthalpy and entropy:
+
+    .. math::
+
+        \Delta S &= \sum_i \delta s_i\, n_i\\
+        \Delta \mu_i &= \delta h_i - T\,\Delta s_i
+
+    ========= ======================= ==================
+    Parameter Description             Symbol
+    ========= ======================= ==================
+    ``dH``    Molar shift in enthalpy :math:`\delta h_i`
+    ``dS``    Molar shift in entropy  :math:`\delta s_i`
+    ========= ======================= ==================
+    """
+    def define(self, res):
+        temp, n = res["T"], res["n"]
+        d_h = self.par_vector("dH", self.species, "J/mol")
+        d_s = self.par_vector("dS", self.species, "J/(mol*K)")
+
+        res["S"] += d_s.T @ n
+        res["mu"] += d_h - temp * d_s
 
 @registered_contribution
 class LinearHeatCapacity(ThermoContribution):
@@ -181,8 +206,6 @@ class BarinHeatCapacity(ThermoContribution):
         dti, dti2 = 1 / t - 1 / t_ref, 1 / t2 - 1 / t2_ref
         dti3 = 1 / t3 - 1 / t3_ref
 
-        # TODO: dh is wrong in integration of reference temperature part.
-        #  example: .. c[1] * t**2/2 - t*t_ref + ...
         d_h = (c[0] * dt + c[1] / 2 * dt ** 2
                + c[2] * dt ** 2 * (t + 2 * t_ref) / 3
                + c[3] * (t ** 4 + t_ref ** 3 * (3 * t_ref - 4 * t))
