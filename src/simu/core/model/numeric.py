@@ -140,6 +140,8 @@ class NumericHandler:
             # process local material objects
             all_names = set()
             for name, material in model.materials.handler.items():
+                if name in model.materials:
+                    continue
                 new_path = mk_new_path(path, name)
                 all_names.add(name)
                 try:
@@ -156,14 +158,8 @@ class NumericHandler:
             for name, proxy in model.hierarchy.handler.items():
                 all_names.add(name)
                 new_path = mk_new_path(path, name)
-                try:
-                    new_part = state_part[name]
-                except KeyError:
-                    if not allow_missing:
-                        raise
-                    result[new_path] = "missing"
-                else:
-                    traverse(proxy, new_part, new_path)
+                new_part = state_part.get(name, {})
+                traverse(proxy, new_part, new_path)
 
             # detect states that are not defined in model
             for name in state_part.keys():

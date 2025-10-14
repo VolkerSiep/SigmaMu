@@ -16,7 +16,7 @@ Casadi solver
 
 Scipy solver
 ------------
-The ``scipy.sparse.linalg`` module offers ``spsolve``. To utilise this, we first must convert the ``casadi.DM`` matrix into a ``scipy.sparse.csc_matrix``, which is made easy by `CasADi`_:
+The ``scipy.sparse.linalg`` module offers ``spsolve``. To utilise this, we first must convert the ``casadi.DM`` matrix into a ``scipy.sparse.csr_matrix``, which is made easy by `CasADi`_:
 
 .. code-block::
    :linenos:
@@ -25,7 +25,7 @@ The ``scipy.sparse.linalg`` module offers ``spsolve``. To utilise this, we first
 
     dm_matrix = DM(...)  # or coming back from a casadi function
     ...
-    scipy_matrix = csc_matrix(dm_matrix)
+    scipy_matrix = csr_matrix(dm_matrix)
 
 The `SciPy`_ module is capable of solving the sparse system of size 10\ :sup:`4` in about 100 seconds, but not exploiting multiple CPUs in the calculation. One declared target of ``SigmaMu`` is to scale its performance with available CPUs.
 
@@ -47,6 +47,10 @@ Further, the conversion from `CasADi`_ to `SciPy`_ has vanishing impact for syst
 
 `PyPardiso`_ is almost one magnitude faster than `SciPy`_ on a PC with 4 CPU cores and 2 threads per core. A system of size 10\ :sup:`4` can be solved in about 10 seconds.
 
+.. warning::
+
+    However, even for well conditioned systems, `PyPardiso`_ sometimes fails to deliver the correct solution and delivers a vector that yields highly non-zero elements in the remaining residual :math:`b-A\,x`. The same happens even with the sparse `SciPy`_ solver, but only with less well conditioned / scaled matrices.
+
 Conclusion
 ----------
 For moderate systems, we could suffice with the standard `SciPy`_ solver, but while the model evaluation is of linear to quadratic complexity, the solver will become the bottle-neck eventually. At this point it is advantageous to use `PyPardiso`_ and benefit from scalability options by employing multiple cores.
@@ -54,3 +58,7 @@ For moderate systems, we could suffice with the standard `SciPy`_ solver, but wh
 The actual system matrices are somewhat different in structure compared to this test, as they are closer to (while not entire) a block structure. This might have impact on the performance - more likely positive than negative, but will unlikely change the conclusion and performance assessment of the solvers relative to each other.
 
 As a final remark, system sizes of 10\ :sup:`4` can still be solved comfortably, while things become very slow at 10\ :sup:`5`, given that the solving of one system is only part of an iterative process. If solving such large system became relevant, iterative linear solvers should be considered.
+
+For all solvers, we iteratively transform the system by normalizing rows and columns of the system matrix to mitigate the unavoidable badly scaled variables from our thermodynamic systems. This helps the solvers much to chose feasible pivot elements and yield a valid solution.
+
+Yet, a robust approach is to fall-back on `SciPy`_ if `PyPardiso`_ gives a wrong solution, and even fall back to `NumPy`_ dense matrices if the system size is small enough.

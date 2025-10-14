@@ -9,13 +9,16 @@ from io import TextIOBase
 
 # external
 from casadi import SX, jacobian, jtimes, Function
-from numpy import array, argmin, argmax, abs, squeeze, log10, isfinite
-from scipy.sparse import csc_array
+from numpy import array, argmin, argmax, abs, squeeze, log10, isfinite, sqrt
+from numpy.linalg import norm, solve
+from scipy.sparse import csr_array, diags
+from scipy.sparse.linalg import svds, spsolve as scipy_spsolve
 
 try:  # use pypardiso if installed
     from pypardiso import spsolve
 except ImportError:  # use scipy if not
-    from scipy.sparse.linalg import spsolve
+    spsolve = scipy_spsolve
+
 
 # internal
 from simu.core.model.numeric import NumericHandler
@@ -72,6 +75,15 @@ class SimulationSolverIterationReport:
     which all residuals are exactly zero. This can however easily happen for
     linear systems. Anyhow, :math:`\mathrm{LMET} < 1` is already a sufficient
     condition for convergence.    
+    """
+
+    condition: float
+    r"""This is a *fair* condition of the system matrix, calculated after
+    repeatedly scaling the rows and columns to eliminate the effect of variable
+    scaling on the norm. As such, the obtained condition number is more
+    suitable to judge the solvability of the model at hand.
+    
+    The reported number is :math:`\log_{10}||\mathbf{J}||`.
     """
 
     def __post_init__(self):
@@ -151,6 +163,7 @@ Example:
         # This can be a lot to print
         all_properties = prop_func(state)
         pprint(all_properties)
+        return True
 
 """
 
@@ -249,7 +262,10 @@ class SimulationSolver(Configurable):
         this a conservative estimate.
 
         With `pypardiso`_ installed, the solving of the linear systems is
-        performed on all available CPU cores.
+        performed on all available CPU cores. However, their solver sometimes
+        chokes and returns a wrong solution. Therefore, the norm of the
+        solution is checked, and ``scipy.sparse.linalg.spsolve`` is used in
+        those instances.
 
         For each given keyword argument, the
         :meth:`~simu.core.utilities.configurable.Configurable.set_option`
@@ -272,6 +288,7 @@ class SimulationSolver(Configurable):
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
+            "condition": ("Norm", "{:7.2g}"),
             "duration": ("Time", "{:6.2f}"),
             "min_alpha_name": ("Limit on bound", "{:>50s}"),
             "max_res_name": ("Max residual", "{:>50s}")
@@ -289,14 +306,18 @@ class SimulationSolver(Configurable):
                 names = [residual_names[i]
                          for i, f in enumerate(r_finite) if not f]
                 nf = ", ".join(names)
-                msg = f"Non-finite values in the follwing residuals: {nf}"
+                msg = f"Non-finite values in the following residuals: {nf}"
                 raise ValueError(msg)
 
-            dr_dx = csc_array(dr_dx)
+            dr_dx = csr_array(dr_dx)
 
+            condition = float("nan")
             if len(r):
+                if iteration % 10 == 0:  # TODO: make option!
+                    condition = log10(self.scaled_norm(dr_dx))
+
                 # assess error
-                max_err_idx = argmax(abs(r))
+                max_err_idx = int(argmax(abs(r)))
                 max_res_name = residual_names[max_err_idx]
                 max_err = abs(r[max_err_idx])
                 if max_err < 1:
@@ -307,7 +328,34 @@ class SimulationSolver(Configurable):
                 break
 
             # calculate full update
-            dx = -spsolve(dr_dx, r)
+            dx = self._solve_linear(dr_dx, r)
+
+            # from numpy.linalg import solve
+            # dx = -solve(dr_dx.toarray(), r)
+
+            # refine solution (TODO: make this optional)
+            # for i in range(10):
+            #     r2 = r + dr_dx @ dx
+            #     print(max(abs(r2)))
+             #    dx += 0.1 * spsolve(dr_dx, r2)
+
+            # names = model.vector_res_names(NumericHandler.RES_VEC)
+            # for k, (n, r_i, r2_i, r3_i) in enumerate(zip(names, r, r2, r3)):
+            #     if abs(r3_i) > abs(r2_i):
+            #         print(f"{n:<50s} {r_i: .7g} {r2_i: .6g} {r3_i: .6g}")
+            #
+            #
+            # # TODO: just for a test
+            # from scipy.sparse.linalg import eigs
+            # print(eigs(dr_dx, 5, sigma=0)[0])
+            # exit()
+
+            # e = eigs(dr_dx.T, 5, sigma=0)[1][:,0]
+            # # names = model.vector_arg_names(NumericHandler.STATE_VEC)
+            # names = model.vector_res_names(NumericHandler.RES_VEC)
+            # for n, e_i in zip(names, e):
+            #     if abs(e_i) > 1e-1:
+            #         print(n, e_i)
 
             # find relaxation factor
             a = squeeze(array(funcs["f_b"](x, dx)))
@@ -334,7 +382,8 @@ class SimulationSolver(Configurable):
                 max_res_name=max_res_name,
                 relax_factor=float(alpha),
                 min_alpha_name=min_alpha_name,
-                duration=duration
+                duration=duration,
+                condition=condition
             ))
             if opt["call_back_iter"] is not None:
                 cb_result = opt["call_back_iter"](
@@ -356,14 +405,15 @@ class SimulationSolver(Configurable):
             max_res_name=max_res_name,
             relax_factor=1,
             min_alpha_name="",
-            duration=duration
+            duration=duration,
+            condition=condition
         ))
         table.row(reports[-1], iteration)
 
         # retain state if desired
         if opt["retain_solution"]:
-            model.retain_state(x.nonzeros(),
-                               self.model_parameters["thermo_params"])
+            thermo_param = self.model_parameters["thermo_params"]
+            model.retain_state(x.nonzeros(), thermo_param)
 
         return SimulationSolverReport(
             iterations=reports,
@@ -431,3 +481,74 @@ class SimulationSolver(Configurable):
                 "msg": "must be a stream or a qualified string"
             }
         }
+
+    @staticmethod
+    def scaled_norm(matrix: csr_array):
+        # todo:
+        #  - can be a utility function
+        #  - also check that it doesn't become a bottleneck for large systems
+        #    Actually, the svd stuff in the end becomes a bottle-neck.
+        #  - Make it an option, also to only report it for first iteration.
+        #    parameter can be: condition_every
+        #      (every nth iteration starting with 0,
+        #      0 means only at iteration zero, -1 means never)
+        for i in range(20):
+            col_norms = sqrt(matrix.multiply(matrix).sum(axis=0))
+            col_norms[col_norms == 0] = 1.0
+            matrix = matrix @ diags(1.0 / col_norms)
+
+            row_norms = sqrt(matrix.multiply(matrix).sum(axis=1))
+            row_norms[row_norms == 0] = 1.0
+            matrix = (matrix.T @ diags(1.0 / row_norms)).T
+            qlt = (sum((row_norms - 1) ** 2) +
+                   sum((col_norms - 1) ** 2)) / matrix.shape[0]
+            if qlt < 0.001:
+                break
+
+        # --- Estimate condition number ---
+        try:
+            s_max = svds(matrix, k=1, which='LM', return_singular_vectors=False)[0]
+            s_min = svds(matrix, k=1, which='SM', return_singular_vectors=False)[0]
+        except Exception:
+            return float("nan")
+        else:
+            return abs(s_max / s_min)
+
+    @staticmethod
+    def _scale(matrix: csr_array, num=10):
+        total_col_norms = 1
+        total_row_norms = 1
+        for i in range(num):
+            col_norms = sqrt(matrix.multiply(matrix).sum(axis=0))
+            col_norms[col_norms == 0] = 1.0
+            total_col_norms = total_col_norms * col_norms
+            matrix = matrix @ diags(1.0 / col_norms)
+
+            row_norms = sqrt(matrix.multiply(matrix).sum(axis=1))
+            row_norms[row_norms == 0] = 1.0
+            total_row_norms = total_row_norms * row_norms
+            matrix = (matrix.T @ diags(1.0 / row_norms)).T
+            qlt = (sum((row_norms - 1) ** 2) +
+                   sum((col_norms - 1) ** 2)) / matrix.shape[0]
+            if qlt < 0.001:
+                break
+        return matrix, diags(1.0 / total_row_norms), diags(1.0 / total_col_norms)
+
+    @staticmethod
+    def _solve_linear(dr_dx: csr_array, r):
+        dr_dx, s_r, s_x = SimulationSolver._scale(dr_dx, num=5)
+        n = r.shape[0]
+        r = r @ s_r
+        dx = -spsolve(dr_dx, r)
+        dr = r + dr_dx @ dx
+        if (nr := norm(dr)) > 0.1 * dr.shape[0]:
+            # print(f"Remaining norm: {nr:.2f} - using scipy fallback")
+            dx = -scipy_spsolve(dr_dx, r)
+        dr = r + dr_dx @ dx
+        if (nr := norm(dr)) > 0.1 * dr.shape[0]:
+            if n < 1000:
+                # print(f"Remaining norm: {nr:.2f} - using numpy fallback")
+                return -solve(dr_dx.toarray(), r) @ s_x
+            msg = f"Linear solver error, remaining residual: {nr:.2f}"
+            raise ValueError(msg)
+        return dx @ s_x
