@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from time import time
 from io import TextIOBase
+from warnings import catch_warnings, simplefilter
 
 # external
 from casadi import SX, jacobian, jtimes, Function
@@ -204,7 +205,7 @@ class SimulationSolver(Configurable):
           domain boundary. Normally, changing the value is not required.
           Generally, a lower value makes the model more robust against
           non-linear domain boundaries (and thus linearisation errors causing
-          the state to exit the domain. A higher value yields slightly faster
+          the state to exit the domain). A higher value yields slightly faster
           convergence, if the solution is in comparison with the initial values
           very close to the domain boundary.
         :param wall: Either if there is no solution within the domain of the
@@ -311,7 +312,7 @@ class SimulationSolver(Configurable):
 
             dr_dx = csr_array(dr_dx)
 
-            condition = float("nan")
+            condition = -1 # less scary than NaN
             if len(r):
                 if iteration % 10 == 0:  # TODO: make option!
                     condition = log10(self.scaled_norm(dr_dx))
@@ -330,35 +331,14 @@ class SimulationSolver(Configurable):
             # calculate full update
             dx = self._solve_linear(dr_dx, r)
 
-            # from numpy.linalg import solve
-            # dx = -solve(dr_dx.toarray(), r)
-
-            # refine solution (TODO: make this optional)
-            # for i in range(10):
-            #     r2 = r + dr_dx @ dx
-            #     print(max(abs(r2)))
-             #    dx += 0.1 * spsolve(dr_dx, r2)
-
-            # names = model.vector_res_names(NumericHandler.RES_VEC)
-            # for k, (n, r_i, r2_i, r3_i) in enumerate(zip(names, r, r2, r3)):
-            #     if abs(r3_i) > abs(r2_i):
-            #         print(f"{n:<50s} {r_i: .7g} {r2_i: .6g} {r3_i: .6g}")
-            #
-            #
-            # # TODO: just for a test
-            # from scipy.sparse.linalg import eigs
-            # print(eigs(dr_dx, 5, sigma=0)[0])
-            # exit()
-
-            # e = eigs(dr_dx.T, 5, sigma=0)[1][:,0]
-            # # names = model.vector_arg_names(NumericHandler.STATE_VEC)
-            # names = model.vector_res_names(NumericHandler.RES_VEC)
-            # for n, e_i in zip(names, e):
-            #     if abs(e_i) > 1e-1:
-            #         print(n, e_i)
-
             # find relaxation factor
-            a = squeeze(array(funcs["f_b"](x, dx)))
+            b, a = map(lambda z: squeeze(array(z)), funcs["f_b"](x, dx))
+            # are there bounds violated?
+            invalid = [n for n, m_i in zip(bound_names, b <= 0) if m_i]
+            if invalid:
+                msg = f"Bound violation of: {', '.join(invalid)}"
+                raise ValueError(msg)
+
             mask = (a > 0)
             a = a[mask]
             alpha, min_alpha_name = 1, ""
@@ -447,7 +427,7 @@ class SimulationSolver(Configurable):
         f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
         return {
             "f_r": Function("f_r", [x], [r, jacobian(r, x)]),
-            "f_b": Function("f_b", [x, dx], [-b / jtimes(b, x, dx)]),
+            "f_b": Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
             "f_y": f_y
         }
 
@@ -505,10 +485,13 @@ class SimulationSolver(Configurable):
             if qlt < 0.001:
                 break
 
-        # --- Estimate condition number ---
         try:
-            s_max = svds(matrix, k=1, which='LM', return_singular_vectors=False)[0]
-            s_min = svds(matrix, k=1, which='SM', return_singular_vectors=False)[0]
+            with catch_warnings():
+                simplefilter("ignore", UserWarning)
+                s_max = svds(matrix, k=1, which='LM',
+                             return_singular_vectors=False)[0]
+                s_min = svds(matrix, k=1, which='SM', solver='lobpcg',
+                             return_singular_vectors=False)[0]
         except Exception:
             return float("nan")
         else:
@@ -544,7 +527,7 @@ class SimulationSolver(Configurable):
         if (nr := norm(dr)) > 0.1 * dr.shape[0]:
             # print(f"Remaining norm: {nr:.2f} - using scipy fallback")
             dx = -scipy_spsolve(dr_dx, r)
-        dr = r + dr_dx @ dx
+            dr = r + dr_dx @ dx
         if (nr := norm(dr)) > 0.1 * dr.shape[0]:
             if n < 1000:
                 # print(f"Remaining norm: {nr:.2f} - using numpy fallback")

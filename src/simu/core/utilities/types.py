@@ -1,20 +1,22 @@
 """This module defines types of complex data structures"""
 
 # stdlib
-from typing import Union, TypeVar, Self
+from typing import TypeVar, Self, TypeAliasType
 from collections.abc import Mapping, MutableMapping
 
-__V = TypeVar("__V")
-"""An arbitrary type"""
+VT = TypeVar("VT")
+"""An arbitrary value type"""
 
-Map = Mapping[str, __V]
+Map = Mapping[str, VT]
 """A mapping of strings to another type"""
 
-MutMap = MutableMapping[str, __V]
+MutMap = MutableMapping[str, VT]
 """A mutable mapping of strings to another type"""
 
-NestedMap = Map[__V | Self]
+NestedMap = TypeAliasType("NestedMap", Map[VT | "NestedMap[VT]"],
+                          type_params=(VT, ))
 """A nested mapping of strings to another type"""
 
-NestedMutMap = MutMap[__V | Self]
+NestedMutMap = TypeAliasType("NestedMutMap", MutMap[VT | "NestedMutMap[VT]"],
+                             type_params=(VT, ))
 """A nested mutable mapping of strings to another type"""
