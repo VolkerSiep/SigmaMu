@@ -33,6 +33,9 @@ from .core.model.amodel import AModel
 from .core.model.numeric import NumericHandler
 from .core.solver.simulation import SimulationSolver
 
+# for convenience:
+NH = NumericHandler  # allows shorter constants, such as NH.THERMO_PARAMS
+
 # versioning
 from ._version import version as __version__
 

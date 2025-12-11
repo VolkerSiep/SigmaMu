@@ -34,7 +34,7 @@ Boston-Mathias-Redlich-Kwong-Gas:
     - IdealMix
     - HelmholtzIdealGas
     - CriticalParameters
-    - RedlichKwongMFactor
+    - BostonMatthiasMFactor
     - BostonMathiasAlphaFunction
     - RedlichKwongAFunction
     - RedlichKwongBFunction
@@ -62,7 +62,7 @@ Boston-Mathias-Redlich-Kwong-Liquid:
     - IdealMix
     - HelmholtzIdealGas
     - CriticalParameters
-    - RedlichKwongMFactor
+    - BostonMatthiasMFactor
     - BostonMathiasAlphaFunction
     - RedlichKwongAFunction
     - RedlichKwongBFunction
@@ -87,6 +87,7 @@ IAPWS-Liquid:
     - MolecularWeight
     - ReducedStateIAPWS
     - StandardStateIAPWS
+    - ReferenceStateShift
     - IdealGasIAPWS
     - Residual1IAPWS
     - Residual2IAPWS
@@ -100,6 +101,7 @@ IAPWS-Gas:
     - MolecularWeight
     - ReducedStateIAPWS
     - StandardStateIAPWS
+    - ReferenceStateShift
     - IdealGasIAPWS
     - Residual1IAPWS
     - Residual2IAPWS

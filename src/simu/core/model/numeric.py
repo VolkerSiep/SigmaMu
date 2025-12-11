@@ -38,7 +38,6 @@ class NumericHandler:
     RES_VEC: str = "residuals"
     BOUND_VEC: str = "bounds"
     VECTORS: str = "vectors"
-    JACOBIANS: str = "jacobians"
 
     def __init__(self, model: ModelProxy, port_properties: bool = True):
         """The option ``port_properties`` determines whether the properties
@@ -141,6 +140,8 @@ class NumericHandler:
             # process local material objects
             all_names = set()
             for name, material in model.materials.handler.items():
+                if name in model.materials:
+                    continue
                 new_path = mk_new_path(path, name)
                 all_names.add(name)
                 try:
@@ -157,14 +158,8 @@ class NumericHandler:
             for name, proxy in model.hierarchy.handler.items():
                 all_names.add(name)
                 new_path = mk_new_path(path, name)
-                try:
-                    new_part = state_part[name]
-                except KeyError:
-                    if not allow_missing:
-                        raise
-                    result[new_path] = "missing"
-                else:
-                    traverse(proxy, new_part, new_path)
+                new_part = state_part.get(name, {})
+                traverse(proxy, new_part, new_path)
 
             # detect states that are not defined in model
             for name in state_part.keys():
@@ -202,7 +197,7 @@ class NumericHandler:
             fetch_retain_initial_state(model, states)
             for name, proxy in model.hierarchy.handler.items():
                 if name in states:
-                    fetch_retain_initial_state(proxy, states[name])
+                    traverse(proxy, states[name])
 
         state_struct = unflatten_dictionary(
             dict(zip(self.__vec_arg_names[self.STATE_VEC], state)))
@@ -319,18 +314,6 @@ class NumericHandler:
         self.__vec_res_names[key] = nam
         return result
 
-    def register_jacobian(self, dependent: str, independent: str) -> str:
-        """Add the given symbols to the jacobian structure. These symbols must
-        be a function of the arguments, or else the function cannot be
-        created. The key must be unique.
-        """
-        dep = self.__sym_res[self.VECTORS][dependent]
-        ind = self.__sym_args[self.VECTORS][independent]
-        jac = jacobian(dep, ind)
-        key = f"d_({dependent})/d_({independent})"
-        self.__sym_res[self.JACOBIANS][key] = jac
-        return key
-
     def __collect_arguments(self) -> NestedMutMap[Quantity]:
         """Create a function that has the following arguments, each of them as
         a flat dictionary:
@@ -382,6 +365,7 @@ class NumericHandler:
             - Model Properties
             - Thermodynamic (state) properties
             - Residuals
+            - Bounds
 
         All the data is to be collected from the model and all child model
         proxies.
@@ -451,24 +435,8 @@ class NumericHandler:
             self.VECTORS: {
                 self.RES_VEC: residuals,
                 self.BOUND_VEC: bounds
-            },
-            self.JACOBIANS: {}
+            }
         }
-
-        # The following jacobian is always needed
-        # TODO: no it isn't!
-        #   I might create 2 functions, one for a Newton step and one
-        #   much cheaper to evaluate for line search.
-        # maybe define flag in constructor whether to create this one right
-        # away.
-
-        # TODO: also might add one entry which is the mean square residual
-
-        # if residuals.magnitude.rows() and states.magnitude.rows():
-        #     self.__symres[cls.DR_DX] = jacobian(residuals, states)
-        # else:
-        #     self.__symres[cls.DR_DX] = Quantity(SX.sym("dr_dx", 0))
-        #
 
     def __collect_argument_values(self) -> NestedMutMap[Quantity]:
         """Fetch initial states from materials, parameter values from
@@ -548,7 +516,9 @@ class NumericHandler:
                 msg = f"Child model / {typ} name clash:" \
                     f"'{name}' in {context}"
                 raise ValueError(msg)
-            result[name] = call_self(proxy, func, typ, path + [name])
+            res_i = call_self(proxy, func, typ, path + [name])
+            if res_i:
+                result[name] = res_i
         return result
 
     @staticmethod

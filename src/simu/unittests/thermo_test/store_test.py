@@ -1,4 +1,4 @@
-from _pytest.python_api import raises
+from pytest import raises
 from pint import DimensionalityError, UndefinedUnitError
 
 from simu import ThermoParameterStore, StringDictThermoSource, SpeciesDefinition

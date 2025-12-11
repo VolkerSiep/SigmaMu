@@ -37,12 +37,17 @@ B-function
   :show-inheritance:
   :exclude-members: __init__, __new__
 
-m-factor
-........
+RedlichKwongMFactor
+...................
  .. autoclass:: RedlichKwongMFactor
   :show-inheritance:
   :exclude-members: __init__, __new__
 
+BostonMathiasMFactor
+....................
+ .. autoclass:: BostonMatthiasMFactor
+  :show-inheritance:
+  :exclude-members: __init__, __new__
 
 Critical parameters
 -------------------
@@ -63,8 +68,15 @@ Linear mixing rule
   :show-inheritance:
   :exclude-members: __init__, __new__
 
-Mathias Boston-Mathias alpha-function
--------------------------------------
+SRKAlphaFunction
+----------------
+ .. autoclass:: SRKAlphaFunction
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
+
+Boston-Mathias alpha-function
+-----------------------------
  .. autoclass:: BostonMathiasAlphaFunction
   :show-inheritance:
   :exclude-members: __init__, __new__

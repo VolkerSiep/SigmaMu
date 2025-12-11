@@ -114,8 +114,8 @@ class StandardStateIAPWS(ThermoContribution):
     ``n_8``   :math:`n_{8,i}^0`              ``g_8``   :math:`\gamma_{8,i}^0`
     ========= ============================== ========= ======================
 
-    The standard state is technically an ideal gas pure component standard state
-    at the critical point of the individual species.
+    The standard state is technically an ideal gas pure component standard
+    state at the critical point of the individual species.
     """
 
     provides = ["mu", "S"]

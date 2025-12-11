@@ -6,6 +6,7 @@ levels, while relying to maximal degree on standard python structures.
 from re import escape, split
 from typing import TypeVar, Callable
 from collections import Counter
+from collections.abc import Mapping
 
 # internal modules
 from .types import NestedMap, MutMap, Map, NestedMutMap
@@ -55,15 +56,13 @@ def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:
     >>> flatten_dictionary(d)
     {'a/b': 1, 'a/c': 2, 'd/e\\/f': 3}
     """
-    try:
-        items = structure.items()  # is this dictionary enough for us?
-    except AttributeError:  # doesn't seem so, this is just a value
-        return {prefix: structure}  # type: ignore
+    if not isinstance(structure, Mapping):
+        return {prefix: structure}
 
     result: MutMap[_V] = {}
     # We must sort to create the same sequence each time
     #   (dictionary might have content permuted)
-    for key, value in sorted(items):
+    for key, value in sorted(structure.items()):
         # esc. separator
         key = str(key).replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")
         key = f"{prefix}{FLATTEN_SEPARATOR}{key}" if prefix else key

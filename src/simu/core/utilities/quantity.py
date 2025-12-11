@@ -370,23 +370,26 @@ class QFunction:
                  func_name: str = "f", simplify_units: bool = True):
         args_flat = flatten_dictionary(args)
         arg_sym = cas.vertcat(*[v.magnitude for v in args_flat.values()])
-        results_flat = flatten_dictionary(results).items()
+        results_flat = flatten_dictionary(results)
         if simplify_units:
-            results_flat = {k: simplify_quantity(v) for k, v in results_flat}
+            results_flat = {k: simplify_quantity(v)
+                            for k, v in results_flat.items()}
 
         self.__res_shapes = {}
         res_sym = []
         for key, value in results_flat.items():
             mag = value.magnitude
-            shape = mag.shape
-            self.__res_shapes[key] = mag.shape
+            try:
+                shape = mag.shape
+            except AttributeError:
+                shape = (1, 1)
+            self.__res_shapes[key] = shape
             res_sym.append(cas.reshape(mag, shape[0] * shape[1], 1))
         res_sym = cas.vertcat(*res_sym)
 
         self.arg_units = {k: v.units for k, v in args_flat.items()}
         self.res_units = {k: v.units for k, v in results_flat.items()}
-        self.func = cas.Function(func_name, [arg_sym], [res_sym],
-                                 ["x"], ["y"])
+        self.func = cas.Function(func_name, [arg_sym], [res_sym], ["x"], ["y"])
 
     def __call__(self, args: NestedMap[Quantity],
                  squeeze_results: bool = True) -> NestedMap[Quantity]:

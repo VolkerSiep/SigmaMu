@@ -31,12 +31,12 @@ Next steps are to instantiate a :class:`~simu.SimulationSolver` on this numeric 
 
 >>> solver = SimulationSolver(numeric)
 >>> result = solver.solve()
-Iter   LMET   Alpha   Time                           Limit on bound                             Max residual
------ ----- ------- ------ ---------------------------------------- ----------------------------------------
-    0   9.0    0.83   ...                source/IdealMix/n/Methane                                        T
-    1   8.2       1   ...                                                                                 T
-    2   6.4       1   ...                                                                                 V
-    3  -7.3       1   ...                                                                                 V
+Iter   LMET   Alpha   Time                                     Limit on bound                                       Max residual
+----- ----- ------- ------ -------------------------------------------------- --------------------------------------------------
+    0   9.0    0.83   ...                          source/IdealMix/n/Methane                                                  T
+    1   8.2       1   ...                                                                                                     T
+    2   6.4       1   ...                                                                                                     V
+    3  -7.3       1   ...                                                                                                     V
 
 The second column ``LMET`` is the logarithmic maximum error to tolerance ratio. An initial value of 7 to 9 is typical, for instance if a temperature is 1 to 100 K away from its solution, while the tolerance is 1e-7 K. When the Newton-Raphson method grips, and full steps can be taken, the decrease of LMET ideally doubles in each iteration. Once being less than zero, all residual values are below their tolerances, and the model is solved. Linear or nearly linear models show above behaviour: The LMET jumps straight down to the level of numerical precision (here roughly 1e-14 of the value magnitudes).
 

@@ -11,6 +11,12 @@ General Properties
   :show-inheritance:
   :exclude-members: __init__, __new__
 
+Activities
+----------
+.. autoclass:: Activities
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
 Elemental flows and fractions
 -----------------------------
 .. autoclass:: Elemental

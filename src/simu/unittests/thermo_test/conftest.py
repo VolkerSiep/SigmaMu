@@ -1,13 +1,14 @@
 from yaml import safe_load
 from pytest import fixture
+from casadi import DM
 
 from simu import (SpeciesDefinition, SymbolQuantity, base_unit,
-                  parse_quantities_in_struct)
-from simu.core.utilities.types import Map
+                  parse_quantities_in_struct, Quantity)
+from simu.core.utilities.types import Map, MutMap
 from simu.app import (DATA_DIR, RegThermoFactory, ThermoStructure)
 from simu.app.thermo.contributions.cubic.core import BostonMathiasAlphaFunction
 
-
+from .utils import vec, sym
 
 @fixture(scope="session")
 def species_definitions_h2o() -> Map[SpeciesDefinition]:
@@ -28,6 +29,28 @@ def species_definitions_abc() -> Map[SpeciesDefinition]:
     return {"A": SpeciesDefinition("N2"),
             "B": SpeciesDefinition("O2"),
             "C": SpeciesDefinition("Ar")}
+
+
+@fixture(scope="session")
+def species_definitions_electrolyte() -> Map[SpeciesDefinition]:
+    """A simple example species definition map with 3 electrolyte species"""
+    return {"H2O": SpeciesDefinition("H2O"),
+            "Na+": SpeciesDefinition("Na:1+"),
+            "SO42-": SpeciesDefinition("SO4:2-")}
+
+@fixture(scope="session")
+def res_input_electrolyte() -> tuple[MutMap[Quantity], set]:
+    d_si = DM.zeros(3)
+    d_si[0] = 1
+    c = DM([0, 1, -2])
+    res = {"T": sym("T", "K"), "n": vec("n", 3, "mol"),
+           "_m_s": sym("m_s", "mol"), "mw": vec("mw", 3, "mol"),
+           "I": sym("I", "dimless"), "b": vec("b", 3, "dimless"),
+           "_di_db": vec("b", 3, "dimless"),
+           "_dms_dn": vec("dms_dn", 3, "dimless")}
+    inp_keys = set(res.keys())
+    res.update(mu=vec("mu", 3, "kJ/mol"), S=sym("S", "J/K"))
+    return res, inp_keys
 
 
 @fixture(scope="session")
@@ -74,9 +97,8 @@ def iapws_ideal_gas_model(species_definitions_h2o, frame_factory):
         "species": ["H2O"],
         "state": "HelmholtzState",
         "contributions": [
-            "MolecularWeight", "ReducedStateIAPWS",
-            "StandardStateIAPWS", "IdealGasIAPWS"
-        ]
+            "MolecularWeight", "ReducedStateIAPWS", "StandardStateIAPWS",
+            "ReferenceStateShift", "IdealGasIAPWS"]
     }
     frame = frame_factory.create_frame(species_definitions_h2o, config)
     with open(DATA_DIR / "parameters" / "iapws_parameters_h2o.yml") as file:

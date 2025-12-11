@@ -6,16 +6,20 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from time import time
 from io import TextIOBase
+from warnings import catch_warnings, simplefilter
 
 # external
-from casadi import MX, jacobian, jtimes, Function
-from numpy import array, argmin, argmax, abs, squeeze, log10
-from scipy.sparse import csc_array
+from casadi import SX, jacobian, jtimes, Function
+from numpy import array, argmin, argmax, abs, squeeze, log10, isfinite, sqrt
+from numpy.linalg import norm, solve
+from scipy.sparse import csr_array, diags
+from scipy.sparse.linalg import svds, spsolve as scipy_spsolve
 
 try:  # use pypardiso if installed
     from pypardiso import spsolve
 except ImportError:  # use scipy if not
-    from scipy.sparse.linalg import spsolve
+    spsolve = scipy_spsolve
+
 
 # internal
 from simu.core.model.numeric import NumericHandler
@@ -72,6 +76,15 @@ class SimulationSolverIterationReport:
     which all residuals are exactly zero. This can however easily happen for
     linear systems. Anyhow, :math:`\mathrm{LMET} < 1` is already a sufficient
     condition for convergence.    
+    """
+
+    condition: float
+    r"""This is a *fair* condition of the system matrix, calculated after
+    repeatedly scaling the rows and columns to eliminate the effect of variable
+    scaling on the norm. As such, the obtained condition number is more
+    suitable to judge the solvability of the model at hand.
+    
+    The reported number is :math:`\log_{10}||\mathbf{J}||`.
     """
 
     def __post_init__(self):
@@ -151,6 +164,7 @@ Example:
         # This can be a lot to print
         all_properties = prop_func(state)
         pprint(all_properties)
+        return True
 
 """
 
@@ -191,7 +205,7 @@ class SimulationSolver(Configurable):
           domain boundary. Normally, changing the value is not required.
           Generally, a lower value makes the model more robust against
           non-linear domain boundaries (and thus linearisation errors causing
-          the state to exit the domain. A higher value yields slightly faster
+          the state to exit the domain). A higher value yields slightly faster
           convergence, if the solution is in comparison with the initial values
           very close to the domain boundary.
         :param wall: Either if there is no solution within the domain of the
@@ -249,7 +263,10 @@ class SimulationSolver(Configurable):
         this a conservative estimate.
 
         With `pypardiso`_ installed, the solving of the linear systems is
-        performed on all available CPU cores.
+        performed on all available CPU cores. However, their solver sometimes
+        chokes and returns a wrong solution. Therefore, the norm of the
+        solution is checked, and ``scipy.sparse.linalg.spsolve`` is used in
+        those instances.
 
         For each given keyword argument, the
         :meth:`~simu.core.utilities.configurable.Configurable.set_option`
@@ -272,9 +289,10 @@ class SimulationSolver(Configurable):
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
-            "duration": ("Time", "{:6.1g}"),
-            "min_alpha_name": ("Limit on bound", "{:>40s}"),
-            "max_res_name": ("Max residual", "{:>40s}")
+            "condition": ("Norm", "{:7.2g}"),
+            "duration": ("Time", "{:6.2f}"),
+            "min_alpha_name": ("Limit on bound", "{:>50s}"),
+            "max_res_name": ("Max residual", "{:>50s}")
         }, row_dig=5, row_head="Iter", stream=output)
 
         funcs = self._prepare_functions()
@@ -284,27 +302,52 @@ class SimulationSolver(Configurable):
             # evaluate system (matrix and rhs)
             r, dr_dx = funcs["f_r"](x)
             r = squeeze(array(r))
-            dr_dx = csc_array(dr_dx)
+            r_finite = isfinite(r)
+            if False in isfinite(r):
+                names = [residual_names[i]
+                         for i, f in enumerate(r_finite) if not f]
+                nf = ", ".join(names)
+                msg = f"Non-finite values in the following residuals: {nf}"
+                raise ValueError(msg)
 
-            # assess error
-            max_err_idx = argmax(abs(r))
-            max_res_name = residual_names[max_err_idx]
-            max_err = abs(r[max_err_idx])
-            if max_err < 1:
+            dr_dx = csr_array(dr_dx)
+
+            condition = -1 # less scary than NaN
+            if len(r):
+                if iteration % 10 == 0:  # TODO: make option!
+                    condition = log10(self.scaled_norm(dr_dx))
+
+                # assess error
+                max_err_idx = int(argmax(abs(r)))
+                max_res_name = residual_names[max_err_idx]
+                max_err = abs(r[max_err_idx])
+                if max_err < 1:
+                    break
+            else:  # trivial model, nothing to solve
+                max_err = 0
+                max_res_name = ""
                 break
 
             # calculate full update
-            dx = -spsolve(dr_dx, r)
+            dx = self._solve_linear(dr_dx, r)
 
             # find relaxation factor
-            a = squeeze(array(funcs["f_b"](x, dx)))
-            a = a[0 < a]
+            b, a = map(lambda z: squeeze(array(z)), funcs["f_b"](x, dx))
+            # are there bounds violated?
+            invalid = [n for n, m_i in zip(bound_names, b <= 0) if m_i]
+            if invalid:
+                msg = f"Bound violation of: {', '.join(invalid)}"
+                raise ValueError(msg)
+
+            mask = (a > 0)
+            a = a[mask]
             alpha, min_alpha_name = 1, ""
             if len(a):
                 min_a_idx = int(argmin(a))
                 if a[min_a_idx] * opt["gamma"] < 1:
                     alpha = a[min_a_idx] * opt["gamma"]
-                    min_alpha_name = bound_names[min_a_idx]
+                    bn = [b for b, m in zip(bound_names, mask) if m]
+                    min_alpha_name = bn[min_a_idx]
                 if alpha < opt["wall"]:
                     msg = f"Relaxation factor is below {opt["wall"]}, " \
                           "no solution found"
@@ -319,7 +362,8 @@ class SimulationSolver(Configurable):
                 max_res_name=max_res_name,
                 relax_factor=float(alpha),
                 min_alpha_name=min_alpha_name,
-                duration=duration
+                duration=duration,
+                condition=condition
             ))
             if opt["call_back_iter"] is not None:
                 cb_result = opt["call_back_iter"](
@@ -341,14 +385,15 @@ class SimulationSolver(Configurable):
             max_res_name=max_res_name,
             relax_factor=1,
             min_alpha_name="",
-            duration=duration
+            duration=duration,
+            condition=condition
         ))
         table.row(reports[-1], iteration)
 
         # retain state if desired
         if opt["retain_solution"]:
-            model.retain_state(x.nonzeros(),
-                               self.model_parameters["thermo_params"])
+            thermo_param = self.model_parameters["thermo_params"]
+            model.retain_state(x.nonzeros(), thermo_param)
 
         return SimulationSolverReport(
             iterations=reports,
@@ -368,19 +413,22 @@ class SimulationSolver(Configurable):
 
     def _prepare_functions(self) -> Map[Callable]:
         # prepare
-        #  - a casadi MX function x -> (r, dr/dx)
-        #  - a casadi MX function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
+        #  - a casadi function x -> (r, dr/dx)
+        #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
         # prepare a QFunction x -> (y_m, y_t)
         param = deepcopy(self.__model_parameters)
 
-        param[_VEC][_STATE] = (Quantity(x := MX.sym("x", self.__state_size)))
-        res = self._model.function(param, squeeze_results=False)
-        r, b = res[_VEC][_RES], res[_VEC][_BOUND]
-        dx = Quantity(MX.sym("x", self.__state_size))
+        # TODO: Is this faster for larger systems if I try to use MX here?
+
+        param[_VEC][_STATE] = (Quantity(x := SX.sym("x", self.__state_size)))
+        res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
+        r, b = res[_VEC][_RES].m, res[_VEC][_BOUND].m
+        dx = SX.sym("dx", self.__state_size)
+        f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
         return {
             "f_r": Function("f_r", [x], [r, jacobian(r, x)]),
-            "f_b": Function("f_b", [x, dx], [-b / jtimes(b, x, dx)]),
-            "f_y": QFunction({"x": Quantity(x)}, res)
+            "f_b": Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
+            "f_y": f_y
         }
 
     @property
@@ -403,7 +451,7 @@ class SimulationSolver(Configurable):
         between = Configurable._validate_between
         return {
             "max_iter": between(1, 10000),
-            "gamma": between(0.1, 0.999),
+            "gamma": between(0, 0.999),
             "call_back_iter": {
                 "f": lambda x: x is None or callable(x),
                 "msg": "must be callable",
@@ -413,3 +461,77 @@ class SimulationSolver(Configurable):
                 "msg": "must be a stream or a qualified string"
             }
         }
+
+    @staticmethod
+    def scaled_norm(matrix: csr_array):
+        # todo:
+        #  - can be a utility function
+        #  - also check that it doesn't become a bottleneck for large systems
+        #    Actually, the svd stuff in the end becomes a bottle-neck.
+        #  - Make it an option, also to only report it for first iteration.
+        #    parameter can be: condition_every
+        #      (every nth iteration starting with 0,
+        #      0 means only at iteration zero, -1 means never)
+        for i in range(20):
+            col_norms = sqrt(matrix.multiply(matrix).sum(axis=0))
+            col_norms[col_norms == 0] = 1.0
+            matrix = matrix @ diags(1.0 / col_norms)
+
+            row_norms = sqrt(matrix.multiply(matrix).sum(axis=1))
+            row_norms[row_norms == 0] = 1.0
+            matrix = (matrix.T @ diags(1.0 / row_norms)).T
+            qlt = (sum((row_norms - 1) ** 2) +
+                   sum((col_norms - 1) ** 2)) / matrix.shape[0]
+            if qlt < 0.001:
+                break
+
+        try:
+            with catch_warnings():
+                simplefilter("ignore", UserWarning)
+                s_max = svds(matrix, k=1, which='LM',
+                             return_singular_vectors=False)[0]
+                s_min = svds(matrix, k=1, which='SM', solver='lobpcg',
+                             return_singular_vectors=False)[0]
+        except Exception:
+            return float("nan")
+        else:
+            return abs(s_max / s_min)
+
+    @staticmethod
+    def _scale(matrix: csr_array, num=10):
+        total_col_norms = 1
+        total_row_norms = 1
+        for i in range(num):
+            col_norms = sqrt(matrix.multiply(matrix).sum(axis=0))
+            col_norms[col_norms == 0] = 1.0
+            total_col_norms = total_col_norms * col_norms
+            matrix = matrix @ diags(1.0 / col_norms)
+
+            row_norms = sqrt(matrix.multiply(matrix).sum(axis=1))
+            row_norms[row_norms == 0] = 1.0
+            total_row_norms = total_row_norms * row_norms
+            matrix = (matrix.T @ diags(1.0 / row_norms)).T
+            qlt = (sum((row_norms - 1) ** 2) +
+                   sum((col_norms - 1) ** 2)) / matrix.shape[0]
+            if qlt < 0.001:
+                break
+        return matrix, diags(1.0 / total_row_norms), diags(1.0 / total_col_norms)
+
+    @staticmethod
+    def _solve_linear(dr_dx: csr_array, r):
+        dr_dx, s_r, s_x = SimulationSolver._scale(dr_dx, num=5)
+        n = r.shape[0]
+        r = r @ s_r
+        dx = -spsolve(dr_dx, r)
+        dr = r + dr_dx @ dx
+        if (nr := norm(dr)) > 0.1 * dr.shape[0]:
+            # print(f"Remaining norm: {nr:.2f} - using scipy fallback")
+            dx = -scipy_spsolve(dr_dx, r)
+            dr = r + dr_dx @ dx
+        if (nr := norm(dr)) > 0.1 * dr.shape[0]:
+            if n < 1000:
+                # print(f"Remaining norm: {nr:.2f} - using numpy fallback")
+                return -solve(dr_dx.toarray(), r) @ s_x
+            msg = f"Linear solver error, remaining residual: {nr:.2f}"
+            raise ValueError(msg)
+        return dx @ s_x

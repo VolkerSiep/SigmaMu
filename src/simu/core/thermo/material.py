@@ -12,6 +12,25 @@ from .state import InitialState
 from .parameters import ThermoParameterStore
 from .species import SpeciesDB, SpeciesDefinition
 
+_export_all_properties = False
+
+def set_export_all_properties(flag: bool):
+    """Set flag whether to export all properties, even those with leading
+    underscore. This affects all material instances built after the call.
+
+    .. note::
+
+        Vector properties with leading underscore are exported as a single
+        vector quantity instance, if they are not declared as vector.
+        This is normally acceptable, as these hidden properties are not meant
+        to be input for the process model. If they were, a contribution should
+        be defined to elevate the property to an ordinary one, such as
+
+        ``res["T_c"] = res["_T_c"]``
+    """
+    global _export_all_properties
+    _export_all_properties = flag
+
 
 class MaterialSpec:
     """Representation of a requirement to a material object.
@@ -119,8 +138,10 @@ class Material(MutMap[Quantity | QuantityDict]):
             result = {s: Quantity(mag[i], unit) for i, s in enumerate(keys)}
             return QuantityDict(result)
 
-        self.__properties = {n: convert(n, p) for n, p in props["props"].items()
-                             if not n.startswith("_")}
+        self.__properties = {n: convert(n, p)
+                             for n, p in props["props"].items()
+                             if (_export_all_properties or
+                                 not n.startswith("_"))}
         self.__bounds = props.get("bounds", {})
         self.__residuals = props.get("residuals", {})
         self.__normed_residuals = props.get("normed_residuals", {})

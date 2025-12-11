@@ -18,18 +18,39 @@ class ParameterDictionary(dict):
     parameters with functionality to be populated using the ``register_*``
     methods.
     """
+    class SparseArray(dict):
+        """This helper class represents a nexted dictionary that contains
+        an arbitrary level of nested keys to address a value that is
+        represented by a quantity. """
 
-    class SparseMatrix(dict):
-        """This helper class represents a nested dictionary that contains
-        two levels of keys and values representing a quantity."""
+        def __init__(self, order):
+            super().__init__()
+            self._order = order
 
         def pair_items(self):
-            """Return an iterator yielding a scalar quantity with the key pair
-            for each element in the sub-structure. The elements have the
-            shape ``(key_1, key_2, quantity)``."""
-            for key_1, second in self.items():
-                for key_2, quantity in second.items():
-                    yield key_1, key_2, quantity
+            yield from self._pairs(self, [])
+
+        def _pairs(self, current, path):
+            try:
+                items = current.items()
+            except AttributeError:
+                yield *path, current
+            else:
+                for key, value in items:
+                    yield from self._pairs(value, path + [key])
+
+        def set(self, value, *keys):
+            if (lk:=len(keys)) != (o:=self._order):
+                raise ValueError(f"Parameter dimension mismatch: {lk} <-> {o}")
+            current = self
+            for k_i in keys[:-1]:
+                try:
+                    current = current[k_i]
+                except KeyError:
+                    current[k_i] = (c := {})
+                    current = c
+            current[keys[-1]] = value
+
 
     def register_scalar(self, key: str, unit: str):
         """Create a scalar quantity and add the structure to the dictionary.
@@ -93,13 +114,41 @@ class ParameterDictionary(dict):
             >>> pprint(pdict)
             {'K_ij': {'H2O': {'CH4': <Quantity(K_ij.H2O.CH4, 'kelvin')>,
                               'CO2': <Quantity(K_ij.H2O.CO2, 'kelvin')>}}}
-
         """
         unit = base_unit(unit)
-        res = ParameterDictionary.SparseMatrix({f: {} for f, _ in pairs})
+        res = ParameterDictionary.SparseArray(order=2)
         for first, second in pairs:
             quantity = SymbolQuantity(f"{key}.{first}.{second}", unit)
-            res[first][second] = quantity
+            res.set(quantity, first, second)
+        self[key] = res
+        return res
+
+    def register_sparse_3d(self, key: str,
+                           pairs: Iterable[tuple[str, str, str]],
+                           unit: str) -> NestedMap[Quantity]:
+        """Create a sparse 3d matrix quantity and add the structure to the
+        dictionary. The given unit is converted to base units before being
+        applied.
+
+            >>> pdict = ParameterDictionary()
+            >>> ternaries = [("A", "B", "C"), ("A", "C", "D")]
+            >>> from pprint import pprint
+            >>> pprint(pdict.register_sparse_3d("C", ternaries, "K"))
+            {'A': {'B': {'C': <Quantity(C.A.B.C, 'kelvin')>},
+                   'C': {'D': <Quantity(C.A.C.D, 'kelvin')>}}}
+
+        After above call, the dictionary contains the following entries:
+
+            >>> from pprint import pprint
+            >>> pprint(pdict)
+            {'C': {'A': {'B': {'C': <Quantity(C.A.B.C, 'kelvin')>},
+                            'C': {'D': <Quantity(C.A.C.D, 'kelvin')>}}}}
+        """
+        unit = base_unit(unit)
+        res = ParameterDictionary.SparseArray(order=3)
+        for elements in pairs:
+            quantity = SymbolQuantity(f"{key}.{'.'.join(elements)}", unit)
+            res.set(quantity, *elements)
         self[key] = res
         return res
 

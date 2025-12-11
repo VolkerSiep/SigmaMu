@@ -1,12 +1,14 @@
 # stdlib modules
 from copy import copy
 
+from simu import Quantity
 # internal modules
 from simu.core.thermo.contribution import ThermoContribution, registered_contribution
 from simu.core.utilities.constants import R_GAS
 from simu.core.utilities.quantity import qsum, base_magnitude, qvertcat
 from simu.core.utilities.qstructures import log
 from simu.core.utilities.errors import DimensionalityError
+from simu.core.utilities.types import MutMap
 
 
 @registered_contribution
@@ -57,6 +59,31 @@ class H0S0ReferenceState(ThermoContribution):
 
         self.declare_vector_keys("mu")
 
+@registered_contribution
+class ReferenceStateShift(ThermoContribution):
+    r"""The purpose of this contribution is to shift the reference state of
+    a model, normally with the purpose of aligning with other models.
+    The shift is individual per species and applies to enthalpy and entropy:
+
+    .. math::
+
+        \Delta S &= \sum_i \delta s_i\, n_i\\
+        \Delta \mu_i &= \delta h_i - T\,\Delta s_i
+
+    ========= ======================= ==================
+    Parameter Description             Symbol
+    ========= ======================= ==================
+    ``dH``    Molar shift in enthalpy :math:`\delta h_i`
+    ``dS``    Molar shift in entropy  :math:`\delta s_i`
+    ========= ======================= ==================
+    """
+    def define(self, res):
+        temp, n = res["T"], res["n"]
+        d_h = self.par_vector("dH", self.species, "J/mol")
+        d_s = self.par_vector("dS", self.species, "J/(mol*K)")
+
+        res["S"] += d_s.T @ n
+        res["mu"] += d_h - temp * d_s
 
 @registered_contribution
 class LinearHeatCapacity(ThermoContribution):
@@ -119,6 +146,84 @@ class LinearHeatCapacity(ThermoContribution):
         res["mu"] += d_h - T * d_s
 
         self.add_bound("T", T)  # logarithm taken
+
+
+@registered_contribution
+class BarinHeatCapacity(ThermoContribution):
+    r"""This contribution defines the Barin heat capacity expression, slightly
+    expanded by including a :math:`T^{-1}` term. We introduce a temperature
+    scaling parameter :math:`T_s` [K] to align the physical dimension of all
+    parameters:
+
+    .. math::
+        t = \frac{T}{T_s}\quad t_\mathrm{ref} = \frac{T_\mathrm{ref}}{T_s}
+
+    .. math::
+
+        c_{p,i}(T) =  a_i + b_i\,(t - t_\mathrm{ref})
+           + c_i\,(t^2 - t_\mathrm{ref}^2) + d_i\,(t^3 - t_\mathrm{ref}^3)
+           + e_i\,(t^{-1} - t_\mathrm{ref}^{-1})\\
+           + f_i\,(t^{-2} - t_\mathrm{ref}^{-2})
+           + g_i\,(t^{-3} - t_\mathrm{ref}^{-3})
+
+    from here, integration yields
+
+    .. math::
+
+        \Delta_{c_p} h_i =
+          \int_{T_\mathrm{ref}}^{T} c_{p,i}(\tau)\,\mathrm{d}\tau
+
+    and
+
+    .. math::
+
+        \Delta_{c_p} s_i =
+          \int_{T_\mathrm{ref}}^{T} \frac{c_{p,i}(\tau)}{\tau}\, \mathrm{d}\tau
+
+    The expression for chemical potential is then
+
+    .. math::
+
+        \Delta_{c_p} \mu_i= \Delta_{c_p} h_i^0 - T\,\Delta_{c_p}  s_i^0
+
+    """
+
+    provides = ["T_ref", "p_ref", "S", "mu"]
+
+    def define(self, res):
+        temp, n, temp_ref = res["T"], res["n"], res["T_ref"]
+        temp_scale = self.par_scalar("T_scale", "K")  # recommended: 1
+        c = [self.par_vector(n, self.species, "J/(mol*K)") for n in "ABCDEFG"]
+
+        # calculate reused temperature terms
+        t, t_ref = temp / temp_scale, temp_ref / temp_scale
+        log_t = log(temp / temp_ref)
+        t2, t2_ref = t * t, t_ref * t_ref
+        t3, t3_ref = t2 * t, t2_ref * t_ref
+
+        dt, dt2, dt3 = t - t_ref, t2 - t2_ref, t3 - t3_ref
+        dt4 = t2*t2 - t2_ref * t2_ref
+        dti, dti2 = 1 / t - 1 / t_ref, 1 / t2 - 1 / t2_ref
+        dti3 = 1 / t3 - 1 / t3_ref
+
+        d_h = (c[0] * dt + c[1] / 2 * dt ** 2
+               + c[2] * dt ** 2 * (t + 2 * t_ref) / 3
+               + c[3] * (t ** 4 + t_ref ** 3 * (3 * t_ref - 4 * t))
+               + c[4] * (log_t + 1 - t / t_ref)
+               - c[5] * dt ** 2 / (t2_ref * t)
+               + c[6] * (1.5 / t2_ref - 0.5 / t2 - t / t3_ref)) * temp_scale
+
+        d_s = (c[0] * log_t + c[1] * (dt - t_ref * log_t)
+               + c[2] * (dt2 / 2 - t2_ref * log_t)
+               + c[3] * (dt3 / 3 - t3_ref * log_t)
+               - c[4] * (dti + log_t / t_ref)
+               - c[5] * (dti2 / 2 + log_t / t2_ref)
+               - c[6] * (dti3 / 3 + log_t / t3_ref))
+
+        res["S"] += d_s.T @ n
+        res["mu"] += d_h - temp * d_s
+
+        self.add_bound("T", temp)  # logarithm taken
 
 
 @registered_contribution

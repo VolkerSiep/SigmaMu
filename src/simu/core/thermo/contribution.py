@@ -49,7 +49,7 @@ class ThermoContribution(ABC):
 
     def __init__(self, species: Map[SpeciesDefinition], options=None):
         self.species_definitions: Map[SpeciesDefinition] = species
-        self.options = options
+        self.options = {} if options is None else options
         self.reset()
 
     def reset(self):
@@ -171,6 +171,15 @@ class ThermoContribution(ABC):
             :class:`~simu.core.utilities.qstructures.ParameterDictionary`
         """
         return self.__parameters.register_sparse_matrix
+
+    @property
+    def par_sparse_3d(self):
+        """Shortcut method for ``self.parameters.register_sparse_3d``
+
+        .. seealso::
+            :class:`~simu.core.utilities.qstructures.ParameterDictionary`
+        """
+        return self.__parameters.register_sparse_3d
 
     @property
     def bounds(self) -> Map[Quantity]:

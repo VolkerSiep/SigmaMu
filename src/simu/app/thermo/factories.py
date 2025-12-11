@@ -33,6 +33,7 @@ class RegThermoFactory(ThermoFactory):
         from .contributions.iapws import standard, residual
         from .contributions.cubic import core, rk
         from .contributions.augmenters import general
+        from .contributions.electrolytes import pitzer
         from simu.core.thermo.contribution import all_contributions
         from simu.core.thermo.state import all_states
 

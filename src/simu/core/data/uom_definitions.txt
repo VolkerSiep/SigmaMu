@@ -6,6 +6,9 @@
 bar_gauge = bar; offset: 1.01325 = barg
 standard_atmosphere_gauge = atm; offset: 1 = atmg
 kilo_pascal_gauge = kPa; offset: 101.325 = kPag
+mega_pascal_gauge = MPa; offset: 0.101325 = MPag
 
 # alias for dimensionless (dimensionless itself isn't defined here however)
 dimless = m/m
+
+parts_per_billion = 1e-9 * dimless = ppb
