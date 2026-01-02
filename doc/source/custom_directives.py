@@ -1,5 +1,4 @@
 from pathlib import Path
-from re import split
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from sphinx.directives.code import LiteralInclude

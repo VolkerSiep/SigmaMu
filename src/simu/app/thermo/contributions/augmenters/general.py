@@ -85,6 +85,7 @@ class Activities(ThermoContribution):
 
     Based on chemical potential :math:`\mu_i` and standard state chemical
     potential :math:`\mu_i^0`, it is
+
     .. math::
 
         a_{x,i} = \frac{\mu_i - \mu_i^0}{R\,T}\qquad

@@ -1,6 +1,80 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]   # PEP 508 specifications.
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.distutils.bdist_wheel]
-universal = true
+[project]
+name = "SigmaMu"
+description = "Equation oriented process modelling library"
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [
+    { name = "Volker Siepmann", email = "volker.siepmann@gmail.com" }
+]
+license = { text = "LGPL-3.0-or-later" }
+requires-python = ">=3.11"
+keywords = ["thermodynamics", "modelling"]
+classifiers = [
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+
+dependencies = [
+    "pint",
+    "numpy",
+    "scipy",
+    "pypardiso",
+    "casadi",
+    "pyyaml",
+]
+
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/VolkerSiep/SigmaMu"
+Documentation = "https://sigmamu.readthedocs.io/en/latest/"
+Repository = "https://github.com/VolkerSiep/SigmaMu.git"
+Issues = "https://github.com/VolkerSiep/SigmaMu/issues"
+Changelog = "https://sigmamu.readthedocs.io/en/latest/release_notes.html"
+
+[project.optional-dependencies]
+doc = [
+    "Sphinx",
+    "sphinxcontrib-bibtex",
+    "sphinx-copybutton",
+]
+
+dist = [
+    "build",
+    "twine",
+]
+
+test = [
+    "pytest",
+    "pytest-doctestplus",
+]
+
+dev = [
+    "matplotlib",
+    "scipy-stubs",
+    "pytest",
+    "pytest-doctestplus",
+    "build",
+    "twine",
+    "Sphinx",
+    "sphinxcontrib-bibtex",
+    "sphinx-copybutton",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { attr = "simu._version.version" }
+
+[tool.setuptools.package-data]
+simu = ["py.typed"]
+"*" = [
+    "src/simu/**/*.yml",
+    "src/simu/core/data/uom_definitions.txt",
+]

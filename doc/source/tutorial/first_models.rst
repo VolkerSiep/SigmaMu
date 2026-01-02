@@ -12,7 +12,7 @@ A brief description on how models are created is given in the :ref:`getting star
 
 To recap, the model declares an interface telling other (parent) models that it has a parameter called ``length`` and calculates a property called ``area``. Then, the definition implements the relationship.
 
-The attentive reader might at this point have realised that no thermodynamic model was involved. The entire example is somehow remote to classical process engineering unless one calculates the cross-section of a square duct. Let us get this rectified in this section, and bring in our ideal gas model from the previous section.
+The attentive reader might at this point have realised that no thermodynamic model was inv olved. The entire example is somehow remote to classical process engineering unless one calculates the cross-section of a square duct. Let us get this rectified in this section, and bring in our ideal gas model from the previous section.
 
 To do so, we first need to create a :class:`simu.MaterialDefinition` object, and by this follow the proper way to build up a simulation, and in practice, you might soon build up a repository of materials required for your field of application.
 
