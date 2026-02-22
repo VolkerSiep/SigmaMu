@@ -78,15 +78,6 @@ class SimulationSolverIterationReport:
     condition for convergence.    
     """
 
-    condition: float
-    r"""This is a *fair* condition of the system matrix, calculated after
-    repeatedly scaling the rows and columns to eliminate the effect of variable
-    scaling on the norm. As such, the obtained condition number is more
-    suitable to judge the solvability of the model at hand.
-    
-    The reported number is :math:`\log_{10}||\mathbf{J}||`.
-    """
-
     def __post_init__(self):
         self.lmet = log10(self.max_err + 1e-8)
 
@@ -289,7 +280,6 @@ class SimulationSolver(Configurable):
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
-            "condition": ("Norm", "{:7.2g}"),
             "duration": ("Time", "{:6.2f}"),
             "min_alpha_name": ("Limit on bound", "{:>50s}"),
             "max_res_name": ("Max residual", "{:>50s}")
@@ -312,11 +302,7 @@ class SimulationSolver(Configurable):
 
             dr_dx = csr_array(dr_dx)
 
-            condition = -1 # less scary than NaN
             if len(r):
-                if iteration % 10 == 0:  # TODO: make option!
-                    condition = log10(self.scaled_norm(dr_dx))
-
                 # assess error
                 max_err_idx = int(argmax(abs(r)))
                 max_res_name = residual_names[max_err_idx]
@@ -362,8 +348,7 @@ class SimulationSolver(Configurable):
                 max_res_name=max_res_name,
                 relax_factor=float(alpha),
                 min_alpha_name=min_alpha_name,
-                duration=duration,
-                condition=condition
+                duration=duration
             ))
             if opt["call_back_iter"] is not None:
                 cb_result = opt["call_back_iter"](
@@ -375,7 +360,7 @@ class SimulationSolver(Configurable):
                     raise IterativeProcessInterrupted(msg)
             table.row(reports[-1], iteration)
         else:
-            msg = f"Model did not converge after {opt["max_iter"]} iterations"
+            msg = f"Model did not converge after {opt['max_iter']} iterations"
             raise ValueError(msg)
 
         # reporting
@@ -385,8 +370,7 @@ class SimulationSolver(Configurable):
             max_res_name=max_res_name,
             relax_factor=1,
             min_alpha_name="",
-            duration=duration,
-            condition=condition
+            duration=duration
         ))
         table.row(reports[-1], iteration)
 
@@ -417,9 +401,6 @@ class SimulationSolver(Configurable):
         #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
         # prepare a QFunction x -> (y_m, y_t)
         param = deepcopy(self.__model_parameters)
-
-        # TODO: Is this faster for larger systems if I try to use MX here?
-
         param[_VEC][_STATE] = (Quantity(x := SX.sym("x", self.__state_size)))
         res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
         r, b = res[_VEC][_RES].m, res[_VEC][_BOUND].m
@@ -461,41 +442,6 @@ class SimulationSolver(Configurable):
                 "msg": "must be a stream or a qualified string"
             }
         }
-
-    @staticmethod
-    def scaled_norm(matrix: csr_array):
-        # todo:
-        #  - can be a utility function
-        #  - also check that it doesn't become a bottleneck for large systems
-        #    Actually, the svd stuff in the end becomes a bottle-neck.
-        #  - Make it an option, also to only report it for first iteration.
-        #    parameter can be: condition_every
-        #      (every nth iteration starting with 0,
-        #      0 means only at iteration zero, -1 means never)
-        for i in range(20):
-            col_norms = sqrt(matrix.multiply(matrix).sum(axis=0))
-            col_norms[col_norms == 0] = 1.0
-            matrix = matrix @ diags(1.0 / col_norms)
-
-            row_norms = sqrt(matrix.multiply(matrix).sum(axis=1))
-            row_norms[row_norms == 0] = 1.0
-            matrix = (matrix.T @ diags(1.0 / row_norms)).T
-            qlt = (sum((row_norms - 1) ** 2) +
-                   sum((col_norms - 1) ** 2)) / matrix.shape[0]
-            if qlt < 0.001:
-                break
-
-        try:
-            with catch_warnings():
-                simplefilter("ignore", UserWarning)
-                s_max = svds(matrix, k=1, which='LM',
-                             return_singular_vectors=False)[0]
-                s_min = svds(matrix, k=1, which='SM', solver='lobpcg',
-                             return_singular_vectors=False)[0]
-        except Exception:
-            return float("nan")
-        else:
-            return abs(s_max / s_min)
 
     @staticmethod
     def _scale(matrix: csr_array, num=10):

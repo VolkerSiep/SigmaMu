@@ -406,14 +406,14 @@ class QFunction:
             for key, value in flatten_dictionary(args).items()
         ])
         result = self.func(args_flat)  # calling Casadi function
-        result = self.__unpack(result)
+        result = self.__give_shapes(result)
         if squeeze_results:
             result = {k: squeeze(v) for k, v in result.items()}
         result = {k: Quantity(v, self.res_units[k])
                   for k, v in result.items()}
         return unflatten_dictionary(result)
 
-    def __unpack(self, raw_result: cas.SX) -> Map[cas.SX]:
+    def __give_shapes(self, raw_result: cas.SX) -> Map[cas.SX]:
         result: MutMap[cas.SX] = {}
         idx = 0
         for key, shape in self.__res_shapes.items():

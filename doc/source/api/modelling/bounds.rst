@@ -6,8 +6,12 @@ Handler classes related to bounds
 BoundHandler
 ------------
 .. autoclass:: BoundHandler
-    :members:
+   :show-inheritance:
+   :members:
+   :exclude-members: __init__, __new__
 
 BoundProxy
 ----------
 .. autoclass:: BoundProxy
+   :show-inheritance:
+   :exclude-members: __init__, __new__

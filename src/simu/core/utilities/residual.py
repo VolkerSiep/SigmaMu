@@ -49,9 +49,10 @@ class Residual:
         self.tolerance -= Quantity(0.0, tol_unit)
 
 
-ResidualProxy = Map[Residual]
-"""This is just a dictionary, mapping the names (*str*) to the :class:`Residual`
-objects"""
+class ResidualProxy(Map[Residual]):
+    """This is just a dictionary, mapping the names (*str*) to the
+    :class:`Residual` objects"""
+
 
 class ResidualHandler(ResidualProxy):
     """This class, being instantiated as the :attr:`simu.Model.residuals`

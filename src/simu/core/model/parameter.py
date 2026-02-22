@@ -104,7 +104,7 @@ class ParameterHandler(Map[Quantity]):
         return ParameterProxy(self, self.__params, self.__values)
 
 
-class ParameterProxy(Mapping[str, Quantity]):
+class ParameterProxy(Map[Quantity]):
     """This class is instantiated by the parent's
     :class:`~simu.core.model.parameter.ParameterHandler` to configure the
     parameter connections from the parent context."""

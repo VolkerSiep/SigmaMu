@@ -12,8 +12,11 @@ ResidualHandler
 ---------------
 
 .. autoclass:: simu.core.utilities.residual.ResidualHandler
-    :members:
+   :show-inheritance:
+   :members:
 
 ResiduaProxy
 ------------
 .. autoclass:: simu.core.utilities.residual.ResidualProxy
+   :exclude-members: __init__, __new__
+   :show-inheritance:

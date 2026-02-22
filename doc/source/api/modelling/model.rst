@@ -12,7 +12,8 @@ ModelProxy
 ----------
 
 .. autoclass:: simu.core.model.base.ModelProxy
-    :members:
+   :members:
+   :exclude-members: __init__, __new__
 
 AModel
 ------
@@ -23,4 +24,5 @@ AModel
 AModelProxy
 -----------
 .. autoclass:: simu.core.model.amodel.AModelProxy
-    :members:
+   :members:
+   :exclude-members: __init__, __new__
