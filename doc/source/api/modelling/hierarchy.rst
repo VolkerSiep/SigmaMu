@@ -4,9 +4,14 @@ Handler classes related to hierarchy
 Hierarchy handler
 -----------------
 .. autoclass:: simu.core.model.hierarchy.HierarchyHandler
-    :members:
+   :members:
+   :show-inheritance:
+   :exclude-members: __init__, __new__
+
 
 HierarchyProxy
 --------------
 .. autoclass:: simu.core.model.hierarchy.HierarchyProxy
-    :members:
+   :members:
+   :show-inheritance:
+   :exclude-members: __init__, __new__

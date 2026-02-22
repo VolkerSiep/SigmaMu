@@ -1,6 +1,11 @@
 Types
 =====
 
+T
+-
+.. autodata:: simu.core.utilities.types.T
+   :annotation:
+
 Map
 ---
 .. autodata:: simu.core.utilities.types.Map

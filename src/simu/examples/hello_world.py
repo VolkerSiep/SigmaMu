@@ -1,4 +1,4 @@
-from simu import Model, NumericHandler, Quantity
+from simu import Model, NumericHandler, Quantity, NHKeys
 
 
 class Square(Model):
@@ -21,10 +21,10 @@ def main():
     args = numeric.arguments
     print(args)
 
-    args[NumericHandler.MODEL_PARAMS]["length"] = Quantity(20, "cm")
+    args[NHKeys.MODEL_PARAMS]["length"] = Quantity(20, "cm")
     result = func(args)
 
-    print(f"{result[NumericHandler.MODEL_PROPS]['area']:.3fP~}")
+    print(f"{result[NHKeys.MODEL_PROPS]['area']:.3fP~}")
 
 
 if __name__ == '__main__':

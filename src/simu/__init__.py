@@ -1,3 +1,4 @@
+from importlib.metadata import version as _get_version
 from logging import getLogger, NullHandler
 
 from .core.utilities.quantity import (
@@ -30,14 +31,11 @@ from .core.thermo.material import MaterialDefinition, Material, MaterialSpec
 
 from .core.model.base import Model
 from .core.model.amodel import AModel
-from .core.model.numeric import NumericHandler
+from .core.model.numeric import NumericHandler, NHKeys
 from .core.solver.simulation import SimulationSolver
 
-# for convenience:
-NH = NumericHandler  # allows shorter constants, such as NH.THERMO_PARAMS
-
 # versioning
-from ._version import version as __version__
+__version__ = _get_version("SigmaMu")
 
 # logging
 logger = getLogger(__name__)

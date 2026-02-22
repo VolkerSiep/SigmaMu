@@ -10,7 +10,7 @@ from simu.core.utilities.types import Map, MutMap
 from simu.core.utilities.errors import DataFlowError
 
 
-class PropertyHandler(Mapping[str, Quantity]):
+class PropertyHandler(Map[Quantity]):
     """This class, being instantiated as the :attr:`simu.Model.properties`
     attribute, allows to declare and define process properties."""
 
@@ -33,10 +33,6 @@ class PropertyHandler(Mapping[str, Quantity]):
         """Via this operator, a calculated property is defined as a
         model result."""
 
-        # TODO: is it not ok to define properties that are not declared?
-        #  if it is, remove the commended code
-        # if name not in self.__declared:
-        #     self.__raise(name,  "is not declared")
         if name in self.__props:
             self.__raise(name,  "is already defined")
 

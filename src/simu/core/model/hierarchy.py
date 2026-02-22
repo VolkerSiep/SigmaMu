@@ -80,7 +80,7 @@ class HierarchyHandler(Map["ModelProxy"]):
             raise DataFlowError(msg)
 
 
-class HierarchyProxy(Mapping[str, "ModelProxy"]):
+class HierarchyProxy(Map["ModelProxy"]):
     """A wrapper of the HierarchyHandler to grant access to the previously
     declared sub-models."""
 

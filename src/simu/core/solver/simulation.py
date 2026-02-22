@@ -22,7 +22,7 @@ except ImportError:  # use scipy if not
 
 
 # internal
-from simu.core.model.numeric import NumericHandler
+from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.types import Map, NestedMutMap, NestedMap
@@ -30,8 +30,8 @@ from simu.core.utilities.configurable import Configurable
 from simu.core.utilities.errors import (
     IterativeProcessInterrupted, NonSquareSystem)
 
-_VEC, _STATE = NumericHandler.VECTORS, NumericHandler.STATE_VEC
-_RES, _BOUND = NumericHandler.RES_VEC, NumericHandler.BOUND_VEC
+# _VEC, _STATE = NHKeys.VECTORS, NHKeys.STATES
+# _RES, _BOUND = NHKeys.RESIDUALS, NHKeys.BOUNDS
 
 
 @dataclass
@@ -76,15 +76,6 @@ class SimulationSolverIterationReport:
     which all residuals are exactly zero. This can however easily happen for
     linear systems. Anyhow, :math:`\mathrm{LMET} < 1` is already a sufficient
     condition for convergence.    
-    """
-
-    condition: float
-    r"""This is a *fair* condition of the system matrix, calculated after
-    repeatedly scaling the rows and columns to eliminate the effect of variable
-    scaling on the norm. As such, the obtained condition number is more
-    suitable to judge the solvability of the model at hand.
-    
-    The reported number is :math:`\log_{10}||\mathbf{J}||`.
     """
 
     def __post_init__(self):
@@ -244,14 +235,14 @@ class SimulationSolver(Configurable):
         # store arguments (parameters) so the user can change them
         args = deepcopy(model.arguments)
         # store size of state
-        self.__state_size = args[_VEC][_STATE].magnitude.size()[0]
-        res_size = len(model.vector_res_names(NumericHandler.RES_VEC))
+        self.__state_size = args[NHKeys.VECTORS][NHKeys.STATES].m.size()[0]
+        res_size = len(model.vector_res_names(NHKeys.RESIDUALS))
 
         if self.__state_size != res_size:
             raise NonSquareSystem(self.__state_size, res_size)
 
         # user shall not think that putting a state here has any effect
-        del args[_VEC][_STATE]
+        del args[NHKeys.VECTORS][NHKeys.STATES]
         self.__model_parameters : NestedMutMap[Quantity] = args
 
     def solve(self, **kwargs: Any) -> SimulationSolverReport:
@@ -280,8 +271,8 @@ class SimulationSolver(Configurable):
         opt = self.options
         model = self._model
         start_time = time()
-        residual_names = model.vector_res_names(_RES)
-        bound_names = model.vector_res_names(_BOUND)
+        residual_names = model.vector_res_names(NHKeys.RESIDUALS)
+        bound_names = model.vector_res_names(NHKeys.BOUNDS)
         reports = []
 
         output = self.__find_output()
@@ -289,7 +280,6 @@ class SimulationSolver(Configurable):
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
-            "condition": ("Norm", "{:7.2g}"),
             "duration": ("Time", "{:6.2f}"),
             "min_alpha_name": ("Limit on bound", "{:>50s}"),
             "max_res_name": ("Max residual", "{:>50s}")
@@ -312,11 +302,7 @@ class SimulationSolver(Configurable):
 
             dr_dx = csr_array(dr_dx)
 
-            condition = -1 # less scary than NaN
             if len(r):
-                if iteration % 10 == 0:  # TODO: make option!
-                    condition = log10(self.scaled_norm(dr_dx))
-
                 # assess error
                 max_err_idx = int(argmax(abs(r)))
                 max_res_name = residual_names[max_err_idx]
@@ -349,7 +335,7 @@ class SimulationSolver(Configurable):
                     bn = [b for b, m in zip(bound_names, mask) if m]
                     min_alpha_name = bn[min_a_idx]
                 if alpha < opt["wall"]:
-                    msg = f"Relaxation factor is below {opt["wall"]}, " \
+                    msg = f"Relaxation factor is below {opt['wall']}, " \
                           "no solution found"
                     raise ValueError(msg)
             # apply update
@@ -362,8 +348,7 @@ class SimulationSolver(Configurable):
                 max_res_name=max_res_name,
                 relax_factor=float(alpha),
                 min_alpha_name=min_alpha_name,
-                duration=duration,
-                condition=condition
+                duration=duration
             ))
             if opt["call_back_iter"] is not None:
                 cb_result = opt["call_back_iter"](
@@ -375,7 +360,7 @@ class SimulationSolver(Configurable):
                     raise IterativeProcessInterrupted(msg)
             table.row(reports[-1], iteration)
         else:
-            msg = f"Model did not converge after {opt["max_iter"]} iterations"
+            msg = f"Model did not converge after {opt['max_iter']} iterations"
             raise ValueError(msg)
 
         # reporting
@@ -385,8 +370,7 @@ class SimulationSolver(Configurable):
             max_res_name=max_res_name,
             relax_factor=1,
             min_alpha_name="",
-            duration=duration,
-            condition=condition
+            duration=duration
         ))
         table.row(reports[-1], iteration)
 
@@ -417,12 +401,11 @@ class SimulationSolver(Configurable):
         #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
         # prepare a QFunction x -> (y_m, y_t)
         param = deepcopy(self.__model_parameters)
-
-        # TODO: Is this faster for larger systems if I try to use MX here?
-
-        param[_VEC][_STATE] = (Quantity(x := SX.sym("x", self.__state_size)))
+        x = SX.sym("x", self.__state_size)
+        param[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
         res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
-        r, b = res[_VEC][_RES].m, res[_VEC][_BOUND].m
+        vectors = res[NHKeys.VECTORS]
+        r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
         dx = SX.sym("dx", self.__state_size)
         f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
         return {
@@ -436,7 +419,7 @@ class SimulationSolver(Configurable):
         """Freshly extract the initial values from the model. These might have
         been changed after the solver class was instantiated"""
         args = self._model.arguments
-        return args[NumericHandler.VECTORS][NumericHandler.STATE_VEC]
+        return args[NHKeys.VECTORS][NHKeys.STATES]
 
     @property
     def model_parameters(self) -> NestedMutMap[Quantity]:
@@ -461,41 +444,6 @@ class SimulationSolver(Configurable):
                 "msg": "must be a stream or a qualified string"
             }
         }
-
-    @staticmethod
-    def scaled_norm(matrix: csr_array):
-        # todo:
-        #  - can be a utility function
-        #  - also check that it doesn't become a bottleneck for large systems
-        #    Actually, the svd stuff in the end becomes a bottle-neck.
-        #  - Make it an option, also to only report it for first iteration.
-        #    parameter can be: condition_every
-        #      (every nth iteration starting with 0,
-        #      0 means only at iteration zero, -1 means never)
-        for i in range(20):
-            col_norms = sqrt(matrix.multiply(matrix).sum(axis=0))
-            col_norms[col_norms == 0] = 1.0
-            matrix = matrix @ diags(1.0 / col_norms)
-
-            row_norms = sqrt(matrix.multiply(matrix).sum(axis=1))
-            row_norms[row_norms == 0] = 1.0
-            matrix = (matrix.T @ diags(1.0 / row_norms)).T
-            qlt = (sum((row_norms - 1) ** 2) +
-                   sum((col_norms - 1) ** 2)) / matrix.shape[0]
-            if qlt < 0.001:
-                break
-
-        try:
-            with catch_warnings():
-                simplefilter("ignore", UserWarning)
-                s_max = svds(matrix, k=1, which='LM',
-                             return_singular_vectors=False)[0]
-                s_min = svds(matrix, k=1, which='SM', solver='lobpcg',
-                             return_singular_vectors=False)[0]
-        except Exception:
-            return float("nan")
-        else:
-            return abs(s_max / s_min)
 
     @staticmethod
     def _scale(matrix: csr_array, num=10):

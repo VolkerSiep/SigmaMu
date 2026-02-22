@@ -11,9 +11,6 @@ from simu.core.utilities.quantity import (
 from simu.core.utilities.qstructures import exp
 from simu.core.utilities.types import Map
 
-# TODO:
-#  - document parameters required for each contribution
-
 
 class ResidualBaseIAPWS(ThermoContribution):
     r"""All IAPWS residual contributions define a molar residual contribution
