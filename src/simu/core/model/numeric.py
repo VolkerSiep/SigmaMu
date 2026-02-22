@@ -2,6 +2,7 @@
 of the top model instance."""
 
 # std lib
+from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Callable, Sequence, Collection
 from enum import StrEnum, auto
@@ -12,19 +13,65 @@ from casadi import vertcat, SX
 from pint import Unit
 
 # internal
-from simu.core.utilities.quantity import Quantity, QFunction, jacobian
+from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.structures import (
     flatten_dictionary, unflatten_dictionary, FLATTEN_SEPARATOR)
 from simu.core.utilities.qstructures import (
-    quantity_dict_to_strings, parse_quantities_in_struct)
+    QuantityDict, quantity_dict_to_strings, parse_quantities_in_struct)
 from simu.core.utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from simu.core.utilities.errors import DataFlowError
 from simu.core.thermo.parameters import ThermoParameterStore
 from simu.core.thermo.state import InitialState
 from .base import ModelProxy
 
+
+class PropertyFilter(ABC):
+    def filter(self, properties: Map[Quantity | QuantityDict]):
+        """On filtering, this method receives the thermodynamic properties
+        of a material as a mapping with keys as strings, representing the
+        property name. The values are either scalar quantities or a
+        quantity dictionary in case of non-scalar properties.
+        """
+        def filter_subkeys(key, sub_props: Quantity | QuantityDict):
+            if isinstance(sub_props, Quantity):
+                return sub_props
+            else:
+                return {
+                    sub_key: value for sub_key, value in sub_props.items()
+                    if self.keep_property(key, sub_key)
+                }
+
+        return {
+            key: filter_subkeys(key, value) for key, value in properties.items()
+            if self.keep_property(key)
+        }
+
+    @abstractmethod
+    def keep_property(self, name: str, sub_key: str = None) -> bool:
+        """Abstract method to decide whether a material property shall be
+        included in the results of the process model.
+
+        In case of non-scalar properties, the method is first called for the
+        property itself without providing any ``sub_key``. Only if this call
+        is answered with ``True``, the method is called again for each
+        existing ``sub_key``.
+
+        :param name: The name of the property
+        :param sub_key: If the property is a non-scalar entity, the ``subkey``
+          contains the identifier of the element, for instance the species name
+          in case of mole flows or chemical potentials.
+        """
+        ...
+
 # TODO:
-#  - set parameters and get parameters
+#  - allow to specify property filter on construction (or later as well?) of
+#    NumericHandler
+#  - provide some simple implementations in simu.app, such as
+#    * ExclusionFilter to specify properties that are to be excluded, or
+#    * InclusionFilter for properties that are to be included.
+#    To be honest, the ExclusionFilter will cover what most users will ever
+#    need.
+
 
 class NHKeys(StrEnum):
     THERMO_PARAMS = auto()
@@ -43,15 +90,6 @@ class NHKeys(StrEnum):
 class NumericHandler:
     """This class implements the function object describing the top level
     model."""
-    # THERMO_PARAMS: str = "thermo_params"
-    # MODEL_PARAMS: str = "model_params"
-    # THERMO_PROPS: str = "thermo_props"
-    # MODEL_PROPS: str = "model_props"
-    # RESIDUALS: str = "residuals"
-    # STATE_VEC: str = "states"
-    # RES_VEC: str = "residuals"
-    # BOUND_VEC: str = "bounds"
-    # VECTORS: str = "vectors"
 
     def __init__(self, model: ModelProxy, port_properties: bool = True):
         """The option ``port_properties`` determines whether the properties
@@ -307,11 +345,11 @@ class NumericHandler:
                 return None, None
 
             nams, syms = [], []
-            for k, value in items:
-                n, s = traverse(value, symbols[k])
+            for k, item in items:
+                n, s = traverse(item, symbols[k])
                 if n is None:
                     nams.append(k)
-                    syms.append(symbols[k].to(value).magnitude)
+                    syms.append(symbols[k].to(item).magnitude)
                 else:
                     nams.extend([f"{k}/{n_i}" for n_i in n])
                     syms.extend(s)
@@ -415,7 +453,7 @@ class NumericHandler:
                 clash = ", ".join(clash)
                 msg = f"Name clash of bounds and child modules: {clash}"
                 raise ValueError(msg)
-            res.update(model.bounds)  # TODO: why type errors
+            res.update(model.bounds.items())
             return res
 
         def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
@@ -426,6 +464,7 @@ class NumericHandler:
             """fetch properties of materials in a specific model"""
             ports = self.options["port_properties"]
             mat_proxy = model.materials
+            # TODO: need to filter v here
             return {k: v for k, v in mat_proxy.handler.items()
                     if ports or k not in mat_proxy}
 
