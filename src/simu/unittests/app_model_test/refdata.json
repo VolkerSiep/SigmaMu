@@ -1,0 +1,6 @@
+{
+  "basic_test.py::test_species_balance": {
+    "C3": "((n_C3_1+n_C3_2)-(n_C3_3+n_C3_4))",
+    "H2O": "((n_H2O_1+n_H2O_2)-(n_H2O_3+n_H2O_4))"
+  }
+}

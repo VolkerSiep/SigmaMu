@@ -3,7 +3,7 @@
 
 import sys
 from os.path import abspath
-from simu import __version__ as _release
+from importlib.metadata import version as get_version
 
 # -- Path setup --------------------------------------------------------------
 sys.path.insert(0, abspath('.'))
@@ -12,7 +12,7 @@ sys.path.insert(0, abspath('.'))
 project = 'SigmaMu'
 copyright = '2021-2025, Volker Siepmann'
 author = 'Volker Siepmann'
-release = _release
+release = get_version(project)
 
 
 # -- General configuration ---------------------------------------------------

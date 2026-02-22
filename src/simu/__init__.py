@@ -1,3 +1,4 @@
+from importlib.metadata import version as _get_version
 from logging import getLogger, NullHandler
 
 from .core.utilities.quantity import (
@@ -33,9 +34,8 @@ from .core.model.amodel import AModel
 from .core.model.numeric import NumericHandler, NHKeys
 from .core.solver.simulation import SimulationSolver
 
-
 # versioning
-from ._version import version as __version__
+__version__ = _get_version("SigmaMu")
 
 # logging
 logger = getLogger(__name__)

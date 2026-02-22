@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "SigmaMu"
 description = "Equation oriented process modelling library"
+version = "1.0b2"  # This is the master tag for version
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
     { name = "Volker Siepmann", email = "volker.siepmann@gmail.com" }
@@ -13,7 +14,6 @@ license = { text = "LGPL-3.0-or-later" }
 requires-python = ">=3.11"
 keywords = ["thermodynamics", "modelling"]
 classifiers = [
-    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Chemistry",
@@ -27,8 +27,6 @@ dependencies = [
     "casadi",
     "pyyaml",
 ]
-
-dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/VolkerSiep/SigmaMu"
@@ -68,9 +66,6 @@ dev = [
 
 [tool.setuptools]
 include-package-data = true
-
-[tool.setuptools.dynamic]
-version = { attr = "simu._version.version" }
 
 [tool.setuptools.package-data]
 simu = ["py.typed"]
