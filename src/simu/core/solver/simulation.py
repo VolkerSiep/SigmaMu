@@ -22,7 +22,7 @@ except ImportError:  # use scipy if not
 
 
 # internal
-from simu.core.model.numeric import NumericHandler
+from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.types import Map, NestedMutMap, NestedMap
@@ -30,8 +30,8 @@ from simu.core.utilities.configurable import Configurable
 from simu.core.utilities.errors import (
     IterativeProcessInterrupted, NonSquareSystem)
 
-_VEC, _STATE = NumericHandler.VECTORS, NumericHandler.STATE_VEC
-_RES, _BOUND = NumericHandler.RES_VEC, NumericHandler.BOUND_VEC
+# _VEC, _STATE = NHKeys.VECTORS, NHKeys.STATES
+# _RES, _BOUND = NHKeys.RESIDUALS, NHKeys.BOUNDS
 
 
 @dataclass
@@ -235,14 +235,14 @@ class SimulationSolver(Configurable):
         # store arguments (parameters) so the user can change them
         args = deepcopy(model.arguments)
         # store size of state
-        self.__state_size = args[_VEC][_STATE].magnitude.size()[0]
-        res_size = len(model.vector_res_names(NumericHandler.RES_VEC))
+        self.__state_size = args[NHKeys.VECTORS][NHKeys.STATES].m.size()[0]
+        res_size = len(model.vector_res_names(NHKeys.RESIDUALS))
 
         if self.__state_size != res_size:
             raise NonSquareSystem(self.__state_size, res_size)
 
         # user shall not think that putting a state here has any effect
-        del args[_VEC][_STATE]
+        del args[NHKeys.VECTORS][NHKeys.STATES]
         self.__model_parameters : NestedMutMap[Quantity] = args
 
     def solve(self, **kwargs: Any) -> SimulationSolverReport:
@@ -271,8 +271,8 @@ class SimulationSolver(Configurable):
         opt = self.options
         model = self._model
         start_time = time()
-        residual_names = model.vector_res_names(_RES)
-        bound_names = model.vector_res_names(_BOUND)
+        residual_names = model.vector_res_names(NHKeys.RESIDUALS)
+        bound_names = model.vector_res_names(NHKeys.BOUNDS)
         reports = []
 
         output = self.__find_output()
@@ -335,7 +335,7 @@ class SimulationSolver(Configurable):
                     bn = [b for b, m in zip(bound_names, mask) if m]
                     min_alpha_name = bn[min_a_idx]
                 if alpha < opt["wall"]:
-                    msg = f"Relaxation factor is below {opt["wall"]}, " \
+                    msg = f"Relaxation factor is below {opt['wall']}, " \
                           "no solution found"
                     raise ValueError(msg)
             # apply update
@@ -401,9 +401,11 @@ class SimulationSolver(Configurable):
         #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
         # prepare a QFunction x -> (y_m, y_t)
         param = deepcopy(self.__model_parameters)
-        param[_VEC][_STATE] = (Quantity(x := SX.sym("x", self.__state_size)))
+        x = SX.sym("x", self.__state_size)
+        param[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
         res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
-        r, b = res[_VEC][_RES].m, res[_VEC][_BOUND].m
+        vectors = res[NHKeys.VECTORS]
+        r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
         dx = SX.sym("dx", self.__state_size)
         f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
         return {
@@ -417,7 +419,7 @@ class SimulationSolver(Configurable):
         """Freshly extract the initial values from the model. These might have
         been changed after the solver class was instantiated"""
         args = self._model.arguments
-        return args[NumericHandler.VECTORS][NumericHandler.STATE_VEC]
+        return args[NHKeys.VECTORS][NHKeys.STATES]
 
     @property
     def model_parameters(self) -> NestedMutMap[Quantity]:

@@ -2,7 +2,8 @@ from typing import cast
 from pytest import fixture, raises
 
 from simu import (
-    NumericHandler, SimulationSolver, Quantity, quantity_dict_to_strings)
+    NumericHandler, NHKeys, SimulationSolver,
+    Quantity, quantity_dict_to_strings)
 from simu.core.utilities.residual import ResidualHandler
 from simu.core.utilities.errors import NonSquareSystem
 from simu.core.utilities.testing import assert_reproduction
@@ -19,7 +20,7 @@ def test_solve(sim_result):
 
 
 def test_solve_res_small(sim_result):
-    res = sim_result.properties[NumericHandler.VECTORS][NumericHandler.RES_VEC]
+    res = sim_result.properties[NHKeys.VECTORS][NHKeys.RESIDUALS]
     assert (abs(res.m_as("")) < 1).all()
 
 

@@ -4,6 +4,7 @@ of the top model instance."""
 # std lib
 from typing import Optional
 from collections.abc import Callable, Sequence, Collection
+from enum import StrEnum, auto
 from copy import deepcopy
 
 # external
@@ -25,19 +26,32 @@ from .base import ModelProxy
 # TODO:
 #  - set parameters and get parameters
 
+class NHKeys(StrEnum):
+    THERMO_PARAMS = auto()
+    MODEL_PARAMS = auto()
+    THERMO_PROPS = auto()
+    MODEL_PROPS = auto()
+    RESIDUALS = auto()
+    STATES = auto()
+    BOUNDS = auto()
+    VECTORS = auto()
+
+    def __repr__(self):
+        return f"'{self.value}'"
+
 
 class NumericHandler:
     """This class implements the function object describing the top level
     model."""
-    THERMO_PARAMS: str = "thermo_params"
-    MODEL_PARAMS: str = "model_params"
-    MODEL_PROPS: str = "model_props"
-    THERMO_PROPS: str = "thermo_props"
-    RESIDUALS: str = "residuals"
-    STATE_VEC: str = "states"
-    RES_VEC: str = "residuals"
-    BOUND_VEC: str = "bounds"
-    VECTORS: str = "vectors"
+    # THERMO_PARAMS: str = "thermo_params"
+    # MODEL_PARAMS: str = "model_params"
+    # THERMO_PROPS: str = "thermo_props"
+    # MODEL_PROPS: str = "model_props"
+    # RESIDUALS: str = "residuals"
+    # STATE_VEC: str = "states"
+    # RES_VEC: str = "residuals"
+    # BOUND_VEC: str = "bounds"
+    # VECTORS: str = "vectors"
 
     def __init__(self, model: ModelProxy, port_properties: bool = True):
         """The option ``port_properties`` determines whether the properties
@@ -73,7 +87,7 @@ class NumericHandler:
         return self.__vec_res_names[key]
 
     @property
-    def arguments(self) -> Map[Quantity]:
+    def arguments(self) -> NestedMap[Quantity]:
         """The function arguments as numerical values. A DataFlowError is
         thrown, if not all numerical values are known.
         A deepcopy of the structure is provided, so the returned data can be
@@ -200,7 +214,7 @@ class NumericHandler:
                     traverse(proxy, states[name])
 
         state_struct = unflatten_dictionary(
-            dict(zip(self.__vec_arg_names[self.STATE_VEC], state)))
+            dict(zip(self.__vec_arg_names[NHKeys.STATES], state)))
 
         self.__arguments = {}  # force reread
         traverse(self.model, state_struct)
@@ -261,7 +275,7 @@ class NumericHandler:
                     args.extend(v)
             return nams, syms, args
 
-        if key in self.__sym_args[NumericHandler.VECTORS]:
+        if key in self.__sym_args[NHKeys.VECTORS]:
             msg = f"A parameter vector of name '{key}' is already used."
             raise KeyError(msg)
 
@@ -270,9 +284,9 @@ class NumericHandler:
         nam, sym, arg = traverse(definition, self.__sym_args, self.__arguments)
 
         result = Quantity(vertcat(*sym))
-        self.__sym_args[NumericHandler.VECTORS][key] = result
+        self.__sym_args[NHKeys.VECTORS][key] = result
         values = Quantity(arg)
-        self.__arguments[NumericHandler.VECTORS][key] = values
+        self.__arguments[NHKeys.VECTORS][key] = values
         self.__vec_arg_names[key] = nam
         return result
 
@@ -303,14 +317,14 @@ class NumericHandler:
                     syms.extend(s)
             return nams, syms
 
-        if key in self.__sym_res[NumericHandler.VECTORS]:
+        if key in self.__sym_res[NHKeys.VECTORS]:
             msg = f"A property vector of name '{key}' is already used."
             raise KeyError(msg)
 
         nam, sym = traverse(definition, self.__sym_res)
 
         result = Quantity(vertcat(*sym))
-        self.__sym_res[NumericHandler.VECTORS][key] = result
+        self.__sym_res[NHKeys.VECTORS][key] = result
         self.__vec_res_names[key] = nam
         return result
 
@@ -349,13 +363,13 @@ class NumericHandler:
 
         states_struct = fetch(mod, fetch_material_states, "state")
         states,  state_names = to_vector(states_struct)
-        self.__vec_arg_names[self.STATE_VEC] = state_names
+        self.__vec_arg_names[NHKeys.STATES] = state_names
 
         return {
-            self.THERMO_PARAMS: fetch_store_param(mod),
-            self.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
-            self.VECTORS: {
-                self.STATE_VEC: states,
+            NHKeys.THERMO_PARAMS: fetch_store_param(mod),
+            NHKeys.MODEL_PARAMS: fetch(mod, fetch_parameters, "parameter"),
+            NHKeys.VECTORS: {
+                NHKeys.STATES: states,
             }
         }
 
@@ -401,7 +415,7 @@ class NumericHandler:
                 clash = ", ".join(clash)
                 msg = f"Name clash of bounds and child modules: {clash}"
                 raise ValueError(msg)
-            res.update(model.bounds)
+            res.update(model.bounds)  # TODO: why type errors
             return res
 
         def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
@@ -424,17 +438,17 @@ class NumericHandler:
         bounds_structure = fetch(mod, fetch_bounds, "bound")
         residuals, residual_names = to_vector(residual_structure)
         bounds, bound_names = to_vector(bounds_structure)
-        self.__vec_res_names[self.RES_VEC] = residual_names
-        self.__vec_res_names[self.BOUND_VEC] = bound_names
+        self.__vec_res_names[NHKeys.RESIDUALS] = residual_names
+        self.__vec_res_names[NHKeys.BOUNDS] = bound_names
         return {
-            self.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
-            self.THERMO_PROPS:
+            NHKeys.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
+            NHKeys.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
-            self.RESIDUALS: fetch(mod, lambda x: fetch_residuals(x, False),
+            NHKeys.RESIDUALS: fetch(mod, lambda x: fetch_residuals(x, False),
                                   "residual"),
-            self.VECTORS: {
-                self.RES_VEC: residuals,
-                self.BOUND_VEC: bounds
+            NHKeys.VECTORS: {
+                NHKeys.RESIDUALS: residuals,
+                NHKeys.BOUNDS: bounds
             }
         }
 
@@ -483,11 +497,11 @@ class NumericHandler:
         model_param = fetch(self.model, lambda m: m.parameters.values,
                             "parameter")
         return {
-            self.VECTORS: {
-                self.STATE_VEC: states,
+            NHKeys.VECTORS: {
+                NHKeys.STATES: states,
             },
-            self.MODEL_PARAMS: model_param,
-            self.THERMO_PARAMS: fetch_store_param()
+            NHKeys.MODEL_PARAMS: model_param,
+            NHKeys.THERMO_PARAMS: fetch_store_param()
         }
 
     @staticmethod

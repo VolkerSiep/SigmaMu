@@ -45,9 +45,8 @@ Name                    What for
 
 .. testsetup::
 
+    >>> from simu import NumericHandler, Quantity, NHKeys
     >>> from simu.examples.hello_world import Square
-    >>> from simu import NumericHandler, Quantity
-    >>> from simu import NumericHandler, Quantity
 
 .. _getting started hello world:
 
@@ -88,17 +87,20 @@ As there are no model constraints, the ``residuals`` section here is empty, but 
 
 The model has also collected the default input values for us.
 
+>>> from pprint import pprint
 >>> args = numeric.arguments
->>> print(args)
-{'vectors': {'states': <Quantity(0x1, 'dimensionless')>}, 'model_params': {'length': <Quantity(10.0, 'meter')>}, 'thermo_params': {}}
+>>> pprint(args)
+{'model_params': {'length': <Quantity(10.0, 'meter')>},
+ 'thermo_params': {},
+ 'vectors': {'states': <Quantity(0x1, 'dimensionless')>}}
 
 For a larger real-life problem, this would also include the initial set of independent variables (``state``) and all thermodynamic parameters, collected from the various data sources. Here we see only the ``length`` parameter as being 10 m.
 
 We can overwrite that parameter by changing its value in the obtained structure
 
->>> args[NumericHandler.MODEL_PARAMS]["length"] = Quantity(20, "cm")
+>>> args[NHKeys.MODEL_PARAMS]["length"] = Quantity(20, "cm")
 >>> result = func(args)
->>> print(f"{result[NumericHandler.MODEL_PROPS]['area']:.3fP~}")
+>>> print(f"{result[NHKeys.MODEL_PROPS]['area']:.3fP~}")
 0.040 m²
 
 Note that the formatting of the physical quantities is utilising `Pint`_ functionality.
