@@ -24,7 +24,7 @@ Running the solver
 
 To solve the example module, we first wrap the model into a numeric handler:
 
->>> from simu import NumericHandler, SimulationSolver
+>>> from simu import NumericHandler, SimulationSolver, NHKeys
 >>> numeric = NumericHandler(Source.top())
 
 Next steps are to instantiate a :class:`~simu.SimulationSolver` on this numeric handler, and then to solve the system:
@@ -45,7 +45,7 @@ The relaxation factor is called ``Alpha``. The first iteration attempts to reduc
 The solving process returns a :class:`~simu.core.solver.simulation.SimulationSolverReport` object, which contains the content of above printed table for further analysis, but also the model's state vector in the solution point and a property to evaluate the model's properties. In this example, the only interesting part are the thermodynamic properties of the source stream:
 
 >>> from pprint import pprint
->>> pprint(result.properties["thermo_props"]["source"])
+>>> pprint(result.properties[NHKeys.THERMO_PROPS]["source"])
 {'S': <Quantity(21.1401..., 'watt / kelvin')>,
  'T': <Quantity(298.15, 'kelvin')>,
  'T_ref': <Quantity(298.15, 'kelvin')>,
@@ -57,7 +57,7 @@ The solving process returns a :class:`~simu.core.solver.simulation.SimulationSol
 
 The least boring result of this simulation is the calculated molar flow of methane:
 
->>> print(result.properties["thermo_props"]["source"]["n"]["Methane"].to("kmol/day"))
+>>> print(result.properties[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
 9.68149... kilomole / day
 
 Changing parameters
@@ -81,9 +81,9 @@ For extra convenience, the solver object provides direct mutable access via :met
 Let's modify the input:
 
 >>> from simu import Quantity
->>> solver.model_parameters["model_params"]["T"] = Quantity(120, "degC")
+>>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(120, "degC")
 >>> result = solver.solve(output="none")
->>> print(result.properties["thermo_props"]["source"]["n"]["Methane"].to("kmol/day"))
+>>> print(result.properties[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
 7.3420... kilomole / day
 
 As a result of increasing the temperature, the molar flow at constant volume flow becomes less. We could also change thermodynamic parameters at this point -- only that due to the applied ideal gas law, none of them has impact on the calculated molar flow.
@@ -96,11 +96,11 @@ Sometimes, for instance for debugging, it is useful to assess the model's state 
 
 >>> def my_callback(iteration, iter_report, state, prop_func):
 ...     props = prop_func(state)
-...     print(iteration, props["thermo_props"]["source"]["n"]["Methane"].to("kmol/day"))
+...     print(iteration, props[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
 ...     return True
 
 >>> solver.set_option("call_back_iter", my_callback)
->>> solver.model_parameters["model_params"]["T"] = Quantity(-20, "degC")
+>>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(-20, "degC")
 >>> result = solver.solve()
     0 9.9565... kilomole / day
     1 11.402... kilomole / day

@@ -1,11 +1,29 @@
+=============
 Release notes
 =============
 
-V1.0b1
-------
-Changes up to this point are not documented as they are part of the initial development with no prior release.
-However, the most recent changes made are
+V1.0b2
+======
+Changes
+-------
+- Changed :class:`~simu.NumericHandler` constants into ``StrEnum`` :class:`~simu.NHKeys` class and removed alias ``NH`` for :class:`~simu.NumericHandler`.
 
+
+Migration guide from V1.0b1
+---------------------------
+- If ``from simu import NH`` was used, revert back to ``from simu import NumericHandler`` and use :class:`~simu.NumericHandler`
+  to address the class, except its constants.
+- To address the constants of :class:`~simu.NumericHandler`, now import ``from simu import NHKeys``. The keys are
+  documented as :class:`~simu.NHKeys`.
+
+
+V1.0b1
+======
+Changes up to this point are not documented as they are part of the initial development with no prior release.
+However, the most recent changes made are listed below.
+
+Changes
+-------
 - Added Pitzer Gibbs excess model, including Pitzer-Debye-Hückel contribution, binary and ternary parameters.
 - Added an extended Barin heat capacity contribution
 - Added IAPWS steam/water model

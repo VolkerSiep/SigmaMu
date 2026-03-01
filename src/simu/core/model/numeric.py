@@ -74,14 +74,43 @@ class PropertyFilter(ABC):
 
 
 class NHKeys(StrEnum):
+    """Enumeration class to address sections in data structures related to
+    the :class:`NumericHandler` class."""
     THERMO_PARAMS = auto()
+    """Top level key in argument structure, addressing thermodynamic parameters.
+    """
+
     MODEL_PARAMS = auto()
+    """Top level key in argument structure, addressing process model parameters.
+    """
+
     THERMO_PROPS = auto()
+    """Top level key in result structure, addressing thermodynamic (or material)
+    properties.
+    """
+
     MODEL_PROPS = auto()
+    """Top level key in result structure, addressing process model properties.
+    """
+
     RESIDUALS = auto()
+    """Top level key in result structure, addressing model residuals, and 
+    sub-key in ``vectors`` section of result structure, containing a vector of
+    dimensionless residuals, normalized by their tolerances.
+    """
     STATES = auto()
+    """Sub-key in ``vectors`` section of argument structure, containing a vector
+    of thermodynamic state variables.
+    """
     BOUNDS = auto()
+    """Top level key in result structure, addressing model bounds, and 
+    sub-key in ``vectors`` section of result structure, containing a lumped 
+    vector of all bounds.
+    """
+
     VECTORS = auto()
+    """Top level key in both argument and result structure, pointing to
+    vectorized data for efficient numerical treatment."""
 
     def __repr__(self):
         return f"'{self.value}'"
