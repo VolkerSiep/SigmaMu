@@ -11,3 +11,13 @@ NumericHandler
 --------------
 .. autoclass:: simu.NumericHandler
    :members:
+
+PropertyFilter
+--------------
+.. autoclass:: simu.PropertyFilter
+   :members:
+
+ExclusionFilter
+...............
+.. autoclass:: simu.app.numeric.ExclusionFilter
+   :members:

@@ -26,7 +26,8 @@ from .base import ModelProxy
 
 
 class PropertyFilter(ABC):
-    def filter(self, properties: Map[Quantity | QuantityDict]):
+    def filter(self, properties: Map[Quantity | QuantityDict]) \
+            -> Map[Quantity | QuantityDict]:
         """On filtering, this method receives the thermodynamic properties
         of a material as a mapping with keys as strings, representing the
         property name. The values are either scalar quantities or a
@@ -62,15 +63,6 @@ class PropertyFilter(ABC):
           in case of mole flows or chemical potentials.
         """
         ...
-
-# TODO:
-#  - allow to specify property filter on construction (or later as well?) of
-#    NumericHandler
-#  - provide some simple implementations in simu.app, such as
-#    * ExclusionFilter to specify properties that are to be excluded, or
-#    * InclusionFilter for properties that are to be included.
-#    To be honest, the ExclusionFilter will cover what most users will ever
-#    need.
 
 
 class NHKeys(StrEnum):
@@ -120,14 +112,32 @@ class NumericHandler:
     """This class implements the function object describing the top level
     model."""
 
-    def __init__(self, model: ModelProxy, port_properties: bool = True):
-        """The option ``port_properties`` determines whether the properties
-        of connected materials are also reported from a child model's
-        perspective by the name of their ports."""
+    def __init__(self, model: ModelProxy, *,
+                 property_filter: PropertyFilter = None,
+                 port_properties: bool = False):
+        """Create a numerical wrapper around a given model. This step is to be
+        applied to any (top level) model that is to be numerically evaluated
+        in any way (for solving, optimization, etc).
+
+        :param model: The model to be wrapped. This model does not need to be
+          square or well-posed. Such details are for the applied solvers to be
+          fought with.
+        :param property_filter: Larger models produce tens of thousands of
+          properties. The house-keeping of those creates overhead internally,
+          but also creates clutter for the client code. Applying a filter can
+          help to limit the number of exported properties to a manageable level.
+        :param port_properties: This parameter determines whether the properties
+            of connected materials are also reported from a child model's
+            perspective by the name of their ports. This is normally not
+            interesting and thus off by default. In a generic front-end however,
+            one might like to address a stream not only by its identifier in the
+            containing context, but also via the port of a containing sub-model.
+        """
         self.options = {
             "port_properties": port_properties
         }
         self.model = model
+        self._property_filter = property_filter
         # the name vectors of vector arguments
         self.__vec_arg_names: MutMap[Sequence[str]] = {}
         self.__vec_res_names: MutMap[Sequence[str]] = {}
@@ -493,8 +503,9 @@ class NumericHandler:
             """fetch properties of materials in a specific model"""
             ports = self.options["port_properties"]
             mat_proxy = model.materials
-            # TODO: need to filter v here
-            return {k: v for k, v in mat_proxy.handler.items()
+            filter_ = self._property_filter
+            f = (lambda x: x) if filter_ is None else filter_.filter
+            return {k: f(v) for k, v in mat_proxy.handler.items()
                     if ports or k not in mat_proxy}
 
         mod = self.model
@@ -509,11 +520,12 @@ class NumericHandler:
         self.__vec_res_names[NHKeys.RESIDUALS] = residual_names
         self.__vec_res_names[NHKeys.BOUNDS] = bound_names
         return {
-            NHKeys.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
+            NHKeys.MODEL_PROPS:
+                fetch(mod, fetch_mod_props, "model property"),
             NHKeys.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
-            NHKeys.RESIDUALS: fetch(mod, lambda x: fetch_residuals(x, False),
-                                  "residual"),
+            NHKeys.RESIDUALS:
+                fetch(mod, lambda x: fetch_residuals(x, False), "residual"),
             NHKeys.VECTORS: {
                 NHKeys.RESIDUALS: residuals,
                 NHKeys.BOUNDS: bounds

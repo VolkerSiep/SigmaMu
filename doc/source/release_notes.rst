@@ -7,6 +7,9 @@ V1.0b2
 Changes
 -------
 - Changed :class:`~simu.NumericHandler` constants into ``StrEnum`` :class:`~simu.NHKeys` class and removed alias ``NH`` for :class:`~simu.NumericHandler`.
+- :class:`~simu.NumericHandler` constructor argument ``port_properties`` is now keyword-only.
+- ``property_filter`` argument added to constructor of :class:`~simu.NumericHandler`, plus offering of base-class and
+  a concrete implementation to demonstrate and facilitate filtering of calculated properties.
 
 
 Migration guide from V1.0b1
