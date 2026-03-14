@@ -2,6 +2,7 @@
 of the top model instance."""
 
 # std lib
+from abc import ABC, abstractmethod
 from typing import Optional
 from collections.abc import Callable, Sequence, Collection
 from enum import StrEnum, auto
@@ -12,29 +13,96 @@ from casadi import vertcat, SX
 from pint import Unit
 
 # internal
-from simu.core.utilities.quantity import Quantity, QFunction, jacobian
+from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.structures import (
     flatten_dictionary, unflatten_dictionary, FLATTEN_SEPARATOR)
 from simu.core.utilities.qstructures import (
-    quantity_dict_to_strings, parse_quantities_in_struct)
+    QuantityDict, quantity_dict_to_strings, parse_quantities_in_struct)
 from simu.core.utilities.types import NestedMap, NestedMutMap, Map, MutMap
 from simu.core.utilities.errors import DataFlowError
 from simu.core.thermo.parameters import ThermoParameterStore
 from simu.core.thermo.state import InitialState
 from .base import ModelProxy
 
-# TODO:
-#  - set parameters and get parameters
+
+class PropertyFilter(ABC):
+    def filter(self, properties: Map[Quantity | QuantityDict]) \
+            -> Map[Quantity | QuantityDict]:
+        """On filtering, this method receives the thermodynamic properties
+        of a material as a mapping with keys as strings, representing the
+        property name. The values are either scalar quantities or a
+        quantity dictionary in case of non-scalar properties.
+        """
+        def filter_subkeys(key, sub_props: Quantity | QuantityDict):
+            if isinstance(sub_props, Quantity):
+                return sub_props
+            else:
+                return {
+                    sub_key: value for sub_key, value in sub_props.items()
+                    if self.keep_property(key, sub_key)
+                }
+
+        return {
+            key: filter_subkeys(key, value) for key, value in properties.items()
+            if self.keep_property(key)
+        }
+
+    @abstractmethod
+    def keep_property(self, name: str, sub_key: str = None) -> bool:
+        """Abstract method to decide whether a material property shall be
+        included in the results of the process model.
+
+        In case of non-scalar properties, the method is first called for the
+        property itself without providing any ``sub_key``. Only if this call
+        is answered with ``True``, the method is called again for each
+        existing ``sub_key``.
+
+        :param name: The name of the property
+        :param sub_key: If the property is a non-scalar entity, the ``subkey``
+          contains the identifier of the element, for instance the species name
+          in case of mole flows or chemical potentials.
+        """
+        ...
+
 
 class NHKeys(StrEnum):
+    """Enumeration class to address sections in data structures related to
+    the :class:`NumericHandler` class."""
     THERMO_PARAMS = auto()
+    """Top level key in argument structure, addressing thermodynamic parameters.
+    """
+
     MODEL_PARAMS = auto()
+    """Top level key in argument structure, addressing process model parameters.
+    """
+
     THERMO_PROPS = auto()
+    """Top level key in result structure, addressing thermodynamic (or material)
+    properties.
+    """
+
     MODEL_PROPS = auto()
+    """Top level key in result structure, addressing process model properties.
+    """
+
     RESIDUALS = auto()
+    """Top level key in result structure, addressing model residuals, and 
+    sub-key in ``vectors`` section of result structure, containing a vector of
+    dimensionless residuals, normalized by their tolerances.
+    """
     STATES = auto()
+    """Sub-key in ``vectors`` section of argument structure, containing a vector
+    of thermodynamic state variables.
+    """
     BOUNDS = auto()
+    """Top level key in result structure, addressing model bounds, and 
+    sub-key in ``vectors`` section of result structure, containing a lumped 
+    vector of all bounds.
+    """
+
     VECTORS = auto()
+    """Top level key in both argument and result structure, pointing to
+    vectorized data for efficient numerical treatment."""
 
     def __repr__(self):
         return f"'{self.value}'"
@@ -43,24 +111,33 @@ class NHKeys(StrEnum):
 class NumericHandler:
     """This class implements the function object describing the top level
     model."""
-    # THERMO_PARAMS: str = "thermo_params"
-    # MODEL_PARAMS: str = "model_params"
-    # THERMO_PROPS: str = "thermo_props"
-    # MODEL_PROPS: str = "model_props"
-    # RESIDUALS: str = "residuals"
-    # STATE_VEC: str = "states"
-    # RES_VEC: str = "residuals"
-    # BOUND_VEC: str = "bounds"
-    # VECTORS: str = "vectors"
 
-    def __init__(self, model: ModelProxy, port_properties: bool = True):
-        """The option ``port_properties`` determines whether the properties
-        of connected materials are also reported from a child model's
-        perspective by the name of their ports."""
+    def __init__(self, model: ModelProxy, *,
+                 property_filter: PropertyFilter = None,
+                 port_properties: bool = False):
+        """Create a numerical wrapper around a given model. This step is to be
+        applied to any (top level) model that is to be numerically evaluated
+        in any way (for solving, optimization, etc).
+
+        :param model: The model to be wrapped. This model does not need to be
+          square or well-posed. Such details are for the applied solvers to be
+          fought with.
+        :param property_filter: Larger models produce tens of thousands of
+          properties. The house-keeping of those creates overhead internally,
+          but also creates clutter for the client code. Applying a filter can
+          help to limit the number of exported properties to a manageable level.
+        :param port_properties: This parameter determines whether the properties
+            of connected materials are also reported from a child model's
+            perspective by the name of their ports. This is normally not
+            interesting and thus off by default. In a generic front-end however,
+            one might like to address a stream not only by its identifier in the
+            containing context, but also via the port of a containing sub-model.
+        """
         self.options = {
             "port_properties": port_properties
         }
         self.model = model
+        self._property_filter = property_filter
         # the name vectors of vector arguments
         self.__vec_arg_names: MutMap[Sequence[str]] = {}
         self.__vec_res_names: MutMap[Sequence[str]] = {}
@@ -307,11 +384,11 @@ class NumericHandler:
                 return None, None
 
             nams, syms = [], []
-            for k, value in items:
-                n, s = traverse(value, symbols[k])
+            for k, item in items:
+                n, s = traverse(item, symbols[k])
                 if n is None:
                     nams.append(k)
-                    syms.append(symbols[k].to(value).magnitude)
+                    syms.append(symbols[k].to(item).magnitude)
                 else:
                     nams.extend([f"{k}/{n_i}" for n_i in n])
                     syms.extend(s)
@@ -415,7 +492,7 @@ class NumericHandler:
                 clash = ", ".join(clash)
                 msg = f"Name clash of bounds and child modules: {clash}"
                 raise ValueError(msg)
-            res.update(model.bounds)  # TODO: why type errors
+            res.update(model.bounds.items())
             return res
 
         def fetch_mod_props(model: ModelProxy) -> MutMap[Quantity]:
@@ -426,7 +503,9 @@ class NumericHandler:
             """fetch properties of materials in a specific model"""
             ports = self.options["port_properties"]
             mat_proxy = model.materials
-            return {k: v for k, v in mat_proxy.handler.items()
+            filter_ = self._property_filter
+            f = (lambda x: x) if filter_ is None else filter_.filter
+            return {k: f(v) for k, v in mat_proxy.handler.items()
                     if ports or k not in mat_proxy}
 
         mod = self.model
@@ -441,11 +520,12 @@ class NumericHandler:
         self.__vec_res_names[NHKeys.RESIDUALS] = residual_names
         self.__vec_res_names[NHKeys.BOUNDS] = bound_names
         return {
-            NHKeys.MODEL_PROPS: fetch(mod, fetch_mod_props, "model property"),
+            NHKeys.MODEL_PROPS:
+                fetch(mod, fetch_mod_props, "model property"),
             NHKeys.THERMO_PROPS:
                 fetch(mod, fetch_thermo_props, "thermo property"),
-            NHKeys.RESIDUALS: fetch(mod, lambda x: fetch_residuals(x, False),
-                                  "residual"),
+            NHKeys.RESIDUALS:
+                fetch(mod, lambda x: fetch_residuals(x, False), "residual"),
             NHKeys.VECTORS: {
                 NHKeys.RESIDUALS: residuals,
                 NHKeys.BOUNDS: bounds

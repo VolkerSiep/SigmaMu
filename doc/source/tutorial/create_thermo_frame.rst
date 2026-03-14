@@ -34,6 +34,8 @@ Next, we describe by the so-called **standard state** how the substance reacts t
 By now, we already have a sufficient complete description of for instance *pure solids* and *pure liquids* under moderate pressures. Parameters can be found for instance in :cite:p:`Wagman_1982`. By adding two more contributions, we arrive at the ideal gas. These are the **ideal mix** (im) and the **ideal gas** (ig) contributions:
 
 .. math::
+  :no-wrap:
+
     \begin{align*}
       \mu_i^\mathrm{im}(T, p_\mathrm{ref}) &= \mu_i^\standard(T, p_\mathrm{ref}) + R\,T\,\ln x_i\\
       \mu_i^\mathrm{ig}(T, p) &= \mu_i^\mathrm{im}(T, p_\mathrm{ref}) + R\,T\,\ln \frac{p}{p_\mathrm{ref}}

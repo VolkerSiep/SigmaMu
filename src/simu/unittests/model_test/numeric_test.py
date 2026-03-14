@@ -1,7 +1,10 @@
 from numpy import squeeze
 from numpy.testing import assert_allclose
 
-from simu import NumericHandler, NHKeys, flatten_dictionary, Quantity, jacobian
+from simu import (
+    NumericHandler, NHKeys, flatten_dictionary, Quantity, jacobian,
+    PropertyFilter)
+from simu.app.numeric import ExclusionFilter
 from simu.examples.material_model import Source
 from simu.core.utilities.testing import assert_reproduction
 
@@ -91,6 +94,25 @@ def test_collect_hierarchy_material(material_parent_test_model):
         ref = {"args": numeric.function.arg_structure,
                "res": numeric.function.result_structure}
         assert_reproduction(ref, suffix=f"{port_props}".lower())
+
+
+def test_filter_properties(square_test_model):
+    class Filter(PropertyFilter):
+        def keep_property(self, name: str, sub_key: str = None) -> bool:
+            return not (name.endswith("_std") or name.endswith("_ref"))
+
+    proxy = square_test_model.top()
+    numeric = NumericHandler(proxy, property_filter=Filter())
+    props = numeric.function.result_structure[NHKeys.THERMO_PROPS]["local"]
+    assert_reproduction(props)
+
+
+def test_filter_properties_2(square_test_model):
+    filter_ = ExclusionFilter({"mu_std", "S_std", "p_std", "T_ref", "p_ref"})
+    proxy = square_test_model.top()
+    numeric = NumericHandler(proxy, property_filter=filter_)
+    props = numeric.function.result_structure[NHKeys.THERMO_PROPS]["local"]
+    assert_reproduction(props)
 
 
 def test_export_state(square_test_model):

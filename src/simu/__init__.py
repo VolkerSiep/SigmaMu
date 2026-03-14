@@ -31,7 +31,7 @@ from .core.thermo.material import MaterialDefinition, Material, MaterialSpec
 
 from .core.model.base import Model
 from .core.model.amodel import AModel
-from .core.model.numeric import NumericHandler, NHKeys
+from .core.model.numeric import NumericHandler, NHKeys, PropertyFilter
 from .core.solver.simulation import SimulationSolver
 
 # versioning
