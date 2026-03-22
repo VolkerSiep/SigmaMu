@@ -9,25 +9,50 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class DataSet:
+class DataSet:  # all data is held in data sets
     columns: Sequence[str]
     data: Iterable[Sequence[float]]
 
 
 @dataclass
-class ThermoFitContribution:
-    data: DataSet
-    model: NumericHandler
-    data_model_map: Map[str]  # maps names in data set to model parameters
-    penalties: Sequence[str]  # model properties representing penalties
-    properties: Sequence[str]  # model properties interesting for evaluation
+class DataSeries:
+    contribution_id: str
+    model_property: bool
+    property_id: str
+
+
+Evaluation = Map[DataSeries]
 
 
 @dataclass
-class ThermoFitEvaluation:
-    # map properties from contribution, both data set and properties
-
+class ThermoFitContribution:
+    data: DataSet
+    fit_model_id: str
+    eval_model_id: str
+    data_to_fit_model: Map[str]  # maps names in data set to model parameters
+    data_to_eval_model: Map[str]
+    penalties: Sequence[str]  # model properties representing penalties
+    properties: Sequence[str]  # model properties interesting for evaluation
+    weight: float
 
 class ThermoParameterFit:
     def __init__(self):
         self._contributions: MutMap[ThermoFitContribution] = {}
+        self._evaluations: MutMap[Evaluation] = {}
+        self._models: MutMap[NumericHandler] = {}
+
+    def add_contribution(self, name: str,
+                         contribution: ThermoFitContribution):
+        if name in self._contributions:
+            raise ValueError(f"Contribution of name {name} already defined")
+        self._contributions[name] = contribution
+
+    def add_evaluation(self, name: str, evaluation: Evaluation):
+        if name in self._evaluations:
+            raise ValueError(f"Evaluation of name {name} already defined")
+        self._evaluations[name] = evaluation
+
+    def add_model(self, name: str, model: NumericHandler):
+        if name in self._models:
+            raise ValueError(f"Model of name {name} already defined")
+        self._models[name] = model

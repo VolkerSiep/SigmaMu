@@ -1,0 +1,41 @@
+contributions:
+  vle:
+    data:
+      columns: [ T, p, x, y ]
+      data:
+        - [ 373.15, 1e5, 0.2, 0.4 ]
+        - [ 383.15, 1e5, 0.3, 0.5 ]
+        - [ 393.15, 1e5, 0.4, 0.6 ]
+        - [ 403.15, 1e5, 0.5, 0.7 ]
+        - [ 413.15, 1e5, 0.6, 0.8 ]
+    fit_model_id: vle_fit
+    eval_model_id: vle_flash
+    data_to_fit_model:
+      T: process.T
+      p: process.p
+      x: process.x
+      y: process.y
+    data_to_eval_model:
+      T: process.T
+      x: process.x
+    penalties:
+      process.dmu_norm/H2O
+      process.dmu_norm/CO2
+    properties:
+      p: process.p
+      y: process.y
+evaluations:
+  vle_p:
+    T:
+      contribution_id: vle
+      model_property: false
+      property_id: T
+    p:
+      contribution_id: vle
+      model_property: false
+      property_id: p
+    p_hat:
+      contribution_id: vle
+      model_property: true
+      property_id: p
+
