@@ -1,12 +1,52 @@
 # stdlib
-from typing import Type
-from collections.abc import Mapping, Collection
+from typing import Type, Union, Any
+from collections.abc import Mapping, Collection, Sequence
+
+# external
+from pydantic import BaseModel, field_validator, ValidationInfo
 
 # internal
 from .state import StateDefinition
 from .species import SpeciesDefinition
 from .frame import ThermoFrame
 from .contribution import ThermoContribution
+
+class ContributionConfiguration(BaseModel):
+    cls: str
+    name: str
+    options: Any
+
+class FrameConfiguration(BaseModel):
+    state: str
+    contributions: Sequence[Union[str, ContributionConfiguration]]
+
+    @field_validator("state")
+    @classmethod
+    def check_valid(cls, value: str, info: ValidationInfo) -> str:
+        states = info.context("valid_states")
+        if value not in states:
+            raise ValueError(f"State {value} not registered in ThermoFactory")
+
+    @field_validator("contributions", mode="before")
+    @classmethod
+    def normalize_contributions(cls, contributions: Sequence[Mapping]) \
+        -> Sequence[Mapping]:
+        def normalize_entry(entry: Union[str, Mapping]) -> Mapping:
+            if isinstance(entry, str):
+                return {
+                    "cls": entry,
+                    "name": entry,
+                    "options": None
+                }
+            return entry
+
+        return [normalize_entry(c) for c in contributions]
+
+    @field_validator("contributions")
+    @classmethod
+    def convert_to_contributions(cls, contributions):
+        return [ContributionConfiguration.model_validate(c)
+                for c in contributions]
 
 
 class ThermoFactory:
@@ -18,7 +58,7 @@ class ThermoFactory:
     static attributes are avoided."""
 
     def __init__(self):
-        """Parameter-less constructor, initialising the data structure
+        """Parameter-less constructor, initializing the data structure
         to host contribution definitions"""
         self.__contributions = {}
         self.__state_definitions = {}
