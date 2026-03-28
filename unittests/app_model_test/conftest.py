@@ -9,7 +9,7 @@ from simu import (MaterialDefinition, SpeciesDB, StringDictThermoSource,
                   InitialState, ThermoParameterStore, ThermoFrame, AModel)
 from simu.app import DATA_DIR, RegThermoFactory, ThermoStructure
 
-from simu.unittests.stubs.material import MaterialDefinitionStub
+from unittests.stubs.material import MaterialDefinitionStub
 
 from simu.app.models.basic import SpeciesBalance
 
