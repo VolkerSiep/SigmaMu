@@ -12,7 +12,8 @@ from copy import deepcopy
 from casadi import vertcat, SX
 from pint import Unit
 from pint.registry import Quantity as QtyType
-from pydantic import BaseModel, field_validator, Field, PlainValidator
+from pydantic import BaseModel, field_validator, Field
+from pydantic_core import core_schema
 
 # internal
 from simu.core.utilities.quantity import Quantity, QFunction
@@ -110,16 +111,18 @@ class NHKeys(StrEnum):
         return f"'{self.value}'"
 
 
-PQuantity = Annotated[str, PlainValidator(lambda v: Quantity(v))]
+class PQuantity:
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        def validate(v):
+            return Quantity(v)
+        return core_schema.no_info_plain_validator_function(validate)
 
 
 class SingleStateDump(BaseModel):
     T: PQuantity
     p: PQuantity
     n: Map[PQuantity]
-
-    def to_dict(self) -> Map[QtyType]:
-        return {"T": self.T, "p": self.p, "n": self.n}
 
     @field_validator("T", mode="after")
     @classmethod
@@ -312,7 +315,7 @@ class NumericHandler:
                     result[new_path] = "missing"
                 else:
                     material.initial_state = \
-                        InitialState.from_dict(new_part.to_dict(),
+                        InitialState.from_dict(new_part.model_dump(),
                                                material.species)
 
             # traverse down into model hierarchy
