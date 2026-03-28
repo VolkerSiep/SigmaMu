@@ -3,7 +3,9 @@ from typing import Type, Union, Any
 from collections.abc import Mapping, Collection, Sequence
 
 # external
-from pydantic import BaseModel, field_validator, ValidationInfo
+from pydantic import (
+    BaseModel, field_validator, model_validator,
+    ValidationInfo, Field, TypeAdapter)
 
 # internal
 from .state import StateDefinition
@@ -11,42 +13,48 @@ from .species import SpeciesDefinition
 from .frame import ThermoFrame
 from .contribution import ThermoContribution
 
+
 class ContributionConfiguration(BaseModel):
     cls: str
     name: str
-    options: Any
+    options: Any = Field(default=None)
+
+    @model_validator(mode="before")
+    @classmethod
+    def from_str_or_dict(cls, value: str|Mapping):
+        if isinstance(value, str):
+            return {"cls": value, "name": value}
+        else:
+            return value
+
+    @field_validator("cls", mode="before")
+    @classmethod
+    def validate_class(cls, cls_: str, info: ValidationInfo):
+        contributions = info.context.get("contributions", [])
+        if cls_ not in contributions:
+            raise ValueError(
+                f"Contribution '{cls_}' not registered in ThermoFactory")
+        return cls_
+
+ContributionList = TypeAdapter(Sequence[ContributionConfiguration])
 
 class FrameConfiguration(BaseModel):
     state: str
-    contributions: Sequence[Union[str, ContributionConfiguration]]
+    contributions: Sequence[ContributionConfiguration]
 
-    @field_validator("state")
+    @field_validator("state", mode="before")
     @classmethod
-    def check_valid(cls, value: str, info: ValidationInfo) -> str:
-        states = info.context("valid_states")
-        if value not in states:
-            raise ValueError(f"State {value} not registered in ThermoFactory")
+    def validate_state(cls, state: str, info: ValidationInfo) -> str:
+        states = info.context.get("states", [])
+        if state not in states:
+            raise ValueError(f"State '{state}' not registered in ThermoFactory")
+        return state
 
+    @classmethod
     @field_validator("contributions", mode="before")
-    @classmethod
-    def normalize_contributions(cls, contributions: Sequence[Mapping]) \
-        -> Sequence[Mapping]:
-        def normalize_entry(entry: Union[str, Mapping]) -> Mapping:
-            if isinstance(entry, str):
-                return {
-                    "cls": entry,
-                    "name": entry,
-                    "options": None
-                }
-            return entry
-
-        return [normalize_entry(c) for c in contributions]
-
-    @field_validator("contributions")
-    @classmethod
-    def convert_to_contributions(cls, contributions):
-        return [ContributionConfiguration.model_validate(c)
-                for c in contributions]
+    def validate_contributions(cls, contributions: Sequence[Mapping|str]) \
+            -> Sequence[ContributionConfiguration]:
+        return ContributionList.validate_python(contributions)
 
 
 class ThermoFactory:
