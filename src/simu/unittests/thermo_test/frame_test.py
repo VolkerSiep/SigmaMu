@@ -103,7 +103,8 @@ def test_validate_configuration_result(simple_config):
                           "StandardState", "IdealMix", "HelmholtzIdealGas"]
     }
     result = FrameConfiguration.model_validate(simple_config, context=context)
-    print(result)
+    assert result.contributions[2].name == "StandardState"
+
 
 # *** helper functions
 

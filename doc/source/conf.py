@@ -2,15 +2,17 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import sys
-from os.path import abspath
+from pathlib import Path
 from importlib.metadata import version as get_version
 
 # -- Path setup --------------------------------------------------------------
-sys.path.insert(0, abspath('.'))
+current_dir = Path(__file__).parent
+sys.path.insert(0, str(current_dir))
+sys.path.insert(0, str(current_dir.parent / "src"))
 
 # -- Project information -----------------------------------------------------
 project = 'SigmaMu'
-copyright = '2021-2025, Volker Siepmann'
+copyright = '2021-2026, Volker Siepmann'
 author = 'Volker Siepmann'
 release = get_version(project)
 
