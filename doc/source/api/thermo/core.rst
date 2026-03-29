@@ -6,6 +6,20 @@ A thermodynamic model in ``SigmaMu`` is composed of :class:`ThermoContribution` 
 
 The :class:`ThermoFactory` administers the construction of this structure by allowing to first register the contribution classes, and then construct models based on a given structure. The model is then encapsulated into a :class:`ThermoFrame` object.
 
+
+FrameConfiguration
+------------------
+.. autoclass:: simu.core.thermo.factory.FrameConfiguration
+   :members: state, contributions
+   :exclude-members: __init__, __new__
+
+FrameContributionConfiguration
+------------------------------
+.. autoclass:: simu.core.thermo.factory.FrameContributionConfiguration
+   :members: cls, name, options
+   :exclude-members: __init__, __new__
+
+
 ThermoContributionDict
 ----------------------
 .. autodata:: simu.core.thermo.frame.ThermoContributionDict

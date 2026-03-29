@@ -3,7 +3,7 @@ of the top model instance."""
 
 # std lib
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Any, Annotated
 from collections.abc import Callable, Sequence, Collection
 from enum import StrEnum, auto
 from copy import deepcopy
@@ -11,6 +11,9 @@ from copy import deepcopy
 # external
 from casadi import vertcat, SX
 from pint import Unit
+from pint.registry import Quantity as QtyType
+from pydantic import BaseModel, field_validator, Field
+from pydantic_core import core_schema
 
 # internal
 from simu.core.utilities.quantity import Quantity, QFunction
@@ -106,6 +109,75 @@ class NHKeys(StrEnum):
 
     def __repr__(self):
         return f"'{self.value}'"
+
+
+class PQuantity:
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        def validate(v):
+            return Quantity(v)
+        return core_schema.no_info_plain_validator_function(validate)
+
+
+class SingleStateDump(BaseModel):
+    T: PQuantity
+    p: PQuantity
+    n: Map[PQuantity]
+
+    @field_validator("T", mode="after")
+    @classmethod
+    def check_temperature(cls, value: QtyType) -> QtyType:
+        try:
+            magnitude = value.to("K").m
+        except Exception as e:
+            raise ValueError(f"Invalid temperature: {value} - {e}")
+        if magnitude <= 0:
+            raise ValueError(f"Infeasible temperature value: {value}")
+        return value
+
+    @field_validator("p", mode="after")
+    @classmethod
+    def check_pressure(cls, value: QtyType) -> QtyType:
+        try:
+            magnitude = value.to("Pa").m
+        except Exception as e:
+            raise ValueError(f"Invalid Pressure: {value} - {e}")
+        if magnitude <= 0:
+            raise ValueError(f"Infeasible pressure value: {value}")
+        return value
+
+    @field_validator("n", mode="after")
+    @classmethod
+    def check_quantities(cls, value: Map[QtyType]) -> Map[QtyType]:
+        for k, n_i in value.items():
+            try:
+                magnitude = n_i.to("mol").m
+            except Exception as e:
+                msg = f"Invalid Quantity for species {k}: {n_i} - {e}"
+                raise ValueError(msg)
+            if magnitude <= 0:
+                msg = f"Infeasible quantity value for species {k}: {n_i}"
+                raise ValueError(msg)
+        return value
+
+
+class StateDump(BaseModel):
+    thermo: Map[Any]
+    non_canonical: Map[Any] = Field(default=None)
+
+    @field_validator("thermo", mode="before")
+    @classmethod
+    def validate_thermo(cls, value: Map[Any]) -> Map[Any]:
+        def traverse(val):
+            if set(val.keys()) == {"T", "p", "n"}:
+                return SingleStateDump.model_validate(val)
+            return {k: traverse(v) for k, v in val.items()}
+        return traverse(value)
+
+    @field_validator("non_canonical", mode="before")
+    @classmethod
+    def validate_non_canonical(cls, value: Map[Any] | None) -> Map[Any]:
+        return {} if value is None else value
 
 
 class NumericHandler:
@@ -226,7 +298,7 @@ class NumericHandler:
             name = name.replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")
             return name if not path else f"{path}{FLATTEN_SEPARATOR}{name}"
 
-        def traverse(model: ModelProxy, state_part: NestedMap[Quantity],
+        def traverse(model: ModelProxy, state_part: NestedMap[SingleStateDump],
                      path: str):
             # process local material objects
             all_names = set()
@@ -243,7 +315,8 @@ class NumericHandler:
                     result[new_path] = "missing"
                 else:
                     material.initial_state = \
-                        InitialState.from_dict(new_part, material.species)
+                        InitialState.from_dict(new_part.model_dump(),
+                                               material.species)
 
             # traverse down into model hierarchy
             for name, proxy in model.hierarchy.handler.items():
@@ -263,7 +336,8 @@ class NumericHandler:
 
         self.__arguments = {}  # force reread
         result = {}
-        traverse(self.model, parse_quantities_in_struct(state["thermo"]), "")
+        state_valid = StateDump.model_validate(state)
+        traverse(self.model, state_valid.thermo, "")
         return unflatten_dictionary(result)
 
 

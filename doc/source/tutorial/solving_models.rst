@@ -132,6 +132,7 @@ This took 4 iteration(s).
                        'p': '100000 Pa'}}}
 
 If we run the solver again without changing any input, we get:
+
 >>> result = solver.solve(output="none")
 >>> print(f"This took {len(result.iterations)} iteration(s).")
 This took 1 iteration(s).

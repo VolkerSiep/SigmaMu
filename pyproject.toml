@@ -26,6 +26,7 @@ dependencies = [
     "pypardiso",
     "casadi",
     "pyyaml",
+    "pydantic"
 ]
 
 [project.urls]
