@@ -1,12 +1,91 @@
 # stdlib
-from typing import Type
-from collections.abc import Mapping, Collection
+from typing import Type, Any
+from collections.abc import Collection, Sequence
+
+# external
+from pydantic import (
+    BaseModel, field_validator, model_validator,
+    ValidationInfo, Field, TypeAdapter)
 
 # internal
+from simu.core.utilities.types import Map
 from .state import StateDefinition
 from .species import SpeciesDefinition
 from .frame import ThermoFrame
 from .contribution import ThermoContribution
+
+
+class FrameContributionConfiguration(BaseModel):
+    """A data structure representing the configuration of a thermodynamic
+    contribution instance."""
+    cls: str
+    """The identifier of the contribution class, as registered via
+    :meth:`~simu.ThermoFactory.register`. or the decorator
+    :func:`~simu.registered_contribution`.
+    """
+    name: str = Field(default=None)
+    """The name of the contribution, by default equal to the class identifier,
+    but to be explicitly defined if one contribution is included multiple times,
+    such as a mixing rule applied on several model parts."""
+    options: Any = Field(default=None)
+    """Some contributions support or even require options. In such cases,
+    the options are flexibly defined by the contribution and documented
+    individually."""
+
+    @model_validator(mode="after")
+    def default_name(self):
+        if self.name is None:
+            self.name = self.cls
+        return self
+
+    @model_validator(mode="before")
+    @classmethod
+    def from_str_or_dict(cls, value: str|Map):
+        """This method allows the class to be created from a string entity,
+        which then will represent both the class identifier and contribution
+        name.
+        """
+        return {"cls": value} if isinstance(value, str) else value
+
+    @field_validator("cls", mode="before")
+    @classmethod
+    def validate_class(cls, cls_: str, info: ValidationInfo):
+        contributions = info.context.get("contributions", [])
+        if cls_ not in contributions:
+            raise ValueError(
+                f"Contribution '{cls_}' not registered in ThermoFactory")
+        return cls_
+
+
+FrameContributionList = TypeAdapter(Sequence[FrameContributionConfiguration])
+
+
+class FrameConfiguration(BaseModel):
+    """A data structure representing the configuration of a thermodynamic frame
+    object.
+    """
+    state: str
+    """A string identifier that represents the type of state as defined by 
+    :meth:`~simu.ThermoFactory.register_state_definition` or via the decorator
+    :func:`~simu.registered_state`."""
+
+    contributions: Sequence[FrameContributionConfiguration]
+    """Each element of this list represents the configuration of a 
+    thermodynamic contribution."""
+
+    @field_validator("state", mode="before")
+    @classmethod
+    def validate_state(cls, state: str, info: ValidationInfo) -> str:
+        states = info.context.get("states", [])
+        if state not in states:
+            raise ValueError(f"State '{state}' not registered in ThermoFactory")
+        return state
+
+    @classmethod
+    @field_validator("contributions", mode="before")
+    def validate_contributions(cls, contributions: Sequence[Map|str]) \
+            -> Sequence[FrameContributionConfiguration]:
+        return FrameContributionList.validate_python(contributions)
 
 
 class ThermoFactory:
@@ -18,7 +97,7 @@ class ThermoFactory:
     static attributes are avoided."""
 
     def __init__(self):
-        """Parameter-less constructor, initialising the data structure
+        """Parameter-less constructor, initializing the data structure
         to host contribution definitions"""
         self.__contributions = {}
         self.__state_definitions = {}
@@ -54,64 +133,45 @@ class ThermoFactory:
         contributions"""
         return set(self.__contributions.keys())
 
-    def create_frame(self, species: Mapping[str, SpeciesDefinition],
-                     configuration: Mapping) -> ThermoFrame:
+    def create_frame(self, species: Map[SpeciesDefinition],
+                     configuration: Map[Any]) -> ThermoFrame:
         """This factory method creates a :class:`ThermoFrame` object from the
         given ``configuration``, and is the recommended way to create
         :class:`ThermoFrame` objects.
 
         :param species: A dictionary mapping names to species definitions
-        :param configuration: A nested dictionary with the following root
-          entries:
+        :param configuration:
+            A nested dictionary, representing an instance
+            of :class:`~simu.core.thermo.factory.FrameConfiguration`.
 
-            - ``state``: A string identifier that represents the type of state
-              as defined by :meth:`register_state_definition`.
-            - ``contributions``: A list of strings, representing the names
-              of the contributions to stack. These identifiers must have been
-              defined upfront by calls to :meth:`register`.
-              A contribution entry can also be a dictionary with the following
-              keys:
+            A valid input (provided the registration of given entities) is
 
-                - ``cls``: The contribution class (required). If this is the
-                  only key defined, its effect is as if the sole string of the
-                  class name was provided.
-                - ``name``: The name of the contribution in the created
-                  :class:`ThermoFrame` object. This name must be unique within
-                  the frame definition. It will also be used to define the
-                  contribution parameter structure.
-                  If skipped, the name will be the same as ``cls``. To be
-                  unique, this doesn't work if one contribution class is used
-                  multiple times.
-                - ``options``: Any data structure that is accepted (and
-                  hopefully documented) for the particular contribution.
-                  If skipped, an empty dictionary is used.
+            .. code::
+
+                {
+                    "species": ["N2", "O2"],
+                    "state": "HelmholtzState",
+                    "contributions": [
+                        "H0S0ReferenceState", "LinearHeatCapacity",
+                        "StandardState", "IdealMix", "HelmholtzIdealGas"
+                    ],
+                }
 
         :return: The thermodynamic model (:class:`ThermoFrame`) object
         """
+        context = {
+            "states": self.__state_definitions.keys(),
+            "contributions": self.__contributions.keys()
+        }
+        config = FrameConfiguration.model_validate(
+            configuration, context=context)
         contributions = {}
-        for item in configuration["contributions"]:
-            if isinstance(item, dict):
-                class_ = item["cls"]
-                name = item.get("name", class_)
-                options = item.get("options", {})
-            else:
-                name, class_, options = item, item, {}
-            class_ = self.__contributions[class_]
-            if name in contributions:
-                raise ValueError(f"Duplicate contribution name '{name}'")
-            contributions[name] = class_, options
+        for item in config.contributions:
+            class_ = self.__contributions[item.cls]
+            if item.name in contributions:
+                raise ValueError(f"Duplicate contribution name '{item.name}'")
+            contributions[item.name] = class_, item.options
 
-        state_def_cls = self.__state_definitions[configuration["state"]]
-        result = ThermoFrame(species, state_def_cls(), contributions)
+        state_def_cls = self.__state_definitions[config.state]
+        return ThermoFrame(species, state_def_cls(), contributions)
 
-        # set default state
-        default = configuration.get("default_state", None)
-        if default is not None:
-            # make sure the values are float
-            default = [
-                float(default[0]),
-                float(default[1]),
-                list(map(float, default[2]))
-            ]
-        result.default = default
-        return result

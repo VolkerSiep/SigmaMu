@@ -5,15 +5,17 @@ from sys import argv
 from pathlib import Path
 
 # external modules
-from pytest import main
+from pytest import main, raises
 from logging import DEBUG
 from yaml import safe_load
+from pydantic import ValidationError
 
 # internal modules
 from simu import (
     ThermoFactory, InitialState, SpeciesDefinition,
     parse_quantities_in_struct, Quantity as Q)
 from simu.core.utilities.testing import assert_reproduction
+from simu.core.thermo.factory import FrameConfiguration
 
 
 filename = Path(__file__).resolve().parent / "example_parameters.yml"
@@ -80,6 +82,28 @@ def test_initial_state(simple_frame):
                                  mol_vector=Q([1, 1], "mol"))
     x = simple_frame.initial_state(initial_state, example_parameters)
     assert_reproduction(x[1])
+
+
+def test_validate_configuration(simple_config):
+    context = {
+        "states": ["HelmholtzState", "GibbsState"],
+        "contributions": ["H0S0ReferenceState", "LinearHeatCapacity",
+                          "StandardState", "IdealMix", "HelmholtzIdealGas"]
+    }
+    FrameConfiguration.model_validate(simple_config, context=context)
+    context["states"] = ["Penguin", "Koala"]
+    with raises(ValidationError):
+        FrameConfiguration.model_validate(simple_config, context=context)
+
+
+def test_validate_configuration_result(simple_config):
+    context = {
+        "states": ["HelmholtzState", "GibbsState"],
+        "contributions": ["H0S0ReferenceState", "LinearHeatCapacity",
+                          "StandardState", "IdealMix", "HelmholtzIdealGas"]
+    }
+    result = FrameConfiguration.model_validate(simple_config, context=context)
+    assert result.contributions[2].name == "StandardState"
 
 
 # *** helper functions

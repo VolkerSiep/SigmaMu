@@ -8,6 +8,7 @@ PyYAML
 matplotlib
 scipy
 pypardiso
+pydantic
 
 docutils
 Sphinx

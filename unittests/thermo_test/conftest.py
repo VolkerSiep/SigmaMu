@@ -77,9 +77,8 @@ def frame_factory():
 
 
 @fixture(scope="session")
-def simple_frame(frame_factory):
-    """Create a ThermoFrame based on just standard state contributions"""
-    config = {
+def simple_config():
+    return {
         "species": ["N2", "O2"],
         "state": "HelmholtzState",
         "contributions": [
@@ -87,8 +86,13 @@ def simple_frame(frame_factory):
             "IdealMix", "HelmholtzIdealGas"
         ],
     }
+
+
+@fixture(scope="session")
+def simple_frame(simple_config, frame_factory):
+    """Create a ThermoFrame based on just standard state contributions"""
     species = {"N2": SpeciesDefinition("N2"), "O2": SpeciesDefinition("O2")}
-    return frame_factory.create_frame(species, config)
+    return frame_factory.create_frame(species, simple_config)
 
 
 @fixture(scope="session")

@@ -9,7 +9,7 @@ function objects, calculating thermochemical properties as function of their
 state and the model parameters.
 """
 # stdlib modules
-from typing import Type, Optional
+from typing import Type, Optional, Any
 from collections.abc import Mapping, Sequence
 from logging import getLogger
 
@@ -29,7 +29,7 @@ from .state import StateDefinition, InitialState
 from .species import SpeciesDefinition
 
 
-ThermoContributionDict = Map[tuple[Type[ThermoContribution], Map]]
+ThermoContributionDict = Map[tuple[Type[ThermoContribution], Any]]
 """
 A dictionary whose keys are the names of the contributions, and the values are
 tuples of the belonging classes and the options belonging to the definition.
@@ -124,7 +124,6 @@ class ThermoFrame:
 
         self.__contributions: Map[ThermoContribution] = contribs
         self.__state_definition: StateDefinition = state_definition
-        self.__default: Optional[InitialState] = None
         self.__param_struct: NestedMap[str] = \
             extract_units_dictionary(parameters)
 
@@ -172,7 +171,7 @@ class ThermoFrame:
         return self.__species
 
     @property
-    def vector_keys(self) -> Map[Sequence[[str]]]:
+    def vector_keys(self) -> Map[Sequence[str]]:
         """Return the index keys for the registered vector properties.
         For a standard model, there should at least be entries for ``n`` and
         ``mu``."""
