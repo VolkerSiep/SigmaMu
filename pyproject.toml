@@ -51,6 +51,7 @@ dist = [
 test = [
     "pytest",
     "pytest-doctestplus",
+    "pytest-cov"
 ]
 
 dev = [
@@ -58,6 +59,7 @@ dev = [
     "scipy-stubs",
     "pytest",
     "pytest-doctestplus",
+    "pytest-cov",
     "build",
     "twine",
     "Sphinx",
@@ -74,3 +76,28 @@ simu = ["py.typed"]
     "src/simu/**/*.yml",
     "src/simu/core/data/uom_definitions.txt",
 ]
+
+[tool.pytest.ini_options]
+doctest_plus = "enabled"
+addopts = "--doctest-rst -q --tb=short -s --cov --cov-report=html"
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+testpaths = [
+    "doc/source",
+    "src/simu",
+    "unittests"
+]
+norecursedirs =  [
+    "src/simu/examples"
+]
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "src/simu/examples/**",
+    "**/__init__.py"
+]
+
+[tool.coverage.report]
+skip_covered = true
+
