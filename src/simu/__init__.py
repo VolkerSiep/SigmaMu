@@ -33,7 +33,6 @@ from .core.model.base import Model
 from .core.model.amodel import AModel
 from .core.model.numeric import NumericHandler, NHKeys, PropertyFilter
 from .core.solver.simulation import SimulationSolver
-from .core.solver.thermofit import ThermoParameterFit
 
 # versioning
 __version__ = _get_version("SigmaMu")

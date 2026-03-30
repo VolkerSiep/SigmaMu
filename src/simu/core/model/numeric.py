@@ -3,7 +3,7 @@ of the top model instance."""
 
 # std lib
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Annotated
+from typing import Optional, Any
 from collections.abc import Callable, Sequence, Collection
 from enum import StrEnum, auto
 from copy import deepcopy
@@ -12,8 +12,7 @@ from copy import deepcopy
 from casadi import vertcat, SX
 from pint import Unit
 from pint.registry import Quantity as QtyType
-from pydantic import BaseModel, field_validator, Field
-from pydantic_core import core_schema
+from pydantic import BaseModel, field_validator, Field, ConfigDict
 
 # internal
 from simu.core.utilities.quantity import Quantity, QFunction
@@ -111,54 +110,41 @@ class NHKeys(StrEnum):
         return f"'{self.value}'"
 
 
-class PQuantity:
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type, handler):
-        def validate(v):
-            return Quantity(v)
-        return core_schema.no_info_plain_validator_function(validate)
-
-
 class SingleStateDump(BaseModel):
-    T: PQuantity
-    p: PQuantity
-    n: Map[PQuantity]
+    T: QtyType
+    p: QtyType
+    n: Map[QtyType]
 
-    @field_validator("T", mode="after")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra='forbid')
+
+    @field_validator("T", mode="before")
     @classmethod
-    def check_temperature(cls, value: QtyType) -> QtyType:
+    def convert_temperature(cls, value):
+        return cls._convert_value(value, "0 K", "temperature")
+
+    @field_validator("p", mode="before")
+    @classmethod
+    def convert_pressure(cls, value):
+        return cls._convert_value(value, "0 Pa", "pressure")
+
+
+    @field_validator("n", mode="before")
+    @classmethod
+    def convert_quantities(cls, value):
+        return {
+            k: cls._convert_value(n_i, "0 mol", f"quantity for species {k}")
+            for k, n_i in value.items()
+        }
+
+    @classmethod
+    def _convert_value(cls, value: str, low_bound, name: str) -> QtyType:
         try:
-            magnitude = value.to("K").m
+            qty = Quantity(value)
         except Exception as e:
-            raise ValueError(f"Invalid temperature: {value} - {e}")
-        if magnitude <= 0:
-            raise ValueError(f"Infeasible temperature value: {value}")
-        return value
-
-    @field_validator("p", mode="after")
-    @classmethod
-    def check_pressure(cls, value: QtyType) -> QtyType:
-        try:
-            magnitude = value.to("Pa").m
-        except Exception as e:
-            raise ValueError(f"Invalid Pressure: {value} - {e}")
-        if magnitude <= 0:
-            raise ValueError(f"Infeasible pressure value: {value}")
-        return value
-
-    @field_validator("n", mode="after")
-    @classmethod
-    def check_quantities(cls, value: Map[QtyType]) -> Map[QtyType]:
-        for k, n_i in value.items():
-            try:
-                magnitude = n_i.to("mol").m
-            except Exception as e:
-                msg = f"Invalid Quantity for species {k}: {n_i} - {e}"
-                raise ValueError(msg)
-            if magnitude <= 0:
-                msg = f"Infeasible quantity value for species {k}: {n_i}"
-                raise ValueError(msg)
-        return value
+            raise ValueError(f"Invalid {name}: {value} - {e}")
+        if qty <= Quantity(low_bound):
+            raise ValueError(f"Infeasible {name}: {value}")
+        return qty
 
 
 class StateDump(BaseModel):
