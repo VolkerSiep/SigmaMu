@@ -1,26 +1,27 @@
 datasets:
-  vle:
+  vle_1bar:
     source: fictive
-    columns: [ T, p, x, y ]
-    uom: [degC, bar, "%", "%"]
+    columns: [ T, p, x, y, w ]
+    uom: [degC, bar, "%", "%", ""]
     data:
-      - [ 100, 1, 20, 40 ]
-      - [ 110, 1, 30, 50 ]
-      - [ 120, 1, 40, 60 ]
-      - [ 130, 1, 50, 70 ]
-      - [ 140, 1, 60, 80 ]
+      - [ 100, 1, 20, 40, 1 ]
+      - [ 110, 1, 30, 50, 1 ]
+      - [ 120, 1, 40, 60, 1 ]
+      - [ 130, 1, 50, 70, 2 ]
+      - [ 140, 1, 60, 80, 0 ]
 contributions:
   vle:
-    dataset: vle
+    dataset: vle_1bar
     model_id: vle_fit
     data_to_model:
-      T: process.T
-      p: process.p
-      x: process.x
-      y: process.y
+      T: process.T  # temperature
+      p: process.p  # pressure
+      x: process.x  # liquid fraction
+      y: process.y  # gas fraction
+      w: process.w  # weight factor
     penalties:
-      process.dmu_norm/H2O
-      process.dmu_norm/CO2
+      - process.dmu_norm/H2O
+      - process.dmu_norm/CO2
 evaluations:
   vle_p:
     dataset: vle
@@ -29,10 +30,6 @@ evaluations:
       T: process.T
       x: process.x
     properties:
-      p_hat:
-        name: process.p
-        uom: bar
-      y_hat:
-        name: process.y
-        uom: "%"
+      p_hat: {name: process.p, uom: bar}
+      y_hat: {name: process.y, uom: "%"}
 
