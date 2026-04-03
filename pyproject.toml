@@ -46,6 +46,8 @@ doc = [
 dist = [
     "build",
     "twine",
+    "setuptools",
+    "wheel"
 ]
 
 test = [
@@ -65,6 +67,8 @@ dev = [
     "Sphinx",
     "sphinxcontrib-bibtex",
     "sphinx-copybutton",
+    "setuptools",
+    "wheel"
 ]
 
 [tool.setuptools]
