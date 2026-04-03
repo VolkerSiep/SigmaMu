@@ -93,7 +93,7 @@ class ThermoFitParameter(BaseModel):
     lower: QtyType = Field(default=None)
     upper: QtyType = Field(default=None)
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
     # TODO: check constraints
 

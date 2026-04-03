@@ -1,23 +1,22 @@
 """This module implements functionality related to property handling"""
 
-# stdlib
 from collections.abc import Mapping, Iterator
 from typing import Self
+from pint.registry import Quantity as QtyType
 
-# internal
 from simu.core.utilities.quantity import Quantity
 from simu.core.utilities.types import Map, MutMap
 from simu.core.utilities.errors import DataFlowError
 
 
-class PropertyHandler(Map[Quantity]):
+class PropertyHandler(Mapping[str, QtyType]):
     """This class, being instantiated as the :attr:`simu.Model.properties`
     attribute, allows to declare and define process properties."""
 
     def __init__(self):
         self.__model_name = "N/A"
-        self.__props: MutMap[Quantity] = {}
-        self.__declared: MutMap[Quantity] = {}
+        self.__props: MutMap[QtyType] = {}
+        self.__declared: MutMap[QtyType] = {}
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.__props)
@@ -29,7 +28,7 @@ class PropertyHandler(Map[Quantity]):
     def __raise(name: str, msg: str):
         raise DataFlowError(f"Property '{name}' {msg}")
 
-    def __setitem__(self, name: str, quantity: Quantity):
+    def __setitem__(self, name: str, quantity: QtyType):
         """Via this operator, a calculated property is defined as a
         model result."""
 
@@ -44,7 +43,7 @@ class PropertyHandler(Map[Quantity]):
 
         self.__props[name] = quantity
 
-    def __getitem__(self, name: str) -> Quantity:
+    def __getitem__(self, name: str) -> QtyType:
         """Return a property as it has been defined via the ``__setitem__``
         operator (``[]``) before."""
         return self.__props[name]
@@ -73,7 +72,7 @@ class PropertyHandler(Map[Quantity]):
         return PropertyProxy(self)
 
 
-class PropertyProxy(Map[Quantity]):
+class PropertyProxy(Mapping[str, QtyType]):
     """This class is instantiated by the parent's :class:`PropertyHandler`
     to handle the property availability to the parent context."""
 

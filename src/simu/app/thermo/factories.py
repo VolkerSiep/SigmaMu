@@ -1,15 +1,8 @@
-# stdlib
 from typing import Iterable, Any
-from copy import deepcopy
-from collections.abc import Iterator
-
-# external
+from collections.abc import Iterator, Mapping
 from yaml import safe_load
 
-# internal
 from simu.core.thermo.factory import ThermoFactory
-from simu.core.thermo.species import SpeciesDefinition
-from simu.core.utilities.types import Map
 from simu.app.data import DATA_DIR
 
 
@@ -42,7 +35,8 @@ class RegThermoFactory(ThermoFactory):
             self.register_state_definition(state)
 
 
-class ThermoStructure(Map):
+# TODO: Is this the same as core.thermo.factory.FrameContribution?
+class ThermoStructure[T](Mapping[str, T]):
     """This class represents the structure of a thermodynamic model,
     representing the list of contributions and holding the state definition.
 

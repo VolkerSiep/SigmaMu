@@ -1,4 +1,5 @@
 """This module handles functionality concerning model hierarchy."""
+from __future__ import annotations
 from typing import TYPE_CHECKING, Type, Any
 from collections.abc import Mapping, Iterator
 
@@ -9,14 +10,14 @@ if TYPE_CHECKING:  # avoid circular dependencies just for typing
     from .base import Model, ModelProxy
 
 
-class HierarchyHandler(Map["ModelProxy"]):
+class HierarchyHandler(Mapping[str, "ModelProxy"]):
     """This class, being instantiated as the :attr:`simu.Model.hierarchy`
     attribute, allows to define child models in a hierarchy context."""
 
-    def __init__(self, model: "Model"):
+    def __init__(self, model: Model):
         self.model = model
-        self.__children: MutMap["ModelProxy"] = {}
-        self.__declared: MutMap[Type["Model"]] = {}
+        self.__children: MutMap[ModelProxy] = {}
+        self.__declared: MutMap[Type[Model]] = {}
 
     def __len__(self) -> int:
         return len(self.__children)
@@ -30,7 +31,7 @@ class HierarchyHandler(Map["ModelProxy"]):
     def __exit__(self, exc_type, exc_val, exc_tb):
         return
 
-    def declare(self, name: str, model_cls: Type["Model"]) -> None:
+    def declare(self, name: str, model_cls: Type[Model]) -> None:
         """Declare a sub-model in the interface, and by that
 
         a) Demand that it will be instantiated, and
@@ -41,8 +42,9 @@ class HierarchyHandler(Map["ModelProxy"]):
             raise KeyError(f"Child model '{name}' already declared")
         self.__declared[name] = model_cls
 
-    def add(self, name: str, model_cls: Type["Model"],
-            *args: Any, **kwargs: Any) -> "ModelProxy":
+    def add[M: Model](
+        self, name: str, model_cls: type[M], *args: Any, **kwargs: Any
+    ) -> ModelProxy:
         """Add an instance of the class ``model_cls`` as child to the current
         (parent) context. A :class:`~simu.core.model.base.ModelProxy` object is
         created, registered, and returned."""
@@ -59,7 +61,7 @@ class HierarchyHandler(Map["ModelProxy"]):
         return instance
 
     @property
-    def declared(self) -> Map[Type["Model"]]:
+    def declared[M: Model](self) -> Map[Type[M]]:
         """Dictionary of declared sub-models"""
         return self.__declared
 
@@ -68,7 +70,7 @@ class HierarchyHandler(Map["ModelProxy"]):
         holding variable in the client scope code."""
         return self.__children[name]
 
-    def create_proxy(self) -> "HierarchyProxy":
+    def create_proxy(self) -> HierarchyProxy:
         """Create a proxy object for configuration in hierarchy context"""
         return HierarchyProxy(self)
 
@@ -80,14 +82,14 @@ class HierarchyHandler(Map["ModelProxy"]):
             raise DataFlowError(msg)
 
 
-class HierarchyProxy(Map["ModelProxy"]):
+class HierarchyProxy(Mapping[str, "ModelProxy"]):
     """A wrapper of the HierarchyHandler to grant access to the previously
     declared sub-models."""
 
     def __init__(self, handler: HierarchyHandler):
         self.handler = handler
 
-    def __getitem__(self, name: str) -> "ModelProxy":
+    def __getitem__(self, name: str) -> ModelProxy:
         if name not in self.handler.declared:
             raise KeyError(f"Child model of name 'name' not declared")
         return self.handler[name]
