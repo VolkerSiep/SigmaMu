@@ -1,11 +1,7 @@
-"""This module defines types / base classes of complex data structures"""
+"""This module defines types of complex data structures"""
 
-# stdlib
-# from typing import TypeVar
 from collections.abc import Mapping, MutableMapping
 
-# T = TypeVar("T")
-# """A generic type variable"""
 
 type Map[T] = Mapping[str, T]
 """A mapping of strings to another type"""

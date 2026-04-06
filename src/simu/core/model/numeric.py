@@ -137,7 +137,7 @@ class SingleStateDump(BaseModel):
         }
 
     @classmethod
-    def _convert_value(cls, value: str, low_bound, name: str) -> QtyType:
+    def _convert_value(cls, value: str, low_bound: str, name: str) -> QtyType:
         try:
             qty = Quantity(value)
         except Exception as e:

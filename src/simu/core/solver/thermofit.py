@@ -10,13 +10,13 @@ from simu.core.utilities.quantity import UnitRegistry
 
 
 _U = UnitRegistry.Unit
-
+_Q = UnitRegistry.Quantity
 
 class DataSet(BaseModel):
-    source: str = Field(default="Unknown")
     columns: Sequence[str]
     uom: Sequence[str]
     data: Sequence[Sequence[float]]
+    source: str = Field(default="Unknown")
 
     model_config = ConfigDict(extra='forbid')
 
@@ -65,37 +65,55 @@ class ThermoFitContribution(BaseModel):
     @model_validator(mode="after")
     def validate_model_parameters(self, info: ValidationInfo) -> Self:
         model_id = self.model_id
+        model = info.context[model_id]
+
         # validate parameter existence
         for param in self.data_to_model.values():
-            if param not in info.context[model_id].parameter_names:
+            if not param in model.parameters:
                 msg = f"Parameter '{param}' not defined in model '{model_id}'"
                 raise ValueError(msg)
-        # validate property existence
+
         for penalty in self.penalties:
-            if penalty not in info.context[model_id].property_names:
+            # validate penalty existence
+            try:
+                unit = model.properties[penalty]
+            except KeyError:
                 msg = f"Property '{penalty}' not defined in model '{model_id}'"
+                raise ValueError(msg)
+            # validate whether penalties are dimensionless
+            if not _U(unit).dimensionless:
+                msg = (f"Penalty property '{penalty}` in model "
+                       f"'{model_id}' is not dimensionless: '{unit}'")
                 raise ValueError(msg)
         return self
 
-    # TODO: check units of penalties (must be dimless)
 
 class ThermoFitProperty(BaseModel):
     name: str  # must exist in model
-    uom: str  # must be consistent with unit from model (validate?)
-
+    uom: str  # must be consistent with unit from model
     model_config = ConfigDict(extra='forbid')
 
-    # TODO: check constraints
+    # todo: check existence of parameter and dimensionality in overall model
 
 class ThermoFitParameter(BaseModel):
-    name: str  # must exist as parameter in all models
+    name: str
     default: QtyType = Field(default=None)  # default value (to be parsed as qty
     lower: QtyType = Field(default=None)
     upper: QtyType = Field(default=None)
 
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
-    # TODO: check constraints
+    @field_validator("default", "lower", "upper", mode="before")
+    @classmethod
+    def validate_default(cls, value: str, info: ValidationInfo):
+        if value is None:
+            return None
+        try:
+            return _Q(value)
+        except Exception as e:
+            raise ValueError(f"Invalid {info.field_name}: {value} - {e}")
+
+    # TODO: check existence, sequence and dimensional compatibility in overall model
 
 class ThermoFitEvaluation(BaseModel):
     dataset: str  # to be registered dataset
@@ -118,7 +136,7 @@ class ThermoFitConfiguration(BaseModel):
 
     # TODO on integration level - in contributions and evaluations
     #  - evaluate existence of data set
-    #  - evaluate existence of columns in data set (data_to_model) and unit consistency
+    #  - evaluate existence of columns in data set (data_to_model) and unit consistency of parameters
 
 
 # TODO: document everything (well!)

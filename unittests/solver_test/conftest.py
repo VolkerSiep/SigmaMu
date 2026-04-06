@@ -1,7 +1,7 @@
-from collections.abc import Sequence
 from pathlib import Path
 from pytest import fixture
 from yaml import safe_load
+from simu.core.utilities.types import Map
 
 @fixture
 def thermo_fit_configuration():
@@ -14,21 +14,16 @@ def thermo_fit_configuration():
 def contribution_context_stub():
     class NumericHandlerStub:
         @property
-        def parameter_names(self) -> Sequence[str]:
-            return [f"process.{n}" for n in ("T", "p", "x", "y", "w")]
+        def parameters(self) -> Map[str]:
+            result = {"T": "K", "p": "bar", "x": "-", "y": "-", "w": "-"}
+            return {f"process.{n}": u for n, u in result.items()}
 
         @property
-        def parameter_units(self) -> Sequence[str]:
-            return ["K", "bar", "", "", ""]
-
-        @property
-        def property_names(self) -> Sequence[str]:
-            return (
+        def properties(self) -> Map[str]:
+            names = (
                 [f"process.dmu_norm/{n}" for n in ("H2O", "CO2")] +
                 [f"process.{n}" for n in ("p", "y")]
             )
-        @property
-        def property_units(self) -> Sequence[str]:
-            return ["", "", "bar", ""]
+            return {n: ("bar" if n == "process.p" else "") for n in names}
 
     return {n: NumericHandlerStub() for n in ("vle_fit", "vle_eval_p")}

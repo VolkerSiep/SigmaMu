@@ -50,7 +50,7 @@ def test_instantiate_thermo_fit_contribution(
     assert contribution.model_id == "vle_fit"
 
 
-def test_instantiate_thermo_fit_contribution_wrong_model(
+def test_thermo_fit_contribution_wrong_model(
         thermo_fit_configuration, contribution_context_stub):
     config = thermo_fit_configuration["contributions"]["vle"]
     config["model_id"] = "hansi"
@@ -61,7 +61,7 @@ def test_instantiate_thermo_fit_contribution_wrong_model(
     assert "hansi" in str(e)
 
 
-def test_instantiate_thermo_fit_contribution_wrong_model_parameter(
+def test_thermo_fit_contribution_wrong_model_parameter(
         thermo_fit_configuration, contribution_context_stub):
     config = thermo_fit_configuration["contributions"]["vle"]
     config["data_to_model"]["x"] = "hansi"
@@ -72,7 +72,7 @@ def test_instantiate_thermo_fit_contribution_wrong_model_parameter(
     assert "hansi" in str(e)
 
 
-def test_instantiate_thermo_fit_contribution_wrong_model_property(
+def test_thermo_fit_contribution_wrong_model_property(
         thermo_fit_configuration, contribution_context_stub):
     config = thermo_fit_configuration["contributions"]["vle"]
     config["penalties"][1] = "hansi"
@@ -81,3 +81,23 @@ def test_instantiate_thermo_fit_contribution_wrong_model_property(
             config, context=contribution_context_stub
         )
     assert "hansi" in str(e)
+
+def test_thermo_fit_contribution_uom_penalty(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["contributions"]["vle"]
+    config["penalties"].append("process.p")
+    with raises(ValidationError) as e:
+        ThermoFitContribution.model_validate(
+            config, context=contribution_context_stub
+        )
+    assert "process.p" in str(e)
+
+# def test_thermo_fit_contribution_uom_parameter(
+#         thermo_fit_configuration, contribution_context_stub):
+#     config = thermo_fit_configuration["contributions"]["vle"]
+#     config["penalties"].append("process.p")
+#     with raises(ValidationError) as e:
+#         ThermoFitContribution.model_validate(
+#             config, context=contribution_context_stub
+#         )
+#     assert "process.p" in str(e)
