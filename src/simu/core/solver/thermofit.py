@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, Protocol
 from collections.abc import Sequence
 from pydantic import (
     BaseModel, ConfigDict, Field, ValidationInfo,
@@ -8,9 +8,9 @@ from pint.registry import Quantity as QtyType
 from simu.core.utilities.types import Map
 from simu.core.utilities.quantity import UnitRegistry
 
-
 _U = UnitRegistry.Unit
 _Q = UnitRegistry.Quantity
+
 
 class DataSet(BaseModel):
     columns: Sequence[str]
@@ -45,33 +45,44 @@ class DataSet(BaseModel):
                                  f"not match number of columns ({l_columns})")
         return self
 
-
-class ThermoFitContribution(BaseModel):
+class ThermoFitEntity(BaseModel):
     dataset: str  # to be registered dataset
     model_id: str  # to be registered model
     data_to_model: Map[str]  # keys to be column titles, values model parameters
-    penalties: Sequence[str]  # to be properties of model
-    weight: float = Field(default=1.0)
 
     model_config = ConfigDict(extra='forbid')
 
     @field_validator("model_id", mode="after")
     @classmethod
     def validate_model_id(cls, value: str, info: ValidationInfo) -> str:
-        if value not in info.context:
+        context = get_context(info)
+        if value not in context:
             raise ValueError(f"Model '{value}' is not registered")
         return value
 
     @model_validator(mode="after")
     def validate_model_parameters(self, info: ValidationInfo) -> Self:
         model_id = self.model_id
-        model = info.context[model_id]
+        context = get_context(info)
+        model = context[model_id]
 
         # validate parameter existence
         for param in self.data_to_model.values():
             if not param in model.parameters:
                 msg = f"Parameter '{param}' not defined in model '{model_id}'"
                 raise ValueError(msg)
+        return self
+
+
+class ThermoFitContribution(ThermoFitEntity):
+    penalties: Sequence[str]  # to be properties of model
+    weight: float = Field(default=1.0)
+
+    @model_validator(mode="after")
+    def validate_penalties(self, info: ValidationInfo) -> Self:
+        model_id = self.model_id
+        context = get_context(info)
+        model = context[model_id]
 
         for penalty in self.penalties:
             # validate penalty existence
@@ -93,11 +104,25 @@ class ThermoFitProperty(BaseModel):
     uom: str  # must be consistent with unit from model
     model_config = ConfigDict(extra='forbid')
 
-    # todo: check existence of parameter and dimensionality in overall model
+
+
+class ThermoFitEvaluation(ThermoFitEntity):
+    properties: Map[ThermoFitProperty]  # to be properties of model
+
+    @model_validator(mode="after")
+    def validate_properties(self, info: ValidationInfo) -> Self:
+        context = get_context(info)
+        properties = context[self.model_id].properties
+        # TODO:
+        #  - first write unit tests
+        #  - do properties exist in the model?
+        #  - do properties have the same dimension as in model?
+        return Self
+
 
 class ThermoFitParameter(BaseModel):
     name: str
-    default: QtyType = Field(default=None)  # default value (to be parsed as qty
+    default: QtyType = Field(default=None)
     lower: QtyType = Field(default=None)
     upper: QtyType = Field(default=None)
 
@@ -105,7 +130,8 @@ class ThermoFitParameter(BaseModel):
 
     @field_validator("default", "lower", "upper", mode="before")
     @classmethod
-    def validate_default(cls, value: str, info: ValidationInfo):
+    def validate_default(cls, value: str,
+                         info: ValidationInfo) -> QtyType | None:
         if value is None:
             return None
         try:
@@ -113,17 +139,7 @@ class ThermoFitParameter(BaseModel):
         except Exception as e:
             raise ValueError(f"Invalid {info.field_name}: {value} - {e}")
 
-    # TODO: check existence, sequence and dimensional compatibility in overall model
-
-class ThermoFitEvaluation(BaseModel):
-    dataset: str  # to be registered dataset
-    model_id: str  # to be registered model
-    data_to_model: Map[str]  # keys to be column titles, values model parameters
-    properties: Map[ThermoFitProperty]  # to be properties of model
-
-    model_config = ConfigDict(extra='forbid')
-
-    # TODO: check constraints
+    # TODO: check existence, sequence and dimensional compatibility in thermo source
 
 
 class ThermoFitConfiguration(BaseModel):
@@ -135,8 +151,24 @@ class ThermoFitConfiguration(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     # TODO on integration level - in contributions and evaluations
-    #  - evaluate existence of data set
+    #  - evaluate existence of data sets in contributions and evaluations
     #  - evaluate existence of columns in data set (data_to_model) and unit consistency of parameters
 
 
 # TODO: document everything (well!)
+
+
+class ThermoFitModelInspection(Protocol):
+    @property
+    def parameters(self) -> Map[str]:
+        ...
+
+    @property
+    def properties(self) -> Map[str]:
+        ...
+
+type ThermoFitValidationContext = Map[ThermoFitModelInspection]
+
+
+def get_context(info: ValidationInfo) -> ThermoFitValidationContext:
+    return info.context

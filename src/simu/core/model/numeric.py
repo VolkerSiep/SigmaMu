@@ -19,11 +19,12 @@ from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.structures import (
     flatten_dictionary, unflatten_dictionary, FLATTEN_SEPARATOR)
 from simu.core.utilities.qstructures import (
-    QuantityDict, quantity_dict_to_strings, parse_quantities_in_struct)
-from simu.core.utilities.types import NestedMap, NestedMutMap, Map, MutMap
-from simu.core.utilities.errors import DataFlowError
+    QuantityDict, quantity_dict_to_strings)
 from simu.core.thermo.parameters import ThermoParameterStore
 from simu.core.thermo.state import InitialState
+from simu.core.utilities.types import NestedMap, NestedMutMap, Map, MutMap
+from simu.core.utilities.errors import DataFlowError
+from simu.core.utilities.pydantic_types import PTemperature, PPressure, PAmount
 from .base import ModelProxy
 
 
@@ -111,40 +112,11 @@ class NHKeys(StrEnum):
 
 
 class SingleStateDump(BaseModel):
-    T: QtyType
-    p: QtyType
-    n: Map[QtyType]
+    T: PTemperature
+    p: PPressure
+    n: Map[PAmount]
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra='forbid')
-
-    @field_validator("T", mode="before")
-    @classmethod
-    def convert_temperature(cls, value):
-        return cls._convert_value(value, "0 K", "temperature")
-
-    @field_validator("p", mode="before")
-    @classmethod
-    def convert_pressure(cls, value):
-        return cls._convert_value(value, "0 Pa", "pressure")
-
-
-    @field_validator("n", mode="before")
-    @classmethod
-    def convert_quantities(cls, value):
-        return {
-            k: cls._convert_value(n_i, "0 mol", f"quantity for species {k}")
-            for k, n_i in value.items()
-        }
-
-    @classmethod
-    def _convert_value(cls, value: str, low_bound: str, name: str) -> QtyType:
-        try:
-            qty = Quantity(value)
-        except Exception as e:
-            raise ValueError(f"Invalid {name}: {value} - {e}")
-        if qty <= Quantity(low_bound):
-            raise ValueError(f"Infeasible {name}: {value}")
-        return qty
 
 
 class StateDump(BaseModel):
