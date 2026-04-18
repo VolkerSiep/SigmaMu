@@ -169,7 +169,7 @@ class Material(MutableMapping[str, Quantity | QuantityDict]):
             mol_vector=res["n"].reshape(-1))  # make sure it's a vector
 
     @property
-    def species(self) -> Collection[str]:
+    def species(self) -> Sequence[str]:
         """The species names"""
         return self.definition.species
 
@@ -268,7 +268,7 @@ class MaterialDefinition:
         return self.__store
 
     @property
-    def species(self) -> Collection[str]:
+    def species(self) -> Sequence[str]:
         """The species names"""
         return self.frame.species
 

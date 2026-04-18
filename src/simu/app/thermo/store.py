@@ -3,7 +3,7 @@ from simu import ThermoParameterStore, StringDictThermoSource
 from simu.app import DATA_DIR
 
 
-def _populate_store() -> ThermoParameterStore:
+def predefined_parameters() -> ThermoParameterStore:
     store = ThermoParameterStore("SigmaMu_default")
 
     for path in (DATA_DIR / "parameters").glob("*.yml"):
@@ -12,5 +12,3 @@ def _populate_store() -> ThermoParameterStore:
             parameter_source = StringDictThermoSource(data["data"])
         store.add_source(data["meta"]["source"], parameter_source)
     return store
-
-predefined_parameters: ThermoParameterStore = _populate_store()

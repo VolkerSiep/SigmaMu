@@ -9,6 +9,7 @@ datasets:
       - [ 120, 1, 40, 60, 1 ]
       - [ 130, 1, 50, 70, 2 ]
       - [ 140, 1, 60, 80, 0 ]
+
 contributions:
   vle:
     dataset: vle_1bar
@@ -22,6 +23,7 @@ contributions:
     penalties:
       - process.dmu_norm/H2O
       - process.dmu_norm/CO2
+
 evaluations:
   vle_p:
     dataset: vle
@@ -32,4 +34,10 @@ evaluations:
     properties:
       p_hat: {name: process.p, uom: bar}
       y_hat: {name: process.y, uom: "%"}
+
+parameters:
+  a_b:
+    path: [a, b]
+    default: 100 degC
+    lower: 200 K
 

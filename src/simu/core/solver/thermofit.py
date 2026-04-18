@@ -1,15 +1,17 @@
-from typing import Self, Protocol
 from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Self, Protocol, Optional
+
+from pint.registry import Quantity as QtyType
 from pydantic import (
     BaseModel, ConfigDict, Field, ValidationInfo,
     model_validator, field_validator)
-from pint.registry import Quantity as QtyType
 
-from simu.core.utilities.types import Map
+from simu import Quantity, AbstractThermoSource
 from simu.core.utilities.quantity import UnitRegistry
+from simu.core.utilities.types import Map
 
-_U = UnitRegistry.Unit
-_Q = UnitRegistry.Quantity
+_Unit = UnitRegistry.Unit
 
 
 class DataSet(BaseModel):
@@ -21,11 +23,10 @@ class DataSet(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     @field_validator("uom", mode="after")
-    @classmethod
     def check_uom(cls, value: Sequence[str]) -> Sequence[str]:
         for uom in value:
             try:
-                _U(uom)
+                _Unit(uom)
             except Exception:
                 raise ValueError(f"Invalid unit of measurement '{uom}'")
         return value
@@ -53,10 +54,9 @@ class ThermoFitEntity(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     @field_validator("model_id", mode="after")
-    @classmethod
     def validate_model_id(cls, value: str, info: ValidationInfo) -> str:
         context = get_context(info)
-        if value not in context:
+        if value not in context.model_contexts:
             raise ValueError(f"Model '{value}' is not registered")
         return value
 
@@ -64,7 +64,7 @@ class ThermoFitEntity(BaseModel):
     def validate_model_parameters(self, info: ValidationInfo) -> Self:
         model_id = self.model_id
         context = get_context(info)
-        model = context[model_id]
+        model = context.model_contexts[model_id]
 
         # validate parameter existence
         for param in self.data_to_model.values():
@@ -82,7 +82,7 @@ class ThermoFitContribution(ThermoFitEntity):
     def validate_penalties(self, info: ValidationInfo) -> Self:
         model_id = self.model_id
         context = get_context(info)
-        model = context[model_id]
+        model = context.model_contexts[model_id]
 
         for penalty in self.penalties:
             # validate penalty existence
@@ -92,7 +92,7 @@ class ThermoFitContribution(ThermoFitEntity):
                 msg = f"Property '{penalty}' not defined in model '{model_id}'"
                 raise ValueError(msg)
             # validate whether penalties are dimensionless
-            if not _U(unit).dimensionless:
+            if not _Unit(unit).dimensionless:
                 msg = (f"Penalty property '{penalty}` in model "
                        f"'{model_id}' is not dimensionless: '{unit}'")
                 raise ValueError(msg)
@@ -107,21 +107,39 @@ class ThermoFitProperty(BaseModel):
 
 
 class ThermoFitEvaluation(ThermoFitEntity):
-    properties: Map[ThermoFitProperty]  # to be properties of model
+    properties: Map[ThermoFitProperty]
 
     @model_validator(mode="after")
     def validate_properties(self, info: ValidationInfo) -> Self:
         context = get_context(info)
-        properties = context[self.model_id].properties
-        # TODO:
-        #  - first write unit tests
-        #  - do properties exist in the model?
-        #  - do properties have the same dimension as in model?
-        return Self
+        properties = context.model_contexts[self.model_id].properties
+        for prop in self.properties.values():
+            name, uom = prop.name, prop.uom
+            # Does property exist in model?
+            try:
+                model_unit = properties[name]
+            except KeyError:
+                msg = f"Property '{name}' not in model '{self.model_id}'"
+                raise ValueError(msg)
+
+            # Is the unit string a valid unit of measurement?
+            try:
+                prop_dim = _Unit(uom).dimensionality
+            except Exception as e:
+                msg = f"Property '{name}' has invalid unit `{uom}`:  {e}"
+                raise ValueError(msg)
+
+            # Are the units compatible?
+            if prop_dim != _Unit(model_unit).dimensionality:
+                msg = (f"Property '{name}' has incompatible unit `{uom}`"
+                       f"to mapped model property (`{model_unit}`)")
+                raise ValueError(msg)
+        return self
+
 
 
 class ThermoFitParameter(BaseModel):
-    name: str
+    path: Sequence[str]
     default: QtyType = Field(default=None)
     lower: QtyType = Field(default=None)
     upper: QtyType = Field(default=None)
@@ -129,15 +147,32 @@ class ThermoFitParameter(BaseModel):
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
     @field_validator("default", "lower", "upper", mode="before")
-    @classmethod
     def validate_default(cls, value: str,
                          info: ValidationInfo) -> QtyType | None:
         if value is None:
             return None
         try:
-            return _Q(value)
+            return Quantity(value)
         except Exception as e:
             raise ValueError(f"Invalid {info.field_name}: {value} - {e}")
+
+    @model_validator(mode="after")
+    def validate_sequence(self) -> Self:
+        def in_seq(a: Optional[QtyType], b: Optional[QtyType]) -> bool:
+            return True if None in (a, b) else a < b
+
+        l, d, u = self.lower, self.default, self.upper
+        err = ""
+        if not in_seq(l, u):
+            err = f"Upper bound '{u:~P}' less than lower bound '{l:~P}'"
+        if not in_seq(l, d):
+            err = f"Default value '{d:~P}' less than lower bound '{l:~P}'"
+        if not in_seq(d, u):
+            err = f"Default value '{d:~P}' more than upper bound '{u:~P}'"
+        if err:
+            raise ValueError(err)
+        return self
+
 
     # TODO: check existence, sequence and dimensional compatibility in thermo source
 
@@ -158,16 +193,19 @@ class ThermoFitConfiguration(BaseModel):
 # TODO: document everything (well!)
 
 
-class ThermoFitModelInspection(Protocol):
+class ThermoFitModelContext(Protocol):
     @property
     def parameters(self) -> Map[str]:
         ...
-
     @property
     def properties(self) -> Map[str]:
         ...
 
-type ThermoFitValidationContext = Map[ThermoFitModelInspection]
+
+@dataclass
+class ThermoFitValidationContext:
+    model_contexts: Map[ThermoFitModelContext]
+    thermo_source: AbstractThermoSource
 
 
 def get_context(info: ValidationInfo) -> ThermoFitValidationContext:

@@ -1,6 +1,8 @@
 from pytest import raises
 from pydantic import ValidationError
-from simu.core.solver.thermofit import DataSet, ThermoFitContribution
+from simu.core.solver.thermofit import (
+    DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter
+)
 
 
 def test_instantiate_dataset(thermo_fit_configuration):
@@ -92,12 +94,68 @@ def test_thermo_fit_contribution_uom_penalty(
         )
     assert "process.p" in str(e)
 
-# def test_thermo_fit_contribution_uom_parameter(
-#         thermo_fit_configuration, contribution_context_stub):
-#     config = thermo_fit_configuration["contributions"]["vle"]
-#     config["penalties"].append("process.p")
-#     with raises(ValidationError) as e:
-#         ThermoFitContribution.model_validate(
-#             config, context=contribution_context_stub
-#         )
-#     assert "process.p" in str(e)
+def test_thermo_fit_evaluation(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["evaluations"]["vle_p"]
+    evaluation = ThermoFitEvaluation.model_validate(
+        config, context=contribution_context_stub
+    )
+    assert "p_hat" in evaluation.properties
+
+def test_thermo_fit_evaluation_wrong_parameter(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["evaluations"]["vle_p"]
+    config["properties"]["p_hat"]["name"] = "hansi"
+    with raises(ValidationError) as e:
+        ThermoFitEvaluation.model_validate(
+            config, context=contribution_context_stub
+        )
+    assert "hansi" in str(e)
+
+def test_thermo_fit_evaluation_wrong_uom(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["evaluations"]["vle_p"]
+    config["properties"]["p_hat"]["uom"] = "ft^2"
+    with raises(ValidationError) as e:
+        ThermoFitEvaluation.model_validate(
+            config, context=contribution_context_stub
+        )
+    assert "ft^2" in str(e)
+
+def test_thermo_fit_parameter(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["parameters"]["a_b"]
+    parameter = ThermoFitParameter.model_validate(
+        config, context=contribution_context_stub
+    )
+    assert parameter.lower.magnitude == 200.0
+
+def test_thermo_fit_parameter_wrong_sequence(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["parameters"]["a_b"]
+    config["lower"] = "400 K"
+    with raises(ValidationError) as e:
+        ThermoFitParameter.model_validate(
+            config, context=contribution_context_stub
+        )
+    assert "400 K" in str(e)
+
+def test_thermo_fit_parameter_wrong_name(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["parameters"]["a_b"]
+    config["path"] = ["hansi"]
+    with raises(ValidationError) as e:
+        ThermoFitParameter.model_validate(
+            config, context=contribution_context_stub
+        )
+    assert "hansi" in str(e)
+
+def test_thermo_fit_parameter_wrong_unit(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["parameters"]["a_b"]
+    config["default"] = "30 m"
+    with raises(ValidationError) as e:
+        ThermoFitParameter.model_validate(
+            config, context=contribution_context_stub
+        )
+    assert "30 m" in str(e)

@@ -11,7 +11,6 @@ from copy import deepcopy
 # external
 from casadi import vertcat, SX
 from pint import Unit
-from pint.registry import Quantity as QtyType
 from pydantic import BaseModel, field_validator, Field, ConfigDict
 
 # internal
@@ -124,7 +123,6 @@ class StateDump(BaseModel):
     non_canonical: Map[Any] = Field(default=None)
 
     @field_validator("thermo", mode="before")
-    @classmethod
     def validate_thermo(cls, value: Map[Any]) -> Map[Any]:
         def traverse(val):
             if set(val.keys()) == {"T", "p", "n"}:
@@ -133,7 +131,6 @@ class StateDump(BaseModel):
         return traverse(value)
 
     @field_validator("non_canonical", mode="before")
-    @classmethod
     def validate_non_canonical(cls, value: Map[Any] | None) -> Map[Any]:
         return {} if value is None else value
 
@@ -147,7 +144,7 @@ class NumericHandler:
                  port_properties: bool = False):
         """Create a numerical wrapper around a given model. This step is to be
         applied to any (top level) model that is to be numerically evaluated
-        in any way (for solving, optimization, etc).
+        in any way (for solving, optimization, etc.).
 
         :param model: The model to be wrapped. This model does not need to be
           square or well-posed. Such details are for the applied solvers to be
@@ -197,7 +194,7 @@ class NumericHandler:
     def arguments(self) -> NestedMap[Quantity]:
         """The function arguments as numerical values. A DataFlowError is
         thrown, if not all numerical values are known.
-        A deepcopy of the structure is provided, so the returned data can be
+        A deep-copy of the structure is provided, so the returned data can be
         altered without side effects.
         """
         if not self.__arguments:
@@ -219,7 +216,7 @@ class NumericHandler:
         processing.
 
         """
-        def fetch_initial_states(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_initial_states(model: ModelProxy) -> NestedMutMap[Quantity]:
             """fetch material states from a specific model"""
             mat_proxy = model.materials
             return {k: m.initial_state.to_dict(m.species)
@@ -370,9 +367,9 @@ class NumericHandler:
                 n, s, v = traverse(value, symbols[k], arguments[k])
                 if s is None:
                     if symbols[k].units != Unit(value):
-                        msg = "No unit conversion possible for parameter " \
+                        err = "No unit conversion possible for parameter " \
                             f"{k}: from {symbols[k].units:~} to {value}."
-                        raise ValueError(msg)
+                        raise ValueError(err)
                     nams.append(k)
                     syms.append(symbols[k].magnitude)
                     args.append(arguments[k].magnitude)
@@ -438,7 +435,7 @@ class NumericHandler:
         return result
 
     def __collect_arguments(self) -> NestedMutMap[Quantity]:
-        """Create a function that has the following arguments, each of them as
+        """Create a structure that has the following arguments, each of them as
         a flat dictionary:
 
             - Material States
@@ -451,7 +448,7 @@ class NumericHandler:
         fetch = self.__fetch
         to_vector = self.__to_vector
 
-        def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_material_states(model: ModelProxy) -> NestedMutMap[Quantity]:
             """fetch material states from a specific model"""
             mat_proxy = model.materials
             return {k: m.sym_state for k, m in mat_proxy.handler.items()
@@ -515,7 +512,7 @@ class NumericHandler:
             res.update({k: extract(v) for k, v in model.residuals.items()})
             return res
 
-        def fetch_bounds(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_bounds(model: ModelProxy) -> NestedMutMap[Quantity]:
             mat_proxy = model.materials
             res = {k: m.bounds for k, m in mat_proxy.handler.items()
                    if k not in mat_proxy}

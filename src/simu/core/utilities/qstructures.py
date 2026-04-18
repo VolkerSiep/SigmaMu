@@ -1,7 +1,7 @@
 """This module contains data structures that build on the quantity datatype"""
 
 # stdlibs
-from typing import Union, TypeVar, Self
+from typing import Union, Self
 from collections.abc import Callable, Iterable, Mapping
 
 # external libs
@@ -9,7 +9,7 @@ import casadi as cas
 
 # internal libs
 from .quantity import Quantity, SymbolQuantity, base_unit, qvertcat, qpow, qsqrt
-from .types import NestedMap
+from .types import NestedMap, NestedMutMap
 from .errors import DimensionalityError
 
 
@@ -19,7 +19,7 @@ class ParameterDictionary(dict):
     methods.
     """
     class SparseArray(dict):
-        """This helper class represents a nexted dictionary that contains
+        """This helper class represents a nested dictionary that contains
         an arbitrary level of nested keys to address a value that is
         represented by a quantity. """
 
@@ -341,7 +341,7 @@ class QuantityDict(dict[str, Quantity]):
             result = {k: qpow(v, other.get(k, 0)) for k, v in self.items()}
             for k, v in items:
                 if k not in self:
-                    result[k] = qpow(0.0, v)
+                    result[k] = qpow(Quantity(0.0), v)
         return QuantityDict(result)
 
     def __rpow__(self, other: _OType) -> Self:
@@ -353,7 +353,7 @@ class QuantityDict(dict[str, Quantity]):
             result = {k: qpow(other.get(k, 0) , v) for k, v in self.items()}
             for k, v in items:
                 if k not in self:
-                    result[k] = qpow(v, 0.0)
+                    result[k] = qpow(v, Quantity(0.0))
         return QuantityDict(result)
 
     def sum(self) -> Quantity:
@@ -369,11 +369,11 @@ class QuantityDict(dict[str, Quantity]):
         return sum(self.values())  # type: ignore[type-error]
 
 
-_V = TypeVar("_V", float, Quantity, Mapping[str, Quantity])
-UNFUNC_TYPE = Callable[[_V], _V]
+type V = float | Quantity | Mapping[str, Quantity]
+type UFuncType[T: V] = Callable[[T], T]
 
 
-def unary_func(quantity: _V, func: UNFUNC_TYPE) -> _V:
+def unary_func[V](quantity: V, func: UFuncType) -> V:
     """Call a unary function that requires a dimensionless argument on the
     argument, accepting that argument to be a float, a scalar quantity,
     a symbolic quantity, or a QuantityDict object (well, any dictionary
@@ -397,7 +397,7 @@ def unary_func(quantity: _V, func: UNFUNC_TYPE) -> _V:
     return QuantityDict({k: unary_func(v, func) for k, v in items})
 
 
-def sqrt(quantity: _V) -> _V:
+def sqrt[V](quantity: V) -> V:
     """The square root function is a special case of a unary function in that
     the argument is not required to be dimensionless.
 
@@ -414,7 +414,7 @@ def sqrt(quantity: _V) -> _V:
     return QuantityDict({k: qsqrt(v) for k, v in items})
 
 
-def log(quantity: _V) -> _V:
+def log[V](quantity: V) -> V:
     """Determine natural logarithms, considering units of
     measurements. The main intent is to use this version for symbolic
     quantities and QuantityDict objects, but it also works on floats.
@@ -438,23 +438,23 @@ def log(quantity: _V) -> _V:
     return unary_func(quantity, cas.log)
 
 
-log10: UNFUNC_TYPE = lambda x: unary_func(x, cas.log10)
-exp: UNFUNC_TYPE = lambda x: unary_func(x, cas.exp)
-sin: UNFUNC_TYPE = lambda x: unary_func(x, cas.sin)
-cos: UNFUNC_TYPE = lambda x: unary_func(x, cas.cos)
-tan: UNFUNC_TYPE = lambda x: unary_func(x, cas.tan)
-arcsin: UNFUNC_TYPE = lambda x: unary_func(x, cas.arcsin)
-arccos: UNFUNC_TYPE = lambda x: unary_func(x, cas.arccos)
-arctan: UNFUNC_TYPE = lambda x: unary_func(x, cas.arctan)
-sinh: UNFUNC_TYPE = lambda x: unary_func(x, cas.sinh)
-cosh: UNFUNC_TYPE = lambda x: unary_func(x, cas.cosh)
-tanh: UNFUNC_TYPE = lambda x: unary_func(x, cas.tanh)
-arcsinh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arcsinh)
-arccosh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arccosh)
-arctanh: UNFUNC_TYPE = lambda x: unary_func(x, cas.arctanh)
+log10: UFuncType = lambda x: unary_func(x, cas.log10)
+exp: UFuncType = lambda x: unary_func(x, cas.exp)
+sin: UFuncType = lambda x: unary_func(x, cas.sin)
+cos: UFuncType = lambda x: unary_func(x, cas.cos)
+tan: UFuncType = lambda x: unary_func(x, cas.tan)
+arcsin: UFuncType = lambda x: unary_func(x, cas.arcsin)
+arccos: UFuncType = lambda x: unary_func(x, cas.arccos)
+arctan: UFuncType = lambda x: unary_func(x, cas.arctan)
+sinh: UFuncType = lambda x: unary_func(x, cas.sinh)
+cosh: UFuncType = lambda x: unary_func(x, cas.cosh)
+tanh: UFuncType = lambda x: unary_func(x, cas.tanh)
+arcsinh: UFuncType = lambda x: unary_func(x, cas.arcsinh)
+arccosh: UFuncType = lambda x: unary_func(x, cas.arccosh)
+arctanh: UFuncType = lambda x: unary_func(x, cas.arctanh)
 
 
-def parse_quantities_in_struct(struct: Union[NestedMap[str], str])\
+def parse_quantities_in_struct(struct: Union[NestedMap[str], str]) \
         -> Union[Quantity, NestedMap[Quantity]]:
     """Return a new struct that contains parsed quantities at the leaf
     values of the given input structure.
@@ -491,7 +491,7 @@ def parse_quantities_in_struct(struct: Union[NestedMap[str], str])\
 
 def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
                              significant_digits: int = 17) \
-        -> str | NestedMap[str]:
+        -> str | NestedMutMap[str]:
     """Return a new structure with the quantity instances replaced by a string
     representation that is parsable by the :class:`simu.Quantity` constructor.
 
@@ -499,13 +499,13 @@ def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
 
     >>> from pprint import pprint
     >>> from simu import Quantity
-    >>> struct = {'speed': {'car': Quantity(400 / 3, 'kilometer / hour'),
+    >>> data = {'speed': {'car': Quantity(400 / 3, 'kilometer / hour'),
     ...                     'fingernail': Quantity(1.2, 'millimeter / day'),
     ...                     'snail': Quantity(1.0, 'centimeter / minute')},
     ...           'weight': {'car': Quantity(1.5, 'metric_ton'),
     ...                      'fingernail': Quantity(300, 'milligram'),
     ...                      'snail': Quantity(10, 'gram')}}
-    >>> pprint(quantity_dict_to_strings(struct))
+    >>> pprint(quantity_dict_to_strings(data))
     {'speed': {'car': '133.33333333333334 km / h',
                'fingernail': '1.2 mm / d',
                'snail': '1 cm / min'},
@@ -518,8 +518,6 @@ def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
         return f"{struct:.{significant_digits}g~}"
     return {key: quantity_dict_to_strings(value, significant_digits)
             for key, value in items}
-
-
 
 
 def extract_sub_structure(source: NestedMap[Quantity],
@@ -554,4 +552,3 @@ def extract_sub_structure(source: NestedMap[Quantity],
             return src[key]
         return {k: prepare(name, k, q, src[key]) for k, q in items}
     return {k: prepare("", k, s, source) for k, s in structure.items()}
-

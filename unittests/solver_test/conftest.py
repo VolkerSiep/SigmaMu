@@ -1,7 +1,12 @@
 from pathlib import Path
+
 from pytest import fixture
 from yaml import safe_load
+
+from simu import StringDictThermoSource
+from simu.core.solver.thermofit import ThermoFitValidationContext
 from simu.core.utilities.types import Map
+
 
 @fixture
 def thermo_fit_configuration():
@@ -12,7 +17,7 @@ def thermo_fit_configuration():
 
 @fixture(scope="session")
 def contribution_context_stub():
-    class NumericHandlerStub:
+    class NHStub:
         @property
         def parameters(self) -> Map[str]:
             result = {"T": "K", "p": "bar", "x": "-", "y": "-", "w": "-"}
@@ -26,4 +31,9 @@ def contribution_context_stub():
             )
             return {n: ("bar" if n == "process.p" else "") for n in names}
 
-    return {n: NumericHandlerStub() for n in ("vle_fit", "vle_eval_p")}
+    return ThermoFitValidationContext(
+        model_contexts= {n: NHStub() for n in ("vle_fit", "vle_eval_p")},
+        thermo_source= StringDictThermoSource({
+                "a": {"b": "300 K", "c": "400 K"}
+        })
+    )
