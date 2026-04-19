@@ -260,8 +260,4 @@ class ThermoFitConfiguration(BaseModel):
                     msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
                     raise ValueError(msg)
 
-
-
-# TODO:
-#  - unit tests on integration
 #  - document everything (well!)
