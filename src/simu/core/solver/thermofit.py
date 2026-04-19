@@ -14,6 +14,35 @@ from simu.core.utilities.types import Map
 
 _Unit = UnitRegistry.Unit
 
+def are_units_compatible(first: str, second: str) -> bool:
+    try:
+        d1 = _Unit(first).dimensionality
+    except Exception as e:
+        raise ValueError(f"Invalid unit '{first}'") from e
+    try:
+        d2 = _Unit(first).dimensionality
+    except Exception as e:
+        raise ValueError(f"Invalid unit '{second}'") from e
+    return d1 == d2
+
+
+class ThermoFitModelContext(Protocol):
+    @property
+    def parameters(self) -> Map[str]:
+        ...
+    @property
+    def properties(self) -> Map[str]:
+        ...
+
+
+@dataclass
+class ThermoFitValidationContext:
+    model_contexts: Map[ThermoFitModelContext]
+    thermo_source: AbstractThermoSource
+
+def get_context(info: ValidationInfo) -> ThermoFitValidationContext:
+    return info.context
+
 
 class DataSet(BaseModel):
     columns: Sequence[str]
@@ -105,7 +134,6 @@ class ThermoFitProperty(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
 
-
 class ThermoFitEvaluation(ThermoFitEntity):
     properties: Map[ThermoFitProperty]
 
@@ -123,19 +151,12 @@ class ThermoFitEvaluation(ThermoFitEntity):
                 raise ValueError(msg) from e
 
             # Is the unit string a valid unit of measurement?
-            try:
-                prop_dim = _Unit(uom).dimensionality
-            except Exception as e:
-                msg = f"Property '{name}' has invalid unit `{uom}`:  {e}"
-                raise ValueError(msg) from e
-
             # Are the units compatible?
-            if prop_dim != _Unit(model_unit).dimensionality:
+            if not are_units_compatible(uom, model_unit):
                 msg = (f"Property '{name}' has incompatible unit `{uom}`"
                        f"to mapped model property (`{model_unit}`)")
                 raise ValueError(msg)
         return self
-
 
 
 class ThermoFitParameter(BaseModel):
@@ -198,33 +219,49 @@ class ThermoFitParameter(BaseModel):
 class ThermoFitConfiguration(BaseModel):
     datasets: Map[DataSet]
     contributions: Map[ThermoFitContribution]
-    parameters: Map[ThermoFitParameter]
     evaluations: Map[ThermoFitEvaluation]
+    parameters: Map[ThermoFitParameter]
 
-    model_config = ConfigDict(extra='forbid')
+    @model_validator(mode="after")
+    def validate_configuration(self, info: ValidationInfo) -> Self:
+        context = get_context(info).model_contexts
+        self._validate_item(self.contributions, context)
+        self._validate_item(self.evaluations, context)
+        return self
 
-    # TODO on integration level - in contributions and evaluations
-    #  - evaluate existence of data sets in contributions and evaluations
-    #  - evaluate existence of columns in data set (data_to_model) and unit consistency of parameters
+    def _validate_item(self, mapping: Map[ThermoFitEntity],
+                       context: Map[str, ThermoFitModelContext]):
+        for entity in mapping.values():
+            # does dataset exist
+            try:
+                dataset = self.datasets[entity.dataset]
+            except KeyError as e:
+                msg = f"Dataset '{entity.dataset}' not defined"
+                raise ValueError(msg) from e
+
+            # validate mapping
+            parameters = context[entity.model_id].parameters
+            for key, target in entity.data_to_model.items():
+                # is column defined in dataset
+                if key not in dataset.columns:
+                    msg = f"Column '{key}' not defined in dataset"
+                    raise ValueError(msg)
+                uom = dataset.uom[dataset.columns.index(key)]
+
+                # is target defined in model (checked before?)
+                try:
+                    uom_model = parameters[target]
+                except KeyError as e:
+                    msg = f"Target '{target}' not a model parameter"
+                    raise ValueError(msg) from e
+
+                # are units compatible?
+                if not are_units_compatible(uom, uom_model):
+                    msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
+                    raise ValueError(msg)
 
 
-# TODO: document everything (well!)
 
-
-class ThermoFitModelContext(Protocol):
-    @property
-    def parameters(self) -> Map[str]:
-        ...
-    @property
-    def properties(self) -> Map[str]:
-        ...
-
-
-@dataclass
-class ThermoFitValidationContext:
-    model_contexts: Map[ThermoFitModelContext]
-    thermo_source: AbstractThermoSource
-
-
-def get_context(info: ValidationInfo) -> ThermoFitValidationContext:
-    return info.context
+# TODO:
+#  - unit tests on integration
+#  - document everything (well!)
