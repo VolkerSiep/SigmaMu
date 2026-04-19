@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Self, Protocol, Optional
 
+from pint import DimensionalityError
 from pint.registry import Quantity as QtyType
 from pydantic import (
     BaseModel, ConfigDict, Field, ValidationInfo,
@@ -27,13 +28,12 @@ class DataSet(BaseModel):
         for uom in value:
             try:
                 _Unit(uom)
-            except Exception:
-                raise ValueError(f"Invalid unit of measurement '{uom}'")
+            except Exception as e:
+                raise ValueError(f"Invalid unit of measurement '{uom}'") from e
         return value
 
     @model_validator(mode="after")
     def check_dimensions(self) -> Self:
-        print("checking dimensions")
         l_columns = len(self.columns)
         l_uom = len(self.uom)
         if l_uom != l_columns:
@@ -88,9 +88,9 @@ class ThermoFitContribution(ThermoFitEntity):
             # validate penalty existence
             try:
                 unit = model.properties[penalty]
-            except KeyError:
+            except KeyError as e:
                 msg = f"Property '{penalty}' not defined in model '{model_id}'"
-                raise ValueError(msg)
+                raise ValueError(msg) from e
             # validate whether penalties are dimensionless
             if not _Unit(unit).dimensionless:
                 msg = (f"Penalty property '{penalty}` in model "
@@ -118,16 +118,16 @@ class ThermoFitEvaluation(ThermoFitEntity):
             # Does property exist in model?
             try:
                 model_unit = properties[name]
-            except KeyError:
+            except KeyError as e:
                 msg = f"Property '{name}' not in model '{self.model_id}'"
-                raise ValueError(msg)
+                raise ValueError(msg) from e
 
             # Is the unit string a valid unit of measurement?
             try:
                 prop_dim = _Unit(uom).dimensionality
             except Exception as e:
                 msg = f"Property '{name}' has invalid unit `{uom}`:  {e}"
-                raise ValueError(msg)
+                raise ValueError(msg) from e
 
             # Are the units compatible?
             if prop_dim != _Unit(model_unit).dimensionality:
@@ -147,19 +147,23 @@ class ThermoFitParameter(BaseModel):
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
     @field_validator("default", "lower", "upper", mode="before")
-    def validate_default(cls, value: str,
+    def convert_values(cls, value: str,
                          info: ValidationInfo) -> QtyType | None:
         if value is None:
             return None
         try:
             return Quantity(value)
         except Exception as e:
-            raise ValueError(f"Invalid {info.field_name}: {value} - {e}")
+            raise ValueError(f"Invalid {info.field_name}: {value} - {e}") from e
 
     @model_validator(mode="after")
     def validate_sequence(self) -> Self:
         def in_seq(a: Optional[QtyType], b: Optional[QtyType]) -> bool:
-            return True if None in (a, b) else a < b
+            try:
+                return True if None in (a, b) else a < b
+            except DimensionalityError as e:
+                msg = f"Incompatible units: '{a:P~}' vs. '{b:P~}'"
+                raise ValueError(msg) from e
 
         l, d, u = self.lower, self.default, self.upper
         err = ""
@@ -173,8 +177,22 @@ class ThermoFitParameter(BaseModel):
             raise ValueError(err)
         return self
 
-
-    # TODO: check existence, sequence and dimensional compatibility in thermo source
+    @model_validator(mode="after")
+    def validate_vs_source(self, info: ValidationInfo) -> Self:
+        # check existence and dimensional compatibility in thermo source
+        source = get_context(info).thermo_source
+        try:
+            parameter = source[self.path]
+        except KeyError as e:
+            msg = f"'{'.'.join(self.path)}' not found in ThermoSource object"
+            raise ValueError(msg) from e
+        for value in (self.default, self.lower, self.upper):
+            if value is None:
+                continue
+            if not value.check(parameter.units):
+                msg = f"Incompatible unit: {value.units} vs. {parameter.units}"
+                raise ValueError(msg)
+        return self
 
 
 class ThermoFitConfiguration(BaseModel):

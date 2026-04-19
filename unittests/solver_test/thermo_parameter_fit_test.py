@@ -140,6 +140,16 @@ def test_thermo_fit_parameter_wrong_sequence(
         )
     assert "400 K" in str(e)
 
+def test_thermo_fit_parameter_different_units(
+        thermo_fit_configuration, contribution_context_stub):
+    config = thermo_fit_configuration["parameters"]["a_b"]
+    config["lower"] = "400 m"
+    with raises(ValidationError) as e:
+        ThermoFitParameter.model_validate(
+            config, context=contribution_context_stub
+        )
+    assert "400 m" in str(e)
+
 def test_thermo_fit_parameter_wrong_name(
         thermo_fit_configuration, contribution_context_stub):
     config = thermo_fit_configuration["parameters"]["a_b"]
