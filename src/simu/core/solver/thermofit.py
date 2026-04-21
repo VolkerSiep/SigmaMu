@@ -259,5 +259,3 @@ class ThermoFitConfiguration(BaseModel):
                 if not are_units_compatible(uom, uom_model):
                     msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
                     raise ValueError(msg)
-
-#  - document everything (well!)
