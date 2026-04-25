@@ -93,15 +93,13 @@ class SimulationSolver:
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
         reports = []
 
-        output = self._find_output(config)
-
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
             "duration": ("Time", "{:6.2f}"),
             "min_alpha_name": ("Limit on bound", "{:>50s}"),
             "max_res_name": ("Max residual", "{:>50s}")
-        }, row_dig=5, row_head="Iter", stream=output)
+        }, row_dig=5, row_head="Iter", stream=config.output)
 
         funcs = self._prepare_functions()
         x = self.initial_state
@@ -202,16 +200,6 @@ class SimulationSolver:
             final_state=x,
             prop_func=lambda z: funcs["f_y"]({"x": Quantity(z)})
         )
-
-    def _find_output(self, config: SimulationSolverConfig) -> TextIOBase | None:
-        output = config.output
-        if isinstance(output, str):
-            opts = {"stdout": sys.stdout, "none": None}
-            try:
-                return opts[output.lower()]
-            except KeyError:
-                raise ValueError(f"Invalid stream name '{output}'")
-        return output
 
     def _prepare_functions(self) -> Map[Callable]:
         # prepare

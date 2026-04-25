@@ -1,7 +1,9 @@
+import sys
 from collections.abc import Callable, Sequence
 from io import TextIOBase
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from simu import Quantity
 from simu.core.utilities.types import NestedMap
@@ -112,3 +114,14 @@ class SimulationSolverConfig(BaseModel):
     :meth:`~simu.NumericHandler.export_state` and be reused as the initial
     values for the next solving process.
     """
+
+    @field_validator("output", mode="before")
+    @classmethod
+    def _validate_output(cls, value: Any) -> TextIOBase | None:
+        if isinstance(value, str):
+            opts = {"stdout": sys.stdout, "none": None}
+            try:
+                return opts[value.lower()]
+            except KeyError:
+                raise ValueError(f"Invalid stream name '{value}'")
+        return value
