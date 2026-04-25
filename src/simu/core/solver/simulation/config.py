@@ -1,9 +1,10 @@
 import sys
 from collections.abc import Callable, Sequence
 from io import TextIOBase
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
+from contextlib import suppress
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from simu import Quantity
 from simu.core.utilities.types import NestedMap
@@ -52,6 +53,10 @@ Example:
 
 """
 
+@runtime_checkable
+class OutputStream(Protocol):
+    def write(self, line: str):  ...
+
 class SimulationSolverConfig(BaseModel):
     max_iter: int = Field(default=30, ge=1)
     """The maximum number of iterations (default 30).
@@ -86,12 +91,11 @@ class SimulationSolverConfig(BaseModel):
     This threshold value is defined by ``wall`` (default ``1e-20``).
     """
 
-    output: TextIOBase | str = Field(default="stdout")
-    """The io-stream to direct the solver output to, or a
-    descriptive string (case-insensitive):
-
-    - ``"stdout"``: The output will be written to standard out (default)
-    - ``"none"``: No output will be printed.
+    output: OutputStream | None = Field(default_factory=lambda: sys.stdout)
+    """The stream to direct the solver output to, ``"stdout"`` 
+    (case-insensitive) for standard output, or ``None`` for no output.
+    The stream can be any object that supports a ``write`` method that consumes
+    a string argument.
 
     .. note::
 
@@ -115,13 +119,4 @@ class SimulationSolverConfig(BaseModel):
     values for the next solving process.
     """
 
-    @field_validator("output", mode="before")
-    @classmethod
-    def _validate_output(cls, value: Any) -> TextIOBase | None:
-        if isinstance(value, str):
-            opts = {"stdout": sys.stdout, "none": None}
-            try:
-                return opts[value.lower()]
-            except KeyError:
-                raise ValueError(f"Invalid stream name '{value}'")
-        return value
+    model_config = ConfigDict(arbitrary_types_allowed=True)

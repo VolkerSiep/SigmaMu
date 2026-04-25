@@ -1,4 +1,4 @@
-Solving models - the first process simulation
+from simu import SimulationSolverConfigSolving models - the first process simulation
 =============================================
 
 While process models are pretty by themselves, their real purpose is to be numerically solved and their results to be analyzed.
@@ -82,7 +82,8 @@ Let's modify the input:
 
 >>> from simu import Quantity
 >>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(120, "degC")
->>> result = solver.solve(output="none")
+>>> solver.set_options(output=None)  # from now on, don't print iterations
+>>> result = solver.solve()
 >>> print(result.properties[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
 7.3420... kilomole / day
 
@@ -99,9 +100,8 @@ Sometimes, for instance for debugging, it is useful to assess the model's state 
 ...     print(iteration, props[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
 ...     return True
 
->>> solver.set_option("call_back_iter", my_callback)
 >>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(-20, "degC")
->>> result = solver.solve()
+>>> result = solver.solve(call_back_iter=my_callback)
     0 9.9565... kilomole / day
     1 11.402... kilomole / day
 
@@ -120,8 +120,8 @@ The model hosts its initial state, defined through the :class:`~simu.MaterialDef
 
 Once we solve the model, the solver will by default retain the solution state (see ``retain_solution``):
 
->>> solver = SimulationSolver(numeric)
->>> result = solver.solve(output="none")
+>>> solver = SimulationSolver(numeric, output=None)
+>>> result = solver.solve()
 >>> print(f"This took {len(result.iterations)} iteration(s).")
 This took 4 iteration(s).
 
@@ -133,7 +133,7 @@ This took 4 iteration(s).
 
 If we run the solver again without changing any input, we get:
 
->>> result = solver.solve(output="none")
+>>> result = solver.solve()
 >>> print(f"This took {len(result.iterations)} iteration(s).")
 This took 1 iteration(s).
 
@@ -151,7 +151,7 @@ We can import the state back into the model, for instance if we would like to st
 Now we only need 1 iteration to solve the model, as we picked up the prior solution as start values:
 
 >>> solver = SimulationSolver(numeric)
->>> result = solver.solve(output="none")
+>>> result = solver.solve(output=None)
 >>> print(f"This took {len(result.iterations)} iteration(s).")
 This took 1 iteration(s).
 

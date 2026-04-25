@@ -33,6 +33,7 @@ from .core.model.base import Model
 from .core.model.amodel import AModel
 from .core.model.numeric import NumericHandler, NHKeys, PropertyFilter
 from .core.solver.simulation.solver import SimulationSolver
+from .core.solver.simulation.config import SimulationSolverConfig
 
 # versioning
 __version__ = _get_version("SigmaMu")

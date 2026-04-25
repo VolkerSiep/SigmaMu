@@ -1,10 +1,8 @@
 # stdlib
-import sys
 from symtable import Function
 from typing import Callable, Any
 from copy import deepcopy
 from time import time
-from io import TextIOBase
 
 # external
 from casadi import SX, jacobian, jtimes, Function
@@ -23,7 +21,6 @@ from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.types import Map, NestedMutMap
-from simu.core.utilities.configurable import Configurable
 from simu.core.utilities.errors import (
     IterativeProcessInterrupted, NonSquareSystem)
 
@@ -39,7 +36,7 @@ class SimulationSolver:
     """
 
     def __init__(self, model: NumericHandler,
-                 config: SimulationSolverConfig | None = None):
+                 config: SimulationSolverConfig | None = None, **options: Any):
         r"""On construction, the solver object requires a
         :class:`~simu.NumericHandler` object. The solver object can then be
         reused for multiple solver runs, for instance with variable parameter
@@ -49,9 +46,11 @@ class SimulationSolver:
           the expression ``NumericHandler(ModelClass.top())``.
         :param config: Options for the solver as defined in
           :class:`~simu.core.solver.simulation.config.SimulationSolverConfig`.
+        :param options: overwriting individual configurations directly
         """
         self._model = model
         self._config = config or SimulationSolverConfig()
+        self.set_options(**options)
 
         args = model.arguments
         # store size of state
@@ -64,6 +63,17 @@ class SimulationSolver:
         # user shall not think that putting a state here has any effect
         del args[NHKeys.VECTORS][NHKeys.STATES]
         self._model_parameters: NestedMutMap[Quantity] = args
+
+    def set_options(self, config: SimulationSolverConfig | None = None,
+                    **options: Any):
+        """Overwrite configuration for subsequent solver runs
+
+       :param config: Options for the solver as defined in
+          :class:`~simu.core.solver.simulation.config.SimulationSolverConfig`.
+        :param options: overwriting individual configurations directly
+        """
+        config = config or self._config
+        self._config = config.model_copy(update=options)
 
     def solve(self, **options: Any) -> SimulationSolverReport:
         """
@@ -84,6 +94,9 @@ class SimulationSolver:
         method is invoked, giving the same effect as if the option was provided
         with the constructor.
 
+        :param options: overwriting individual configurations for this solver
+          run.
+
         :return: The report including the iteration sequence
         """
         config = self._config.model_copy(update=options)
@@ -92,7 +105,6 @@ class SimulationSolver:
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
         reports = []
-
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
             "relax_factor": ("Alpha", "{:7.2g}"),
