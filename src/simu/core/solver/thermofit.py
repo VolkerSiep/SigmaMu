@@ -20,7 +20,7 @@ def are_units_compatible(first: str, second: str) -> bool:
     except Exception as e:
         raise ValueError(f"Invalid unit '{first}'") from e
     try:
-        d2 = _Unit(first).dimensionality
+        d2 = _Unit(second).dimensionality
     except Exception as e:
         raise ValueError(f"Invalid unit '{second}'") from e
     return d1 == d2
@@ -91,16 +91,19 @@ class ThermoFitEntity(BaseModel):
 
     @model_validator(mode="after")
     def validate_model_parameters(self, info: ValidationInfo) -> Self:
-        model_id = self.model_id
-        context = get_context(info)
-        model = context.model_contexts[model_id]
+        model = self._model_context(info)
 
         # validate parameter existence
         for param in self.data_to_model.values():
             if not param in model.parameters:
-                msg = f"Parameter '{param}' not defined in model '{model_id}'"
+                msg = (f"Parameter '{param}' not defined in "
+                       f"model '{self.model_id}'")
                 raise ValueError(msg)
         return self
+
+    def _model_context(self, info: ValidationInfo) -> ThermoFitModelContext:
+        context = get_context(info)
+        return context.model_contexts[self.model_id]
 
 
 class ThermoFitContribution(ThermoFitEntity):
@@ -110,8 +113,7 @@ class ThermoFitContribution(ThermoFitEntity):
     @model_validator(mode="after")
     def validate_penalties(self, info: ValidationInfo) -> Self:
         model_id = self.model_id
-        context = get_context(info)
-        model = context.model_contexts[model_id]
+        model = self._model_context(info)
 
         for penalty in self.penalties:
             # validate penalty existence
@@ -139,8 +141,7 @@ class ThermoFitEvaluation(ThermoFitEntity):
 
     @model_validator(mode="after")
     def validate_properties(self, info: ValidationInfo) -> Self:
-        context = get_context(info)
-        properties = context.model_contexts[self.model_id].properties
+        properties = self._model_context(info).properties
         for prop in self.properties.values():
             name, uom = prop.name, prop.uom
             # Does property exist in model?

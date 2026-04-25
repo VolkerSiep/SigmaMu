@@ -11,3 +11,4 @@ dist/
 .idea/
 .run/
 .coverage
+.aider*
