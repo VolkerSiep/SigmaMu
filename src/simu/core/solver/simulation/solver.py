@@ -70,8 +70,8 @@ class SimulationSolver:
 
        :param config: Options for the solver as defined in
           :class:`~simu.core.solver.simulation.config.SimulationSolverConfig`.
-        :param options: overwriting individual configurations directly
-        """
+       :param options: overwriting individual configurations directly
+       """
         config = config or self._config
         self._config = config.model_copy(update=options)
 
@@ -88,11 +88,6 @@ class SimulationSolver:
         chokes and returns a wrong solution. Therefore, the norm of the
         solution is checked, and ``scipy.sparse.linalg.spsolve`` is used in
         those instances.
-
-        For each given keyword argument, the
-        :meth:`~simu.core.utilities.configurable.Configurable.set_option`
-        method is invoked, giving the same effect as if the option was provided
-        with the constructor.
 
         :param options: overwriting individual configurations for this solver
           run.
@@ -111,7 +106,7 @@ class SimulationSolver:
             "duration": ("Time", "{:6.2f}"),
             "min_alpha_name": ("Limit on bound", "{:>50s}"),
             "max_res_name": ("Max residual", "{:>50s}")
-        }, row_dig=5, row_head="Iter", stream=config.output)
+        }, row_dig=5, row_head="Iter", output=config.output)
 
         funcs = self._prepare_functions()
         x = self.initial_state

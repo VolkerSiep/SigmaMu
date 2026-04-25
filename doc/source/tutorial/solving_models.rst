@@ -1,4 +1,4 @@
-from simu import SimulationSolverConfigSolving models - the first process simulation
+Solving models - the first process simulation
 =============================================
 
 While process models are pretty by themselves, their real purpose is to be numerically solved and their results to be analyzed.
@@ -42,7 +42,7 @@ The second column ``LMET`` is the logarithmic maximum error to tolerance ratio. 
 
 The relaxation factor is called ``Alpha``. The first iteration attempts to reduce the molar flow in one step dangerously close to the domain limit (:math:`n > 0`). The solver hence stabilises the step by only admitting 83 %. The residual of maximal value to tolerance ratio is shown in the right-most column.
 
-The solving process returns a :class:`~simu.core.solver.simulation.SimulationSolverReport` object, which contains the content of above printed table for further analysis, but also the model's state vector in the solution point and a property to evaluate the model's properties. In this example, the only interesting part are the thermodynamic properties of the source stream:
+The solving process returns a :class:`~simu.core.solver.simulation.report.SimulationSolverReport` object, which contains the content of above printed table for further analysis, but also the model's state vector in the solution point and a property to evaluate the model's properties. In this example, the only interesting part are the thermodynamic properties of the source stream:
 
 >>> from pprint import pprint
 >>> pprint(result.properties[NHKeys.THERMO_PROPS]["source"])

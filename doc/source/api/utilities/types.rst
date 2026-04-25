@@ -25,3 +25,9 @@ NestedMutMap
 ------------
 .. autodata:: simu.core.utilities.types.NestedMutMap
    :annotation:
+
+
+OutputIOStream
+--------------
+.. autoclass:: simu.core.utilities.types.OutputIOStream
+   :members: write

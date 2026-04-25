@@ -8,7 +8,7 @@ from simu.core.utilities.types import NestedMap
 @dataclass
 class SimulationSolverIterationReport:
     """This data class object is provided for each iteration during a
-    :class:`SimulationSolver` run.
+    :class:`~simu.SimulationSolver` run.
     """
     max_err: float
     r"""For each :class:`~simu.core.utilities.residual.Residual`, the 
@@ -55,7 +55,7 @@ class SimulationSolverIterationReport:
 
 @dataclass
 class SimulationSolverReport:
-    """The data class object returned from a :class:`SimulationSolver` run
+    """The data class object returned from a :class:`~simu.SimulationSolver` run
     """
     iterations: Sequence[SimulationSolverIterationReport]
     """A :class:'SimulationSolverIterationReport` object for each performed

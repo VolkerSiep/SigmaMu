@@ -1,13 +1,10 @@
 import sys
 from collections.abc import Callable, Sequence
-from io import TextIOBase
-from typing import Any, Protocol, runtime_checkable
-from contextlib import suppress
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 
 from simu import Quantity
-from simu.core.utilities.types import NestedMap
+from simu.core.utilities.types import NestedMap, OutputIOStream
 from .report import SimulationSolverIterationReport
 
 
@@ -20,11 +17,12 @@ type SimulationSolverCallback = Callable[
          NestedMap[Quantity]]
      ],
     bool]
-"""A function (type) to act as a call-back in the :class:`SimulationSolver`
-solving process. The arguments are as follows:
+"""A function (type) to act as a call-back in the 
+:class:`~simu.SimulationSolver` solving process. The arguments are as follows:
 
 - ``iteration``: The iteration number as integer, incrementing from zero
-- ``report``: The (:class:`SimulationSolverIterationReport`) object
+- ``report``: The data class containing information regarding the current
+  iteration
 - ``state``: The internal state of the model at given iteration as a sequence of
   floats
 - ``prop_func``: A function to calculate all model properties for the given
@@ -52,10 +50,6 @@ Example:
         return True
 
 """
-
-@runtime_checkable
-class OutputStream(Protocol):
-    def write(self, line: str):  ...
 
 class SimulationSolverConfig(BaseModel):
     max_iter: int = Field(default=30, ge=1)
@@ -91,23 +85,24 @@ class SimulationSolverConfig(BaseModel):
     This threshold value is defined by ``wall`` (default ``1e-20``).
     """
 
-    output: OutputStream | None = Field(default_factory=lambda: sys.stdout)
-    """The stream to direct the solver output to, ``"stdout"`` 
-    (case-insensitive) for standard output, or ``None`` for no output.
+    output: OutputIOStream | None = Field(default_factory=lambda: sys.stdout)
+    """The stream to direct the solver output to, by default ``sys.stdout``.
+    ``None`` suppresses output. 
+
     The stream can be any object that supports a ``write`` method that consumes
     a string argument.
 
     .. note::
 
       Instead of printing, one might either analyse the returned
-      :class:`~simu.core.solver.simulation.SimulationSolverReport` project
-      after the run, or utilise the ``call_back_iter`` callback and
+      :class:`~simu.core.solver.simulation.report.SimulationSolverReport`
+      project after the run, or utilise the ``call_back_iter`` callback and
       process the iteration progress from there.
     """
 
     call_back_iter: SimulationSolverCallback | None = Field(default=None)
     """A callback function (default ``None``),
-    see :data:`~simu.core.solver.simulation.SimulationSolverCallback`,
+    see :data:`~simu.core.solver.simulation.config.SimulationSolverCallback`,
     to intercept the solving process. The returned boolean variable
     determines whether the solver iteration is continued or not.
     """
