@@ -1,6 +1,8 @@
 # stdlib
 from typing import Optional
-from collections.abc import Iterable, Collection, Mapping, Sequence
+from collections.abc import (
+    Iterable, Collection, Mapping, Sequence, MutableMapping
+)
 
 # internal
 from simu.core.utilities.quantity import Quantity, SymbolQuantity, QFunction
@@ -99,7 +101,7 @@ class MaterialSpec:
         return flow_comp and not ((spe - mspe) or (locked and (mspe - spe)))
 
 
-class Material(MutMap[Quantity | QuantityDict]):
+class Material(MutableMapping[str, Quantity | QuantityDict]):
     """This class represents a material"""
 
     definition: "MaterialDefinition"
@@ -167,7 +169,7 @@ class Material(MutMap[Quantity | QuantityDict]):
             mol_vector=res["n"].reshape(-1))  # make sure it's a vector
 
     @property
-    def species(self) -> Collection[str]:
+    def species(self) -> Sequence[str]:
         """The species names"""
         return self.definition.species
 
@@ -266,7 +268,7 @@ class MaterialDefinition:
         return self.__store
 
     @property
-    def species(self) -> Collection[str]:
+    def species(self) -> Sequence[str]:
         """The species names"""
         return self.frame.species
 

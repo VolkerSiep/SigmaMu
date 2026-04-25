@@ -1,16 +1,15 @@
 """This module implements functionality related to parameter handling"""
 
-# stdlib
 from typing import Optional
 from collections.abc import Mapping, Iterable, Iterator
+from pint.registry import Quantity as QtyType
 
-# internal
 from simu.core.utilities.quantity import Quantity, SymbolQuantity
 from simu.core.utilities.types import Map, MutMap
 from simu.core.utilities.errors import DataFlowError
 
 
-class ParameterHandler(Map[Quantity]):
+class ParameterHandler(Mapping[str, QtyType]):
     """This class, being instantiated as the :attr:`simu.Model.parameters`
     attribute, allows to define and access process parameters.
 
@@ -27,12 +26,12 @@ class ParameterHandler(Map[Quantity]):
     overall model function.
     """
 
-    static_parameters: MutMap[Quantity] = {}
-    static_values: MutMap[Quantity] = {}
+    static_parameters: MutMap[QtyType] = {}
+    static_values: MutMap[QtyType] = {}
 
     def __init__(self, static_id: str):
-        self.__params: MutMap[Quantity] = {}
-        self.__values: MutMap[Quantity] = {}
+        self.__params: MutMap[QtyType] = {}
+        self.__values: MutMap[QtyType] = {}
         self.__static_used_names: set[str] = set()
         self.__static_id = static_id
 
@@ -82,12 +81,12 @@ class ParameterHandler(Map[Quantity]):
     def __exit__(self, exc_type, exc_val, exc_tb):
         return
 
-    def __getitem__(self, name: str) -> Quantity:
+    def __getitem__(self, name: str) -> QtyType:
         """Return the symbol of a defined parameter. This is to be used within
         the :meth:`simu.Model.define` method."""
         return self.__params[name]
 
-    def get_static(self, name: str) -> SymbolQuantity:
+    def get_static(self, name: str) -> QtyType:
         """Return a static parameter of given name"""
         cls = ParameterHandler
         full_name = f"{self.__static_id}/{name}"
@@ -104,23 +103,23 @@ class ParameterHandler(Map[Quantity]):
         return ParameterProxy(self, self.__params, self.__values)
 
 
-class ParameterProxy(Map[Quantity]):
+class ParameterProxy(Mapping[str, QtyType]):
     """This class is instantiated by the parent's
     :class:`~simu.core.model.parameter.ParameterHandler` to configure the
     parameter connections from the parent context."""
 
     def __init__(self, handler: ParameterHandler,
-                 params: MutMap[Quantity], values: MutMap[Quantity]):
+                 params: MutMap[QtyType], values: MutMap[QtyType]):
         self.__handler = handler
         self.__model_name = "N/A"
 
         self.__params = params  # reference to dicts in handler
         self.__values = values  # not a copy by design
-        self.__free: Map[Quantity] = {}
+        self.__free: Map[QtyType] = {}
 
         self.__provided: set[str] = set()
 
-    def __getitem__(self, name: str) -> Quantity:
+    def __getitem__(self, name: str) -> QtyType:
         return self.__handler[name]
 
     def __len__(self) -> int:
@@ -133,7 +132,7 @@ class ParameterProxy(Map[Quantity]):
         """Set the name of the model for better error diagnostics"""
         self.__model_name = name
 
-    def provide(self, **kwargs: Quantity) -> None:
+    def provide(self, **kwargs: QtyType) -> None:
         """Connect a parameter from parent context to child parameter."""
         for name, quantity in kwargs.items():
             self.__assure_ok(name, quantity)
@@ -146,7 +145,7 @@ class ParameterProxy(Map[Quantity]):
         self.__assure_ok(name, quantity)
         self.__values[name] = quantity
 
-    def __assure_ok(self, name: str, quantity: Quantity) -> None:
+    def __assure_ok(self, name: str, quantity: QtyType) -> None:
         """Check that a new quantity can be processed and is compatible with
         the previously defined slot."""
         model_name = self.__model_name
@@ -160,14 +159,14 @@ class ParameterProxy(Map[Quantity]):
         quantity.to(self.__params[name].units)
 
     @property
-    def free(self) -> Map[Quantity]:
+    def free(self) -> Map[QtyType]:
         """Symbols representing the symbols of the parameters that have not
         been provided. These must be used to create an overall function, when
         parameter values are provided from the outside."""
         return dict(self.__free)
 
     @property
-    def values(self) -> Map[Quantity]:
+    def values(self) -> Map[QtyType]:
         """Symbols representing the values of the parameters that have not
         been provided. These must be used to call the overall function."""
         return dict(self.__values)

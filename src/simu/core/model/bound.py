@@ -1,9 +1,10 @@
-from typing import NewType
+from collections.abc import Mapping
+from abc import ABC
 
+from pint.registry import Quantity as QtyType
 from simu.core.utilities.quantity import Quantity
-from simu.core.utilities.types import Map
 
-class BoundProxy(Map[Quantity]):
+class BoundProxy(ABC, Mapping[str, QtyType]):
     """A map of quantities, interpreted as variables to stay positive"""
 
 
@@ -41,7 +42,7 @@ class BoundHandler(BoundProxy):
     def __init__(self):
         self.__bounds = {}
 
-    def add(self, name: str, bound: Quantity):
+    def add(self, name: str, bound: QtyType):
         """Add a quantity to the bound handler to signal the solver that its
         value must remain strictly positive.
 
@@ -53,7 +54,7 @@ class BoundHandler(BoundProxy):
         >>> b = SymbolQuantity("T", "degC")
         >>> handler = BoundHandler()
         >>> handler.add("T", b)
-        >>> print(f"{handler["T"]}")
+        >>> print(f"{handler['T']}")
         T delta_degree_Celsius
 
         If the intention is really to define a bound at a given absolute value,
@@ -61,7 +62,7 @@ class BoundHandler(BoundProxy):
 
         >>> from simu import Quantity
         >>> handler.add("T2", b - Quantity(31.4159, "degC"))
-        >>> print(f"{handler["T2"]}")
+        >>> print(f"{handler['T2']}")
         (T-31.4159) delta_degree_Celsius
         """
         if name in self.__bounds:

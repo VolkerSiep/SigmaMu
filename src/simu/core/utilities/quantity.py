@@ -255,7 +255,7 @@ def base_unit(unit: str) -> str:
     """
     if unit == "":
         unit = "dimensionless"
-    base = unit_registry.Quantity(unit).to_base_units().units
+    base = Quantity(unit).to_base_units().units
     return f"{base:~}"
 
 

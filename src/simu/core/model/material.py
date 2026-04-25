@@ -3,7 +3,7 @@ the modelling context."""
 
 # stdlib modules
 from typing import Optional
-from collections.abc import Iterator, Collection
+from collections.abc import Iterator, Collection, Mapping
 
 # internal modules
 from simu.core.thermo.material import MaterialSpec, Material, MaterialDefinition
@@ -11,7 +11,7 @@ from simu.core.utilities.types import Map, MutMap
 from simu.core.utilities.errors import DataFlowError
 
 
-class MaterialHandler(Map[Material]):
+class MaterialHandler(Mapping[str, Material]):
     """The material handler maintains the thermodynamic states represented as
     flows and states. When a model is created, the ``interface`` method can be
     used to define material ports. In the ``with`` context, invoked by the
@@ -77,7 +77,7 @@ class MaterialHandler(Map[Material]):
         return material
 
 
-class MaterialProxy(Map[MaterialSpec]):
+class MaterialProxy(Mapping[str, MaterialSpec]):
     handler: MaterialHandler
 
     def __init__(self, handler: MaterialHandler):

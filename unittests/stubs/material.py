@@ -1,10 +1,9 @@
-from collections.abc import Collection
+from collections.abc import Collection, MutableMapping
 
 from simu import Quantity, QuantityDict, SymbolQuantity
-from simu.core.utilities.types import MutMap
 
 
-class MaterialStub(MutMap[Quantity | QuantityDict]):
+class MaterialStub(MutableMapping[str, Quantity | QuantityDict]):
     current_instance = 0
 
     def __init__(self, definition: "MaterialDefinitionStub", flow: bool):

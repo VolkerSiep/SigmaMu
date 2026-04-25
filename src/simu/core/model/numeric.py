@@ -3,7 +3,7 @@ of the top model instance."""
 
 # std lib
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Annotated
+from typing import Optional, Any
 from collections.abc import Callable, Sequence, Collection
 from enum import StrEnum, auto
 from copy import deepcopy
@@ -11,20 +11,19 @@ from copy import deepcopy
 # external
 from casadi import vertcat, SX
 from pint import Unit
-from pint.registry import Quantity as QtyType
-from pydantic import BaseModel, field_validator, Field
-from pydantic_core import core_schema
+from pydantic import BaseModel, field_validator, Field, ConfigDict
 
 # internal
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.structures import (
     flatten_dictionary, unflatten_dictionary, FLATTEN_SEPARATOR)
 from simu.core.utilities.qstructures import (
-    QuantityDict, quantity_dict_to_strings, parse_quantities_in_struct)
-from simu.core.utilities.types import NestedMap, NestedMutMap, Map, MutMap
-from simu.core.utilities.errors import DataFlowError
+    QuantityDict, quantity_dict_to_strings)
 from simu.core.thermo.parameters import ThermoParameterStore
 from simu.core.thermo.state import InitialState
+from simu.core.utilities.types import NestedMap, NestedMutMap, Map, MutMap
+from simu.core.utilities.errors import DataFlowError
+from simu.core.utilities.pydantic_types import PTemperature, PPressure, PAmount
 from .base import ModelProxy
 
 
@@ -111,54 +110,12 @@ class NHKeys(StrEnum):
         return f"'{self.value}'"
 
 
-class PQuantity:
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type, handler):
-        def validate(v):
-            return Quantity(v)
-        return core_schema.no_info_plain_validator_function(validate)
-
-
 class SingleStateDump(BaseModel):
-    T: PQuantity
-    p: PQuantity
-    n: Map[PQuantity]
+    T: PTemperature
+    p: PPressure
+    n: Map[PAmount]
 
-    @field_validator("T", mode="after")
-    @classmethod
-    def check_temperature(cls, value: QtyType) -> QtyType:
-        try:
-            magnitude = value.to("K").m
-        except Exception as e:
-            raise ValueError(f"Invalid temperature: {value} - {e}")
-        if magnitude <= 0:
-            raise ValueError(f"Infeasible temperature value: {value}")
-        return value
-
-    @field_validator("p", mode="after")
-    @classmethod
-    def check_pressure(cls, value: QtyType) -> QtyType:
-        try:
-            magnitude = value.to("Pa").m
-        except Exception as e:
-            raise ValueError(f"Invalid Pressure: {value} - {e}")
-        if magnitude <= 0:
-            raise ValueError(f"Infeasible pressure value: {value}")
-        return value
-
-    @field_validator("n", mode="after")
-    @classmethod
-    def check_quantities(cls, value: Map[QtyType]) -> Map[QtyType]:
-        for k, n_i in value.items():
-            try:
-                magnitude = n_i.to("mol").m
-            except Exception as e:
-                msg = f"Invalid Quantity for species {k}: {n_i} - {e}"
-                raise ValueError(msg)
-            if magnitude <= 0:
-                msg = f"Infeasible quantity value for species {k}: {n_i}"
-                raise ValueError(msg)
-        return value
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra='forbid')
 
 
 class StateDump(BaseModel):
@@ -166,7 +123,6 @@ class StateDump(BaseModel):
     non_canonical: Map[Any] = Field(default=None)
 
     @field_validator("thermo", mode="before")
-    @classmethod
     def validate_thermo(cls, value: Map[Any]) -> Map[Any]:
         def traverse(val):
             if set(val.keys()) == {"T", "p", "n"}:
@@ -175,7 +131,6 @@ class StateDump(BaseModel):
         return traverse(value)
 
     @field_validator("non_canonical", mode="before")
-    @classmethod
     def validate_non_canonical(cls, value: Map[Any] | None) -> Map[Any]:
         return {} if value is None else value
 
@@ -189,7 +144,7 @@ class NumericHandler:
                  port_properties: bool = False):
         """Create a numerical wrapper around a given model. This step is to be
         applied to any (top level) model that is to be numerically evaluated
-        in any way (for solving, optimization, etc).
+        in any way (for solving, optimization, etc.).
 
         :param model: The model to be wrapped. This model does not need to be
           square or well-posed. Such details are for the applied solvers to be
@@ -239,7 +194,7 @@ class NumericHandler:
     def arguments(self) -> NestedMap[Quantity]:
         """The function arguments as numerical values. A DataFlowError is
         thrown, if not all numerical values are known.
-        A deepcopy of the structure is provided, so the returned data can be
+        A deep-copy of the structure is provided, so the returned data can be
         altered without side effects.
         """
         if not self.__arguments:
@@ -261,7 +216,7 @@ class NumericHandler:
         processing.
 
         """
-        def fetch_initial_states(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_initial_states(model: ModelProxy) -> NestedMutMap[Quantity]:
             """fetch material states from a specific model"""
             mat_proxy = model.materials
             return {k: m.initial_state.to_dict(m.species)
@@ -412,9 +367,9 @@ class NumericHandler:
                 n, s, v = traverse(value, symbols[k], arguments[k])
                 if s is None:
                     if symbols[k].units != Unit(value):
-                        msg = "No unit conversion possible for parameter " \
+                        err = "No unit conversion possible for parameter " \
                             f"{k}: from {symbols[k].units:~} to {value}."
-                        raise ValueError(msg)
+                        raise ValueError(err)
                     nams.append(k)
                     syms.append(symbols[k].magnitude)
                     args.append(arguments[k].magnitude)
@@ -480,7 +435,7 @@ class NumericHandler:
         return result
 
     def __collect_arguments(self) -> NestedMutMap[Quantity]:
-        """Create a function that has the following arguments, each of them as
+        """Create a structure that has the following arguments, each of them as
         a flat dictionary:
 
             - Material States
@@ -493,7 +448,7 @@ class NumericHandler:
         fetch = self.__fetch
         to_vector = self.__to_vector
 
-        def fetch_material_states(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_material_states(model: ModelProxy) -> NestedMutMap[Quantity]:
             """fetch material states from a specific model"""
             mat_proxy = model.materials
             return {k: m.sym_state for k, m in mat_proxy.handler.items()
@@ -557,7 +512,7 @@ class NumericHandler:
             res.update({k: extract(v) for k, v in model.residuals.items()})
             return res
 
-        def fetch_bounds(model: ModelProxy) -> MutMap[Quantity]:
+        def fetch_bounds(model: ModelProxy) -> NestedMutMap[Quantity]:
             mat_proxy = model.materials
             res = {k: m.bounds for k, m in mat_proxy.handler.items()
                    if k not in mat_proxy}

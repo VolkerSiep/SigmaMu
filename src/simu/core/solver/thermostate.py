@@ -1,15 +1,11 @@
-# stdlib
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
-
-# external
 from numpy import array, squeeze
 from numpy.linalg import solve
 from casadi import SX, vertcat, jacobian, Function, jtimes
-
-# internal
 from simu.core.utilities.structures import flatten_dictionary
+
 
 if TYPE_CHECKING:
     from simu.core.thermo.frame import ThermoFrame

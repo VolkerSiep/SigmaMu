@@ -124,7 +124,7 @@ class ExcessBasePitzer(ThermoContribution):
 
     @abstractmethod
     def define_chi(self, res: MutMap[Quantity]) -> Map[Quantity]:
-        """
+        r"""
         Provide dimensionless residual contribution :math:`\chi(T, I, b_i)`
         and the partial derivatives :math:`\chi_T` (``chi_t``),
         :math:`\chi_I` (``chi_i``) and :math:`\chi_{b}` (``chi_b``).

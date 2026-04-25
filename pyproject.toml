@@ -11,7 +11,7 @@ authors = [
     { name = "Volker Siepmann", email = "volker.siepmann@gmail.com" }
 ]
 license = { text = "LGPL-3.0-or-later" }
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 keywords = ["thermodynamics", "modelling"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -46,11 +46,14 @@ doc = [
 dist = [
     "build",
     "twine",
+    "setuptools",
+    "wheel"
 ]
 
 test = [
     "pytest",
     "pytest-doctestplus",
+    "pytest-cov"
 ]
 
 dev = [
@@ -58,11 +61,14 @@ dev = [
     "scipy-stubs",
     "pytest",
     "pytest-doctestplus",
+    "pytest-cov",
     "build",
     "twine",
     "Sphinx",
     "sphinxcontrib-bibtex",
     "sphinx-copybutton",
+    "setuptools",
+    "wheel"
 ]
 
 [tool.setuptools]
@@ -74,3 +80,28 @@ simu = ["py.typed"]
     "src/simu/**/*.yml",
     "src/simu/core/data/uom_definitions.txt",
 ]
+
+[tool.pytest.ini_options]
+doctest_plus = "enabled"
+addopts = "--doctest-rst -q --tb=short -s --cov --cov-report=html"
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+testpaths = [
+    "doc/source",
+    "src/simu",
+    "unittests"
+]
+norecursedirs =  [
+    "src/simu/examples"
+]
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "src/simu/examples/**",
+    "**/__init__.py"
+]
+
+[tool.coverage.report]
+skip_covered = true
+

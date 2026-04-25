@@ -1,13 +1,12 @@
 # stdlib
 from dataclasses import dataclass
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 
 # external
 from casadi import DM
 
 # internal
 from .quantity import Quantity
-from .types import Map
 from .errors import DimensionalityError
 
 
@@ -49,7 +48,7 @@ class Residual:
         self.tolerance -= Quantity(0.0, tol_unit)
 
 
-class ResidualProxy(Map[Residual]):
+class ResidualProxy(Mapping[str, Residual]):
     """This is just a dictionary, mapping the names (*str*) to the
     :class:`Residual` objects"""
 

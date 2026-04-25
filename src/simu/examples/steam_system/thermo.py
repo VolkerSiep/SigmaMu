@@ -18,7 +18,7 @@ def _create_frames() -> (ThermoFrame, ThermoFrame):
 def _create_material(frame: ThermoFrame,
                      t: float, p: float, n: float) -> MaterialDefinition:
     initial_state = InitialState.from_si(t, p, [n])
-    return MaterialDefinition(frame, initial_state, predefined_parameters)
+    return MaterialDefinition(frame, initial_state, predefined_parameters())
 
 
 _f_cond, _f_steam = _create_frames()
@@ -27,4 +27,3 @@ hp_steam = _create_material(_f_steam, 600, 100e5, 100)
 hp_condensate = _create_material(_f_cond, 600, 100e5, 100)
 lp_steam = _create_material(_f_steam, 373, 1e5, 100)
 lp_condensate = _create_material(_f_cond, 373, 1e5, 100)
-
