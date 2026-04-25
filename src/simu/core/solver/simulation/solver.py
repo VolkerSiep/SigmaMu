@@ -54,53 +54,8 @@ class SimulationSolver(Configurable):
 
         :param model: The numeric handler of a model, in most cases obtained by
           the expression ``NumericHandler(ModelClass.top())``.
-        :param max_iter: The maximum number of iterations (default 30).
-
-          .. note::
-
-            Normally, 30 iterations should be sufficient. In other words, if the
-            model is not converged after 30 iterations, chances are quite low
-            that it still will converge at all. The advice would be to try to
-            improve the starting values and to investigate whether the model is
-            properly posed.
-
-        :param gamma: As described above, :math:`\gamma` (default 0.9) is the
-          fraction of the step-length applied by the solver before hitting the
-          domain boundary. Normally, changing the value is not required.
-          Generally, a lower value makes the model more robust against
-          non-linear domain boundaries (and thus linearisation errors causing
-          the state to exit the domain). A higher value yields slightly faster
-          convergence, if the solution is in comparison with the initial values
-          very close to the domain boundary.
-        :param wall: Either if there is no solution within the domain of the
-          model (for instance: The material balance forces some of the species
-          flows in a stream to be negative), or if the solver for other reasons
-          is forced to try to leave the model domain, the state will move closer
-          and closer to the domain boundary and not revert. At some point,
-          :math:`\gamma` becomes ridiculously small, and we need to give up.
-          This threshold value is defined by ``wall`` (default ``1e-20``).
-        :param output: The io-stream to direct the solver output to, or a
-          descriptive string (case-insensitive):
-
-          - ``"stdout"``: The output will be written to standard out (default)
-          - ``"none"``: No output will be printed.
-
-          .. note::
-
-            Instead of printing, one might either analyse the returned
-            :class:`~simu.core.solver.simulation.SimulationSolverReport` project
-            after the run, or utilise the ``call_back_iter`` callback and
-            process the iteration progress from there.
-
-        :param call_back_iter: A callback function (default ``None``),
-          see :data:`~simu.core.solver.simulation.SimulationSolverCallback`,
-          to intercept the solving process. The returned boolean variable
-          determines whether the solver iteration is continued or not.
-
-        :param retain_solution: Whether the solver shall, on success, retain the
-          obtained state in the model, such that it can be exported via
-          :meth:`~simu.NumericHandler.export_state` and be reused as the initial
-          values for the next solving process.
+        :param kwargs: Options for the solver as defined in
+          :class:`~simu.core.solver.simulation.config.SimulationSolverConfig`.
         """
         super().__init__(exclude=["model"])
         self._model = model
