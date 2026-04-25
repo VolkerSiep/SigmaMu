@@ -20,7 +20,7 @@ def contribution_context_stub():
     class NHStub:
         @property
         def parameters(self) -> Map[str]:
-            result = {"T": "K", "p": "bar", "x": "-", "y": "-", "w": "-"}
+            result = {"T": "K", "p": "bar", "x": "", "y": "", "w": ""}
             return {f"process.{n}": u for n, u in result.items()}
 
         @property
