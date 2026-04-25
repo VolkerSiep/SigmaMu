@@ -28,25 +28,18 @@ from simu.core.utilities.errors import (
     IterativeProcessInterrupted, NonSquareSystem)
 
 from .report import SimulationSolverReport, SimulationSolverIterationReport
-from .config import SimulationSolverCallback
+from .config import SimulationSolverConfig
 
 
-class SimulationSolver(Configurable):
+class SimulationSolver:
     r"""
     The simulation solver assumes both thermodynamic and model parameters to
     be constant, aiming to find the state variable values such that all
     residuals evaluate to zero within their tolerance.
     """
 
-    # noinspection PyUnusedLocal
-    # Options are parsed via inspection
-    def __init__(self, model: NumericHandler, *,
-                 max_iter: int = 30,
-                 gamma: float = 0.9,
-                 wall: float = 1e-20,
-                 output: TextIOBase | str = "stdout",
-                 call_back_iter: SimulationSolverCallback = None,
-                 retain_solution: bool = True):
+    def __init__(self, model: NumericHandler,
+                 config: SimulationSolverConfig | None = None):
         r"""On construction, the solver object requires a
         :class:`~simu.NumericHandler` object. The solver object can then be
         reused for multiple solver runs, for instance with variable parameter
@@ -54,14 +47,13 @@ class SimulationSolver(Configurable):
 
         :param model: The numeric handler of a model, in most cases obtained by
           the expression ``NumericHandler(ModelClass.top())``.
-        :param kwargs: Options for the solver as defined in
+        :param config: Options for the solver as defined in
           :class:`~simu.core.solver.simulation.config.SimulationSolverConfig`.
         """
-        super().__init__(exclude=["model"])
         self._model = model
+        self._config = config or SimulationSolverConfig()
 
-        # store arguments (parameters) so the user can change them
-        args = deepcopy(model.arguments)
+        args = model.arguments
         # store size of state
         self.__state_size = args[NHKeys.VECTORS][NHKeys.STATES].m.size()[0]
         res_size = len(model.vector_res_names(NHKeys.RESIDUALS))
@@ -71,9 +63,9 @@ class SimulationSolver(Configurable):
 
         # user shall not think that putting a state here has any effect
         del args[NHKeys.VECTORS][NHKeys.STATES]
-        self.__model_parameters: NestedMutMap[Quantity] = args
+        self._model_parameters: NestedMutMap[Quantity] = args
 
-    def solve(self, **kwargs: Any) -> SimulationSolverReport:
+    def solve(self, **options: Any) -> SimulationSolverReport:
         """
         This method triggers iterative the solving process. This takes less than
         0.1 seconds for small models, and increases with model complexity.
@@ -94,16 +86,14 @@ class SimulationSolver(Configurable):
 
         :return: The report including the iteration sequence
         """
-        for name, value in kwargs.items():
-            self.set_option(name, value)
-        opt = self.options
+        config = self._config.model_copy(update=options)
         model = self._model
         start_time = time()
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
         reports = []
 
-        output = self.__find_output()
+        output = self._find_output(config)
 
         table = ProgressTableOutput({
             "lmet": ("LMET", "{:5.1f}"),
@@ -116,7 +106,7 @@ class SimulationSolver(Configurable):
         funcs = self._prepare_functions()
         x = self.initial_state
 
-        for iteration in range(opt["max_iter"]):
+        for iteration in range(config.max_iter):
             # evaluate system (matrix and rhs)
             r, dr_dx = funcs["f_r"](x)
             r = squeeze(array(r))
@@ -158,12 +148,12 @@ class SimulationSolver(Configurable):
             alpha, min_alpha_name = 1, ""
             if len(a):
                 min_a_idx = int(argmin(a))
-                if a[min_a_idx] * opt["gamma"] < 1:
-                    alpha = a[min_a_idx] * opt["gamma"]
+                if a[min_a_idx] * config.gamma < 1:
+                    alpha = a[min_a_idx] * config.gamma
                     bn = [b for b, m in zip(bound_names, mask) if m]
                     min_alpha_name = bn[min_a_idx]
-                if alpha < opt["wall"]:
-                    msg = f"Relaxation factor is below {opt['wall']}, " \
+                if alpha < config.wall:
+                    msg = f"Relaxation factor is below {config.wall}, " \
                           "no solution found"
                     raise ValueError(msg)
             # apply update
@@ -178,8 +168,8 @@ class SimulationSolver(Configurable):
                 min_alpha_name=min_alpha_name,
                 duration=duration
             ))
-            if opt["call_back_iter"] is not None:
-                cb_result = opt["call_back_iter"](
+            if config.call_back_iter is not None:
+                cb_result = config.call_back_iter(
                     iteration, reports[-1], x.magnitude,
                     lambda x_arg: funcs["f_y"]({"x": Quantity(x_arg)})
                 )
@@ -188,7 +178,7 @@ class SimulationSolver(Configurable):
                     raise IterativeProcessInterrupted(msg)
             table.row(reports[-1], iteration)
         else:
-            msg = f"Model did not converge after {opt['max_iter']} iterations"
+            msg = f"Model did not converge after {config.max_iter} iterations"
             raise ValueError(msg)
 
         # reporting
@@ -203,7 +193,7 @@ class SimulationSolver(Configurable):
         table.row(reports[-1], iteration)
 
         # retain state if desired
-        if opt["retain_solution"]:
+        if config.retain_solution:
             thermo_param = self.model_parameters["thermo_params"]
             model.retain_state(x.nonzeros(), thermo_param)
 
@@ -213,8 +203,8 @@ class SimulationSolver(Configurable):
             prop_func=lambda z: funcs["f_y"]({"x": Quantity(z)})
         )
 
-    def __find_output(self) -> TextIOBase | None:
-        output = self.options["output"]
+    def _find_output(self, config: SimulationSolverConfig) -> TextIOBase | None:
+        output = config.output
         if isinstance(output, str):
             opts = {"stdout": sys.stdout, "none": None}
             try:
@@ -228,7 +218,7 @@ class SimulationSolver(Configurable):
         #  - a casadi function x -> (r, dr/dx)
         #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
         # prepare a QFunction x -> (y_m, y_t)
-        param = deepcopy(self.__model_parameters)
+        param = deepcopy(self._model_parameters)
         x = SX.sym("x", self.__state_size)
         param[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
         res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
@@ -255,23 +245,7 @@ class SimulationSolver(Configurable):
         mutable object. The state variables are removed in this instance, as
         these are rather provided by the solver during the iterative solving
         process."""
-        return self.__model_parameters
-
-    @property
-    def _arg_validations(self):
-        between = Configurable._validate_between
-        return {
-            "max_iter": between(1, 10000),
-            "gamma": between(0, 0.999),
-            "call_back_iter": {
-                "f": lambda x: x is None or callable(x),
-                "msg": "must be callable",
-            },
-            "output": {
-                "f": lambda x: isinstance(x, str) or isinstance(x, TextIOBase),
-                "msg": "must be a stream or a qualified string"
-            }
-        }
+        return self._model_parameters
 
     @staticmethod
     def _scale(matrix: csr_array, num=10):

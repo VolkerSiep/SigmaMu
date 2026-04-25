@@ -191,7 +191,7 @@ class NumericHandler:
         return self.__vec_res_names[key]
 
     @property
-    def arguments(self) -> NestedMap[Quantity]:
+    def arguments(self) -> NestedMutMap[Quantity]:
         """The function arguments as numerical values. A DataFlowError is
         thrown, if not all numerical values are known.
         A deep-copy of the structure is provided, so the returned data can be

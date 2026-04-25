@@ -49,18 +49,25 @@ SimulationSolver
    :show-inheritance:
    :members:
 
+SimulationSolverConfig
+----------------------
+.. autoclass:: simu.core.solver.simulation.config.SimulationSolverConfig
+  :exclude-members: __init__
+  :members:
+
+
 SimulationSolverIterationReport
 -------------------------------
-.. autoclass:: simu.core.solver.simulation.SimulationSolverIterationReport
+.. autoclass:: simu.core.solver.simulation.report.SimulationSolverIterationReport
   :exclude-members: __init__
   :members:
 
 SimulationSolverReport
 ----------------------
-.. autoclass:: simu.core.solver.simulation.SimulationSolverReport
+.. autoclass:: simu.core.solver.simulation.report.SimulationSolverReport
   :exclude-members: __init__
   :members:
 
 SimulationSolverCallback
 ------------------------
-.. autodata:: simu.core.solver.simulation.SimulationSolverCallback
+.. autodata:: simu.core.solver.simulation.config.SimulationSolverCallback

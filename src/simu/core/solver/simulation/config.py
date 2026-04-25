@@ -64,7 +64,7 @@ class SimulationSolverConfig(BaseModel):
     """
 
     gamma: float = Field(default=0.9, gt=0.0, lt=1.0)
-    """As described above, :math:`\gamma` (default 0.9) is the
+    r""":math:`\gamma` (default 0.9) is the
     fraction of the step-length applied by the solver before hitting the
     domain boundary. Normally, changing the value is not required.
     Generally, a lower value makes the model more robust against
@@ -75,7 +75,7 @@ class SimulationSolverConfig(BaseModel):
     """
 
     wall: float = Field(default=1e-20, ge=0.0, lt=0.01)
-    """Either if there is no solution within the domain of the
+    r"""Either if there is no solution within the domain of the
     model (for instance: The material balance forces some of the species
     flows in a stream to be negative), or if the solver for other reasons
     is forced to try to leave the model domain, the state will move closer
