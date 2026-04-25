@@ -32,7 +32,7 @@ from .core.thermo.material import MaterialDefinition, Material, MaterialSpec
 from .core.model.base import Model
 from .core.model.amodel import AModel
 from .core.model.numeric import NumericHandler, NHKeys, PropertyFilter
-from .core.solver.simulation import SimulationSolver
+from .core.solver.simulation.solver import SimulationSolver
 
 # versioning
 __version__ = _get_version("SigmaMu")

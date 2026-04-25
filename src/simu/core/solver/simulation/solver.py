@@ -1,163 +1,35 @@
 # stdlib
 import sys
 from symtable import Function
-from typing import Callable, Sequence, Any
+from typing import Callable, Any
 from copy import deepcopy
-from dataclasses import dataclass, field
 from time import time
 from io import TextIOBase
-from warnings import catch_warnings, simplefilter
 
 # external
 from casadi import SX, jacobian, jtimes, Function
-from numpy import array, argmin, argmax, abs, squeeze, log10, isfinite, sqrt
+from numpy import array, argmin, argmax, abs, squeeze, isfinite, sqrt
 from numpy.linalg import norm, solve
 from scipy.sparse import csr_array, diags
-from scipy.sparse.linalg import svds, spsolve as scipy_spsolve
+from scipy.sparse.linalg import spsolve as scipy_spsolve
 
 try:  # use pypardiso if installed
     from pypardiso import spsolve
 except ImportError:  # use scipy if not
     spsolve = scipy_spsolve
 
-
 # internal
 from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
-from simu.core.utilities.types import Map, NestedMutMap, NestedMap
+from simu.core.utilities.types import Map, NestedMutMap
 from simu.core.utilities.configurable import Configurable
 from simu.core.utilities.errors import (
     IterativeProcessInterrupted, NonSquareSystem)
 
-# _VEC, _STATE = NHKeys.VECTORS, NHKeys.STATES
-# _RES, _BOUND = NHKeys.RESIDUALS, NHKeys.BOUNDS
+from .report import SimulationSolverReport, SimulationSolverIterationReport
+from .config import SimulationSolverCallback
 
-
-@dataclass
-class SimulationSolverIterationReport:
-    """This data class object is provided for each iteration during a
-    :class:`SimulationSolver` run.
-    """
-    max_err: float
-    r"""For each :class:`~simu.core.utilities.residual.Residual`, the 
-    quotient of residual value :math:`r_i` and tolerance :math:`t_i` is 
-    calculated. ``max_err`` is the maximum absolute value of these quotients:
-    
-    .. math:: \mathrm{MET} = \max_i \frac{r_i}{t_i}
-    """
-
-    max_res_name: str
-    """The name of the :class:`~simu.core.utilities.residual.Residual` which
-    causes the value of :attr:`max_err`"""
-
-    relax_factor: float
-    """The applied relaxation factor to stay within the domain of the process
-    model and the thermodynamic models, according to the defined bounds."""
-
-    min_alpha_name: str
-    """The name of the bound that is most limiting and therefore causing the
-    value of :attr:`relax_factor`"""
-
-    duration: float
-    """The accumulative duration of the solving process inclusive the given
-    iteration"""
-
-    lmet: float = field(init=False)  # logarithmic max error to tolerance
-    r"""The logarithmic (base 10) value of :attr:`max_err` :math:`r_i / t_i`,
-    practically defined as
-    
-    .. math::
-        
-        \mathrm{LMET} = \log_{10} \left (
-            \max_i \frac{r_i}{t_i} + 10^{-8} \right )
-
-    The offset is introduced to not cause ``NaN`` values for the lucky case in
-    which all residuals are exactly zero. This can however easily happen for
-    linear systems. Anyhow, :math:`\mathrm{LMET} < 1` is already a sufficient
-    condition for convergence.    
-    """
-
-    def __post_init__(self):
-        self.lmet = log10(self.max_err + 1e-8)
-
-
-@dataclass
-class SimulationSolverReport:
-    """The data class object returned from a :class:`SimulationSolver` run
-    """
-    iterations: Sequence[SimulationSolverIterationReport]
-    """A :class:'SimulationSolverIterationReport` object for each performed
-    iteration"""
-
-    final_state: Sequence[float]
-    """The numerical final state of the model.
-    
-    .. important::
-    
-        This state is not suitable for handling initial values in a robust way,
-        as it can be very sensitive to minor model changes that for instance
-        impact the liquid volumes of equations of state.
-        
-        Instead, use :meth:`simu.NumericHandler.export_state`,
-        :meth:`~simu.NumericHandler.import_state` and 
-        :meth:`~simu.NumericHandler.retain_state`.
-    """
-
-    prop_func: Callable[[Sequence[float]], NestedMap[Quantity]]
-    """The function to calculate all properties of the model as function of
-    the state."""
-
-    @property
-    def properties(self) -> NestedMap[Quantity]:
-        """This property returns all properties of the model, evaluated on
-        the :attr:`final_state` attribute. For larger models, this causes
-        noticeable computational effort. For this reason, this evaluation is
-        only done on demand."""
-        return self.prop_func(self.final_state)
-
-
-SimulationSolverCallback = Callable[
-    [int,
-     SimulationSolverIterationReport,
-     Sequence[float],
-     Callable[
-         [Sequence[float]],
-         NestedMap[Quantity]]
-     ],
-     bool]
-"""A function (type) to act as a call-back in the :class:`SimulationSolver`
-solving process. The arguments are as follows:
-
-- ``iteration``: The iteration number as integer, incrementing from zero
-- ``report``: The (:class:`SimulationSolverIterationReport`) object
-- ``state``: The internal state of the model at given iteration as a sequence of
-  floats
-- ``prop_func``: A function to calculate all model properties for the given
-  state.
-
-The last argument is provided instead of the property structure itself, as it
-might be expensive to calculate the entire property structure in each iteration.
-This way it can be done on demand.
-
-The callback shall return ``True``, if the solver is to continue, or ``False``
-otherwise. In the latter case, the solver will raise a 
-:class:`~simu.core.utilities.errors.IterativeProcessInterrupted` exception.
-
-Example:
-
-.. code-block::
-   :linenos:
-
-    from pprint import pprint
-    
-    def my_callback(iteration, report, state, prop_func):
-        # This can be a lot to print
-        all_properties = prop_func(state)
-        pprint(all_properties)
-        return True
-
-"""
 
 class SimulationSolver(Configurable):
     r"""
@@ -165,13 +37,14 @@ class SimulationSolver(Configurable):
     be constant, aiming to find the state variable values such that all
     residuals evaluate to zero within their tolerance.
     """
+
     # noinspection PyUnusedLocal
     # Options are parsed via inspection
     def __init__(self, model: NumericHandler, *,
                  max_iter: int = 30,
                  gamma: float = 0.9,
                  wall: float = 1e-20,
-                 output: TextIOBase|str = "stdout",
+                 output: TextIOBase | str = "stdout",
                  call_back_iter: SimulationSolverCallback = None,
                  retain_solution: bool = True):
         r"""On construction, the solver object requires a
@@ -243,7 +116,7 @@ class SimulationSolver(Configurable):
 
         # user shall not think that putting a state here has any effect
         del args[NHKeys.VECTORS][NHKeys.STATES]
-        self.__model_parameters : NestedMutMap[Quantity] = args
+        self.__model_parameters: NestedMutMap[Quantity] = args
 
     def solve(self, **kwargs: Any) -> SimulationSolverReport:
         """
@@ -385,7 +258,7 @@ class SimulationSolver(Configurable):
             prop_func=lambda z: funcs["f_y"]({"x": Quantity(z)})
         )
 
-    def __find_output(self) -> TextIOBase|None:
+    def __find_output(self) -> TextIOBase | None:
         output = self.options["output"]
         if isinstance(output, str):
             opts = {"stdout": sys.stdout, "none": None}
@@ -440,7 +313,7 @@ class SimulationSolver(Configurable):
                 "msg": "must be callable",
             },
             "output": {
-                "f": lambda x: isinstance(x, str)  or isinstance(x, TextIOBase),
+                "f": lambda x: isinstance(x, str) or isinstance(x, TextIOBase),
                 "msg": "must be a stream or a qualified string"
             }
         }
