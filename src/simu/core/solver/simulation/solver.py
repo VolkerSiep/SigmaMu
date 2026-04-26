@@ -270,12 +270,10 @@ class SimulationSolver:
         dx = -spsolve(dr_dx, r)
         dr = r + dr_dx @ dx
         if (nr := norm(dr)) > 0.1 * dr.shape[0]:
-            # print(f"Remaining norm: {nr:.2f} - using scipy fallback")
             dx = -scipy_spsolve(dr_dx, r)
             dr = r + dr_dx @ dx
         if (nr := norm(dr)) > 0.1 * dr.shape[0]:
-            if n < 1000:
-                # print(f"Remaining norm: {nr:.2f} - using numpy fallback")
+            if n < 10000:
                 return -solve(dr_dx.toarray(), r) @ s_x
             msg = f"Linear solver error, remaining residual: {nr:.2f}"
             raise ValueError(msg)

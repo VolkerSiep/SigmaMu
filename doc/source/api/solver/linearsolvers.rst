@@ -10,6 +10,12 @@ As a sub-problem for nearly all simulation disciplines, linear systems must be s
 
 Typically, the sparsity of the system matrices is around 1 % to 2 %, slightly decreasing with size, as it is rather the number of non-zero elements per row that is constant than the absolute density.
 
+.. warning::
+
+    This entire benchmark is baloney, as the structure has a lot to say on the performance of sparse vs. dense solvers.
+    Indeed, in this example, the dense ``numpy.linalg.solve`` solver even beats the multi-core `PyPardiso`_ solver.
+    To be fair, numpy's solver manages to do efficient multi-core calculations and keep all CPU's busy.
+
 Casadi solver
 -------------
 `CasADi`_ features high performant and efficient functionality for solving differential equation systems that come with control problems, and, as a very essential part of ``SigmaMu``, we obtain Jacobian information from the library. Within the ``SigmaMu`` solvers, we hence retrieve the system matrices as ``casadi.DM`` objects. Though it is possible to solve smaller linear systems, these are not designed to be subject to larger computations.

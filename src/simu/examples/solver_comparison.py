@@ -2,6 +2,7 @@ from time import time
 from pathlib import Path
 from numpy import logspace, zeros, log10, ravel
 from numpy.random import random, seed
+from numpy.linalg import solve as np_solve
 from scipy.sparse import random as srandom, csc_array
 from scipy.sparse.linalg import spsolve
 from pypardiso import spsolve as pspsolve
@@ -9,11 +10,11 @@ from casadi import DM, solve, Sparsity
 from matplotlib import pyplot
 
 N = 25000
-NUM = 100
+NUM = 40
 TIME_LIMIT = 10
 FIG_PATH = Path(__file__).parents[3] / "doc" / "source" / "figures"
 
-SCIPY, CASADI, CAS_SCI, PYPAR = range(4)
+NUMPY, SCIPY, CASADI, CAS_SCI, PYPAR = range(5)
 
 def create_objects(size, density):
     a_s = srandom(size, size, density, format="csc", dtype=float)
@@ -21,16 +22,21 @@ def create_objects(size, density):
     b = random(size)
     sparsity = Sparsity(size, size, a_s.indptr, a_s.indices, True)
     a_c = DM(sparsity, a_s.data)
-    return a_s, a_c, b
+    a_d = a_s.todense()
+    return a_s, a_c, a_d, b
 
 def conv_solve(a, b):
     # Convert from Casadi, solve in Scipy
     a = csc_array(a)
     spsolve(a, b)
 
+def pardiso_solve(a, b):
+    return pspsolve(a, b, factorize=False)
+
 
 def main():
     def measure(a, b, which):
+        print("  ", which)
         nonlocal functions
         func = functions[which]
         if func is None:
@@ -43,15 +49,16 @@ def main():
         return result
 
     functions = {
+        NUMPY: np_solve,
         SCIPY: spsolve,
         CASADI: solve,
         CAS_SCI: conv_solve,
-        PYPAR: pspsolve}
+        PYPAR: pardiso_solve}
 
-    seed(0)  # reproducible random numbers
+    seed(2)  # reproducible random numbers
     sizes = logspace(1, log10(N), num=NUM)
     densities = [0.01, 0.02]
-    times = zeros((NUM, 4, 2))
+    times = zeros((NUM, 5, 2))
     for k, size in enumerate(sizes):
         size = int(size)
         active = [i for i, f in functions.items() if f is not None]
@@ -59,7 +66,8 @@ def main():
             times[k:, :, :] = float("nan")
             break
         for d, density in enumerate(densities):
-            a_s, a_c, b = create_objects(size, density)
+            a_s, a_c, a_d, b = create_objects(size, density)
+            times[k][NUMPY][d] = measure(a_d, b, NUMPY)
             times[k][SCIPY][d] = measure(a_s, b, SCIPY)
             times[k][CASADI][d] = measure(a_c, b, CASADI)
             times[k][CAS_SCI][d] = measure(a_c, b, CAS_SCI)
@@ -67,11 +75,13 @@ def main():
         print(k, size, ravel(times[k, :, 1]))
 
 
-    pyplot.loglog(sizes, times[:, SCIPY, 0], "k-", label="Scipy, $\\varrho=0.01$")
+    pyplot.loglog(sizes, times[:, NUMPY, 0], "k-", label="Numpy, $\\varrho=0.01$")
+    pyplot.loglog(sizes, times[:, SCIPY, 0], "b-", label="Scipy, $\\varrho=0.01$")
     pyplot.loglog(sizes, times[:, CASADI, 0], "r-", label="Casadi")
     pyplot.loglog(sizes, times[:, CAS_SCI, 0], "g-", label="Casadi $\\to$ Scipy")
     pyplot.loglog(sizes, times[:, PYPAR, 0], "b-", label="pypardiso")
-    pyplot.loglog(sizes, times[:, SCIPY, 1], "k--", label="$\\varrho=0.02$")
+    pyplot.loglog(sizes, times[:, NUMPY, 1], "k--", label="$\\varrho=0.02$")
+    pyplot.loglog(sizes, times[:, SCIPY, 1], "b--")
     pyplot.loglog(sizes, times[:, CASADI, 1], "r--")
     pyplot.loglog(sizes, times[:, CAS_SCI, 1], "g--")
     pyplot.loglog(sizes, times[:, PYPAR, 1], "b--")
