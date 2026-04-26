@@ -28,6 +28,7 @@ class OutputIOStream(Protocol):
     def write(self, line: str):  ...
 
 
+@runtime_checkable
 class LinearSolver(Protocol):
     def solve(self, matrix: csr_array, rhs: NDArray) -> NDArray: ...
 

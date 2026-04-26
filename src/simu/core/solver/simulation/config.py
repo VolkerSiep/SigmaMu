@@ -4,8 +4,9 @@ from collections.abc import Callable, Sequence
 from pydantic import BaseModel, Field, ConfigDict
 
 from simu import Quantity
-from simu.core.utilities.types import NestedMap, OutputIOStream
+from simu.core.utilities.types import NestedMap, OutputIOStream, LinearSolver
 from .report import SimulationSolverIterationReport
+from ..linear import ScaledLinearSparseSolver
 
 
 type SimulationSolverCallback = Callable[
@@ -113,5 +114,10 @@ class SimulationSolverConfig(BaseModel):
     :meth:`~simu.NumericHandler.export_state` and be reused as the initial
     values for the next solving process.
     """
+
+    linear_solver: LinearSolver = Field(default_factory=ScaledLinearSparseSolver)
+    """
+    """
+
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

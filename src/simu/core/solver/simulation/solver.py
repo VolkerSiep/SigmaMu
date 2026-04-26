@@ -6,15 +6,8 @@ from time import time
 
 # external
 from casadi import SX, jacobian, jtimes, Function
-from numpy import array, argmin, argmax, abs, squeeze, isfinite, sqrt
-from numpy.linalg import norm, solve
-from scipy.sparse import csr_array, diags
-from scipy.sparse.linalg import spsolve as scipy_spsolve
-
-try:  # use pypardiso if installed
-    from pypardiso import spsolve
-except ImportError:  # use scipy if not
-    spsolve = scipy_spsolve
+from numpy import array, argmin, argmax, abs, squeeze, isfinite
+from scipy.sparse import csr_array
 
 # internal
 from simu.core.model.numeric import NumericHandler, NHKeys
@@ -138,7 +131,7 @@ class SimulationSolver:
                 break
 
             # calculate full update
-            dx = self._solve_linear(dr_dx, r)
+            dx = -self._config.linear_solver.solve(dr_dx, r)
 
             # find relaxation factor
             b, a = map(lambda z: squeeze(array(z)), funcs["f_b"](x, dx))
@@ -241,40 +234,3 @@ class SimulationSolver:
         these are rather provided by the solver during the iterative solving
         process."""
         return self._model_parameters
-
-    @staticmethod
-    def _scale(matrix: csr_array, num=10):
-        total_col_norms = 1
-        total_row_norms = 1
-        for i in range(num):
-            col_norms = sqrt(matrix.multiply(matrix).sum(axis=0))
-            col_norms[col_norms == 0] = 1.0
-            total_col_norms = total_col_norms * col_norms
-            matrix = matrix @ diags(1.0 / col_norms)
-
-            row_norms = sqrt(matrix.multiply(matrix).sum(axis=1))
-            row_norms[row_norms == 0] = 1.0
-            total_row_norms = total_row_norms * row_norms
-            matrix = (matrix.T @ diags(1.0 / row_norms)).T
-            qlt = (sum((row_norms - 1) ** 2) +
-                   sum((col_norms - 1) ** 2)) / matrix.shape[0]
-            if qlt < 0.001:
-                break
-        return matrix, diags(1.0 / total_row_norms), diags(1.0 / total_col_norms)
-
-    @staticmethod
-    def _solve_linear(dr_dx: csr_array, r):
-        dr_dx, s_r, s_x = SimulationSolver._scale(dr_dx, num=5)
-        n = r.shape[0]
-        r = r @ s_r
-        dx = -spsolve(dr_dx, r)
-        dr = r + dr_dx @ dx
-        if (nr := norm(dr)) > 0.1 * dr.shape[0]:
-            dx = -scipy_spsolve(dr_dx, r)
-            dr = r + dr_dx @ dx
-        if (nr := norm(dr)) > 0.1 * dr.shape[0]:
-            if n < 10000:
-                return -solve(dr_dx.toarray(), r) @ s_x
-            msg = f"Linear solver error, remaining residual: {nr:.2f}"
-            raise ValueError(msg)
-        return dx @ s_x
