@@ -3,10 +3,12 @@ from symtable import Function
 from typing import Callable, Any
 from copy import deepcopy
 from time import time
+from collections.abc import Sequence
 
 # external
 from casadi import SX, jacobian, jtimes, Function
 from numpy import array, argmin, argmax, abs, squeeze, isfinite
+from numpy.typing import NDArray
 from scipy.sparse import csr_array
 
 # internal
@@ -108,52 +110,28 @@ class SimulationSolver:
             # evaluate system (matrix and rhs)
             r, dr_dx = funcs["f_r"](x)
             r = squeeze(array(r))
-            r_finite = isfinite(r)
-            if False in isfinite(r):
-                names = [residual_names[i]
-                         for i, f in enumerate(r_finite) if not f]
-                nf = ", ".join(names)
+            dr_dx = csr_array(dr_dx)
+
+            if not_final := _not_final(r, residual_names):
+                nf = ", ".join(not_final)
                 msg = f"Non-finite values in the following residuals: {nf}"
                 raise ValueError(msg)
 
-            dr_dx = csr_array(dr_dx)
-
-            if len(r):
-                # assess error
-                max_err_idx = int(argmax(abs(r)))
-                max_res_name = residual_names[max_err_idx]
-                max_err = abs(r[max_err_idx])
-                if max_err < 1:
-                    break
-            else:  # trivial model, nothing to solve
-                max_err = 0
-                max_res_name = ""
+            max_err, max_res_name = _assess_residuals(r, residual_names)
+            if max_err < 1:
                 break
 
             # calculate full update
             dx = -self._config.linear_solver.solve(dr_dx, r)
 
             # find relaxation factor
-            b, a = map(lambda z: squeeze(array(z)), funcs["f_b"](x, dx))
-            # are there bounds violated?
-            invalid = [n for n, m_i in zip(bound_names, b <= 0) if m_i]
-            if invalid:
-                msg = f"Bound violation of: {', '.join(invalid)}"
+            b, a = funcs["f_b"](x, dx)
+            alpha, min_alpha_name = self._relax(b, a, bound_names)
+            if alpha < config.wall:
+                msg = f"Relaxation factor is below {config.wall}, " \
+                      "no solution found"
                 raise ValueError(msg)
 
-            mask = (a > 0)
-            a = a[mask]
-            alpha, min_alpha_name = 1, ""
-            if len(a):
-                min_a_idx = int(argmin(a))
-                if a[min_a_idx] * config.gamma < 1:
-                    alpha = a[min_a_idx] * config.gamma
-                    bn = [b for b, m in zip(bound_names, mask) if m]
-                    min_alpha_name = bn[min_a_idx]
-                if alpha < config.wall:
-                    msg = f"Relaxation factor is below {config.wall}, " \
-                          "no solution found"
-                    raise ValueError(msg)
             # apply update
             x = x + alpha * dx
 
@@ -166,6 +144,9 @@ class SimulationSolver:
                 min_alpha_name=min_alpha_name,
                 duration=duration
             ))
+            table.row(reports[-1], iteration)
+
+            # callback
             if config.call_back_iter is not None:
                 cb_result = config.call_back_iter(
                     iteration, reports[-1], x.magnitude,
@@ -174,7 +155,6 @@ class SimulationSolver:
                 if not cb_result:
                     msg = "Solver iterations interrupted by callback"
                     raise IterativeProcessInterrupted(msg)
-            table.row(reports[-1], iteration)
         else:
             msg = f"Model did not converge after {config.max_iter} iterations"
             raise ValueError(msg)
@@ -220,6 +200,29 @@ class SimulationSolver:
             "f_y": f_y
         }
 
+    def _relax(self, b: NDArray, a: NDArray, bound_names: Sequence[str]):
+        config = self._config
+        a, b = [squeeze(array(x)) for x in (a, b)]
+        # are there bounds violated?
+        invalid = [n for n, m_i in zip(bound_names, b <= 0) if m_i]
+
+        if invalid:
+            msg = f"Bound violation of: {', '.join(invalid)}"
+            raise ValueError(msg)
+
+        mask = (a > 0)
+        a = a[mask]
+        alpha, min_alpha_name = 1.0, ""
+        if not len(a):
+            return alpha, min_alpha_name
+
+        min_a_idx = int(argmin(a))
+        if a[min_a_idx] * config.gamma < 1:
+            alpha = a[min_a_idx] * config.gamma
+            bn = [b for b, m in zip(bound_names, mask) if m]
+            min_alpha_name = bn[min_a_idx]
+        return alpha, min_alpha_name
+
     @property
     def initial_state(self):
         """Freshly extract the initial values from the model. These might have
@@ -234,3 +237,21 @@ class SimulationSolver:
         these are rather provided by the solver during the iterative solving
         process."""
         return self._model_parameters
+
+
+def _not_final(vector: NDArray, names: Sequence[str]) -> Sequence[str]:
+    finite = isfinite(vector)
+    if False in isfinite(finite):
+        return [names[i] for i, f in enumerate(finite) if not f]
+    return []
+
+def _assess_residuals(vector: NDArray,
+                      names: Sequence[str]) -> tuple[float, str]:
+    if len(vector):
+        # assess error
+        max_err_idx = int(argmax(abs(vector)))
+        max_name = names[max_err_idx]
+        max_err = float(abs(vector[max_err_idx]))
+        return max_err, max_name
+    else:  # trivial model, nothing to solve
+        return 0, ""
