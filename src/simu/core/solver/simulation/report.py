@@ -2,14 +2,19 @@ from collections.abc import Sequence, Callable
 from dataclasses import dataclass, field
 from math import log10
 from simu import Quantity
-from simu.core.utilities.types import NestedMap
+from simu.core.utilities.types import NestedMutMap
 
+
+type PropertyFunction = Callable[[Sequence[float]], NestedMutMap[Quantity]]
 
 @dataclass
 class SimulationSolverIterationReport:
     """This data class object is provided for each iteration during a
     :class:`~simu.SimulationSolver` run.
     """
+    iteration: int
+    """The number of the iteration, starting with 1"""
+
     max_err: float
     r"""For each :class:`~simu.core.utilities.residual.Residual`, the 
     quotient of residual value :math:`r_i` and tolerance :math:`t_i` is 
@@ -75,12 +80,12 @@ class SimulationSolverReport:
         :meth:`~simu.NumericHandler.retain_state`.
     """
 
-    prop_func: Callable[[Sequence[float]], NestedMap[Quantity]]
+    prop_func: PropertyFunction
     """The function to calculate all properties of the model as function of
     the state."""
 
     @property
-    def properties(self) -> NestedMap[Quantity]:
+    def properties(self) -> NestedMutMap[Quantity]:
         """This property returns all properties of the model, evaluated on
         the :attr:`final_state` attribute. For larger models, this causes
         noticeable computational effort. For this reason, this evaluation is

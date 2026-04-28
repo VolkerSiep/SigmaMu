@@ -15,7 +15,7 @@ from pint.util import UnitsContainer
 # internal modules
 from simu.core.data import DATA_DIR
 from .structures import flatten_dictionary, unflatten_dictionary
-from .types import NestedMap, Map, MutMap
+from .types import NestedMap, Map, MutMap, NestedMutMap
 from .errors import DimensionalityError
 
 
@@ -392,7 +392,7 @@ class QFunction:
         self.func = cas.Function(func_name, [arg_sym], [res_sym], ["x"], ["y"])
 
     def __call__(self, args: NestedMap[Quantity],
-                 squeeze_results: bool = True) -> NestedMap[Quantity]:
+                 squeeze_results: bool = True) -> NestedMutMap[Quantity]:
         """Call operator for the function object, as described above.
 
         :param args: The arguments of the function
@@ -423,7 +423,7 @@ class QFunction:
         return result
 
     @property
-    def result_structure(self) -> NestedMap[str]:
+    def result_structure(self) -> NestedMutMap[str]:
         """Return the result structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
         simplify = self.__simplify_unit
@@ -431,7 +431,7 @@ class QFunction:
         return unflatten_dictionary(units)
 
     @property
-    def arg_structure(self) -> NestedMap[str]:
+    def arg_structure(self) -> NestedMutMap[str]:
         """Return the argument structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
         simplify = self.__simplify_unit

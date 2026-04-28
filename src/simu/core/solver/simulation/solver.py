@@ -1,9 +1,10 @@
 # stdlib
 from symtable import Function
-from typing import Callable, Any
+from typing import Any
 from copy import deepcopy
 from time import time
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 # external
 from casadi import SX, jacobian, jtimes, Function
@@ -15,13 +16,29 @@ from scipy.sparse import csr_array
 from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
-from simu.core.utilities.types import Map, NestedMutMap
+from simu.core.utilities.types import NestedMutMap
 from simu.core.utilities.errors import (
     IterativeProcessInterrupted, NonSquareSystem)
 
-from .report import SimulationSolverReport, SimulationSolverIterationReport
+from .report import (
+    SimulationSolverReport, SimulationSolverIterationReport, PropertyFunction)
 from .config import SimulationSolverConfig
 
+@dataclass
+class _FunctionCollection:
+    f_r: Function
+    f_b: Function
+    f_y: PropertyFunction
+
+
+_OUTPUT_TABLE_DEFINITION = {
+    "iteration": ("Iter", "{: 5d}"),
+    "lmet": ("LMET", "{:5.1f}"),
+    "relax_factor": ("Alpha", "{:7.2g}"),
+    "duration": ("Time", "{:6.2f}"),
+    "min_alpha_name": ("Limit on bound", "{:>50s}"),
+    "max_res_name": ("Max residual", "{:>50s}")
+}
 
 class SimulationSolver:
     r"""
@@ -95,20 +112,17 @@ class SimulationSolver:
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
         reports = []
-        table = ProgressTableOutput({
-            "lmet": ("LMET", "{:5.1f}"),
-            "relax_factor": ("Alpha", "{:7.2g}"),
-            "duration": ("Time", "{:6.2f}"),
-            "min_alpha_name": ("Limit on bound", "{:>50s}"),
-            "max_res_name": ("Max residual", "{:>50s}")
-        }, row_dig=5, row_head="Iter", output=config.output)
+        table = ProgressTableOutput(
+            _OUTPUT_TABLE_DEFINITION,
+            output=config.output
+        )
 
         funcs = self._prepare_functions()
         x = self.initial_state
 
         for iteration in range(config.max_iter):
             # evaluate system (matrix and rhs)
-            r, dr_dx = funcs["f_r"](x)
+            r, dr_dx = funcs.f_r(x)
             r = squeeze(array(r))
             dr_dx = csr_array(dr_dx)
 
@@ -125,7 +139,7 @@ class SimulationSolver:
             dx = -self._config.linear_solver.solve(dr_dx, r)
 
             # find relaxation factor
-            b, a = funcs["f_b"](x, dx)
+            b, a = funcs.f_b(x, dx)
             alpha, min_alpha_name = self._relax(b, a, bound_names)
             if alpha < config.wall:
                 msg = f"Relaxation factor is below {config.wall}, " \
@@ -138,19 +152,20 @@ class SimulationSolver:
             # reporting
             duration = time() - start_time
             reports.append(SimulationSolverIterationReport(
+                iteration=iteration,
                 max_err=float(max_err),
                 max_res_name=max_res_name,
                 relax_factor=float(alpha),
                 min_alpha_name=min_alpha_name,
                 duration=duration
             ))
-            table.row(reports[-1], iteration)
+            table.row(reports[-1])
 
             # callback
             if config.call_back_iter is not None:
                 cb_result = config.call_back_iter(
                     iteration, reports[-1], x.magnitude,
-                    lambda x_arg: funcs["f_y"]({"x": Quantity(x_arg)})
+                    funcs.f_y
                 )
                 if not cb_result:
                     msg = "Solver iterations interrupted by callback"
@@ -162,13 +177,14 @@ class SimulationSolver:
         # reporting
         duration = time() - start_time
         reports.append(SimulationSolverIterationReport(
+            iteration=iteration,
             max_err=float(max_err),
             max_res_name=max_res_name,
             relax_factor=1,
             min_alpha_name="",
             duration=duration
         ))
-        table.row(reports[-1], iteration)
+        table.row(reports[-1])
 
         # retain state if desired
         if config.retain_solution:
@@ -178,10 +194,10 @@ class SimulationSolver:
         return SimulationSolverReport(
             iterations=reports,
             final_state=x,
-            prop_func=lambda z: funcs["f_y"]({"x": Quantity(z)})
+            prop_func=funcs.f_y
         )
 
-    def _prepare_functions(self) -> Map[Callable]:
+    def _prepare_functions(self) -> _FunctionCollection:
         # prepare
         #  - a casadi function x -> (r, dr/dx)
         #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
@@ -194,13 +210,15 @@ class SimulationSolver:
         r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
         dx = SX.sym("dx", self.__state_size)
         f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
-        return {
-            "f_r": Function("f_r", [x], [r, jacobian(r, x)]),
-            "f_b": Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
-            "f_y": f_y
-        }
 
-    def _relax(self, b: NDArray, a: NDArray, bound_names: Sequence[str]):
+        return _FunctionCollection(
+            f_r=Function("f_r", [x], [r, jacobian(r, x)]),
+            f_b=Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
+            f_y=lambda z: f_y({"x": Quantity(z)})
+        )
+
+    def _relax(self, b: NDArray, a: NDArray,
+               bound_names: Sequence[str]) -> tuple[float, str]:
         config = self._config
         a, b = [squeeze(array(x)) for x in (a, b)]
         # are there bounds violated?

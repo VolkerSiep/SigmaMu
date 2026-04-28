@@ -4,15 +4,11 @@ levels, while relying to maximal degree on standard python structures.
 """
 # stdlib
 from re import escape, split
-from typing import TypeVar, Callable
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Mapping, Callable
 
 # internal modules
 from .types import NestedMap, MutMap, Map, NestedMutMap
-
-_V = TypeVar("_V")
-_R = TypeVar("_R")
 
 FLATTEN_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
@@ -46,7 +42,7 @@ class MCounter(Counter):
         raise NotImplemented
 
 
-def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:
+def flatten_dictionary[V](structure: NestedMap[V], prefix: str = "") -> Map[V]:
     r"""Convert the given structure into a flat list of key value pairs,
     where the keys are ``SEPARATOR``-separated concatonations of the paths,
     and values are the values of the leafs. Non-string keys are converted
@@ -59,7 +55,7 @@ def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:
     if not isinstance(structure, Mapping):
         return {prefix: structure}
 
-    result: MutMap[_V] = {}
+    result: MutMap[V] = {}
     # We must sort to create the same sequence each time
     #   (dictionary might have content permuted)
     for key, value in sorted(structure.items()):
@@ -70,7 +66,7 @@ def flatten_dictionary(structure: NestedMap[_V], prefix: str = "") -> Map[_V]:
     return result
 
 
-def unflatten_dictionary(flat_structure: Map[_V]) -> NestedMap[_V]:
+def unflatten_dictionary[V](flat_structure: Map[V]) -> NestedMutMap[V]:
     r"""This is the reverse of :func:`flatten_dictionary`, inflating the
     given one-depth dictionary into a nested structure.
 
@@ -78,7 +74,7 @@ def unflatten_dictionary(flat_structure: Map[_V]) -> NestedMap[_V]:
     >>> unflatten_dictionary(d)
     {'a': {'b': 1, 'c': 2}, 'd': {'e/f': 3}}
     """
-    result: NestedMutMap[_V] = {}
+    result: NestedMutMap[V] = {}
 
     def insert(struct, sub_keys, sub_value):
         """insert one element into the nested structure"""
@@ -101,8 +97,8 @@ def unflatten_dictionary(flat_structure: Map[_V]) -> NestedMap[_V]:
     return result
 
 
-def nested_map(structure: NestedMap[_V],
-               function: Callable[[_V], _R]) -> NestedMap[_R]:
+def nested_map[V, R](structure: NestedMap[V],
+               function: Callable[[V], R]) -> NestedMap[R]:
     """Apply a unary function to each leaf values of the given nested
     dictionary, and return the same structure with the function's values as
     leafs.
