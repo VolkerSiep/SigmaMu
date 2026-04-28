@@ -10,8 +10,7 @@ from ..linear import ScaledLinearSparseSolver
 
 
 type SimulationSolverCallback = Callable[
-    [int,
-     SimulationSolverIterationReport,
+    [SimulationSolverIterationReport,
      Sequence[float],
      Callable[
          [Sequence[float]],

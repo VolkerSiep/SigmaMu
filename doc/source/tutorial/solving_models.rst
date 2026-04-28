@@ -95,15 +95,19 @@ Using the callback function
 ---------------------------
 Sometimes, for instance for debugging, it is useful to assess the model's state during the solving process in each iteration, and possibly even decide to stop the iterations based on custom conditions. The :class:`~simu.SimulationSolver` object offers to install a callback function:
 
->>> def my_callback(iteration, iter_report, state, prop_func):
+>>> def my_callback(iter_report, state, prop_func):
 ...     props = prop_func(state)
-...     print(iteration, props[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
+...     iteration = iter_report.iteration
+...     lmet = iter_report.lmet
+...     ch4_flow = props[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day")
+...     print(f"{iteration} {lmet: .2f}, {ch4_flow:6.3f~P}")
 ...     return True
 
 >>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(-20, "degC")
 >>> result = solver.solve(call_back_iter=my_callback)
-    0 9.9565... kilomole / day
-    1 11.402... kilomole / day
+    0  9.15,  9.957 kmol/d
+    1  7.10, 11.402 kmol/d
+    2 -8.00, 11.402 kmol/d
 
 Here we observe the calculated molar flow for each iteration. The callback function returns ``True`` to proceed with the iterations until convergence is obtained.
 

@@ -3,7 +3,7 @@ from symtable import Function
 from typing import Any
 from copy import deepcopy
 from time import time
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterator
 from dataclasses import dataclass
 
 # external
@@ -76,6 +76,9 @@ class SimulationSolver:
         del args[NHKeys.VECTORS][NHKeys.STATES]
         self._model_parameters: NestedMutMap[Quantity] = args
 
+        self._funcs : _FunctionCollection | None = None
+        self._x : Quantity | None = None
+
     def set_options(self, config: SimulationSolverConfig | None = None,
                     **options: Any):
         """Overwrite configuration for subsequent solver runs
@@ -107,18 +110,59 @@ class SimulationSolver:
         :return: The report including the iteration sequence
         """
         config = self._config.model_copy(update=options)
-        model = self._model
-        start_time = time()
-        residual_names = model.vector_res_names(NHKeys.RESIDUALS)
-        bound_names = model.vector_res_names(NHKeys.BOUNDS)
-        reports = []
         table = ProgressTableOutput(
             _OUTPUT_TABLE_DEFINITION,
             output=config.output
         )
+        reports = []
+        for iter_report in self.solve_iter(config):
+            reports.append(iter_report)
+            table.row(iter_report)
 
-        funcs = self._prepare_functions()
-        x = self.initial_state
+            # callback
+            if config.call_back_iter is not None:
+                cb_result = config.call_back_iter(
+                    iter_report, self._x.magnitude, self._funcs.f_y
+                )
+                if not cb_result:
+                    msg = "Solver iterations interrupted by callback"
+                    raise IterativeProcessInterrupted(msg)
+
+        # retain state if desired
+        if self._config.retain_solution:
+            thermo_param = self.model_parameters[NHKeys.THERMO_PARAMS]
+            self._model.retain_state(self._x.nonzeros(), thermo_param)
+
+        return SimulationSolverReport(
+            iterations=reports,
+            final_state=self._x,
+            prop_func=self._funcs.f_y
+        )
+
+    def solve_iter(self, config: SimulationSolverConfig = None
+                   ) -> Iterator[SimulationSolverIterationReport]:
+        """Run individual iterations and return control flow back to the client
+        code after each iteration. This allows for finer control in a
+        multithreaded environment, for instance to update a GUI with trends
+        about the convergence progress and intermediate values, or to allow
+        interactive pausing and cancelling of the simulation run.
+
+        :param config: An optional opportunity to overwrite solver options.
+          Note that
+
+          - ``output`` will be ignored, as no output is written
+          - ``call_back_iter`` will be ignored, as no callback will be called
+
+        :return: An iterator over all generated iteration reports.
+        """
+        model = self._model
+        config = config or SimulationSolverConfig()
+        start_time = time()
+        residual_names = model.vector_res_names(NHKeys.RESIDUALS)
+        bound_names = model.vector_res_names(NHKeys.BOUNDS)
+
+        self._funcs = funcs = self._prepare_functions()
+        self._x = x = self.initial_state
 
         for iteration in range(config.max_iter):
             # evaluate system (matrix and rhs)
@@ -147,54 +191,32 @@ class SimulationSolver:
                 raise ValueError(msg)
 
             # apply update
-            x = x + alpha * dx
+            self._x = x = x + alpha * dx
 
             # reporting
             duration = time() - start_time
-            reports.append(SimulationSolverIterationReport(
+            report = SimulationSolverIterationReport(
                 iteration=iteration,
                 max_err=float(max_err),
                 max_res_name=max_res_name,
                 relax_factor=float(alpha),
                 min_alpha_name=min_alpha_name,
                 duration=duration
-            ))
-            table.row(reports[-1])
-
-            # callback
-            if config.call_back_iter is not None:
-                cb_result = config.call_back_iter(
-                    iteration, reports[-1], x.magnitude,
-                    funcs.f_y
-                )
-                if not cb_result:
-                    msg = "Solver iterations interrupted by callback"
-                    raise IterativeProcessInterrupted(msg)
+            )
+            yield report
         else:
             msg = f"Model did not converge after {config.max_iter} iterations"
             raise ValueError(msg)
 
         # reporting
         duration = time() - start_time
-        reports.append(SimulationSolverIterationReport(
+        yield SimulationSolverIterationReport(
             iteration=iteration,
             max_err=float(max_err),
             max_res_name=max_res_name,
             relax_factor=1,
             min_alpha_name="",
             duration=duration
-        ))
-        table.row(reports[-1])
-
-        # retain state if desired
-        if config.retain_solution:
-            thermo_param = self.model_parameters["thermo_params"]
-            model.retain_state(x.nonzeros(), thermo_param)
-
-        return SimulationSolverReport(
-            iterations=reports,
-            final_state=x,
-            prop_func=funcs.f_y
         )
 
     def _prepare_functions(self) -> _FunctionCollection:
