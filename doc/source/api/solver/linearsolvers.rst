@@ -1,6 +1,7 @@
+==============
 Linear solvers
 ==============
-As a sub-problem for nearly all simulation disciplines, linear systems must be solved. More specifically, the system matrix for process models in ``SigmaMu`` can reach O(10000) for models with large scope and/or level of detail.
+As a sub-problem for nearly all simulation disciplines, linear systems must be solved. More specifically, the system matrix for process models in ``SigmaMu`` can reach :math:`O(10^5)` for models with large scope and/or level of detail.
 
 .. note::
 
@@ -8,13 +9,17 @@ As a sub-problem for nearly all simulation disciplines, linear systems must be s
 
     As an example, a process of 10 packed columns, where each packing is discretised into 10 slices - or 10 tray columns with 10 stages each, and the gas liquid boundary layer of each slice is discretised into 10 reactive elements, an eight-species system yields typically 10 x 10 x 10 x (8 + 2) = 10000 variables.
 
-Typically, the sparsity of the system matrices is around 1 % to 2 %, slightly decreasing with size, as it is rather the number of non-zero elements per row that is constant than the absolute density.
+Typically, the sparsity of the system matrices is around 1 % to 2 %, decreasing with size, as it is rather the number of non-zero elements per row that is constant (typically 10-30) than the absolute density.
 
-.. warning::
+In the following, computation times are given for an *Intel Core i5-8259U × 8* CPU on *Ubuntu 24.04.4 LTS* and just to be understood indicatively.
 
-    This entire benchmark is baloney, as the structure has a lot to say on the performance of sparse vs. dense solvers.
-    Indeed, in this example, the dense ``numpy.linalg.solve`` solver even beats the multi-core `PyPardiso`_ solver.
-    To be fair, numpy's solver manages to do efficient multi-core calculations and keep all CPU's busy.
+Comparison
+==========
+
+Numpy solver
+------------
+The standard `numpy.linalg.solve` solver is robust for non-singular matrices, as the pivoting is solely performed to maximize numerical accuracy.
+However, its computational cost is truly cubic in system size, and solving a system of size :math:`1.5\times 10^4` requires about 10 seconds. But this also means that using ``numpy`` is a robust and suitable choice for systems of size up to 10\ :sup:`3`.
 
 Casadi solver
 -------------
@@ -33,38 +38,40 @@ The ``scipy.sparse.linalg`` module offers ``spsolve``. To utilise this, we first
     ...
     scipy_matrix = csr_matrix(dm_matrix)
 
-The `SciPy`_ module is capable of solving the sparse system of size 10\ :sup:`4` in about 100 seconds, but not exploiting multiple CPUs in the calculation. One declared target of ``SigmaMu`` is to scale its performance with available CPUs.
+The `SciPy`_ module is capable of solving the sparse system of size :math:`1.4\times 10^4` in about 0.4 seconds, even if not not exploiting multiple CPUs in the calculation. The solver is reasonably robust for well scaled matrices, but can produce wrong solutions due to pivoting heuristics requiring to compromise between numerical precision and preservation of non-zero elements.
+
+For application of any sparse solver, pre-scaling of the matrix to obtain near unity column and row norms is an efficient way to drastically improve robustness.
 
 Pypardiso solver
 ----------------
-The *Intel oneAPI Math Kernel Library PARDISO solver* is wrapped into a python package called `PyPardiso`_. Its ``spsolve`` function is compatible to the ``scipy.sparse.linalg.spsolve`` version, but exploits available cores.
+The *Intel oneAPI Math Kernel Library PARDISO solver* is wrapped into a python package called `PyPardiso`_. Its ``spsolve`` function is compatible to the ``scipy.sparse.linalg.spsolve`` version, but exploits available cores. However, the performance for a system of size :math:`1.4\times 10^4` is by factor 2-3 inferior to that of `Scipy`_, likely due to the matrix structure and -- for the standards of sparse equation solving -- still too small to efficiently exploit multi-core algorithms. Further, the `PyPardiso`_ solver often fails to solve ``SigmaMu`` typical matrices.
 
 Performance and comparison
 --------------------------
-.. image:: ../../figures/solver_comparison.*
+At this point, we presented a nice graph that compared the performance of above solvers as function of system size.
+The approach was to generate random, but non-singular matrices with a defined sparsity and time / apply the range of solvers.
+This study (initially) surprisingly concluded with poor performance of the sparse solvers, being even slower than ``numpy.linalg.solve``.
 
-Above figure shows the required runtimes to solve systems of various sizes :math:`N` using the above mentioned solvers.
-We populated a sparse matrix with 1 % or 2 % random valued elements :math:`a_{ij} \in [0;1]` and added positive diagonal elements :math:`a_{ii} > N` to avoid singularities.
+The cause for this is that matrices with random distribution of non-zero elements yield a nearly dense decomposition and hence still require :math:`O(n^3)` complexity, while structure, even if not the nice band-structure often occurring from discretization of partial differential equations, gives a drastic advantage to sparse solvers. A typical process model structure, here for a detailed reactive column model, is shown below.
 
-The initial question whether to not bother converting from ``casadi.DM`` is answered fast. The performance is by factor 100 below that of `SciPy`_, and systems with sizes larger than some hundred variables would be heavily impacted by this bottle-neck.
+.. image:: ../../figures/large_model_spy.png
+    :align: center
 
-All solvers solve, as expected, in cubic time, and whether the density of non-zero elements is 1 % or 2 % has no significant impact.
-Further, the conversion from `CasADi`_ to `SciPy`_ has vanishing impact for systems of size greater 1000.
+`SciPy`_ solves above mentioned system in 0.4 seconds, but requires over a minute for a random matrix of same size.
 
-`PyPardiso`_ is almost one magnitude faster than `SciPy`_ on a PC with 4 CPU cores and 2 threads per core. A system of size 10\ :sup:`4` can be solved in about 10 seconds.
+Utilized solvers
+================
 
-.. warning::
+ScaledLinearSparseSolver
+------------------------
+.. autoclass:: simu.core.solver.linear.ScaledLinearSparseSolverConfig
+   :members:
+   :exclude-members: model_config
 
-    However, even for well conditioned systems, `PyPardiso`_ sometimes fails to deliver the correct solution and delivers a vector that yields highly non-zero elements in the remaining residual :math:`b-A\,x`. The same happens even with the sparse `SciPy`_ solver, but only with less well conditioned / scaled matrices.
+.. autoclass:: simu.core.solver.linear.ScaledLinearSparseSolver
+   :exclude-members: __new__, __init__, reset, solve
 
-Conclusion
-----------
-For moderate systems, we could suffice with the standard `SciPy`_ solver, but while the model evaluation is of linear to quadratic complexity, the solver will become the bottle-neck eventually. At this point it is advantageous to use `PyPardiso`_ and benefit from scalability options by employing multiple cores.
-
-The actual system matrices are somewhat different in structure compared to this test, as they are closer to (while not entire) a block structure. This might have impact on the performance - more likely positive than negative, but will unlikely change the conclusion and performance assessment of the solvers relative to each other.
-
-As a final remark, system sizes of 10\ :sup:`4` can still be solved comfortably, while things become very slow at 10\ :sup:`5`, given that the solving of one system is only part of an iterative process. If solving such large system became relevant, iterative linear solvers should be considered.
-
-For all solvers, we iteratively transform the system by normalizing rows and columns of the system matrix to mitigate the unavoidable badly scaled variables from our thermodynamic systems. This helps the solvers much to chose feasible pivot elements and yield a valid solution.
-
-Yet, a robust approach is to fall-back on `SciPy`_ if `PyPardiso`_ gives a wrong solution, and even fall back to `NumPy`_ dense matrices if the system size is small enough.
+NumpySolver
+-----------
+.. autoclass:: simu.core.solver.linear.NumpySolver
+   :exclude-members: __new__, __init__, reset, solve

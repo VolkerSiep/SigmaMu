@@ -1,4 +1,5 @@
 import sys
+from typing import Self
 from collections.abc import Callable, Sequence
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -20,7 +21,6 @@ type SimulationSolverCallback = Callable[
 """A function (type) to act as a call-back in the 
 :class:`~simu.SimulationSolver` solving process. The arguments are as follows:
 
-- ``iteration``: The iteration number as integer, incrementing from zero
 - ``report``: The data class containing information regarding the current
   iteration
 - ``state``: The internal state of the model at given iteration as a sequence of
@@ -43,7 +43,7 @@ Example:
 
     from pprint import pprint
 
-    def my_callback(iteration, report, state, prop_func):
+    def my_callback(report, state, prop_func):
         # This can be a lot to print
         all_properties = prop_func(state)
         pprint(all_properties)
@@ -114,9 +114,19 @@ class SimulationSolverConfig(BaseModel):
     values for the next solving process.
     """
 
-    linear_solver: LinearSolver = Field(default_factory=ScaledLinearSparseSolver)
+    linear_solver: LinearSolver = \
+        Field(default_factory=ScaledLinearSparseSolver)
+    r"""An option to provide any other linear solver for solving the Newton-type
+    updates. This can be useful for instance for very large models (say larger
+    than 50000 variables, when multi-core and/or iterative solvers become
+    superior in terms of performance and robustness.
     """
-    """
-
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def update(self, **options) -> Self:
+        data = self.model_dump() | options
+        if "output" not in options:
+            # reverse undesired irreversible serialization of IO stream
+            data["output"] = self.output
+        return SimulationSolverConfig.model_validate(data)

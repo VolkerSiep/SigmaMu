@@ -9,7 +9,7 @@ from pypardiso import spsolve as pspsolve
 from casadi import DM, solve, Sparsity
 from matplotlib import pyplot
 
-N = 25000
+N = 10000
 NUM = 40
 TIME_LIMIT = 10
 FIG_PATH = Path(__file__).parents[3] / "doc" / "source" / "figures"
@@ -36,7 +36,6 @@ def pardiso_solve(a, b):
 
 def main():
     def measure(a, b, which):
-        print("  ", which)
         nonlocal functions
         func = functions[which]
         if func is None:

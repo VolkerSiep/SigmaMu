@@ -23,7 +23,6 @@ dependencies = [
     "pint",
     "numpy",
     "scipy",
-    "pypardiso",
     "casadi",
     "pyyaml",
     "pydantic"

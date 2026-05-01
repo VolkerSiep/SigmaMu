@@ -4,9 +4,9 @@ One of the most common tasks is to simply solve a process model for its independ
 
 The process model has the form
 
-.. math:: r(x, p, c) = 0
+.. math:: r(x, p, \tau) = 0
 
-Here, :math:`x` is the complete set of independent variables, :math:`p` and :math:`c` the process model and thermodynamic parameters respectively, and :math:`r` the set of residuals. For the model to be solvable, the system must be square (:math:`\mathrm{dim}\ r = \mathrm{dim}\ x`), and the system matrix :math:`J_{rx}` must not be singular.
+Here, :math:`x` is the complete set of independent variables, :math:`p` and :math:`\tau` the process model and thermodynamic parameters respectively, and :math:`r` the set of residuals. For the model to be solvable, the system must be square (:math:`\mathrm{dim}\ r = \mathrm{dim}\ x`), and the system matrix :math:`J_{rx}` must not be singular.
 
 Iteratively, we can determine a raw Newton-Raphson update via
 
@@ -15,7 +15,7 @@ Iteratively, we can determine a raw Newton-Raphson update via
 
 Additionally, the model domain :math:`\mathbb D \ni x` is limited, and its bounds described by
 
-.. math:: b(x, p, c) > 0
+.. math:: b(x, p, \tau) > 0
 
 These are not to be confused with inequality constraints. In particular, the case :math:`b = 0` is generally not feasible, and, as we solve an equation system, defining such bounds as inequality constraints would make the system non-square and thus not solvable.
 
@@ -52,7 +52,7 @@ SimulationSolver
 SimulationSolverConfig
 ----------------------
 .. autoclass:: simu.core.solver.simulation.config.SimulationSolverConfig
-  :exclude-members: __init__
+  :exclude-members: __init__, model_config
   :members:
 
 
@@ -70,4 +70,8 @@ SimulationSolverReport
 
 SimulationSolverCallback
 ------------------------
-.. autodata:: simu.core.solver.simulation.config.SimulationSolverCallback
+.. autotype:: simu.core.solver.simulation.config.SimulationSolverCallback
+
+PropertyFunction
+----------------
+.. autotype:: simu.core.solver.simulation.report.PropertyFunction

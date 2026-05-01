@@ -61,8 +61,7 @@ class SimulationSolver:
         :param options: overwriting individual configurations directly
         """
         self._model = model
-        self._config = config or SimulationSolverConfig()
-        self.set_options(**options)
+        self._config = (config or SimulationSolverConfig()).update(**options)
 
         args = model.arguments
         # store size of state
@@ -87,8 +86,7 @@ class SimulationSolver:
           :class:`~simu.core.solver.simulation.config.SimulationSolverConfig`.
        :param options: overwriting individual configurations directly
        """
-        config = config or self._config
-        self._config = config.model_copy(update=options)
+        self._config = (config or self._config).update(**options)
 
     def solve(self, **options: Any) -> SimulationSolverReport:
         """
@@ -109,7 +107,7 @@ class SimulationSolver:
 
         :return: The report including the iteration sequence
         """
-        config = self._config.model_copy(update=options)
+        config = self._config.update(**options)
         table = ProgressTableOutput(
             _OUTPUT_TABLE_DEFINITION,
             output=config.output
@@ -129,7 +127,7 @@ class SimulationSolver:
                     raise IterativeProcessInterrupted(msg)
 
         # retain state if desired
-        if self._config.retain_solution:
+        if config.retain_solution:
             thermo_param = self.model_parameters[NHKeys.THERMO_PARAMS]
             self._model.retain_state(self._x.nonzeros(), thermo_param)
 
@@ -139,8 +137,8 @@ class SimulationSolver:
             prop_func=self._funcs.f_y
         )
 
-    def solve_iter(self, config: SimulationSolverConfig = None
-                   ) -> Iterator[SimulationSolverIterationReport]:
+    def solve_iter(self, config: SimulationSolverConfig = None,
+                   **options: Any) -> Iterator[SimulationSolverIterationReport]:
         """Run individual iterations and return control flow back to the client
         code after each iteration. This allows for finer control in a
         multithreaded environment, for instance to update a GUI with trends
@@ -156,13 +154,14 @@ class SimulationSolver:
         :return: An iterator over all generated iteration reports.
         """
         model = self._model
-        config = config or SimulationSolverConfig()
+        config = (config or self._config).update(**options)
         start_time = time()
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
 
         self._funcs = funcs = self._prepare_functions()
         self._x = x = self.initial_state
+        lin_solve = config.linear_solver.solve
 
         for iteration in range(config.max_iter):
             # evaluate system (matrix and rhs)
@@ -180,7 +179,7 @@ class SimulationSolver:
                 break
 
             # calculate full update
-            dx = -self._config.linear_solver.solve(dr_dx, r)
+            dx = -lin_solve(dr_dx, r)
 
             # find relaxation factor
             b, a = funcs.f_b(x, dx)
@@ -195,7 +194,7 @@ class SimulationSolver:
 
             # reporting
             duration = time() - start_time
-            report = SimulationSolverIterationReport(
+            yield SimulationSolverIterationReport(
                 iteration=iteration,
                 max_err=float(max_err),
                 max_res_name=max_res_name,
@@ -203,7 +202,6 @@ class SimulationSolver:
                 min_alpha_name=min_alpha_name,
                 duration=duration
             )
-            yield report
         else:
             msg = f"Model did not converge after {config.max_iter} iterations"
             raise ValueError(msg)
