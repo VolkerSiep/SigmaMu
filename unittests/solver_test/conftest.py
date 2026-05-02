@@ -1,10 +1,11 @@
+from collections.abc import Sequence
 from pathlib import Path
 
 from pytest import fixture
 from yaml import safe_load
 
 from simu import StringDictThermoSource
-from simu.core.solver.thermofit import ThermoFitValidationContext
+from simu.core.solver.thermofit.config import ThermoFitValidationContext
 from simu.core.utilities.types import Map
 
 
@@ -28,18 +29,25 @@ def linear_system():
 @fixture(scope="session")
 def contribution_context_stub():
     class NHStub:
-        @property
-        def parameters(self) -> Map[str]:
-            result = {"T": "K", "p": "bar", "x": "", "y": "", "w": ""}
-            return {f"process.{n}": u for n, u in result.items()}
+        def __init__(self):
+            self._parameters = {"T": "K", "p": "bar", "x": "", "y": "", "w": ""}
+            self._properties = {"process": {"dmu_norm": {"H2O": "", "CO2": ""},
+                                            "p": "bar", "y": ""}}
 
-        @property
-        def properties(self) -> Map[str]:
-            names = (
-                [f"process.dmu_norm/{n}" for n in ("H2O", "CO2")] +
-                [f"process.{n}" for n in ("p", "y")]
-            )
-            return {n: ("bar" if n == "process.p" else "") for n in names}
+        def parameter_unit(self, path: Sequence[str]) -> str:
+            if path[0] != "process" or path[1] not in self._parameters:
+                raise KeyError(f"'{'.'.join(path)}' not found")
+            return self._parameters[path[1]]
+
+        def property_unit(self, path: Sequence[str]) -> str:
+            if not path:
+                raise KeyError("Empty path")
+            res = self._properties
+            for p in path:
+                res = res[p]
+            if not isinstance(res, str):
+                raise KeyError("Incomplete path")
+            return  res
 
     return ThermoFitValidationContext(
         model_contexts= {n: NHStub() for n in ("vle_fit", "vle_eval_p")},

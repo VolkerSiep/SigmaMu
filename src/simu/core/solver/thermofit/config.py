@@ -1,3 +1,4 @@
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Self, Protocol, Optional
@@ -10,28 +11,45 @@ from pydantic import (
 
 from simu import Quantity, AbstractThermoSource
 from simu.core.utilities.quantity import UnitRegistry
-from simu.core.utilities.types import Map
+from simu.core.utilities.types import Map, NestedMap, OutputIOStream
 
-_Unit = UnitRegistry.Unit
 
-def are_units_compatible(first: str, second: str) -> bool:
-    try:
-        d1 = _Unit(first).dimensionality
-    except Exception as e:
-        raise ValueError(f"Invalid unit '{first}'") from e
-    try:
-        d2 = _Unit(second).dimensionality
-    except Exception as e:
-        raise ValueError(f"Invalid unit '{second}'") from e
-    return d1 == d2
+class ThermoFitSolverConfig(BaseModel):
+    max_iter: int = Field(default=30, ge=1)
+    """The maximum number of iterations (default 30).
+
+    .. note::
+
+      Normally, 30 iterations should be sufficient. In other words, if the
+      model is not converged after 30 iterations, chances are quite low
+      that it still will converge at all. The advice would be to try to
+      improve the starting values and to investigate whether the model is
+      properly posed.
+    """
+
+    output: OutputIOStream | None = Field(default_factory=lambda: sys.stdout)
+    """The stream to direct the solver output to, by default ``sys.stdout``.
+    ``None`` suppresses output. 
+
+    The stream can be any object that supports a ``write`` method that consumes
+    a string argument.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+    def update(self, **options) -> Self:
+        data = self.model_dump() | options
+        if "output" not in options:
+            # reverse undesired irreversible serialization of IO stream
+            data["output"] = self.output
+        return ThermoFitSolverConfig.model_validate(data)
 
 
 class ThermoFitModelContext(Protocol):
-    @property
-    def parameters(self) -> Map[str]:
+    def parameter_unit(self, path: Sequence[str]) -> str:
         ...
-    @property
-    def properties(self) -> Map[str]:
+
+    def property_unit(self, path: Sequence[str]) -> str:
         ...
 
 
@@ -78,7 +96,8 @@ class DataSet(BaseModel):
 class ThermoFitEntity(BaseModel):
     dataset: str  # to be registered dataset
     model_id: str  # to be registered model
-    data_to_model: Map[str]  # keys to be column titles, values model parameters
+    data_to_model: Map[Sequence[str]]
+    # keys = column titles, values = model parameters
 
     model_config = ConfigDict(extra='forbid')
 
@@ -94,11 +113,14 @@ class ThermoFitEntity(BaseModel):
         model = self._model_context(info)
 
         # validate parameter existence
-        for param in self.data_to_model.values():
-            if not param in model.parameters:
+        for param_path in self.data_to_model.values():
+            try:
+                _ = model.parameter_unit(param_path)
+            except KeyError as e:
+                param = ".".join(param_path)
                 msg = (f"Parameter '{param}' not defined in "
                        f"model '{self.model_id}'")
-                raise ValueError(msg)
+                raise ValueError(msg) from e
         return self
 
     def _model_context(self, info: ValidationInfo) -> ThermoFitModelContext:
@@ -107,7 +129,7 @@ class ThermoFitEntity(BaseModel):
 
 
 class ThermoFitContribution(ThermoFitEntity):
-    penalties: Sequence[str]  # to be properties of model
+    penalties: Sequence[Sequence[str]]  # properties of model
     weight: float = Field(default=1.0)
 
     @model_validator(mode="after")
@@ -117,21 +139,22 @@ class ThermoFitContribution(ThermoFitEntity):
 
         for penalty in self.penalties:
             # validate penalty existence
+            name = ".".join(penalty)
             try:
-                unit = model.properties[penalty]
+                unit = model.property_unit(penalty)
             except KeyError as e:
-                msg = f"Property '{penalty}' not defined in model '{model_id}'"
+                msg = f"Property '{name}' not defined in model '{model_id}'"
                 raise ValueError(msg) from e
             # validate whether penalties are dimensionless
             if not _Unit(unit).dimensionless:
-                msg = (f"Penalty property '{penalty}` in model "
+                msg = (f"Penalty property '{name}` in model "
                        f"'{model_id}' is not dimensionless: '{unit}'")
                 raise ValueError(msg)
         return self
 
 
 class ThermoFitProperty(BaseModel):
-    name: str  # must exist in model
+    path: Sequence[str]  # must exist in model
     uom: str  # must be consistent with unit from model
     model_config = ConfigDict(extra='forbid')
 
@@ -141,12 +164,13 @@ class ThermoFitEvaluation(ThermoFitEntity):
 
     @model_validator(mode="after")
     def validate_properties(self, info: ValidationInfo) -> Self:
-        properties = self._model_context(info).properties
+        model = self._model_context(info)
         for prop in self.properties.values():
-            name, uom = prop.name, prop.uom
+            path, uom = prop.path, prop.uom
+            name = ".".join(path)
             # Does property exist in model?
             try:
-                model_unit = properties[name]
+                model_unit = model.property_unit(path)
             except KeyError as e:
                 msg = f"Property '{name}' not in model '{self.model_id}'"
                 raise ValueError(msg) from e
@@ -217,10 +241,10 @@ class ThermoFitParameter(BaseModel):
         return self
 
 
-class ThermoFitConfiguration(BaseModel):
+class ThermoFitDefinition(BaseModel):
     datasets: Map[DataSet]
     contributions: Map[ThermoFitContribution]
-    evaluations: Map[ThermoFitEvaluation]
+    evaluations: Map[ThermoFitEvaluation]  # TODO: make ThermoEvaluationDefinition?
     parameters: Map[ThermoFitParameter]
 
     @model_validator(mode="after")
@@ -241,7 +265,7 @@ class ThermoFitConfiguration(BaseModel):
                 raise ValueError(msg) from e
 
             # validate mapping
-            parameters = context[entity.model_id].parameters
+            model = context[entity.model_id]
             for key, target in entity.data_to_model.items():
                 # is column defined in dataset
                 if key not in dataset.columns:
@@ -251,12 +275,27 @@ class ThermoFitConfiguration(BaseModel):
 
                 # is target defined in model (checked before?)
                 try:
-                    uom_model = parameters[target]
+                    uom_model = model.parameter_unit(target)
                 except KeyError as e:
-                    msg = f"Target '{target}' not a model parameter"
+                    name = ".".join(target)
+                    msg = f"Target '{name}' not a model parameter"
                     raise ValueError(msg) from e
 
                 # are units compatible?
                 if not are_units_compatible(uom, uom_model):
                     msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
                     raise ValueError(msg)
+
+
+def are_units_compatible(first: str, second: str) -> bool:
+    try:
+        d1 = _Unit(first).dimensionality
+    except Exception as e:
+        raise ValueError(f"Invalid unit '{first}'") from e
+    try:
+        d2 = _Unit(second).dimensionality
+    except Exception as e:
+        raise ValueError(f"Invalid unit '{second}'") from e
+    return d1 == d2
+
+_Unit = UnitRegistry.Unit

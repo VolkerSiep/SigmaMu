@@ -1,8 +1,8 @@
 from pytest import raises
 from pydantic import ValidationError
-from simu.core.solver.thermofit import (
+from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
-    ThermoFitConfiguration
+    ThermoFitDefinition
 )
 
 
@@ -172,7 +172,7 @@ def test_thermo_fit_parameter_wrong_unit(
     assert "30 m" in str(e)
 
 def test_thermo_fit_config(thermo_fit_configuration, contribution_context_stub):
-    config = ThermoFitConfiguration.model_validate(
+    config = ThermoFitDefinition.model_validate(
         thermo_fit_configuration, context=contribution_context_stub
     )
-    assert config.evaluations["vle_p"].data_to_model["x"] == "process.x"
+    assert config.evaluations["vle_p"].data_to_model["x"] == ["process", "x"]
