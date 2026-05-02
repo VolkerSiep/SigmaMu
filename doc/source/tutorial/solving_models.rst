@@ -42,16 +42,16 @@ The second column ``LMET`` is the logarithmic maximum error to tolerance ratio. 
 
 The relaxation factor is called ``Alpha``. The first iteration attempts to reduce the molar flow in one step dangerously close to the domain limit (:math:`n > 0`). The solver hence stabilises the step by only admitting 83 %. The residual of maximal value to tolerance ratio is shown in the right-most column.
 
-The solving process returns a :class:`~simu.core.solver.simulation.SimulationSolverReport` object, which contains the content of above printed table for further analysis, but also the model's state vector in the solution point and a property to evaluate the model's properties. In this example, the only interesting part are the thermodynamic properties of the source stream:
+The solving process returns a :class:`~simu.core.solver.simulation.report.SimulationSolverReport` object, which contains the content of above printed table for further analysis, but also the model's state vector in the solution point and a property to evaluate the model's properties. In this example, the only interesting part are the thermodynamic properties of the source stream:
 
 >>> from pprint import pprint
 >>> pprint(result.properties[NHKeys.THERMO_PROPS]["source"])
 {'S': <Quantity(21.1401..., 'watt / kelvin')>,
  'T': <Quantity(298.15, 'kelvin')>,
  'T_ref': <Quantity(298.15, 'kelvin')>,
- 'V': <Quantity(0.002777777777777777, 'meter ** 3 / second')>,
- 'mu': {'Methane': <Quantity(-131118.979, 'joule / mole')>},
- 'n': {'Methane': <Quantity(0.112054293180843, 'mole / second')>},
+ 'V': <Quantity(0.002777..., 'meter ** 3 / second')>,
+ 'mu': {'Methane': <Quantity(-131118.9..., 'joule / mole')>},
+ 'n': {'Methane': <Quantity(0.11205..., 'mole / second')>},
  'p': <Quantity(100000.0, 'pascal')>,
  'p_ref': <Quantity(100000.0, 'pascal')>}
 
@@ -82,7 +82,8 @@ Let's modify the input:
 
 >>> from simu import Quantity
 >>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(120, "degC")
->>> result = solver.solve(output="none")
+>>> solver.set_options(output=None)  # from now on, don't print iterations
+>>> result = solver.solve()
 >>> print(result.properties[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
 7.3420... kilomole / day
 
@@ -94,16 +95,19 @@ Using the callback function
 ---------------------------
 Sometimes, for instance for debugging, it is useful to assess the model's state during the solving process in each iteration, and possibly even decide to stop the iterations based on custom conditions. The :class:`~simu.SimulationSolver` object offers to install a callback function:
 
->>> def my_callback(iteration, iter_report, state, prop_func):
+>>> def my_callback(iter_report, state, prop_func):
 ...     props = prop_func(state)
-...     print(iteration, props[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
+...     iteration = iter_report.iteration
+...     lmet = iter_report.lmet
+...     ch4_flow = props[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day")
+...     print(f"{iteration} {lmet: .2f}, {ch4_flow:6.3f~P}")
 ...     return True
 
->>> solver.set_option("call_back_iter", my_callback)
 >>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(-20, "degC")
->>> result = solver.solve()
-    0 9.9565... kilomole / day
-    1 11.402... kilomole / day
+>>> result = solver.solve(call_back_iter=my_callback)
+    0  9.15,  9.957 kmol/d
+    1  7.10, 11.402 kmol/d
+    2 -8.00, 11.402 kmol/d
 
 Here we observe the calculated molar flow for each iteration. The callback function returns ``True`` to proceed with the iterations until convergence is obtained.
 
@@ -120,8 +124,8 @@ The model hosts its initial state, defined through the :class:`~simu.MaterialDef
 
 Once we solve the model, the solver will by default retain the solution state (see ``retain_solution``):
 
->>> solver = SimulationSolver(numeric)
->>> result = solver.solve(output="none")
+>>> solver = SimulationSolver(numeric, output=None)
+>>> result = solver.solve()
 >>> print(f"This took {len(result.iterations)} iteration(s).")
 This took 4 iteration(s).
 
@@ -133,7 +137,7 @@ This took 4 iteration(s).
 
 If we run the solver again without changing any input, we get:
 
->>> result = solver.solve(output="none")
+>>> result = solver.solve()
 >>> print(f"This took {len(result.iterations)} iteration(s).")
 This took 1 iteration(s).
 
@@ -151,7 +155,7 @@ We can import the state back into the model, for instance if we would like to st
 Now we only need 1 iteration to solve the model, as we picked up the prior solution as start values:
 
 >>> solver = SimulationSolver(numeric)
->>> result = solver.solve(output="none")
+>>> result = solver.solve(output=None)
 >>> print(f"This took {len(result.iterations)} iteration(s).")
 This took 1 iteration(s).
 

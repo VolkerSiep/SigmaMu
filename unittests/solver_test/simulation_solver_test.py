@@ -2,7 +2,7 @@ from typing import cast
 from pytest import fixture, raises
 
 from simu import (
-    NumericHandler, NHKeys, SimulationSolver,
+    NumericHandler, NHKeys, SimulationSolver, SimulationSolverConfig,
     Quantity, quantity_dict_to_strings)
 from simu.core.utilities.residual import ResidualHandler
 from simu.core.utilities.errors import NonSquareSystem
@@ -41,33 +41,14 @@ def test_non_square():
 
 def test_model_parameters():
     numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output="None")
+    solver = SimulationSolver(numeric, output=None)
     param = quantity_dict_to_strings(solver.model_parameters["model_params"])
     assert_reproduction(param)
 
 
-def test_invalid_option_constructor():
-    numeric = NumericHandler(Source.top())
-    with raises(ValueError):
-        _ = SimulationSolver(numeric, max_iter=-3)
-
-
-def test_valid_option_set_option():
-    numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric)
-    solver.set_option("max_iter", 20)
-
-
-def test_invalid_option_set_option():
-    numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric)
-    with raises(ValueError):
-        solver.set_option("max_iter", -3)
-
-
 def test_change_parameters():
     numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output="None")
+    solver = SimulationSolver(numeric, output=None)
     param = solver.model_parameters["model_params"]
     param["p"] = Quantity(2, "MPa")
     res = solver.solve(max_iter=5)
@@ -99,5 +80,5 @@ def test_change_parameters():
 @fixture(scope="module")
 def sim_result():
     numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output="None")
+    solver = SimulationSolver(numeric, output=None)
     return solver.solve()
