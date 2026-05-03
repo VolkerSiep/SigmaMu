@@ -1,0 +1,18 @@
+
+H0S0ReferenceState:
+    T_ref: 25 degC
+    p_ref: 1 bar
+    dh_form:
+      alpha-tin: -2.09 kJ/mol
+      beta-tin: 0 kJ/mol
+    s_0:
+      alpha-tin: 44.14 J/mol/K
+      beta-tin: 51.55 J/mol/K
+LinearHeatCapacity:
+    cp_a:
+      alpha-tin: 25.77 J/mol/K
+      beta-tin: 26.99 J/mol/K
+    cp_b:
+      alpha-tin: 0 J/mol/K^2
+      beta-tin: 0 J/mol/K^2
+

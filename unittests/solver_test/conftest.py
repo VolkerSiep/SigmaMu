@@ -6,7 +6,6 @@ from yaml import safe_load
 
 from simu import StringDictThermoSource
 from simu.core.solver.thermofit.config import ThermoFitValidationContext
-from simu.core.utilities.types import Map
 
 
 @fixture
@@ -31,11 +30,11 @@ def contribution_context_stub():
     class NHStub:
         def __init__(self):
             self._parameters = {"T": "K", "p": "bar", "x": "", "y": "", "w": ""}
-            self._properties = {"process": {"dmu_norm": {"H2O": "", "CO2": ""},
-                                            "p": "bar", "y": ""}}
+            self._properties = {"dmu_norm": {"H2O": "", "CO2": ""},
+                                "p": "bar", "y": ""}
 
         def parameter_unit(self, path: Sequence[str]) -> str:
-            if path[0] != "process" or path[1] not in self._parameters:
+            if len(path) > 1 or path[0] not in self._parameters:
                 raise KeyError(f"'{'.'.join(path)}' not found")
             return self._parameters[path[1]]
 

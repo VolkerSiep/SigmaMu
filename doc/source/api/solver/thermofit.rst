@@ -1,3 +1,5 @@
+.. _fit-of-thermodynamic-parameters:
+
 ===============================
 Fit of thermodynamic parameters
 ===============================
@@ -114,3 +116,8 @@ This system is used as a second order update scheme for :math:`\tau`.
 
 Evaluation
 ----------
+
+ThermoFitSolver
+===============
+.. autoclass:: simu.ThermoFitSolver
+   :members:

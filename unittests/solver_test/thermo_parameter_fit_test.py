@@ -1,9 +1,13 @@
 from pytest import raises
 from pydantic import ValidationError
+
+from simu import NumericHandler
 from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
     ThermoFitDefinition
 )
+from simu.core.solver.thermofit.solver import ModelContext
+from simu.examples.hello_world import Square
 
 
 def test_instantiate_dataset(thermo_fit_configuration):
@@ -175,4 +179,16 @@ def test_thermo_fit_config(thermo_fit_configuration, contribution_context_stub):
     config = ThermoFitDefinition.model_validate(
         thermo_fit_configuration, context=contribution_context_stub
     )
-    assert config.evaluations["vle_p"].data_to_model["x"] == ["process", "x"]
+    assert config.evaluations["vle_p"].data_to_model["x"] == ["x"]
+
+def test_model_contest():
+    model = NumericHandler(Square.top())
+    print(model.function.result_structure)
+    context = ModelContext(model)
+    assert context.parameter_unit(["length"]) == "m"
+    assert context.property_unit(["area"]) == "m ** 2"
+    with raises(KeyError) as err:
+        context.property_unit(["area", "Antarctica"])
+    assert "Antarctica" in str(err)
+
+# TODO: create example model to fit simple parameter (tinn?)

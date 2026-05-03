@@ -244,7 +244,8 @@ class ThermoFitParameter(BaseModel):
 class ThermoFitDefinition(BaseModel):
     datasets: Map[DataSet]
     contributions: Map[ThermoFitContribution]
-    evaluations: Map[ThermoFitEvaluation]  # TODO: make ThermoEvaluationDefinition?
+    evaluations: Map[ThermoFitEvaluation] = Field(default_factory=dict)
+    # TODO: make ThermoEvaluationDefinition instead of including evaluations here?
     parameters: Map[ThermoFitParameter]
 
     @model_validator(mode="after")

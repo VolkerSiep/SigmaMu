@@ -1,30 +1,46 @@
 from typing import Any
-from simu import NumericHandler, NHKeys
-from simu.core.utilities.types import Map, MutMap
+from collections.abc import Sequence
+from simu import NumericHandler, NHKeys, AbstractThermoSource
+from simu.core.utilities.types import Map, MutMap, NestedMap
 
 from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext)
 
-class _ModelContext:
+class ModelContext:
     def __init__(self, model: NumericHandler):
-        # TODO:
-        #  - change protocol and context, so that parameters and properties
-        #    are nested structures
-        #  - re-understand what I tried to do with thermo-parameters.
-        #    maybe do not fiddle around with ThermoSources, but allow any path
-        #    of thermo parameters that is available in the models
-        #  - Should I separate the structures for data fit and evaluation?
-        #    They really do not need to be provided at the same time,
-        #    and the evaluator can even be an entirely different object.
+        self._parameters = model.function.arg_structure.get(
+            NHKeys.MODEL_PARAMS, {}
+        )
+        self._properties = model.function.result_structure.get(
+            NHKeys.MODEL_PROPS, {}
+        )
 
-        self.parameters = model.arguments[NHKeys.MODEL_PARAMS]
+    def parameter_unit(self, path: Sequence[str]) -> str:
+        return self._extract(path, self._parameters)
+
+    def property_unit(self, path: Sequence[str]) -> str:
+        return self._extract(path, self._properties)
+
+    @staticmethod
+    def _extract(path: Sequence[str], structure: NestedMap[str]) -> str:
+        result = structure
+        try:
+            for p in path:
+                result = result[p]
+        except (KeyError, TypeError) as e:
+            raise KeyError(f"Invalid path: '{'.'.join(path)}'") from e
+        if not isinstance(result, str):
+            raise KeyError(f"Invalid path: '{'.'.join(path)}'")
+        return result
 
 
 class ThermoFitSolver:
     def __init__(self, models: MutMap[NumericHandler],
+                 thermo_source: AbstractThermoSource,
                  config: ThermoFitSolverConfig | None = None,
                  **options: Any):
         self._config = (config or ThermoFitSolverConfig()).update(**options)
+        self._thermo_source = thermo_source
         self._models = models
 
     def set_options(self, config: ThermoFitSolverConfig | None = None,
@@ -41,13 +57,14 @@ class ThermoFitSolver:
               config: ThermoFitSolverConfig | None = None,
               **options: Any):
         config = (config or self._config).update(**options)
-        context = self._create_validation_context()
-        ThermoFitDefinition.model_validate(config, context=context)
+        context = self._parse_definition(definition)
 
 
         # for each data set, collect the model and create the required functions
         # need to identify thermodynamic parameters in arguments
 
 
-    def _create_validation_context(self) -> ThermoFitValidationContext:
-        ...
+    def _parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
+        models = {n: ModelContext(m) for n, m in self._models.items()}
+        context = ThermoFitValidationContext(models, self._thermo_source)
+        return ThermoFitDefinition.model_validate(definition, context=context)

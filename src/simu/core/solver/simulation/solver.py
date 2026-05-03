@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 # external
 from casadi import SX, jacobian, jtimes, Function
-from numpy import array, argmin, argmax, abs, squeeze, isfinite
+from numpy import array, argmin, argmax, abs, squeeze, isfinite, atleast_1d
 from numpy.typing import NDArray
 from scipy.sparse import csr_array
 
@@ -242,7 +242,7 @@ class SimulationSolver:
         config = self._config
         a, b = [squeeze(array(x)) for x in (a, b)]
         # are there bounds violated?
-        invalid = [n for n, m_i in zip(bound_names, b <= 0) if m_i]
+        invalid = [n for n, m_i in zip(bound_names, atleast_1d(b <= 0)) if m_i]
 
         if invalid:
             msg = f"Bound violation of: {', '.join(invalid)}"
