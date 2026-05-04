@@ -39,7 +39,7 @@ For the aspiring tin specialist, there is of course more literature :cite:p:`Khv
 
 Simulation of transition temperature
 ------------------------------------
-Note again that the following simulation is an overkill version of solving for the temperature at which the chemical potentials of both tin forms are equal:
+Note again that the following simulation is an overkill version of solving the following equation for :math:`s^0_\alpha` under the constraint that the chemical potentials of both tin forms are equal:
 
 .. math::
 
@@ -48,6 +48,7 @@ Note again that the following simulation is an overkill version of solving for t
         T - T^\mathrm{ref} - T^\mathrm{ref}\,\ln \frac{T}{T^\mathrm{ref}}
       \right )
 
+To make things more embarrassing, above equation is even linear in :math:`s^0_\alpha`.
 
 The first step is to simply simulate the transition temperature based on above parameters (``wagman_tin.yml``):
 
@@ -63,9 +64,9 @@ Note that ``cp_b`` is left zero for both forms, as no data is readily available,
 
 There are a couple of aspects worth being mentioned:
 
-  - Normally, we would not care about the identifier of the thermodynamic source once it is added to the store. In this case however, we are interested in changing parameters in that source, so we need ``SOURCE_ID`` for later.
-  - The configuration (line 12-15) contains no calculation of volumetric properties. Volume itself is simply not defined. We could easily add for instance the :class:`~simu.app.thermo.contributions.basic.ConstantGibbsVolume` contribution and assign molar volumes ``v_n`` to each form, but we do not need to for this case.
-  - The species definition (line 16-17) is only concerned about the atomic composition and does not distinguish |alpha-tin| from |beta-tin|. This case is however a good example for the fact that we still can define such species multiple times and assign different thermodynamic parameters to it.
+  - Normally, we would not care about the identifier of the thermodynamic source once it is added to the store. In this case however, we are interested in changing parameters in that source, so we need that object for later.
+  - The configuration (lines 11-14) contains no calculation of volumetric properties. Volume itself is simply not defined. We could easily add for instance the :class:`~simu.app.thermo.contributions.basic.ConstantGibbsVolume` contribution and assign molar volumes ``v_n`` to each form, but we do not need to for this case.
+  - The species definition (line 15) is only concerned about the atomic composition and does not distinguish |alpha-tin| from |beta-tin|. This case is however a good example for the fact that we still can define such species multiple times and assign different thermodynamic parameters to it.
 
 Based on the material definition, we can create a simple model and simulate the transition temperature:
 
@@ -75,7 +76,7 @@ Based on the material definition, we can create a simple model and simulate the 
 
 .. note::
 
-    The result of 8.83 |degC| is very arguably different from the cited 13.2 |degC|. This is due to a fundamental thermodynamic principle: "*You can't always please everybody!*" The tabulated data is likely based on calorimetric measurements independently for both |alpha-tin| and |beta-tin|, and in its compilation not being constrained to reproduce the transition temperature.
+    The result of 8.8 |degC| is very arguably different from the cited 13.2 |degC|. This is due to a fundamental thermodynamic principle: "*You can't always please everybody!*" The tabulated data is likely based on calorimetric measurements independently for both |alpha-tin| and |beta-tin|, and in its compilation not being constrained to reproduce the transition temperature.
 
 Some explanation of above code:
 
@@ -106,7 +107,7 @@ The ``data_to_model`` section says: "Use the value of the ``T_trans`` column in 
 
 *Well, normally we would need more data samples to generate a real minimization problem. This case degrades to a square system with a resulting zero penalty, reproducing the measured temperature exactly. But then again: This is a minimal example, not made to impress anybody.*
 
-Finally, the standard entropy of |alpha-tin| is to be parameterized (line 19-20).
+Finally, the standard entropy of |alpha-tin| is to be parameterized (line 19-20). The code to perform the parameter fit then looks as follows:
 
 .. exampleinclude:: tin_parameter_fit/parameter_fit.py
    :language: python

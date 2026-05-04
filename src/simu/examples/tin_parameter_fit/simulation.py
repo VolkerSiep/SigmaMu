@@ -1,5 +1,5 @@
 from simu import AModel, NumericHandler, SimulationSolver, NHKeys
-from thermo import tin_definition
+from simu.examples.tin_parameter_fit.thermo import tin_definition
 
 class TinTransition(AModel):
     """Calculate the transition temperature of Tin"""
@@ -12,10 +12,10 @@ class TinTransition(AModel):
     def define(self) -> None:
         tin = self.mcs("tin", tin_definition)
         n, mu = tin["n"], tin["mu"]
-        self.ra("n_alpha", n["alpha-tin"] - self.pa["n"], "mol")
-        self.ra("n_beta", n["beta-tin"] - self.pa["n"], "mol")
+        self.ra("n_a-Sn", n["a-Sn"] - self.pa["n"], "mol")
+        self.ra("n_b-Sn", n["b-Sn"] - self.pa["n"], "mol")
         self.ra("p", tin["p"] - self.pa["p"], "bar")
-        self.ra("equilibrium", mu["alpha-tin"] - mu["beta-tin"], "kJ/mol")
+        self.ra("equilibrium", mu["a-Sn"] - mu["b-Sn"], "kJ/mol")
         self.pr["dT_norm"] = tin["T"] / self.pa["T_measured"] - 1
 
 def main():

@@ -1,13 +1,16 @@
 from pytest import raises
 from pydantic import ValidationError
 
-from simu import NumericHandler
+from simu import NumericHandler, ThermoFitSolver
 from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
     ThermoFitDefinition
 )
 from simu.core.solver.thermofit.solver import ModelContext
 from simu.examples.hello_world import Square
+from simu.examples.tin_parameter_fit.thermo import thermo_source
+from simu.examples.tin_parameter_fit.simulation import TinTransition
+from simu.examples.tin_parameter_fit.parameter_fit import load_definition
 
 
 def test_instantiate_dataset(thermo_fit_configuration):
@@ -191,4 +194,8 @@ def test_model_contest():
         context.property_unit(["area", "Antarctica"])
     assert "Antarctica" in str(err)
 
-# TODO: create example model to fit simple parameter (tinn?)
+def test_tin_parameter_fit():
+    models = {"transition_model": NumericHandler(TinTransition.top())}
+    solver = ThermoFitSolver(models, thermo_source)
+    report = solver.solve(load_definition())
+    new_param = report.thermo_source

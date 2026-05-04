@@ -17,5 +17,5 @@ contributions:
 
 parameters:
   h_0:
-    path: [ H0S0ReferenceState, s_0, alpha-tin ]
+    path: [ H0S0ReferenceState, s_0, a-Sn ]
 

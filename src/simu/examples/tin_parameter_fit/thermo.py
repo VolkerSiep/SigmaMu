@@ -12,9 +12,7 @@ _CONFIG = {
     "state": "GibbsState",
     "contributions": ["H0S0ReferenceState", "LinearHeatCapacity"],
 }
-_SPECIES = {"alpha-tin": SpeciesDefinition("Sn"),
-           "beta-tin": SpeciesDefinition("Sn")}
-
+_SPECIES = {"a-Sn": SpeciesDefinition("Sn"), "b-Sn": SpeciesDefinition("Sn")}
 
 def _create_material():
     # create thermodynamic model
@@ -24,7 +22,7 @@ def _create_material():
 
     # create thermo store and add parameter source
     store = ThermoParameterStore()
-    with open(_PARAMETER_FILE) as file:
+    with _PARAMETER_FILE.open() as file:
         parameters = safe_load(file)
     source = StringDictThermoSource(parameters)
     store.add_source(_SOURCE_ID, source)

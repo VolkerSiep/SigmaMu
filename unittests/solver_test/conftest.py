@@ -4,7 +4,7 @@ from pathlib import Path
 from pytest import fixture
 from yaml import safe_load
 
-from simu import StringDictThermoSource
+from simu import StringDictThermoSource, NumericHandler
 from simu.core.solver.thermofit.config import ThermoFitValidationContext
 
 
@@ -15,7 +15,7 @@ def thermo_fit_configuration():
         return safe_load(file)
 
 
-@fixture
+@fixture(scope="session")
 def linear_system():
     from numpy import array
     from scipy.sparse import csr_array
