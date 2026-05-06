@@ -36,7 +36,7 @@ def contribution_context_stub():
         def parameter_unit(self, path: Sequence[str]) -> str:
             if len(path) > 1 or path[0] not in self._parameters:
                 raise KeyError(f"'{'.'.join(path)}' not found")
-            return self._parameters[path[1]]
+            return self._parameters[path[0]]
 
         def property_unit(self, path: Sequence[str]) -> str:
             if not path:

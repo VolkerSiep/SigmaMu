@@ -1,9 +1,8 @@
 # stdlib
-from symtable import Function
 from typing import Any
 from copy import deepcopy
 from time import time
-from collections.abc import Sequence, Iterator
+from collections.abc import Sequence, Generator
 from dataclasses import dataclass
 
 # external
@@ -16,7 +15,7 @@ from scipy.sparse import csr_array
 from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
-from simu.core.utilities.types import NestedMutMap
+from simu.core.utilities.types import Map, NestedMutMap
 from simu.core.utilities.errors import (
     IterativeProcessInterrupted, NonSquareSystem)
 
@@ -24,11 +23,12 @@ from .report import (
     SimulationSolverReport, SimulationSolverIterationReport, PropertyFunction)
 from .config import SimulationSolverConfig
 
+
 @dataclass
 class _FunctionCollection:
-    f_r: Function
-    f_b: Function
-    f_y: PropertyFunction
+    f_r: Function  # x -> r, r_x
+    f_b: Function  # x, dx -> a, b
+    f_y: PropertyFunction  # x -> y
 
 
 _OUTPUT_TABLE_DEFINITION = {
@@ -137,8 +137,10 @@ class SimulationSolver:
             prop_func=self._funcs.f_y
         )
 
-    def solve_iter(self, config: SimulationSolverConfig = None,
-                   **options: Any) -> Iterator[SimulationSolverIterationReport]:
+    def solve_iter(
+            self, config: SimulationSolverConfig = None,
+            **options: Any
+    ) -> Generator[SimulationSolverIterationReport, Map[Any] | None, None]:
         """Run individual iterations and return control flow back to the client
         code after each iteration. This allows for finer control in a
         multithreaded environment, for instance to update a GUI with trends
@@ -194,7 +196,7 @@ class SimulationSolver:
 
             # reporting
             duration = time() - start_time
-            yield SimulationSolverIterationReport(
+            options = yield SimulationSolverIterationReport(
                 iteration=iteration,
                 max_err=float(max_err),
                 max_res_name=max_res_name,
@@ -202,6 +204,8 @@ class SimulationSolver:
                 min_alpha_name=min_alpha_name,
                 duration=duration
             )
+            if options is not None:
+                config = config.update(**options)
         else:
             msg = f"Model did not converge after {config.max_iter} iterations"
             raise ValueError(msg)

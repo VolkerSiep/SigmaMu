@@ -1,10 +1,22 @@
 from typing import Any
 from collections.abc import Sequence
+from dataclasses import dataclass
+from casadi import SX, jacobian, jtimes, Function
 from simu import NumericHandler, NHKeys, AbstractThermoSource
 from simu.core.utilities.types import Map, MutMap, NestedMap
 
 from .config import (
-    ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext)
+    ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
+    ThermoFitContribution
+)
+
+@dataclass
+class _FunctionCollection:
+    f_r: Function  # t, x, p -> r, r_x
+    f_bx: Function  # t, x, dx, p -> a, b
+    f_bt: Function  # t, x, dt, p -> a, b
+    f_q: Function  # t, x, p -> q, q_x, q_t, r_x, r_t
+
 
 class ModelContext:
     def __init__(self, model: NumericHandler):
@@ -42,6 +54,7 @@ class ThermoFitSolver:
         self._config = (config or ThermoFitSolverConfig()).update(**options)
         self._thermo_source = thermo_source
         self._models = models
+        # TODO: check models to be square, store sizes,
 
     def set_options(self, config: ThermoFitSolverConfig | None = None,
                     **options: Any):
@@ -57,11 +70,21 @@ class ThermoFitSolver:
               config: ThermoFitSolverConfig | None = None,
               **options: Any):
         config = (config or self._config).update(**options)
-        context = self._parse_definition(definition)
+        setup = self._parse_definition(definition)
+        funcs = {n: self._prepare_functions(c)
+                 for n, c in setup.contributions.items()}
 
 
-        # for each data set, collect the model and create the required functions
+        # for each contribution, collect the model and create the required functions
+
+
         # need to identify thermodynamic parameters in arguments
+
+    def _prepare_functions(self,
+                           cont: ThermoFitContribution) -> _FunctionCollection:
+        model = self._models[cont.model_id]
+
+
 
 
     def _parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
