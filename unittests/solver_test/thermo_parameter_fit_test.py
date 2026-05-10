@@ -182,7 +182,7 @@ def test_thermo_fit_config(thermo_fit_configuration, contribution_context_stub):
     config = ThermoFitDefinition.model_validate(
         thermo_fit_configuration, context=contribution_context_stub
     )
-    assert config.evaluations["vle_p"].data_to_model["x"] == ["x"]
+    assert config.evaluations["vle_p"].data_to_model["x"].path == ["x"]
 
 def test_model_contest():
     model = NumericHandler(Square.top())

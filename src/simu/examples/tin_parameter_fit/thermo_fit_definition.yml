@@ -11,9 +11,9 @@ contributions:
     dataset: wiki_data
     model_id: transition_model
     data_to_model:
-      T_trans: [ T_measured ]
+      T_trans: {path: [T_measured]}
     penalties:
-      - [ dT_norm ]
+      - [dT_norm]
 
 parameters:
   h_0:

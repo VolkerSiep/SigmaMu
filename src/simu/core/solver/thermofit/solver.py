@@ -1,21 +1,28 @@
 from typing import Any
 from collections.abc import Sequence
 from dataclasses import dataclass
-from casadi import SX, jacobian, jtimes, Function
-from simu import NumericHandler, NHKeys, AbstractThermoSource
-from simu.core.utilities.types import Map, MutMap, NestedMap
+from casadi import SX, jacobian, jtimes, Function, vertcat
+from simu import (
+    NumericHandler, NHKeys, AbstractThermoSource, Quantity, SymbolQuantity)
+from simu.core.utilities.types import Map, MutMap, NestedMap, NestedMutMap
 
 from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
-    ThermoFitContribution
+    ThermoFitContribution, ThermoFitParameter
 )
 
 @dataclass
+class _ParameterSymbol:
+    name: str
+    default_value: Quantity
+
+
+@dataclass
 class _FunctionCollection:
-    f_r: Function  # t, x, p -> r, r_x
-    f_bx: Function  # t, x, dx, p -> a, b
-    f_bt: Function  # t, x, dt, p -> a, b
-    f_q: Function  # t, x, p -> q, q_x, q_t, r_x, r_t
+    f_r: Function  # x, p, t -> r, r_x
+    f_bx: Function  # x, p, t, dx -> b, a
+    f_bt: Function  # x, p, t, dt -> b, a
+    f_q: Function  # x, p, t -> q, q_x, q_t, r_x, r_t
 
 
 class ModelContext:
@@ -66,13 +73,13 @@ class ThermoFitSolver:
        """
         self._config = (config or self._config).update(**options)
 
-    def solve(self, definition: Map[Any],
+    def solve(self, thermo_fit_definition: Map[Any],
               config: ThermoFitSolverConfig | None = None,
               **options: Any):
         config = (config or self._config).update(**options)
-        setup = self._parse_definition(definition)
-        funcs = {n: self._prepare_functions(c)
-                 for n, c in setup.contributions.items()}
+        definition = self._parse_definition(thermo_fit_definition)
+        funcs = {n: self._prepare_functions(c, definition.parameters)
+                 for n, c in definition.contributions.items()}
 
 
         # for each contribution, collect the model and create the required functions
@@ -80,10 +87,55 @@ class ThermoFitSolver:
 
         # need to identify thermodynamic parameters in arguments
 
-    def _prepare_functions(self,
-                           cont: ThermoFitContribution) -> _FunctionCollection:
+    def _prepare_functions(self, cont: ThermoFitContribution,
+                           tau_def: Map[ThermoFitParameter]
+                          ) -> _FunctionCollection:
         model = self._models[cont.model_id]
+        args = model.arguments
+        num_states = args[NHKeys.VECTORS][NHKeys.STATES].shape[0]
 
+        # define symbols for function arguments
+        x = SX.sym("x", num_states)
+        d_x = SX.sym("d_x", num_states)
+        t = SX.sym("t", len(tau_def))
+        d_t = SX.sym("d_tau", len(tau_def))
+        p = SX.sym("p", len(cont.data_to_model))
+
+        # replace state
+        args[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
+        # replace thermo parameters from t in arg
+        for t_i, def_i in zip(t.nonzeros(), tau_def.values()):
+            symbol = Quantity(t_i, def_i.default.units)
+            _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
+        # replace model parameters from p in arg
+        for p_i, def_i in zip(p.nonzeros(), cont.data_to_model.values()):
+            symbol = Quantity(p_i, def_i.uom)
+            _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
+
+        # evaluate model symbolically
+        res = model.function(args, squeeze_results=False)
+
+        # extract r, b
+        vectors = res[NHKeys.VECTORS]
+        r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
+
+        # extract q
+        q = vertcat(*[_extract_qty(res[NHKeys.MODEL_PROPS], path).to("").m
+                     for path in cont.penalties])
+        # apply weight of entire contribution
+        q *= cont.weight
+
+        # create Jacobian matrices
+        r_x, r_t = jacobian(r, x), jacobian(r, t)
+        q_x, q_t = jacobian(q, x), jacobian(q, t)
+
+        # create functions
+        return _FunctionCollection(
+            f_r=Function("f_r", [x, p, t], [r, r_x]),
+            f_bx=Function("f_bx", [x, p, t, d_x], [b, -b / jtimes(b, x, d_x)]),
+            f_bt=Function("f_bt", [x, p, t, d_t], [b, -b / jtimes(b, t, d_t)]),
+            f_q=Function("f_q", [x, p, t], [q, q_x, q_t, r_x, r_t])
+        )
 
 
 
@@ -91,3 +143,30 @@ class ThermoFitSolver:
         models = {n: ModelContext(m) for n, m in self._models.items()}
         context = ThermoFitValidationContext(models, self._thermo_source)
         return ThermoFitDefinition.model_validate(definition, context=context)
+
+    def _define_thermo_parameter(self, name: str, parameter: ThermoFitParameter
+                                 ) -> _ParameterSymbol:
+        default_value = parameter.default
+        if default_value is None:
+            default_value = self._thermo_source[parameter.path]
+        return _ParameterSymbol(
+            name=name,
+            default_value=default_value
+        )
+
+
+def _extract_qty(results: NestedMap[Quantity], path: Sequence[str]) -> Quantity:
+    for p in path:
+        results = results[p]
+    return results
+
+
+def _replace_qty(arguments: NestedMutMap[Quantity],
+                 item: Quantity, path: Sequence[str]):
+    """Replace an item"""
+    prev = None
+    for p in path:
+        if not p in arguments:
+            return  # Thermo-parameter is not in model, skip
+        prev, arguments = arguments, arguments[p]
+    prev[path[-1]] = item

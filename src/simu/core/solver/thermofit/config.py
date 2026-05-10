@@ -93,11 +93,18 @@ class DataSet(BaseModel):
                                  f"not match number of columns ({l_columns})")
         return self
 
+
+class ModelParameter(BaseModel):
+    path: Sequence[str]
+    uom: str | None = Field(default=None)
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class ThermoFitEntity(BaseModel):
     dataset: str  # to be registered dataset
     model_id: str  # to be registered model
-    data_to_model: Map[Sequence[str]]
-    # keys = column titles, values = model parameters
+    data_to_model: Map[ModelParameter] # keys = data set column titles
 
     model_config = ConfigDict(extra='forbid')
 
@@ -113,14 +120,15 @@ class ThermoFitEntity(BaseModel):
         model = self._model_context(info)
 
         # validate parameter existence
-        for param_path in self.data_to_model.values():
+        for param in self.data_to_model.values():
             try:
-                _ = model.parameter_unit(param_path)
+                unit = model.parameter_unit(param.path)
             except KeyError as e:
-                param = ".".join(param_path)
-                msg = (f"Parameter '{param}' not defined in "
+                param_path = ".".join(param.path)
+                msg = (f"Parameter '{param_path}' not defined in "
                        f"model '{self.model_id}'")
                 raise ValueError(msg) from e
+            param.uom = unit
         return self
 
     def _model_context(self, info: ValidationInfo) -> ThermoFitModelContext:
@@ -186,9 +194,9 @@ class ThermoFitEvaluation(ThermoFitEntity):
 
 class ThermoFitParameter(BaseModel):
     path: Sequence[str]
-    default: QtyType = Field(default=None)
-    lower: QtyType = Field(default=None)
-    upper: QtyType = Field(default=None)
+    default: QtyType | None = Field(default=None)
+    lower: QtyType | None = Field(default=None)
+    upper: QtyType | None = Field(default=None)
 
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
@@ -238,6 +246,8 @@ class ThermoFitParameter(BaseModel):
             if not value.check(parameter.units):
                 msg = f"Incompatible unit: {value.units} vs. {parameter.units}"
                 raise ValueError(msg)
+        if self.default is None:
+            self.default = parameter
         return self
 
 
@@ -276,9 +286,9 @@ class ThermoFitDefinition(BaseModel):
 
                 # is target defined in model (checked before?)
                 try:
-                    uom_model = model.parameter_unit(target)
+                    uom_model = model.parameter_unit(target.path)
                 except KeyError as e:
-                    name = ".".join(target)
+                    name = ".".join(target.path)
                     msg = f"Target '{name}' not a model parameter"
                     raise ValueError(msg) from e
 

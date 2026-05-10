@@ -15,11 +15,11 @@ contributions:
     dataset: vle_1bar
     model_id: vle_fit
     data_to_model:
-      T: [T]  # temperature
-      p: [p]  # pressure
-      x: [x]  # liquid fraction
-      y: [y]  # gas fraction
-      w: [w]  # weight factor
+      T: {path: [T]}  # temperature
+      p: {path: [p]}  # pressure
+      x: {path: [x]}  # liquid fraction
+      y: {path: [y]}  # gas fraction
+      w: {path: [w]}  # weight factor
     penalties:
       - [dmu_norm, H2O]
       - [dmu_norm, CO2]
@@ -29,8 +29,8 @@ evaluations:
     dataset: vle_1bar
     model_id: vle_eval_p
     data_to_model:
-      T: [T]
-      x: [x]
+      T: {path: [T]}
+      x: {path: [x]}
     properties:
       p_hat: {path: [p], uom: bar}
       y_hat: {path: [y], uom: "%"}
