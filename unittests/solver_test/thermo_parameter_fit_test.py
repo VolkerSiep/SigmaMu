@@ -6,7 +6,7 @@ from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
     ThermoFitDefinition
 )
-from simu.core.solver.thermofit.solver import ModelContext
+from simu.core.solver.thermofit.solver import ModelContext, _prepare_functions
 from simu.examples.hello_world import Square
 from simu.examples.tin_parameter_fit.thermo import thermo_source
 from simu.examples.tin_parameter_fit.simulation import TinTransition

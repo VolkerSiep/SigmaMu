@@ -78,7 +78,8 @@ class ThermoFitSolver:
               **options: Any):
         config = (config or self._config).update(**options)
         definition = self._parse_definition(thermo_fit_definition)
-        funcs = {n: self._prepare_functions(c, definition.parameters)
+        funcs = {n: _prepare_functions(self._models[c.model_id],
+                                       c, definition.parameters)
                  for n, c in definition.contributions.items()}
 
 
@@ -87,55 +88,7 @@ class ThermoFitSolver:
 
         # need to identify thermodynamic parameters in arguments
 
-    def _prepare_functions(self, cont: ThermoFitContribution,
-                           tau_def: Map[ThermoFitParameter]
-                          ) -> _FunctionCollection:
-        model = self._models[cont.model_id]
-        args = model.arguments
-        num_states = args[NHKeys.VECTORS][NHKeys.STATES].shape[0]
 
-        # define symbols for function arguments
-        x = SX.sym("x", num_states)
-        d_x = SX.sym("d_x", num_states)
-        t = SX.sym("t", len(tau_def))
-        d_t = SX.sym("d_tau", len(tau_def))
-        p = SX.sym("p", len(cont.data_to_model))
-
-        # replace state
-        args[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
-        # replace thermo parameters from t in arg
-        for t_i, def_i in zip(t.nonzeros(), tau_def.values()):
-            symbol = Quantity(t_i, def_i.default.units)
-            _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
-        # replace model parameters from p in arg
-        for p_i, def_i in zip(p.nonzeros(), cont.data_to_model.values()):
-            symbol = Quantity(p_i, def_i.uom)
-            _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
-
-        # evaluate model symbolically
-        res = model.function(args, squeeze_results=False)
-
-        # extract r, b
-        vectors = res[NHKeys.VECTORS]
-        r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
-
-        # extract q
-        q = vertcat(*[_extract_qty(res[NHKeys.MODEL_PROPS], path).to("").m
-                     for path in cont.penalties])
-        # apply weight of entire contribution
-        q *= cont.weight
-
-        # create Jacobian matrices
-        r_x, r_t = jacobian(r, x), jacobian(r, t)
-        q_x, q_t = jacobian(q, x), jacobian(q, t)
-
-        # create functions
-        return _FunctionCollection(
-            f_r=Function("f_r", [x, p, t], [r, r_x]),
-            f_bx=Function("f_bx", [x, p, t, d_x], [b, -b / jtimes(b, x, d_x)]),
-            f_bt=Function("f_bt", [x, p, t, d_t], [b, -b / jtimes(b, t, d_t)]),
-            f_q=Function("f_q", [x, p, t], [q, q_x, q_t, r_x, r_t])
-        )
 
 
 
@@ -153,6 +106,56 @@ class ThermoFitSolver:
             name=name,
             default_value=default_value
         )
+
+def _prepare_functions(model: NumericHandler, cont: ThermoFitContribution,
+                       tau_def: Map[ThermoFitParameter]
+                      ) -> _FunctionCollection:
+    args = model.arguments
+    num_states = args[NHKeys.VECTORS][NHKeys.STATES].shape[0]
+
+    # define symbols for function arguments
+    x = SX.sym("x", num_states)
+    d_x = SX.sym("d_x", num_states)
+    t = SX.sym("t", len(tau_def))
+    d_t = SX.sym("d_tau", len(tau_def))
+    p = SX.sym("p", len(cont.data_to_model))
+
+    # replace state
+    args[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
+    # replace thermo parameters from t in arg
+    for t_i, def_i in zip(t.nonzeros(), tau_def.values()):
+        symbol = Quantity(t_i, def_i.default.units)
+        _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
+    # replace model parameters from p in arg
+    for p_i, def_i in zip(p.nonzeros(), cont.data_to_model.values()):
+        symbol = Quantity(p_i, def_i.uom)
+        _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
+
+    # evaluate model symbolically
+    res = model.function(args, squeeze_results=False)
+
+    # extract r, b
+    vectors = res[NHKeys.VECTORS]
+    r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
+
+    # extract q
+    model_props = res[NHKeys.MODEL_PROPS]
+    q = vertcat(*[_extract_qty(model_props, path).to("").m
+                  for path in cont.penalties])
+    # apply weight of entire contribution
+    q *= cont.weight
+
+    # create Jacobian matrices
+    r_x, r_t = jacobian(r, x), jacobian(r, t)
+    q_x, q_t = jacobian(q, x), jacobian(q, t)
+
+    # create functions
+    return _FunctionCollection(
+        f_r=Function("f_r", [x, p, t], [r, r_x]),
+        f_bx=Function("f_bx", [x, p, t, d_x], [b, -b / jtimes(b, x, d_x)]),
+        f_bt=Function("f_bt", [x, p, t, d_t], [b, -b / jtimes(b, t, d_t)]),
+        f_q=Function("f_q", [x, p, t], [q, q_x, q_t, r_x, r_t])
+    )
 
 
 def _extract_qty(results: NestedMap[Quantity], path: Sequence[str]) -> Quantity:
