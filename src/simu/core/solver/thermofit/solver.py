@@ -124,8 +124,9 @@ def _prepare_functions(model: NumericHandler, cont: ThermoFitContribution,
     args[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
     # replace thermo parameters from t in arg
     for t_i, def_i in zip(t.nonzeros(), tau_def.values()):
+        path = [def_i.store_name, *def_i.path]
         symbol = Quantity(t_i, def_i.default.units)
-        _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
+        _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, path)
     # replace model parameters from p in arg
     for p_i, def_i in zip(p.nonzeros(), cont.data_to_model.values()):
         symbol = Quantity(p_i, def_i.uom)

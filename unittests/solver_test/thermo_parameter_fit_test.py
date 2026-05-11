@@ -1,3 +1,5 @@
+from math import isnan
+
 from pytest import raises
 from pydantic import ValidationError
 
@@ -194,31 +196,41 @@ def test_model_contest():
     assert "Antarctica" in str(err)
 
 def test_prepare_function_r(tin_functions):
-    r, jac = tin_functions.f_r([273.15 + 8.83, 1e5, 1, 1], [12.3], [44.14])
+    x = [273.15 + 8.83, 1e5, 1, 1]
+    r, jac = tin_functions.f_r(x, [12.3], [44.14])
     assert r.shape == (4, 1)
     assert jac.shape == (4, 4)
     r = list(r.nonzeros())
     for i in range(1, 4):
-        assert r[1] == 0
+        assert r[i] == 0
     assert 160 < r[0] < 170
 
 def test_prepare_function_q(tin_functions):
     x = [273.15 + 8.83, 1e5, 1, 1]
     q, q_x, q_t, r_x, r_t = tin_functions.f_q(x, [12.3], [44.14])
-    print(f"{q =}")
-    print(f"{q_x =}")
-    print(f"{q_t =}")
-    print(f"{r_x =}")
-    print(f"{r_t =}")
-    # TODO:
-    #  - finish implementing this test with adequate asserts
-    #  - r_t[0] should not be zero, as equilibrium depends on parameter!
-    #    check that tau is substituted into thermo-arguments
-    #    !! first key in thermo parameters is name of store: "default".
-    #    Must I look in all thermo-stores? Do I define the store in the config?
+    assert abs(q) < 0.02  # close to solution with 8.83 degC
+    assert q_x.shape == (1, 4)
+    assert r_t.shape == (4, 1)
+    for i in range(1, 4):
+        assert q_x[i] == 0.0  # q only depends on T, not p or n_i
+    assert q_t == 0.0  # no direct dependency
+    for i in range(1, 4):
+        assert r_t[i] == 0.0  # only r[0] depends on thermo-parameter
 
+def test_prepare_function_bx(tin_functions):
+    temp = 273.15 + 8.83
+    x = [temp, 1e5, 1, 1]
+    dx = [-2 * temp, 0, 0, 0]
+    b, a = tin_functions.f_bx(x, [12.3], [44.14], dx)
+    assert b == temp
+    assert a == 0.5
 
-# TODO: also test other functions
+def test_prepare_function_bt(tin_functions):
+    temp = 273.15 + 8.83
+    x = [temp, 1e5, 1, 1]
+    b, a = tin_functions.f_bt(x, [12.3], [44.14], [1])
+    assert b == temp
+    assert isnan(a)
 
 def test_tin_parameter_fit():
     models = {"transition_model": NumericHandler(TinTransition.top())}

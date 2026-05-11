@@ -66,7 +66,8 @@ def tin_functions():
     contrib = ThermoFitContribution.model_construct(
         dataset="dummy",
         model_id="dummy",
-        data_to_model={"T_Trans": ModelParameter(path=["T_measured"], uom="K")},
+        data_to_model={
+            "T_Trans": ModelParameter(path=["T_measured"], uom="degC")},
         penalties=[["dT_norm"]]
     )
 

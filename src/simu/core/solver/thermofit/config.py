@@ -197,6 +197,7 @@ class ThermoFitParameter(BaseModel):
     default: QtyType | None = Field(default=None)
     lower: QtyType | None = Field(default=None)
     upper: QtyType | None = Field(default=None)
+    store_name: str = Field(default="default")
 
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 

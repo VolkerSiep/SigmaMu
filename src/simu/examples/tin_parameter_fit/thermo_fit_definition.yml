@@ -1,10 +1,10 @@
 datasets:
   wiki_data:
     source: Wikipedia, entry on tin
-    columns: [ T_trans ]
-    uom: [ degC ]
+    columns: [T_trans]
+    uom: [degC]
     data:
-      - [ 12.3 ]  # Only one data point
+      - [12.3]  # Only one data point
 
 contributions:
   equilibrium:
@@ -17,5 +17,5 @@ contributions:
 
 parameters:
   s_0:
-    path: [ H0S0ReferenceState, s_0, a-Sn ]
+    path: [H0S0ReferenceState, s_0, a-Sn]
 
