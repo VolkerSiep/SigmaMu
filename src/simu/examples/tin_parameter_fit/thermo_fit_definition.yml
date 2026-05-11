@@ -16,6 +16,6 @@ contributions:
       - [dT_norm]
 
 parameters:
-  h_0:
+  s_0:
     path: [ H0S0ReferenceState, s_0, a-Sn ]
 

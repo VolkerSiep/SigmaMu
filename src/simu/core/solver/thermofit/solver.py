@@ -129,7 +129,7 @@ def _prepare_functions(model: NumericHandler, cont: ThermoFitContribution,
     # replace model parameters from p in arg
     for p_i, def_i in zip(p.nonzeros(), cont.data_to_model.values()):
         symbol = Quantity(p_i, def_i.uom)
-        _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, def_i.path)
+        _replace_qty(args[NHKeys.MODEL_PARAMS], symbol, def_i.path)
 
     # evaluate model symbolically
     res = model.function(args, squeeze_results=False)

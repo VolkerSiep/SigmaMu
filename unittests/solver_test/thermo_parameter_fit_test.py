@@ -6,7 +6,7 @@ from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
     ThermoFitDefinition
 )
-from simu.core.solver.thermofit.solver import ModelContext, _prepare_functions
+from simu.core.solver.thermofit.solver import ModelContext
 from simu.examples.hello_world import Square
 from simu.examples.tin_parameter_fit.thermo import thermo_source
 from simu.examples.tin_parameter_fit.simulation import TinTransition
@@ -186,13 +186,39 @@ def test_thermo_fit_config(thermo_fit_configuration, contribution_context_stub):
 
 def test_model_contest():
     model = NumericHandler(Square.top())
-    print(model.function.result_structure)
     context = ModelContext(model)
     assert context.parameter_unit(["length"]) == "m"
     assert context.property_unit(["area"]) == "m ** 2"
     with raises(KeyError) as err:
         context.property_unit(["area", "Antarctica"])
     assert "Antarctica" in str(err)
+
+def test_prepare_function_r(tin_functions):
+    r, jac = tin_functions.f_r([273.15 + 8.83, 1e5, 1, 1], [12.3], [44.14])
+    assert r.shape == (4, 1)
+    assert jac.shape == (4, 4)
+    r = list(r.nonzeros())
+    for i in range(1, 4):
+        assert r[1] == 0
+    assert 160 < r[0] < 170
+
+def test_prepare_function_q(tin_functions):
+    x = [273.15 + 8.83, 1e5, 1, 1]
+    q, q_x, q_t, r_x, r_t = tin_functions.f_q(x, [12.3], [44.14])
+    print(f"{q =}")
+    print(f"{q_x =}")
+    print(f"{q_t =}")
+    print(f"{r_x =}")
+    print(f"{r_t =}")
+    # TODO:
+    #  - finish implementing this test with adequate asserts
+    #  - r_t[0] should not be zero, as equilibrium depends on parameter!
+    #    check that tau is substituted into thermo-arguments
+    #    !! first key in thermo parameters is name of store: "default".
+    #    Must I look in all thermo-stores? Do I define the store in the config?
+
+
+# TODO: also test other functions
 
 def test_tin_parameter_fit():
     models = {"transition_model": NumericHandler(TinTransition.top())}
