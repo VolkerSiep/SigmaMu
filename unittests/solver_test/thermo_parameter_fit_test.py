@@ -207,7 +207,7 @@ def test_prepare_function_r(tin_functions):
 
 def test_prepare_function_q(tin_functions):
     x = [273.15 + 8.83, 1e5, 1, 1]
-    q, q_x, q_t, r_x, r_t = tin_functions.f_q(x, [12.3], [44.14])
+    q, q_x, q_t, r_t = tin_functions.f_q(x, [12.3], [44.14])
     assert abs(q) < 0.02  # close to solution with 8.83 degC
     assert q_x.shape == (1, 4)
     assert r_t.shape == (4, 1)

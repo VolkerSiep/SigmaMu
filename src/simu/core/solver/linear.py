@@ -75,6 +75,7 @@ class ScaledLinearSparseSolver:
         pass
 
     def solve(self, matrix: csr_array, rhs: NDArray) -> NDArray:
+
         s_x = 1
         # scale system if demanded
         if self.config.num_scale:

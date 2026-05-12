@@ -1,6 +1,10 @@
 from typing import Any
 from collections.abc import Sequence
 from dataclasses import dataclass
+
+from numpy import squeeze, array
+from numpy.typing import NDArray
+from scipy.sparse import csr_array
 from casadi import SX, jacobian, jtimes, Function, vertcat
 from simu import (
     NumericHandler, NHKeys, AbstractThermoSource, Quantity, SymbolQuantity)
@@ -8,8 +12,10 @@ from simu.core.utilities.types import Map, MutMap, NestedMap, NestedMutMap
 
 from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
-    ThermoFitContribution, ThermoFitParameter
+    ThermoFitContribution, ThermoFitParameter, DataSet
 )
+from ..common import not_finite
+
 
 @dataclass
 class _ParameterSymbol:
@@ -22,7 +28,17 @@ class _FunctionCollection:
     f_r: Function  # x, p, t -> r, r_x
     f_bx: Function  # x, p, t, dx -> b, a
     f_bt: Function  # x, p, t, dt -> b, a
-    f_q: Function  # x, p, t -> q, q_x, q_t, r_x, r_t
+    f_q: Function  # x, p, t -> q, q_x, q_t, r_t
+
+
+@dataclass
+class _ContributionResult:
+    q: Sequence[NDArray]
+    dq_dt: Sequence[NDArray]
+
+class _DataPointResult:
+    x: NDArray
+    dr_dx: NDArray
 
 
 class ModelContext:
@@ -52,6 +68,74 @@ class ModelContext:
             raise KeyError(f"Invalid path: '{'.'.join(path)}'")
         return result
 
+class DataRowConverter:
+    def __init__(self, from_uom: Sequence[str], to_uom: Sequence[str]):
+        self._from = from_uom
+        self._to = to_uom
+
+    def __call__(self, row: Sequence[float]) -> Sequence[float]:
+        return [
+            Quantity(r, f).to(t).magnitude
+            for r, f, t in zip(row, self._from, self._to)
+    ]
+
+
+class ThermoFitContributionWrapper:
+    def __init__(self,
+                 model: NumericHandler,
+                 contribution: ThermoFitContribution,
+                 dataset: DataSet,
+                 parameters: Map[ThermoFitParameter]):
+        self._model = model
+        self._dataset = dataset
+        self._contribution = contribution
+        self._funcs = _prepare_functions(model, contribution, parameters)
+
+        param_uom = [d.uom for d in contribution.data_to_model.values()]
+        self._row_converter = DataRowConverter(dataset.uom, param_uom)
+
+        state = model.arguments[NHKeys.VECTORS][NHKeys.STATES]  # This is a quantity!!
+        self._states = [state] * len(dataset.data)
+
+
+    def solve(self, tau: NDArray) -> _ContributionResult:
+        states, model, data = self._states, self._model, self._dataset.data
+
+        for r, row in enumerate(data):
+            param = self._row_converter(row)
+            try:
+                states[r], dr_dx = self._solve_point(states[r], param, tau)
+            except ValueError:
+                pass  # TODO: ignore contribution, reset state to default maybe
+
+        # TODO:
+        #    solve data point, keep last r_x
+        #    calculate q and derivatives (q_x, q_t, r_t)
+        #    calculate q_i and dq_i_dt
+        #  return sequences <q_i> and <dq_i_dt>
+
+        return _ContributionResult(...)
+
+    def _solve_point(self,
+                     state: NDArray,
+                     param: Sequence[float],
+                     tau: Sequence[float]) -> _DataPointResult:
+        """Solve a point, return dr_dx. state is updated """
+        model = self._model
+        residual_names = model.vector_res_names(NHKeys.RESIDUALS)
+        bound_names = model.vector_res_names(NHKeys.BOUNDS)
+
+        for iteration in range(30):  # todo: use max_iter from config
+            r, dr_dx = self._funcs.f_r(state, param, tau)
+            r = squeeze(array(r))
+            dr_dx = csr_array(dr_dx)
+            if not_finite(r, residual_names):
+                raise ValueError("No convergence")
+            max_err, max_res_name = assess_residuals(r, residual_names)
+            if max_err < 1:
+                break
+            # TODO: now I need linear solver, so I need the config down here!
+
 
 class ThermoFitSolver:
     def __init__(self, models: MutMap[NumericHandler],
@@ -78,17 +162,13 @@ class ThermoFitSolver:
               **options: Any):
         config = (config or self._config).update(**options)
         definition = self._parse_definition(thermo_fit_definition)
-        funcs = {n: _prepare_functions(self._models[c.model_id],
-                                       c, definition.parameters)
-                 for n, c in definition.contributions.items()}
-
-
-        # for each contribution, collect the model and create the required functions
-
-
-        # need to identify thermodynamic parameters in arguments
-
-
+        wrappers = {
+            n: ThermoFitContributionWrapper(
+                self._models[c.model_id], c,
+                definition.datasets[c.dataset],
+                definition.parameters
+            ) for n, c in definition.contributions.items()
+        }
 
 
 
@@ -155,7 +235,7 @@ def _prepare_functions(model: NumericHandler, cont: ThermoFitContribution,
         f_r=Function("f_r", [x, p, t], [r, r_x]),
         f_bx=Function("f_bx", [x, p, t, d_x], [b, -b / jtimes(b, x, d_x)]),
         f_bt=Function("f_bt", [x, p, t, d_t], [b, -b / jtimes(b, t, d_t)]),
-        f_q=Function("f_q", [x, p, t], [q, q_x, q_t, r_x, r_t])
+        f_q=Function("f_q", [x, p, t], [q, q_x, q_t, r_t])
     )
 
 
