@@ -16,10 +16,9 @@ from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.types import Map, NestedMutMap
-from simu.core.utilities.errors import (
-    IterativeProcessInterrupted, NonSquareSystem)
+from simu.core.utilities.errors import IterativeProcessInterrupted
 
-from ..common import relax, not_finite, assess_residuals
+from ..common import relax, not_finite, assess_residuals, check_model_square
 from .report import (
     SimulationSolverReport, SimulationSolverIterationReport, PropertyFunction)
 from .config import SimulationSolverConfig
@@ -64,15 +63,10 @@ class SimulationSolver:
         self._model = model
         self._config = (config or SimulationSolverConfig()).update(**options)
 
-        args = model.arguments
-        # store size of state
-        self.__state_size = args[NHKeys.VECTORS][NHKeys.STATES].m.size()[0]
-        res_size = len(model.vector_res_names(NHKeys.RESIDUALS))
-
-        if self.__state_size != res_size:
-            raise NonSquareSystem(self.__state_size, res_size)
+        check_model_square(model)
 
         # user shall not think that putting a state here has any effect
+        args = model.arguments
         del args[NHKeys.VECTORS][NHKeys.STATES]
         self._model_parameters: NestedMutMap[Quantity] = args
 
@@ -166,7 +160,6 @@ class SimulationSolver:
         self._x = x = self.initial_state
 
         config.linear_solver.reset()
-        lin_solve = config.linear_solver.solve
 
         for iteration in range(config.max_iter):
             # evaluate system (matrix and rhs)
@@ -184,7 +177,7 @@ class SimulationSolver:
                 break
 
             # calculate full update
-            dx = -lin_solve(dr_dx, r)
+            dx = -config.linear_solver.solve(dr_dx, r)
 
             # find relaxation factor
             b, a = funcs.f_b(x, dx)
@@ -229,13 +222,14 @@ class SimulationSolver:
         #  - a casadi function x -> (r, dr/dx)
         #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
         # prepare a QFunction x -> (y_m, y_t)
+        size = len(self._model.vector_arg_names(NHKeys.STATES))
         param = deepcopy(self._model_parameters)
-        x = SX.sym("x", self.__state_size)
+        x = SX.sym("x", size)
         param[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
         res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
         vectors = res[NHKeys.VECTORS]
         r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
-        dx = SX.sym("dx", self.__state_size)
+        dx = SX.sym("dx", size)
         f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
 
         return _FunctionCollection(

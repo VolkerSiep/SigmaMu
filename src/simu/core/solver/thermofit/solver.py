@@ -7,14 +7,15 @@ from numpy.typing import NDArray
 from scipy.sparse import csr_array
 from casadi import SX, jacobian, jtimes, Function, vertcat
 from simu import (
-    NumericHandler, NHKeys, AbstractThermoSource, Quantity, SymbolQuantity)
+    NumericHandler, NHKeys, AbstractThermoSource, Quantity)
 from simu.core.utilities.types import Map, MutMap, NestedMap, NestedMutMap
+from simu.core.utilities.errors import NonSquareSystem
 
 from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
     ThermoFitContribution, ThermoFitParameter, DataSet
 )
-from ..common import not_finite
+from ..common import not_finite, assess_residuals, relax, check_model_square
 
 
 @dataclass
@@ -36,9 +37,10 @@ class _ContributionResult:
     q: Sequence[NDArray]
     dq_dt: Sequence[NDArray]
 
+@dataclass
 class _DataPointResult:
     x: NDArray
-    dr_dx: NDArray
+    dr_dx: csr_array
 
 
 class ModelContext:
@@ -85,56 +87,81 @@ class ThermoFitContributionWrapper:
                  model: NumericHandler,
                  contribution: ThermoFitContribution,
                  dataset: DataSet,
-                 parameters: Map[ThermoFitParameter]):
+                 parameters: Map[ThermoFitParameter],
+                 config: ThermoFitSolverConfig):
         self._model = model
         self._dataset = dataset
         self._contribution = contribution
         self._funcs = _prepare_functions(model, contribution, parameters)
+        self._config = config
 
         param_uom = [d.uom for d in contribution.data_to_model.values()]
         self._row_converter = DataRowConverter(dataset.uom, param_uom)
 
-        state = model.arguments[NHKeys.VECTORS][NHKeys.STATES]  # This is a quantity!!
+        state = model.arguments[NHKeys.VECTORS][NHKeys.STATES].magnitude
         self._states = [state] * len(dataset.data)
 
 
     def solve(self, tau: NDArray) -> _ContributionResult:
         states, model, data = self._states, self._model, self._dataset.data
+        config = self._config
+        q : list[NDArray] = []
+        dq_dt: list[NDArray] = []
 
         for r, row in enumerate(data):
             param = self._row_converter(row)
             try:
                 states[r], dr_dx = self._solve_point(states[r], param, tau)
             except ValueError:
-                pass  # TODO: ignore contribution, reset state to default maybe
+                continue  # ignore contribution
+            q_i, q_x, q_t, r_t = self._funcs.f_q(states[r], param, tau)
+            x_t = -config.linear_solver_inner.solve(dr_dx, r_t)
+            q.append(q_i)
+            dq_dt.append(q_t + q_x @ x_t)
 
-        # TODO:
-        #    solve data point, keep last r_x
-        #    calculate q and derivatives (q_x, q_t, r_t)
-        #    calculate q_i and dq_i_dt
-        #  return sequences <q_i> and <dq_i_dt>
-
-        return _ContributionResult(...)
+        return _ContributionResult(q, dq_dt)
 
     def _solve_point(self,
                      state: NDArray,
                      param: Sequence[float],
                      tau: Sequence[float]) -> _DataPointResult:
         """Solve a point, return dr_dx. state is updated """
-        model = self._model
+        model, config = self._model, self._config
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
-
-        for iteration in range(30):  # todo: use max_iter from config
+        config.linear_solver_inner.reset()
+        for iteration in range(config.max_iter_inner):
+            # evaluate system
             r, dr_dx = self._funcs.f_r(state, param, tau)
             r = squeeze(array(r))
             dr_dx = csr_array(dr_dx)
+
             if not_finite(r, residual_names):
                 raise ValueError("No convergence")
+
             max_err, max_res_name = assess_residuals(r, residual_names)
             if max_err < 1:
                 break
-            # TODO: now I need linear solver, so I need the config down here!
+
+            # calculate update and find relaxation factor
+            dx = -config.linear_solver_inner.solve(dr_dx, r)
+            b, a = self._funcs.f_bx(state, param, tau, dx)
+            alpha, min_alpha_name = relax(b, a, bound_names, config.gamma)
+            if alpha < config.wall:
+                msg = f"Relaxation factor is below {config.wall}, " \
+                      "no solution found"
+                raise ValueError(msg)
+
+            # apply update
+            state = state + alpha * dx
+        else:
+            msg = f"No convergence after {config.max_iter_inner} iterations"
+            raise ValueError(msg)
+
+        return _DataPointResult(
+            x=state,
+            dr_dx=dr_dx
+        )
 
 
 class ThermoFitSolver:
@@ -145,7 +172,11 @@ class ThermoFitSolver:
         self._config = (config or ThermoFitSolverConfig()).update(**options)
         self._thermo_source = thermo_source
         self._models = models
-        # TODO: check models to be square, store sizes,
+        for n, model in models.items():
+            try:
+                check_model_square(model)
+            except NonSquareSystem as err:
+                raise NonSquareSystem(f"Model '{n}': {str(err)}") from err
 
     def set_options(self, config: ThermoFitSolverConfig | None = None,
                     **options: Any):
@@ -166,10 +197,18 @@ class ThermoFitSolver:
             n: ThermoFitContributionWrapper(
                 self._models[c.model_id], c,
                 definition.datasets[c.dataset],
-                definition.parameters
+                definition.parameters,
+                config
             ) for n, c in definition.contributions.items()
         }
 
+        # TODO:
+        #  - create initial tau vector
+        #  - in max-iter loop
+        #    * concatenate q and q_t from each contribution
+        #    * add all rhs = -q @ q_t and all hessians q_t.T @ q_t
+        #    * solve for d_tau, relax, apply
+        #    * apply convergence criterion (which ???)
 
 
     def _parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
@@ -254,3 +293,4 @@ def _replace_qty(arguments: NestedMutMap[Quantity],
             return  # Thermo-parameter is not in model, skip
         prev, arguments = arguments, arguments[p]
     prev[path[-1]] = item
+

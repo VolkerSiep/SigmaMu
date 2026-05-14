@@ -3,6 +3,9 @@ from typing import Sequence
 from numpy import squeeze, array, atleast_1d, argmin, isfinite, argmax, abs
 from numpy.typing import NDArray
 
+from simu import NumericHandler, NHKeys
+from simu.core.utilities.errors import NonSquareSystem
+
 
 def relax(b: NDArray, a: NDArray,
           bound_names: Sequence[str],
@@ -46,3 +49,13 @@ def assess_residuals(vector: NDArray,
         return max_err, max_name
     else:  # trivial model, nothing to solve
         return 0, ""
+
+
+def check_model_square(model: NumericHandler):
+    args = model.arguments
+    # store size of state
+    state_size = args[NHKeys.VECTORS][NHKeys.STATES].m.size()[0]
+    res_size = len(model.vector_res_names(NHKeys.RESIDUALS))
+
+    if state_size != res_size:
+        raise NonSquareSystem(state_size, res_size)

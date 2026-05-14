@@ -11,12 +11,14 @@ from pydantic import (
 
 from simu import Quantity, AbstractThermoSource
 from simu.core.utilities.quantity import UnitRegistry
-from simu.core.utilities.types import Map, NestedMap, OutputIOStream
+from simu.core.utilities.types import Map, OutputIOStream, LinearSolver
+from ..linear import NumpySolver
 
 
 class ThermoFitSolverConfig(BaseModel):
-    max_iter: int = Field(default=30, ge=1)
-    """The maximum number of iterations (default 30).
+    max_iter_inner: int = Field(default=30, ge=1)
+    """The maximum number of iterations (default 30) for solving the
+    sub-models for each data point.
 
     .. note::
 
@@ -27,12 +29,57 @@ class ThermoFitSolverConfig(BaseModel):
       properly posed.
     """
 
+    max_iter_outer: int = Field(default=30, ge=1)
+    """The maximum number of iterations (default 30) for solving the outer
+    iteration on finding the optimal parameter values."""
+
     output: OutputIOStream | None = Field(default_factory=lambda: sys.stdout)
     """The stream to direct the solver output to, by default ``sys.stdout``.
     ``None`` suppresses output. 
 
     The stream can be any object that supports a ``write`` method that consumes
     a string argument.
+    """
+
+    gamma: float = Field(default=0.9, gt=0.0, lt=1.0)
+    r""":math:`\gamma` (default 0.9) is the
+    fraction of the step-length applied by the solver before hitting the
+    domain boundary. Normally, changing the value is not required.
+    Generally, a lower value makes the model more robust against
+    non-linear domain boundaries (and thus linearisation errors causing
+    the state to exit the domain). A higher value yields slightly faster
+    convergence, if the solution is in comparison with the initial values
+    very close to the domain boundary.
+    """
+
+    wall: float = Field(default=1e-20, ge=0.0, lt=0.01)
+    r"""Either if there is no solution within the domain of the
+    model (for instance: The material balance forces some of the species
+    flows in a stream to be negative), or if the solver for other reasons
+    is forced to try to leave the model domain, the state will move closer
+    and closer to the domain boundary and not revert. At some point,
+    :math:`\gamma` becomes ridiculously small, and we need to give up.
+    This threshold value is defined by ``wall`` (default ``1e-20``).
+    """
+
+    linear_solver_inner: LinearSolver = \
+        Field(default_factory=NumpySolver)
+    r"""An option to provide any other linear solver for solving the Newton-type
+    updates for the inner solving of the sub models for each data point.
+    
+    As the process models of this type are typically small (say, less than 100
+    variables), and not in particular sparse, the default solver is the
+    standard dense ``numpy.linalg.solve`` version.
+    """
+
+    linear_solver_outer: LinearSolver = \
+        Field(default_factory=NumpySolver)
+    r"""An option to provide any other linear solver for solving the Newton-type
+    updates for the outer solving of the parameter optimization.
+    
+    The size of this system is equal to the number of parameters to fit, and
+    hence typically by far below 100. Further, the system is dense. As such,
+    the default solver is the standard dense ``numpy.linalg.solve`` version.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
