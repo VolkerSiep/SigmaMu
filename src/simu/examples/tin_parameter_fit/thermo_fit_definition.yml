@@ -4,7 +4,13 @@ datasets:
     columns: [T_trans]
     uom: [degC]
     data:
-      - [12.3]  # Only one data point
+      - [12.0]  # 12.3, but let's pretend we measure twice like this
+#      - [12.1]
+#      - [12.2]  # 12.3, but let's pretend we measure twice like this
+#      - [12.3]
+#      - [12.4]  # 12.3, but let's pretend we measure twice like this
+#      - [12.5]
+#      - [12.6]
 
 contributions:
   equilibrium:

@@ -62,7 +62,7 @@ class ThermoFitSolverConfig(BaseModel):
     This threshold value is defined by ``wall`` (default ``1e-20``).
     """
 
-    linear_solver_inner: LinearSolver = \
+    linear_solver: LinearSolver = \
         Field(default_factory=NumpySolver)
     r"""An option to provide any other linear solver for solving the Newton-type
     updates for the inner solving of the sub models for each data point.
@@ -72,14 +72,24 @@ class ThermoFitSolverConfig(BaseModel):
     standard dense ``numpy.linalg.solve`` version.
     """
 
-    linear_solver_outer: LinearSolver = \
-        Field(default_factory=NumpySolver)
-    r"""An option to provide any other linear solver for solving the Newton-type
-    updates for the outer solving of the parameter optimization.
+    epsilon: float = Field(default=1e-8, gt=0, lt=1)
+    r"""The convergence criterion for the parameter fit, expressed as the
+    orthogonal distance of the penalty vector to the sensitivity direction of
+    each parameter. For the augmented linearized system
     
-    The size of this system is equal to the number of parameters to fit, and
-    hence typically by far below 100. Further, the system is dense. As such,
-    the default solver is the standard dense ``numpy.linalg.solve`` version.
+    .. math:: J^\mathrm{T}\cdot J\cdot \Delta \tau = -J^\mathrm{T}\,q
+    
+    the stationary condition :math:`J^\mathrm{T}\,q = 0` is interpreted as the
+    potential to improve the solution per parameter :math:`\tau_\alpha` as the
+    angle between :math:`\sum_i J_{\alpha i}\,e_i` and :math:`\sum_i q_i e_i`:
+    
+    .. math::
+    
+        max_\alpha \frac{|J^\mathrm{T}\,q|}
+          {||J^\mathrm{T}_\alpha||\,||q|| + \varepsilon_p} < \varepsilon
+        
+    Here, :math:`\varepsilon_p = 10^{-30}` is an artificial parameter to prevent
+    division by zero, while :math:`\varepsilon` is the true tolerance parameter.  
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")

@@ -2,8 +2,9 @@ from typing import Any
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from numpy import squeeze, array
+from numpy import squeeze, array, vstack, concatenate, sum, sqrt
 from numpy.typing import NDArray
+from numpy.linalg import lstsq, norm
 from scipy.sparse import csr_array
 from casadi import SX, jacobian, jtimes, Function, vertcat
 from simu import (
@@ -111,13 +112,14 @@ class ThermoFitContributionWrapper:
         for r, row in enumerate(data):
             param = self._row_converter(row)
             try:
-                states[r], dr_dx = self._solve_point(states[r], param, tau)
+                result = self._solve_point(states[r], param, tau)
+                states[r] = result.x
             except ValueError:
                 continue  # ignore contribution
             q_i, q_x, q_t, r_t = self._funcs.f_q(states[r], param, tau)
-            x_t = -config.linear_solver_inner.solve(dr_dx, r_t)
-            q.append(q_i)
-            dq_dt.append(q_t + q_x @ x_t)
+            x_t = -config.linear_solver.solve(result.dr_dx, r_t)
+            q.append(array(q_i).squeeze(axis=1))
+            dq_dt.append(array(q_t + q_x @ x_t))
 
         return _ContributionResult(q, dq_dt)
 
@@ -129,7 +131,7 @@ class ThermoFitContributionWrapper:
         model, config = self._model, self._config
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
-        config.linear_solver_inner.reset()
+        config.linear_solver.reset()
         for iteration in range(config.max_iter_inner):
             # evaluate system
             r, dr_dx = self._funcs.f_r(state, param, tau)
@@ -144,7 +146,7 @@ class ThermoFitContributionWrapper:
                 break
 
             # calculate update and find relaxation factor
-            dx = -config.linear_solver_inner.solve(dr_dx, r)
+            dx = -config.linear_solver.solve(dr_dx, r)
             b, a = self._funcs.f_bx(state, param, tau, dx)
             alpha, min_alpha_name = relax(b, a, bound_names, config.gamma)
             if alpha < config.wall:
@@ -176,7 +178,11 @@ class ThermoFitSolver:
             try:
                 check_model_square(model)
             except NonSquareSystem as err:
-                raise NonSquareSystem(f"Model '{n}': {str(err)}") from err
+                raise NonSquareSystem(
+                    variables=err.variables,
+                    equations=err.equations,
+                    name=f"matrix of model {n}"
+                ) from err
 
     def set_options(self, config: ThermoFitSolverConfig | None = None,
                     **options: Any):
@@ -201,14 +207,33 @@ class ThermoFitSolver:
                 config
             ) for n, c in definition.contributions.items()
         }
+        tau = _extract_default_values(definition.parameters)
+        for iteration in range(config.max_iter_outer):
+            sub_results = [w.solve(tau) for w in wrappers.values()]
+            jac = vstack([j for s in sub_results for j in s.dq_dt])
+            q = concatenate([q_i for s in sub_results for q_i in s.q])
+            penalty = q @ q
+            d_tau, *_ = lstsq(jac, -q)
+            # todo: how to relax now: need to ask each model
+            #   but I cannot ask the models that failed to solve
+            tau += d_tau
 
-        # TODO:
-        #  - create initial tau vector
-        #  - in max-iter loop
-        #    * concatenate q and q_t from each contribution
-        #    * add all rhs = -q @ q_t and all hessians q_t.T @ q_t
-        #    * solve for d_tau, relax, apply
-        #    * apply convergence criterion (which ???)
+            criterion = abs(q @ jac) / (norm(jac, axis=0) * norm(q) + 1e-30)
+            criterion2 = abs(q @ jac) / (sqrt(sum(jac ** 2, axis=0)) * (norm(q) + 1e-15))
+
+
+            print(iteration, tau, penalty, criterion, criterion2)
+            # TODO better:
+            #   evaluate decrease in penalty function. Mabe demand
+            #   - penalty function less than 10% of initial penalty function
+            #   - penalty function no longer decreasing.
+            #   - gemini: max(J.T*q / (sqrt(J.T*J) * (|q| + eta) < eps
+
+            if max(criterion) < config.epsilon:
+                break
+        else:
+            raise ValueError("No convergence in outer loop after "
+                             f"{config.max_iter_outer} iterations")
 
 
     def _parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
@@ -294,3 +319,6 @@ def _replace_qty(arguments: NestedMutMap[Quantity],
         prev, arguments = arguments, arguments[p]
     prev[path[-1]] = item
 
+
+def _extract_default_values(parameters: Map[ThermoFitParameter]) -> NDArray:
+    return array([p.default.magnitude for p in parameters.values()])
