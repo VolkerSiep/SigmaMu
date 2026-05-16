@@ -14,7 +14,7 @@ from simu.core.utilities.errors import NonSquareSystem
 
 from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
-    ThermoFitContribution, ThermoFitParameter, DataSet
+    ThermoFitContribution, ThermoFitParameter, DataSet, ThermoFitReport
 )
 from ..common import not_finite, assess_residuals, relax, check_model_square
 
@@ -123,6 +123,16 @@ class ThermoFitContributionWrapper:
 
         return _ContributionResult(q, dq_dt)
 
+    def relax(self, tau: NDArray, d_tau: NDArray):
+        states, model, data = self._states, self._model, self._dataset.data
+        min_alpha = 1.0
+        for r, row in enumerate(data):
+            param = self._row_converter(row)
+            alpha = self._relax_point(states[r], param, tau, d_tau)
+            if alpha < min_alpha:
+                min_alpha = alpha
+        return min_alpha
+
     def _solve_point(self,
                      state: NDArray,
                      param: Sequence[float],
@@ -132,6 +142,8 @@ class ThermoFitContributionWrapper:
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
         config.linear_solver.reset()
+        count_down, max_err = 2, 1.0
+        dr_dx = None
         for iteration in range(config.max_iter_inner):
             # evaluate system
             r, dr_dx = self._funcs.f_r(state, param, tau)
@@ -143,6 +155,10 @@ class ThermoFitContributionWrapper:
 
             max_err, max_res_name = assess_residuals(r, residual_names)
             if max_err < 1:
+                count_down -= 1
+            else:
+                count_down = 2
+            if not count_down:
                 break
 
             # calculate update and find relaxation factor
@@ -157,13 +173,23 @@ class ThermoFitContributionWrapper:
             # apply update
             state = state + alpha * dx
         else:
-            msg = f"No convergence after {config.max_iter_inner} iterations"
-            raise ValueError(msg)
+            if max_err > 1:  # accept solution if it was in count-down
+                msg = f"No convergence after {config.max_iter_inner} iterations"
+                raise ValueError(msg)
 
         return _DataPointResult(
             x=state,
             dr_dx=dr_dx
         )
+
+    def _relax_point(self,
+                     state: NDArray,
+                     param: Sequence[float],
+                     tau: Sequence[float],
+                     d_tau: Sequence[float]) -> float:
+        bound_names = self._model.vector_res_names(NHKeys.BOUNDS)
+        b, a = self._funcs.f_bt(state, param, tau, d_tau)
+        return relax(b, a, bound_names, self._config.gamma)[0]
 
 
 class ThermoFitSolver:
@@ -196,7 +222,7 @@ class ThermoFitSolver:
 
     def solve(self, thermo_fit_definition: Map[Any],
               config: ThermoFitSolverConfig | None = None,
-              **options: Any):
+              **options: Any) -> ThermoFitReport:
         config = (config or self._config).update(**options)
         definition = self._parse_definition(thermo_fit_definition)
         wrappers = {
@@ -212,28 +238,31 @@ class ThermoFitSolver:
             sub_results = [w.solve(tau) for w in wrappers.values()]
             jac = vstack([j for s in sub_results for j in s.dq_dt])
             q = concatenate([q_i for s in sub_results for q_i in s.q])
-            penalty = q @ q
             d_tau, *_ = lstsq(jac, -q)
-            # todo: how to relax now: need to ask each model
-            #   but I cannot ask the models that failed to solve
-            tau += d_tau
 
-            criterion = abs(q @ jac) / (norm(jac, axis=0) * norm(q) + 1e-30)
-            criterion2 = abs(q @ jac) / (sqrt(sum(jac ** 2, axis=0)) * (norm(q) + 1e-15))
+            alpha = min(w.relax(tau, d_tau) for w in wrappers.values())
+            if alpha < config.wall:
+                raise ValueError(
+                    f"Relaxation factor is below {config.wall} in outer loop; "
+                    "no solution found"
+                )
+            tau += alpha * d_tau
 
+            q_norm = norm(q)
+            criterion = abs(q @ jac) / (norm(jac, axis=0) * q_norm + 1e-30)
+            print(iteration, tau, alpha, q_norm, criterion)
 
-            print(iteration, tau, penalty, criterion, criterion2)
-            # TODO better:
-            #   evaluate decrease in penalty function. Mabe demand
-            #   - penalty function less than 10% of initial penalty function
-            #   - penalty function no longer decreasing.
-            #   - gemini: max(J.T*q / (sqrt(J.T*J) * (|q| + eta) < eps
-
-            if max(criterion) < config.epsilon:
+            if max(criterion) < config.epsilon or q_norm < config.epsilon_q:
                 break
         else:
             raise ValueError("No convergence in outer loop after "
                              f"{config.max_iter_outer} iterations")
+
+        parameters = _generate_parameter_struct(tau, definition.parameters)
+        # collect tau
+        return ThermoFitReport(
+            parameters=parameters
+        )
 
 
     def _parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
@@ -322,3 +351,18 @@ def _replace_qty(arguments: NestedMutMap[Quantity],
 
 def _extract_default_values(parameters: Map[ThermoFitParameter]) -> NDArray:
     return array([p.default.magnitude for p in parameters.values()])
+
+
+def _generate_parameter_struct(
+        tau: Sequence[float],
+        parameters: Map[ThermoFitParameter]) -> NestedMutMap[Quantity]:
+    result = {}
+    for parameter, tau_i in zip(parameters.values(), tau):
+        res = result
+        for p in parameter.path[:-1]:
+            if p not in res:
+                res[p] = {}
+            res = res[p]
+        res[parameter.path[-1]] = Quantity(tau_i, parameter.default.units)
+    return result
+

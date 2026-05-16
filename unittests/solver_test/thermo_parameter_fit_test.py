@@ -234,6 +234,7 @@ def test_prepare_function_bt(tin_functions):
 
 def test_tin_parameter_fit():
     models = {"transition_model": NumericHandler(TinTransition.top())}
-    solver = ThermoFitSolver(models, thermo_source)
+    solver = ThermoFitSolver(models, thermo_source, epsilon_q=1e-7)
     report = solver.solve(load_definition())
-    new_param = report.thermo_source
+    new_param = report.parameters
+    print(new_param)

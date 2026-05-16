@@ -11,7 +11,8 @@ from pydantic import (
 
 from simu import Quantity, AbstractThermoSource
 from simu.core.utilities.quantity import UnitRegistry
-from simu.core.utilities.types import Map, OutputIOStream, LinearSolver
+from simu.core.utilities.types import (
+    Map, OutputIOStream, LinearSolver, NestedMutMap)
 from ..linear import NumpySolver
 
 
@@ -86,11 +87,23 @@ class ThermoFitSolverConfig(BaseModel):
     .. math::
     
         max_\alpha \frac{|J^\mathrm{T}\,q|}
-          {||J^\mathrm{T}_\alpha||\,||q|| + \varepsilon_p} < \varepsilon
+          {||J^\mathrm{T}_\alpha||\,||q|| + \varepsilon_m} < \varepsilon
         
-    Here, :math:`\varepsilon_p = 10^{-30}` is an artificial parameter to prevent
+    Here, :math:`\varepsilon_m = 10^{-30}` is an artificial parameter to prevent
     division by zero, while :math:`\varepsilon` is the true tolerance parameter.  
     """
+
+    epsilon_q: float = Field(default=0, ge=0, lt=1)
+    r"""Normally, :attr:`epsilon` is sufficient to detect convergence, but in
+    degenerate cases, such as when the number of data points is equal to the
+    number of parameters to fit, :math:`q` approaches very small values and is
+    impacted by the remaining residual of the inner model convergence. The
+    orthogonality criterion is then less reliable than simply demanding a small
+    value of the objective: :math:`||q|| < \varepsilon_q`.
+     
+     The default value, :math:`\varepsilon_q = 0`, disables this criterion
+     unless the objective norm is truly zero.
+     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
@@ -354,6 +367,10 @@ class ThermoFitDefinition(BaseModel):
                 if not are_units_compatible(uom, uom_model):
                     msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
                     raise ValueError(msg)
+
+@dataclass
+class ThermoFitReport:
+    parameters: NestedMutMap[Quantity]
 
 
 def are_units_compatible(first: str, second: str) -> bool:
