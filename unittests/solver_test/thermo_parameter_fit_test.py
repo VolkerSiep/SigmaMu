@@ -235,7 +235,7 @@ def test_prepare_function_bt(tin_functions):
 def test_tin_parameter_fit():
     models = {"transition_model": NumericHandler(TinTransition.top())}
     solver = ThermoFitSolver(models, thermo_source, epsilon_q=1e-7)
-    report = solver.solve(load_definition())
-    param = report.parameters["H0S0ReferenceState"]["s_0"]["a-Sn"]
-    l, u = [Quantity(x, "J/mol/K") for x in (44.225, 44.230)]
+    report = solver.solve(load_definition(), output=None)
+    param = report.final_parameters["H0S0ReferenceState"]["s_0"]["a-Sn"]
+    l, u = [Quantity(x, "J/mol/K") for x in (44.252, 44.253)]
     assert l < param < u

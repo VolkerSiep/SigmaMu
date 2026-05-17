@@ -1,5 +1,9 @@
-from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Sequence
+
+from numpy.typing import NDArray
+from scipy.sparse import csr_array
+
 from simu import Quantity
 from simu.core.utilities.types import NestedMutMap
 
@@ -22,10 +26,27 @@ class ThermoFitOuterIterationReport:
     """The accumulative duration of the solving process inclusive the given
     iteration"""
 
+    tau: NestedMutMap[Quantity]
+    """The current set of parameters"""
+
+    num_failed: int
+
 
 @dataclass
 class ThermoFitReport:
     iterations: Sequence[ThermoFitOuterIterationReport]
-    parameters: NestedMutMap[Quantity]
+    num_data_points: int
+    final_parameters: NestedMutMap[Quantity]
 
 
+@dataclass
+class ContributionResult:
+    q: Sequence[NDArray]
+    dq_dt: Sequence[NDArray]
+    num_failed: int
+
+
+@dataclass
+class DataPointResult:
+    x: NDArray
+    dr_dx: csr_array

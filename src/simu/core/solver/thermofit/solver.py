@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Generator
 from collections.abc import Sequence
 from dataclasses import dataclass
 from time import time
@@ -11,15 +11,26 @@ from casadi import SX, jacobian, jtimes, Function, vertcat
 from simu import (
     NumericHandler, NHKeys, AbstractThermoSource, Quantity)
 from simu.core.utilities.types import Map, MutMap, NestedMap, NestedMutMap
+from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.errors import NonSquareSystem
 
 from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
     ThermoFitContribution, ThermoFitParameter, DataSet
 )
-from .report import ThermoFitReport, ThermoFitOuterIterationReport
+from .report import (ThermoFitReport, ThermoFitOuterIterationReport,
+                     ContributionResult, DataPointResult)
 from ..common import not_finite, assess_residuals, relax, check_model_square
 
+
+_OUTPUT_TABLE_DEFINITION = {
+    "iteration": ("Iter", "{: 4d}"),
+    "q_norm": ("Penalty", "{: 8.2g}"),
+    "stationarity": ("Stationarity", "{: 12.6g}"),
+    "relax_factor": ("Alpha", "{:7.2g}"),
+    "num_failed": ("Failed", "{: 6d}"),
+    "duration": ("Time", "{:6.2f}")
+}
 
 @dataclass
 class _ParameterSymbol:
@@ -33,17 +44,6 @@ class _FunctionCollection:
     f_bx: Function  # x, p, t, dx -> b, a
     f_bt: Function  # x, p, t, dt -> b, a
     f_q: Function  # x, p, t -> q, q_x, q_t, r_t
-
-
-@dataclass
-class _ContributionResult:
-    q: Sequence[NDArray]
-    dq_dt: Sequence[NDArray]
-
-@dataclass
-class _DataPointResult:
-    x: NDArray
-    dr_dx: csr_array
 
 
 class ModelContext:
@@ -105,25 +105,27 @@ class ThermoFitContributionWrapper:
         self._states = [state] * len(dataset.data)
 
 
-    def solve(self, tau: NDArray) -> _ContributionResult:
+    def solve(self, tau: NDArray) -> ContributionResult:
         states, model, data = self._states, self._model, self._dataset.data
         config = self._config
         q : list[NDArray] = []
         dq_dt: list[NDArray] = []
 
+        num_failed = 0
         for r, row in enumerate(data):
             param = self._row_converter(row)
             try:
                 result = self._solve_point(states[r], param, tau)
                 states[r] = result.x
             except ValueError:
-                continue  # ignore contribution
+                num_failed += 1
+                continue
             q_i, q_x, q_t, r_t = self._funcs.f_q(states[r], param, tau)
             x_t = -config.linear_solver.solve(result.dr_dx, r_t)
             q.append(array(q_i).squeeze(axis=1))
             dq_dt.append(array(q_t + q_x @ x_t))
 
-        return _ContributionResult(q, dq_dt)
+        return ContributionResult(q, dq_dt, num_failed)
 
     def relax(self, tau: NDArray, d_tau: NDArray):
         states, model, data = self._states, self._model, self._dataset.data
@@ -138,7 +140,7 @@ class ThermoFitContributionWrapper:
     def _solve_point(self,
                      state: NDArray,
                      param: Sequence[float],
-                     tau: Sequence[float]) -> _DataPointResult:
+                     tau: Sequence[float]) -> DataPointResult:
         """Solve a point, return dr_dx. state is updated """
         model, config = self._model, self._config
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
@@ -179,7 +181,7 @@ class ThermoFitContributionWrapper:
                 msg = f"No convergence after {config.max_iter_inner} iterations"
                 raise ValueError(msg)
 
-        return _DataPointResult(
+        return DataPointResult(
             x=state,
             dr_dx=dr_dx
         )
@@ -226,7 +228,31 @@ class ThermoFitSolver:
               config: ThermoFitSolverConfig | None = None,
               **options: Any) -> ThermoFitReport:
         config = (config or self._config).update(**options)
-        definition = self._parse_definition(thermo_fit_definition)
+        definition = self.parse_definition(thermo_fit_definition)
+
+        table = ProgressTableOutput(
+            _OUTPUT_TABLE_DEFINITION,
+            output=config.output
+        )
+        iterations = []
+        for iter_report in self.solve_iter(definition, config):
+            table.row(iter_report)
+            iterations.append(iter_report)
+
+        num_data_points = sum(len(d.data) for d in definition.datasets.values())
+
+        return ThermoFitReport(
+            final_parameters=iterations[-1].tau,
+            num_data_points=num_data_points,
+            iterations=iterations
+        )
+
+    def solve_iter(
+            self, definition: ThermoFitDefinition,
+            config: ThermoFitSolverConfig | None = None,
+            **options: Any) \
+            -> Generator[ThermoFitOuterIterationReport, Map[Any] | None, None]:
+        config = (config or self._config).update(**options)
         wrappers = {
             n: ThermoFitContributionWrapper(
                 self._models[c.model_id], c,
@@ -236,9 +262,8 @@ class ThermoFitSolver:
             ) for n, c in definition.contributions.items()
         }
         tau = _extract_default_values(definition.parameters)
-        
+
         start_time = time()
-        iterations = []
         for iteration in range(config.max_iter_outer):
             sub_results = [w.solve(tau) for w in wrappers.values()]
             jac = vstack([j for s in sub_results for j in s.dq_dt])
@@ -256,14 +281,16 @@ class ThermoFitSolver:
             q_norm = float(norm(q))
             crit_tau = abs(q @ jac) / (norm(jac, axis=0) * q_norm + 1e-30)
             criterion = float(max(crit_tau))
-            
-            iterations.append(ThermoFitOuterIterationReport(
+
+            yield ThermoFitOuterIterationReport(
                 iteration=iteration + 1,
+                tau=_generate_parameter_struct(tau, definition.parameters),
                 q_norm=q_norm,
                 stationarity=criterion,
                 relax_factor=alpha,
+                num_failed = sum(s.num_failed for s in sub_results),
                 duration=time() - start_time
-            ))
+            )
 
             if criterion < config.epsilon or q_norm < config.epsilon_q:
                 break
@@ -271,14 +298,8 @@ class ThermoFitSolver:
             raise ValueError("No convergence in outer loop after "
                              f"{config.max_iter_outer} iterations")
 
-        # collect tau
-        return ThermoFitReport(
-            parameters=_generate_parameter_struct(tau, definition.parameters),
-            iterations=iterations
-        )
 
-
-    def _parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
+    def parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
         models = {n: ModelContext(m) for n, m in self._models.items()}
         context = ThermoFitValidationContext(models, self._thermo_source)
         return ThermoFitDefinition.model_validate(definition, context=context)

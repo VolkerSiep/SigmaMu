@@ -19,9 +19,9 @@ from simu.core.utilities.types import Map, NestedMutMap
 from simu.core.utilities.errors import IterativeProcessInterrupted
 
 from ..common import relax, not_finite, assess_residuals, check_model_square
+from .config import SimulationSolverConfig
 from .report import (
     SimulationSolverReport, SimulationSolverIterationReport, PropertyFunction)
-from .config import SimulationSolverConfig
 
 
 @dataclass
