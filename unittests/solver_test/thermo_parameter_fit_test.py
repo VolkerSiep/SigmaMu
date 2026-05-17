@@ -3,7 +3,7 @@ from math import isnan
 from pytest import raises
 from pydantic import ValidationError
 
-from simu import NumericHandler, ThermoFitSolver
+from simu import NumericHandler, ThermoFitSolver, Quantity
 from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
     ThermoFitDefinition
@@ -236,5 +236,6 @@ def test_tin_parameter_fit():
     models = {"transition_model": NumericHandler(TinTransition.top())}
     solver = ThermoFitSolver(models, thermo_source, epsilon_q=1e-7)
     report = solver.solve(load_definition())
-    new_param = report.parameters
-    print(new_param)
+    param = report.parameters["H0S0ReferenceState"]["s_0"]["a-Sn"]
+    l, u = [Quantity(x, "J/mol/K") for x in (44.225, 44.230)]
+    assert l < param < u

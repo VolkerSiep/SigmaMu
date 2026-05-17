@@ -250,7 +250,7 @@ class ThermoFitSolver:
 
             q_norm = norm(q)
             criterion = abs(q @ jac) / (norm(jac, axis=0) * q_norm + 1e-30)
-            print(iteration, tau, alpha, q_norm, criterion)
+            # print(iteration, tau, alpha, q_norm, criterion)
 
             if max(criterion) < config.epsilon or q_norm < config.epsilon_q:
                 break
