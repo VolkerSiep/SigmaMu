@@ -1,8 +1,9 @@
 from typing import Any
 from collections.abc import Sequence
 from dataclasses import dataclass
+from time import time
 
-from numpy import squeeze, array, vstack, concatenate, sum, sqrt
+from numpy import squeeze, array, vstack, concatenate
 from numpy.typing import NDArray
 from numpy.linalg import lstsq, norm
 from scipy.sparse import csr_array
@@ -14,8 +15,9 @@ from simu.core.utilities.errors import NonSquareSystem
 
 from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
-    ThermoFitContribution, ThermoFitParameter, DataSet, ThermoFitReport
+    ThermoFitContribution, ThermoFitParameter, DataSet
 )
+from .report import ThermoFitReport, ThermoFitOuterIterationReport
 from ..common import not_finite, assess_residuals, relax, check_model_square
 
 
@@ -234,6 +236,9 @@ class ThermoFitSolver:
             ) for n, c in definition.contributions.items()
         }
         tau = _extract_default_values(definition.parameters)
+        
+        start_time = time()
+        iterations = []
         for iteration in range(config.max_iter_outer):
             sub_results = [w.solve(tau) for w in wrappers.values()]
             jac = vstack([j for s in sub_results for j in s.dq_dt])
@@ -248,20 +253,28 @@ class ThermoFitSolver:
                 )
             tau += alpha * d_tau
 
-            q_norm = norm(q)
-            criterion = abs(q @ jac) / (norm(jac, axis=0) * q_norm + 1e-30)
-            # print(iteration, tau, alpha, q_norm, criterion)
+            q_norm = float(norm(q))
+            crit_tau = abs(q @ jac) / (norm(jac, axis=0) * q_norm + 1e-30)
+            criterion = float(max(crit_tau))
+            
+            iterations.append(ThermoFitOuterIterationReport(
+                iteration=iteration + 1,
+                q_norm=q_norm,
+                stationarity=criterion,
+                relax_factor=alpha,
+                duration=time() - start_time
+            ))
 
-            if max(criterion) < config.epsilon or q_norm < config.epsilon_q:
+            if criterion < config.epsilon or q_norm < config.epsilon_q:
                 break
         else:
             raise ValueError("No convergence in outer loop after "
                              f"{config.max_iter_outer} iterations")
 
-        parameters = _generate_parameter_struct(tau, definition.parameters)
         # collect tau
         return ThermoFitReport(
-            parameters=parameters
+            parameters=_generate_parameter_struct(tau, definition.parameters),
+            iterations=iterations
         )
 
 
@@ -365,4 +378,3 @@ def _generate_parameter_struct(
             res = res[p]
         res[parameter.path[-1]] = Quantity(tau_i, parameter.default.units)
     return result
-

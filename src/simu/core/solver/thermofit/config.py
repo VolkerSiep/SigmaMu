@@ -11,8 +11,7 @@ from pydantic import (
 
 from simu import Quantity, AbstractThermoSource
 from simu.core.utilities.quantity import UnitRegistry
-from simu.core.utilities.types import (
-    Map, OutputIOStream, LinearSolver, NestedMutMap)
+from simu.core.utilities.types import Map, OutputIOStream, LinearSolver
 from ..linear import NumpySolver
 
 
@@ -367,10 +366,6 @@ class ThermoFitDefinition(BaseModel):
                 if not are_units_compatible(uom, uom_model):
                     msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
                     raise ValueError(msg)
-
-@dataclass
-class ThermoFitReport:
-    parameters: NestedMutMap[Quantity]
 
 
 def are_units_compatible(first: str, second: str) -> bool:
