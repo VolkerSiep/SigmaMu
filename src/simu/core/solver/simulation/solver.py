@@ -41,7 +41,7 @@ _OUTPUT_TABLE_DEFINITION = {
 }
 
 class SimulationSolver:
-    r"""
+    """
     The simulation solver assumes both thermodynamic and model parameters to
     be constant, aiming to find the state variable values such that all
     residuals evaluate to zero within their tolerance.
@@ -49,7 +49,7 @@ class SimulationSolver:
 
     def __init__(self, model: NumericHandler,
                  config: SimulationSolverConfig | None = None, **options: Any):
-        r"""On construction, the solver object requires a
+        """On construction, the solver object requires a
         :class:`~simu.NumericHandler` object. The solver object can then be
         reused for multiple solver runs, for instance with variable parameter
         values (sensitivity study).

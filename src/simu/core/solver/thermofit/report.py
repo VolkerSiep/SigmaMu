@@ -9,6 +9,10 @@ from simu.core.utilities.types import NestedMutMap
 
 @dataclass
 class ThermoFitOuterIterationReport:
+    """
+
+    """
+
     iteration: int
     """The number of the iteration, starting with 1"""
 
@@ -34,6 +38,9 @@ class ThermoFitOuterIterationReport:
 
 @dataclass
 class ThermoFitReport:
+    """
+
+    """
     iterations: Sequence[ThermoFitOuterIterationReport]
     num_data_points: int
     final_parameters: NestedMutMap[Quantity]

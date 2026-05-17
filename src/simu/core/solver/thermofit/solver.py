@@ -197,10 +197,30 @@ class ThermoFitContributionWrapper:
 
 
 class ThermoFitSolver:
+    r"""This class facilitates fitting thermodynamic parameters to given data
+    sets. The least squares problem of minimizing the norm of penalty terms
+    :math:`||q||` is solved by a nested Gauss-Newton method. The inner loop
+    solves the model :math:`f_k(x_k, \tau)` for each data point :math:`i`.
+    """
     def __init__(self, models: MutMap[NumericHandler],
                  thermo_source: AbstractThermoSource,
                  config: ThermoFitSolverConfig | None = None,
                  **options: Any):
+        """On construction, the solver requires a map of the
+        :class:`~simu.NumericHandler` objects to be used and referred to by the
+        :class:`~simu.core.solver.thermofit.ThermoFitContribution` entries used.
+
+        :param models: The numerical handlers of all later-on models to
+          interpret the data points to calculate penalties.
+        :param thermo_source: A thermodynamic parameter source object that
+          contains a superset of all thermodynamic parameters that are fitted
+          in the lifetime of this object. This object is used to validate the
+          input and to extract default values for each parameter.
+        :param config: An optional configuration object to enable efficient
+          reuse of solver parameters
+        :param options: An alternative way to provide solver options, as defined
+          in :class:`~simu.core.solver.thermofit.ThermoFitSolverConfig`.
+        """
         self._config = (config or ThermoFitSolverConfig()).update(**options)
         self._thermo_source = thermo_source
         self._models = models
@@ -220,14 +240,27 @@ class ThermoFitSolver:
 
        :param config: Options for the solver as defined in
           :class:`~simu.core.solver.thermofit.config.ThermoFitSolverConfig`.
-       :param options: overwriting individual configurations directly
+       :param options: for overwriting individual configurations directly
        """
         self._config = (config or self._config).update(**options)
 
     def solve(self, thermo_fit_definition: Map[Any],
-              config: ThermoFitSolverConfig | None = None,
               **options: Any) -> ThermoFitReport:
-        config = (config or self._config).update(**options)
+        """This method triggers the iterative solving process, given the
+        entire definition of the problem via ``thermo_fit_definition``, which
+        is parsed and validated into a
+        :class:`~simu.core.solver.thermofit.config.ThermoFitDefinition` object.
+
+        :param thermo_fit_definition: The data structure to define the setup,
+          to be parsed into a
+          :class:`~simu.core.solver.thermofit.config.ThermoFitDefinition`
+          object.
+        :param options: An opportunity to overwrite individual solver options
+          for this solver run only.
+        :return: The solver report object, including a summary for each
+          iteration and the final parameters
+        """
+        config = self._config.update(**options)
         definition = self.parse_definition(thermo_fit_definition)
 
         table = ProgressTableOutput(
