@@ -238,8 +238,7 @@ class ThermoFitSolver:
                     **options: Any):
         """Overwrite configuration for subsequent solver runs
 
-       :param config: Options for the solver as defined in
-          :class:`~simu.core.solver.thermofit.config.ThermoFitSolverConfig`.
+       :param config: Options for the solver
        :param options: for overwriting individual configurations directly
        """
         self._config = (config or self._config).update(**options)
@@ -285,6 +284,21 @@ class ThermoFitSolver:
             config: ThermoFitSolverConfig | None = None,
             **options: Any) \
             -> Generator[ThermoFitOuterIterationReport, Map[Any] | None, None]:
+        """
+        Like the method :meth:`solve`, but as an iterator to return the control
+        flow back to the caller in each iteration. This allows for finer control in a
+        multithreaded environment, for instance to update a GUI with trends
+        about the convergence progress and intermediate values, or to allow
+        interactive pausing and cancelling of the data fit.
+
+        :param definition: The definition of the thermo fit, by convenience
+          created via the :meth:`parse_definition` method for proper
+          pre-validation
+        :param config: Options for the solver
+        :param options: for overwriting individual configurations directly
+        :return: A generator object that yields iteration reports for each
+          iteration
+        """
         config = (config or self._config).update(**options)
         wrappers = {
             n: ThermoFitContributionWrapper(
@@ -333,6 +347,13 @@ class ThermoFitSolver:
 
 
     def parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
+        """Parse and validate the given definition of the thermodynamic data
+        fit.
+
+        :param definition: The data structure to define the thermodynamic data
+          fit
+        :return: The validated parsed configuration object
+        """
         models = {n: ModelContext(m) for n, m in self._models.items()}
         context = ThermoFitValidationContext(models, self._thermo_source)
         return ThermoFitDefinition.model_validate(definition, context=context)

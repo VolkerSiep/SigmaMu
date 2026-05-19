@@ -91,12 +91,6 @@ class SimulationSolver:
         systems cubic in system size, though the model structure might render
         this a conservative estimate.
 
-        With `pypardiso`_ installed, the solving of the linear systems is
-        performed on all available CPU cores. However, their solver sometimes
-        chokes and returns a wrong solution. Therefore, the norm of the
-        solution is checked, and ``scipy.sparse.linalg.spsolve`` is used in
-        those instances.
-
         :param options: overwriting individual configurations for this solver
           run.
 
