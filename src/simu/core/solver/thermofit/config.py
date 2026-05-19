@@ -16,6 +16,8 @@ from ..linear import NumpySolver
 
 
 class ThermoFitSolverConfig(BaseModel):
+    """Configuration settings for the ThermoFitSolver."""
+
     max_iter_inner: int = Field(default=30, ge=1)
     """The maximum number of iterations (default 30) for solving the
     sub-models for each data point.
@@ -132,10 +134,19 @@ def get_context(info: ValidationInfo) -> ThermoFitValidationContext:
 
 
 class DataSet(BaseModel):
+    """Represents a collection of experimental data points."""
+
     columns: Sequence[str]
+    """The names of the columns in the dataset."""
+
     uom: Sequence[str]
+    """The units of measurement for each column."""
+
     data: Sequence[Sequence[float]]
+    """The experimental data values, organized as a sequence of rows."""
+
     source: str = Field(default="Unknown")
+    """The source or origin of the dataset."""
 
     model_config = ConfigDict(extra='forbid')
 
@@ -164,16 +175,30 @@ class DataSet(BaseModel):
 
 
 class ModelParameter(BaseModel):
+    """Identifies a parameter in the model."""
+
     path: Sequence[str]
+    """The path to the parameter within the model structure."""
+
     uom: str | None = Field(default=None)
+    """The unit of measurement for the parameter. This field is filled on
+    validation based on a query to the model."""
 
     model_config = ConfigDict(extra="forbid")
 
 
 class ThermoFitEntity(BaseModel):
-    dataset: str  # to be registered dataset
-    model_id: str  # to be registered model
-    data_to_model: Map[ModelParameter] # keys = data set column titles
+    """Base class for entities involved in a thermodynamic fit, associating a
+    data set with a model"""
+
+    dataset: str
+    """The identifier of the dataset to be used."""
+
+    model_id: str
+    """The identifier of the model to be used."""
+
+    data_to_model: Map[ModelParameter]
+    """Mapping of dataset column titles to model parameters."""
 
     model_config = ConfigDict(extra='forbid')
 
@@ -206,8 +231,13 @@ class ThermoFitEntity(BaseModel):
 
 
 class ThermoFitContribution(ThermoFitEntity):
-    penalties: Sequence[Sequence[str]]  # properties of model
+    """Defines a contribution to the objective function for the fit."""
+
+    penalties: Sequence[Sequence[str]]
+    """The properties of the model to be used as penalties."""
+
     weight: float = Field(default=1.0)
+    """The weight applied to this contribution."""
 
     @model_validator(mode="after")
     def validate_penalties(self, info: ValidationInfo) -> Self:
@@ -231,8 +261,14 @@ class ThermoFitContribution(ThermoFitEntity):
 
 
 class ThermoFitProperty(BaseModel):
-    path: Sequence[str]  # must exist in model
-    uom: str  # must be consistent with unit from model
+    """Defines a property to be evaluated."""
+
+    path: Sequence[str]
+    """The path to the property within the model structure."""
+
+    uom: str
+    """The unit of measurement for the property."""
+
     model_config = ConfigDict(extra='forbid')
 
 
@@ -262,11 +298,23 @@ class ThermoFitEvaluation(ThermoFitEntity):
 
 
 class ThermoFitParameter(BaseModel):
+    """Defines a thermodynamic parameter to be fitted."""
+
     path: Sequence[str]
+    """The path to the parameter within the thermo source."""
+
     default: QtyType | None = Field(default=None)
+    """The default value for the parameter."""
+
     lower: QtyType | None = Field(default=None)
+    """The lower bound for the parameter."""
+
     upper: QtyType | None = Field(default=None)
+    """The upper bound for the parameter."""
+
     store_name: str = Field(default="default")
+    """The name of the :class:`~simu.ThermoParameterStore` containing the
+    parameter."""
 
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
@@ -322,11 +370,20 @@ class ThermoFitParameter(BaseModel):
 
 
 class ThermoFitDefinition(BaseModel):
+    """Defines the complete thermodynamic fit problem."""
+
     datasets: Map[DataSet]
+    """The datasets used in the fit."""
+
     contributions: Map[ThermoFitContribution]
+    """The contributions to the objective function."""
+
     evaluations: Map[ThermoFitEvaluation] = Field(default_factory=dict)
+    """The evaluations to be performed."""
     # TODO: make ThermoEvaluationDefinition instead of including evaluations here?
+
     parameters: Map[ThermoFitParameter]
+    """The parameters to be fitted."""
 
     @model_validator(mode="after")
     def validate_configuration(self, info: ValidationInfo) -> Self:

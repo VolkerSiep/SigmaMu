@@ -10,7 +10,11 @@ from simu.core.utilities.types import NestedMutMap
 @dataclass
 class ThermoFitOuterIterationReport:
     """
+    Captures the state and metrics of a single outer iteration within the
+    ThermoFit solver process.
 
+    This report tracks convergence metrics, relaxation parameters, and the
+    parameter state at a specific iteration step.
     """
 
     iteration: int
@@ -34,16 +38,25 @@ class ThermoFitOuterIterationReport:
     """The current set of parameters"""
 
     num_failed: int
+    """The number of failed data point evaluations during this iteration"""
 
 
 @dataclass
 class ThermoFitReport:
     """
+    Aggregates the results and history of a complete ThermoFit solver execution.
 
+    This report contains the full history of iterations, the total number of
+    data points processed, and the final optimized parameter set.
     """
     iterations: Sequence[ThermoFitOuterIterationReport]
+    """A sequence of reports for each outer iteration performed."""
+
     num_data_points: int
+    """The total number of data points used in the fitting process."""
+
     final_parameters: NestedMutMap[Quantity]
+    """The final set of parameters resulting from the optimization."""
 
 
 @dataclass
