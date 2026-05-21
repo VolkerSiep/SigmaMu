@@ -234,10 +234,13 @@ class ThermoFitContribution(ThermoFitEntity):
     """Defines a contribution to the objective function for the fit."""
 
     penalties: Sequence[Sequence[str]]
-    """The properties of the model to be used as penalties."""
+    """The properties of the model to be used as penalties as a list of paths. 
+    A path is a list of strings, identifying the penalty property in the
+    hierarchical context of the model. Penalty properties must be dimensionless.
+    """
 
-    weight: float = Field(default=1.0)
-    """The weight applied to this contribution."""
+    weight: float = Field(default=1.0, ge=0)
+    """The weight applied to this contribution as a non-negative value."""
 
     @model_validator(mode="after")
     def validate_penalties(self, info: ValidationInfo) -> Self:

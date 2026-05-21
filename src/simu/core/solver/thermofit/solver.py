@@ -112,7 +112,7 @@ class ThermoFitContributionWrapper:
         dq_dt: list[NDArray] = []
 
         num_failed = 0
-        for r, row in enumerate(data):
+        for r, row in enumerate(data):  # TODO: parallelize this loop
             param = self._row_converter(row)
             try:
                 result = self._solve_point(states[r], param, tau)
@@ -130,7 +130,7 @@ class ThermoFitContributionWrapper:
     def relax(self, tau: NDArray, d_tau: NDArray):
         states, model, data = self._states, self._model, self._dataset.data
         min_alpha = 1.0
-        for r, row in enumerate(data):
+        for r, row in enumerate(data):  # TODO: parallelize this loop
             param = self._row_converter(row)
             alpha = self._relax_point(states[r], param, tau, d_tau)
             if alpha < min_alpha:
@@ -220,7 +220,7 @@ class ThermoFitSolver:
         :param config: Optional configuration object for solver parameters.
         :param options: Additional solver options that override or extend
             the provided `config`. See
-            :class:`~simu.core.solver.thermofit.ThermoFitSolverConfig`.
+            :class:`~simu.core.solver.thermofit.config.ThermoFitSolverConfig`.
         """
         self._config = (config or ThermoFitSolverConfig()).update(**options)
         self._thermo_source = thermo_source
@@ -350,10 +350,10 @@ class ThermoFitSolver:
         """Parse and validate a raw thermodynamic fit definition.
 
         :param definition: A dictionary or mapping representing the fit
-            configuration.
+          configuration.
         :return: A validated
-        :class:`~simu.core.solver.thermofit.config.ThermoFitDefinition`
-            object.
+          :class:`~simu.core.solver.thermofit.config.ThermoFitDefinition`
+          object.
         """
         models = {n: ModelContext(m) for n, m in self._models.items()}
         context = ThermoFitValidationContext(models, self._thermo_source)

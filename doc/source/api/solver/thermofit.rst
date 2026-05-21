@@ -58,7 +58,7 @@ Mathematical description
 ========================
 Data fit
 --------
-The *penalty model* is represented by residuals :math:`r(x, p, \tau) = 0`, whereas :math:`x` is the internal state of the model, :math:`p` are the model parameters, and :math:`\tau` are the thermodynamic parameters to be estimated. We demand :math:`\dim r = \dim x` and a well-formed (non-singular) equation system with a solution within the domain of :math:`x`. Further, the model calculates dimensionless one or more penalty terms :math:`q(x, p)`.
+The *penalty model* is represented by residuals :math:`r(x, p, \tau) = 0`, whereas :math:`x` is the internal state of the model, :math:`p` are the model parameters, and :math:`\tau` are the thermodynamic parameters to be estimated. We demand :math:`\dim r = \dim x` and a well-formed (non-singular) equation system with a solution within the domain of :math:`x`. Further, the model calculates dimensionless one or more penalty terms :math:`q(x, p, \tau)`.
 
 For each row :math:`j` in the dataset :math:`i`, the model receives its data as parameters :math:`p_{ij}` and provides :math:`r_{ij}` as function of :math:`x_ {ij}`, further :math:`q_{ij}`, as well as the later required Jacobian matrices.
 For practical convenience, we also introduce a weight factor :math:`w_i` to control the impact for entire data sets.
@@ -110,14 +110,74 @@ Neglecting higher order derivatives (*normally not a problem here*), the lineari
    \left [\sum_k w_k^2\,q_k\,J_{q_k, \tau} \right ]+
      \left [ \sum_k w_k^2 \left ( J_{q_k, \tau} \right )^\mathrm{T}\,J_{q_k, \tau} \right ]\,\Delta\tau \approx 0
 
-This system is used as a second order update scheme for :math:`\tau`.
+Solving the system as such however yields loss of numerical precision in case of :math:`\left ( J_{q_k, \tau} \right )^\mathrm{T}\,J_{q_k, \tau}` being badly conditioned.
+Therefore, instead, all :math:`q_k` and :math:`J_{q_k, \tau}` are stacked vertically into :math:`q` and :math:`J_{q,\tau}` and solved using the robust least squares solver ``numpy.linalg.lstsq`` based on a stable matrix decomposition on
 
+.. math:: J_{q,\tau}\,\Delta\tau = -q
 
+Using ``lstsq`` has the secondary advantage that one can indeed provide an under-determined system (less independent data points than parameters). The algorithm will then yield parameter updates with a minimized norm :math:`||\Delta\tau||`.
 
 Evaluation
 ----------
+Certainly, one can inspect the penalty contributions used for the data fit as an assessment of fit quality, but those penalties might not be intuitive or describing the application well. As an example, a robust way to fit VLE data is to specify gas and liquid phase independently and use the normalized chemical potential differences :math:`\Delta_{vl}\mu_i / (R\,T)` for equilibrated species as a penalty. While their exponentiated value still could be interpreted as a *deviation factor* in terms of concentration, a more tangible evaluation would be based on actual flash results. Even the same data set can then be evaluated twice, for instance once to assess the boiling point curve and once for the dew point curve.
+
+For this reason - and convenience - the evaluation functionality is provided.
+
+The evaluation model, alike the penalty model, is a square non-singular system of equations :math:`r_e(x, p, \tau) = 0` combined with a property function :math:`q_e(x, p, \tau)`, the elements of which can for instance be the predicted equivalents of experimental properties from the data set.
+
+Typically, the evaluation is executed - by solving the model for each data point - for both the initial and the final :math:`\tau`, such that model improvements can be assessed.
+
+Solver classes
+==============
 
 ThermoFitSolver
-===============
+---------------
 .. autoclass:: simu.ThermoFitSolver
    :members:
+
+ThermoFitSolverConfig
+---------------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitSolverConfig
+   :members:
+   :exclude-members: model_config
+
+Definition
+==========
+
+ThermoFitDefinition
+-------------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitDefinition
+   :members:
+
+
+DataSet
+-------
+.. autoclass:: simu.core.solver.thermofit.config.DataSet
+   :members:
+   :exclude-members: model_config
+
+ThermoFitContribution
+---------------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitContribution
+   :members:
+   :exclude-members: model_config
+
+ThermoFitParameter
+------------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitParameter
+   :members:
+   :exclude-members: model_config
+
+Reporting
+=========
+ThermoFitReport
+---------------
+.. autoclass:: simu.core.solver.thermofit.report.ThermoFitReport
+   :members:
+   :exclude-members: __init__
+
+ThermoFitOuterIterationReport
+-----------------------------
+.. autoclass:: simu.core.solver.thermofit.report.ThermoFitOuterIterationReport
+   :members:
+   :exclude-members: __init__
