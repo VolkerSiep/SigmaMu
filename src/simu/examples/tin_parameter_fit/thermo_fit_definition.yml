@@ -5,10 +5,10 @@ datasets:
     uom: [degC]
     data:
       - [13.2]
-      # - [13.4]
+
 contributions:
   equilibrium:
-    dataset: wiki_data
+    dataset_id: wiki_data
     model_id: transition_model
     data_to_model:
       T_trans: {path: [T_measured]}
@@ -18,4 +18,14 @@ contributions:
 parameters:
   s_0_a:
     path: [H0S0ReferenceState, s_0, a-Sn]
+
+evaluations:
+  by_temp:
+    dataset_id: wiki_data
+    model_id: transition_model
+    data_to_model: {}
+    properties:
+      T_hat:
+        path: [T_calc]
+        uom: degC
 

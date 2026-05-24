@@ -60,6 +60,11 @@ class ThermoFitReport:
 
 
 @dataclass
+class ThermoEvaluationReport:
+    pass  # TODO: must contain result DataSet objects
+
+
+@dataclass
 class ContributionResult:
     q: Sequence[NDArray]
     dq_dt: Sequence[NDArray]

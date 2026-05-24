@@ -20,7 +20,8 @@ from .config import (
 )
 from .report import (ThermoFitReport, ThermoFitOuterIterationReport,
                      ContributionResult, DataPointResult)
-from ..common import not_finite, assess_residuals, relax, check_model_square
+from ..common import (ModelContext, not_finite, assess_residuals,
+                      relax, check_model_square, DataRowConverter)
 
 
 _OUTPUT_TABLE_DEFINITION = {
@@ -44,45 +45,6 @@ class _FunctionCollection:
     f_bx: Function  # x, p, t, dx -> b, a
     f_bt: Function  # x, p, t, dt -> b, a
     f_q: Function  # x, p, t -> q, q_x, q_t, r_t
-
-
-class ModelContext:
-    def __init__(self, model: NumericHandler):
-        self._parameters = model.function.arg_structure.get(
-            NHKeys.MODEL_PARAMS, {}
-        )
-        self._properties = model.function.result_structure.get(
-            NHKeys.MODEL_PROPS, {}
-        )
-
-    def parameter_unit(self, path: Sequence[str]) -> str:
-        return self._extract(path, self._parameters)
-
-    def property_unit(self, path: Sequence[str]) -> str:
-        return self._extract(path, self._properties)
-
-    @staticmethod
-    def _extract(path: Sequence[str], structure: NestedMap[str]) -> str:
-        result = structure
-        try:
-            for p in path:
-                result = result[p]
-        except (KeyError, TypeError) as e:
-            raise KeyError(f"Invalid path: '{'.'.join(path)}'") from e
-        if not isinstance(result, str):
-            raise KeyError(f"Invalid path: '{'.'.join(path)}'")
-        return result
-
-class DataRowConverter:
-    def __init__(self, from_uom: Sequence[str], to_uom: Sequence[str]):
-        self._from = from_uom
-        self._to = to_uom
-
-    def __call__(self, row: Sequence[float]) -> Sequence[float]:
-        return [
-            Quantity(r, f).to(t).magnitude
-            for r, f, t in zip(row, self._from, self._to)
-    ]
 
 
 class ThermoFitContributionWrapper:
@@ -303,7 +265,7 @@ class ThermoFitSolver:
         wrappers = {
             n: ThermoFitContributionWrapper(
                 self._models[c.model_id], c,
-                definition.datasets[c.dataset],
+                definition.datasets[c.dataset_id],
                 definition.parameters,
                 config
             ) for n, c in definition.contributions.items()

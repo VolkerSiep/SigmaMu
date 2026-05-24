@@ -1,5 +1,5 @@
 from typing import cast
-from pytest import fixture, raises
+from pytest import raises
 
 from simu import (
     NumericHandler, NHKeys, SimulationSolver,
@@ -76,9 +76,3 @@ def test_change_parameters():
     #         q = q.to(unit)
     #     print(f"{k:20s} {q:.3g~}")
 
-
-@fixture(scope="module")
-def sim_result():
-    numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output=None)
-    return solver.solve()

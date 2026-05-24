@@ -6,8 +6,9 @@ from pydantic import ValidationError
 from simu import NumericHandler, ThermoFitSolver, Quantity
 from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
-    ThermoFitDefinition
+    ThermoFitDefinition, ThermoFitEvaluationDefinition
 )
+from simu.core.solver.thermofit.evaluator import ThermoFitEvaluator
 from simu.core.solver.thermofit.solver import ModelContext
 from simu.examples.hello_world import Square
 from simu.examples.tin_parameter_fit.thermo import thermo_source
@@ -180,12 +181,6 @@ def test_thermo_fit_parameter_wrong_unit(
         )
     assert "30 m" in str(e)
 
-def test_thermo_fit_config(thermo_fit_configuration, contribution_context_stub):
-    config = ThermoFitDefinition.model_validate(
-        thermo_fit_configuration, context=contribution_context_stub
-    )
-    assert config.evaluations["vle_p"].data_to_model["x"].path == ["x"]
-
 def test_model_contest():
     model = NumericHandler(Square.top())
     context = ModelContext(model)
@@ -239,3 +234,25 @@ def test_tin_parameter_fit():
     param = report.final_parameters["H0S0ReferenceState"]["s_0"]["a-Sn"]
     l, u = [Quantity(x, "J/mol/K") for x in (44.252, 44.253)]
     assert l < param < u
+
+def test_thermo_fit_config(thermo_fit_configuration, contribution_context_stub):
+    config = ThermoFitDefinition.model_validate(
+        thermo_fit_configuration, context=contribution_context_stub
+    )
+    assert config.contributions["vle"].model_id == "vle_fit"
+
+def test_evaluation_config(thermo_fit_configuration, contribution_context_stub):
+    context = contribution_context_stub
+    config = ThermoFitEvaluationDefinition.model_validate(
+        thermo_fit_configuration, context=context
+    )
+    assert config.evaluations["vle_p"].model_id == "vle_eval_p"
+
+def test_tin_evaluation():
+    models = {"transition_model": NumericHandler(TinTransition.top())}
+    evaluator = ThermoFitEvaluator(models)
+    result = evaluator.solve(load_definition())
+
+# TODO: actually, I can exclude all thermo-props from numerical handler, as
+#  I anyhow do not permit thermo properties to be used in data fit or evaluation
+#  I think this is even a good rule - needs to be mentioned for evaluation!!

@@ -1,7 +1,7 @@
-import sys
+from typing import Self, Protocol, Optional, Any
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Self, Protocol, Optional
+import sys
 
 from pint import DimensionalityError
 from pint.registry import Quantity as QtyType
@@ -116,6 +116,56 @@ class ThermoFitSolverConfig(BaseModel):
         return ThermoFitSolverConfig.model_validate(data)
 
 
+class ThermoFitEvaluationConfig(BaseModel):
+    max_iter: int = Field(default=30, ge=1)
+    """The maximum number of iterations (default 30) for solving the
+    sub-models for each data point.
+
+    .. note::
+
+      Normally, 30 iterations should be sufficient. In other words, if the
+      model is not converged after 30 iterations, chances are quite low
+      that it still will converge at all.
+    """
+
+    gamma: float = Field(default=0.9, gt=0.0, lt=1.0)
+    r""":math:`\gamma` (default 0.9) is the
+    fraction of the step-length applied by the solver before hitting the
+    domain boundary. Normally, changing the value is not required.
+    Generally, a lower value makes the model more robust against
+    non-linear domain boundaries (and thus linearisation errors causing
+    the state to exit the domain). A higher value yields slightly faster
+    convergence, if the solution is in comparison with the initial values
+    very close to the domain boundary.
+    """
+
+    wall: float = Field(default=1e-20, ge=0.0, lt=0.01)
+    r"""Either if there is no solution within the domain of the
+    model (for instance: The material balance forces some of the species
+    flows in a stream to be negative), or if the solver for other reasons
+    is forced to try to leave the model domain, the state will move closer
+    and closer to the domain boundary and not revert. At some point,
+    :math:`\gamma` becomes ridiculously small, and we need to give up.
+    This threshold value is defined by ``wall`` (default ``1e-20``).
+    """
+
+    linear_solver: LinearSolver = \
+        Field(default_factory=NumpySolver)
+    r"""An option to provide any other linear solver for solving the Newton-type
+    updates for the inner solving of the sub models for each data point.
+
+    As the process models of this type are typically small (say, less than 100
+    variables), and not in particular sparse, the default solver is the
+    standard dense ``numpy.linalg.solve`` version.
+    """
+
+    def update(self, **options) -> Self:
+        data = self.model_dump() | options
+        return ThermoFitEvaluationConfig.model_validate(data)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+
 class ThermoFitModelContext(Protocol):
     def parameter_unit(self, path: Sequence[str]) -> str:
         ...
@@ -127,9 +177,10 @@ class ThermoFitModelContext(Protocol):
 @dataclass
 class ThermoFitValidationContext:
     model_contexts: Map[ThermoFitModelContext]
-    thermo_source: AbstractThermoSource
+    thermo_source: AbstractThermoSource | None
 
 def get_context(info: ValidationInfo) -> ThermoFitValidationContext:
+    """Help type-analyzer to know regarding the context type for data fit"""
     return info.context
 
 
@@ -191,7 +242,7 @@ class ThermoFitEntity(BaseModel):
     """Base class for entities involved in a thermodynamic fit, associating a
     data set with a model"""
 
-    dataset: str
+    dataset_id: str
     """The identifier of the dataset to be used."""
 
     model_id: str
@@ -259,43 +310,6 @@ class ThermoFitContribution(ThermoFitEntity):
             if not _Unit(unit).dimensionless:
                 msg = (f"Penalty property '{name}` in model "
                        f"'{model_id}' is not dimensionless: '{unit}'")
-                raise ValueError(msg)
-        return self
-
-
-class ThermoFitProperty(BaseModel):
-    """Defines a property to be evaluated."""
-
-    path: Sequence[str]
-    """The path to the property within the model structure."""
-
-    uom: str
-    """The unit of measurement for the property."""
-
-    model_config = ConfigDict(extra='forbid')
-
-
-class ThermoFitEvaluation(ThermoFitEntity):
-    properties: Map[ThermoFitProperty]
-
-    @model_validator(mode="after")
-    def validate_properties(self, info: ValidationInfo) -> Self:
-        model = self._model_context(info)
-        for prop in self.properties.values():
-            path, uom = prop.path, prop.uom
-            name = ".".join(path)
-            # Does property exist in model?
-            try:
-                model_unit = model.property_unit(path)
-            except KeyError as e:
-                msg = f"Property '{name}' not in model '{self.model_id}'"
-                raise ValueError(msg) from e
-
-            # Is the unit string a valid unit of measurement?
-            # Are the units compatible?
-            if not are_units_compatible(uom, model_unit):
-                msg = (f"Property '{name}' has incompatible unit `{uom}`"
-                       f"to mapped model property (`{model_unit}`)")
                 raise ValueError(msg)
         return self
 
@@ -372,6 +386,43 @@ class ThermoFitParameter(BaseModel):
         return self
 
 
+class ThermoFitProperty(BaseModel):
+    """Defines a property to be evaluated."""
+
+    path: Sequence[str]
+    """The path to the property within the model structure."""
+
+    uom: str
+    """The unit of measurement for the property."""
+
+    model_config = ConfigDict(extra='forbid')
+
+
+class ThermoFitEvaluation(ThermoFitEntity):
+    properties: Map[ThermoFitProperty]
+
+    @model_validator(mode="after")
+    def validate_properties(self, info: ValidationInfo) -> Self:
+        model = self._model_context(info)
+        for prop in self.properties.values():
+            path, uom = prop.path, prop.uom
+            name = ".".join(path)
+            # Does property exist in model?
+            try:
+                model_unit = model.property_unit(path)
+            except KeyError as e:
+                msg = f"Property '{name}' not in model '{self.model_id}'"
+                raise ValueError(msg) from e
+
+            # Is the unit string a valid unit of measurement?
+            # Are the units compatible?
+            if not are_units_compatible(uom, model_unit):
+                msg = (f"Property '{name}' has incompatible unit `{uom}`"
+                       f"to mapped model property (`{model_unit}`)")
+                raise ValueError(msg)
+        return self
+
+
 class ThermoFitDefinition(BaseModel):
     """Defines the complete thermodynamic fit problem."""
 
@@ -381,51 +432,88 @@ class ThermoFitDefinition(BaseModel):
     contributions: Map[ThermoFitContribution]
     """The contributions to the objective function."""
 
-    evaluations: Map[ThermoFitEvaluation] = Field(default_factory=dict)
-    """The evaluations to be performed."""
-    # TODO: make ThermoEvaluationDefinition instead of including evaluations here?
-
     parameters: Map[ThermoFitParameter]
     """The parameters to be fitted."""
+
+    evaluations: Map[ThermoFitEvaluation] | None = Field(default=None)
+    """Ignored in the context of data fit, but accepted, so the same data
+    structure can be used for data fit and evaluation."""
+
+    @field_validator("evaluations", mode="before")
+    def ignore_evaluation_fields(cls, value: Any) -> None:
+        return None
 
     @model_validator(mode="after")
     def validate_configuration(self, info: ValidationInfo) -> Self:
         context = get_context(info).model_contexts
-        self._validate_item(self.contributions, context)
-        self._validate_item(self.evaluations, context)
+        for contribution in self.contributions.values():
+            _validate_entity(contribution, self.datasets, context)
         return self
 
-    def _validate_item(self, mapping: Map[ThermoFitEntity],
-                       context: Map[str, ThermoFitModelContext]):
-        for entity in mapping.values():
-            # does dataset exist
-            try:
-                dataset = self.datasets[entity.dataset]
-            except KeyError as e:
-                msg = f"Dataset '{entity.dataset}' not defined"
-                raise ValueError(msg) from e
+    model_config = ConfigDict(extra='forbid')
 
-            # validate mapping
-            model = context[entity.model_id]
-            for key, target in entity.data_to_model.items():
-                # is column defined in dataset
-                if key not in dataset.columns:
-                    msg = f"Column '{key}' not defined in dataset"
-                    raise ValueError(msg)
-                uom = dataset.uom[dataset.columns.index(key)]
 
-                # is target defined in model (checked before?)
-                try:
-                    uom_model = model.parameter_unit(target.path)
-                except KeyError as e:
-                    name = ".".join(target.path)
-                    msg = f"Target '{name}' not a model parameter"
-                    raise ValueError(msg) from e
+class ThermoFitEvaluationDefinition(BaseModel):
+    datasets: Map[DataSet]
+    """The datasets used in the evaluation."""
 
-                # are units compatible?
-                if not are_units_compatible(uom, uom_model):
-                    msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
-                    raise ValueError(msg)
+    evaluations: Map[ThermoFitEvaluation]
+    """The evaluations to be performed."""
+
+    contributions: Map[ThermoFitContribution] | None = Field(default=None)
+    """Ignored in the context of evaluation, but accepted, so the same data
+    structure can be used for data fit and evaluation."""
+
+    parameters: Map[ThermoFitParameter] | None = Field(default=None)
+    """Ignored in the context of evaluation, but accepted, so the same data
+    structure can be used for data fit and evaluation."""
+
+    @field_validator("contributions", "parameters", mode="before")
+    def ignore_datafit_fields(cls, value: Any) -> None:
+        return None
+
+
+    @model_validator(mode="after")
+    def validate_configuration(self, info: ValidationInfo) -> Self:
+        context = get_context(info).model_contexts
+        for contribution in self.evaluations.values():
+            _validate_entity(contribution, self.datasets, context)
+        return self
+
+    model_config = ConfigDict(extra='forbid')
+
+
+def _validate_entity(entity: ThermoFitEntity,
+                     datasets: Map[DataSet],
+                     context: Map[str, ThermoFitModelContext]):
+    # does dataset exist
+    try:
+        dataset = datasets[entity.dataset_id]
+    except KeyError as e:
+        msg = f"Dataset '{entity.dataset_id}' not defined"
+        raise ValueError(msg) from e
+
+    # validate mapping
+    model = context[entity.model_id]
+    for key, target in entity.data_to_model.items():
+        # is column defined in dataset
+        if key not in dataset.columns:
+            msg = f"Column '{key}' not defined in dataset"
+            raise ValueError(msg)
+        uom = dataset.uom[dataset.columns.index(key)]
+
+        # is target defined in model (checked before?)
+        try:
+            uom_model = model.parameter_unit(target.path)
+        except KeyError as e:
+            name = ".".join(target.path)
+            msg = f"Target '{name}' not a model parameter"
+            raise ValueError(msg) from e
+
+        # are units compatible?
+        if not are_units_compatible(uom, uom_model):
+            msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
+            raise ValueError(msg)
 
 
 def are_units_compatible(first: str, second: str) -> bool:

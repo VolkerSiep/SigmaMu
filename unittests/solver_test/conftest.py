@@ -4,12 +4,14 @@ from pathlib import Path
 from pytest import fixture
 from yaml import safe_load
 
-from simu import StringDictThermoSource, NumericHandler, Quantity
+from simu import (
+    StringDictThermoSource, NumericHandler, Quantity, SimulationSolver)
 from simu.core.solver.thermofit.solver import _prepare_functions
 from simu.core.solver.thermofit.config import (
     ThermoFitValidationContext, ThermoFitContribution, ThermoFitParameter,
     ModelParameter)
 
+from simu.examples.material_model import Source
 from simu.examples.tin_parameter_fit.simulation import TinTransition
 
 @fixture
@@ -64,7 +66,7 @@ def tin_functions():
     model = NumericHandler(TinTransition.top())
 
     contrib = ThermoFitContribution.model_construct(
-        dataset="dummy",
+        dataset_id="dummy",
         model_id="dummy",
         data_to_model={
             "T_Trans": ModelParameter(path=["T_measured"], uom="degC")},
@@ -78,3 +80,10 @@ def tin_functions():
         )
     }
     return _prepare_functions(model, contrib, tau_def)
+
+
+@fixture(scope="module")
+def sim_result():
+    numeric = NumericHandler(Source.top())
+    solver = SimulationSolver(numeric, output=None)
+    return solver.solve()

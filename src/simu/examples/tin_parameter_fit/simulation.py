@@ -7,6 +7,7 @@ class TinTransition(AModel):
         self.pad("n", 1, "mol")
         self.pad("p", 1, "bar")
         self.pad("T_measured", 12.3, "degC")
+        self.prd("T_calc", "degC")
         self.prd("dT_norm", "dimensionless")
 
     def define(self) -> None:
@@ -16,6 +17,7 @@ class TinTransition(AModel):
         self.ra("n_b-Sn", n["b-Sn"] - self.pa["n"], "mol")
         self.ra("p", tin["p"] - self.pa["p"], "bar")
         self.ra("equilibrium", mu["a-Sn"] - mu["b-Sn"], "kJ/mol")
+        self.pr["T_calc"] = tin["T"]
         self.pr["dT_norm"] = tin["T"] / self.pa["T_measured"] - 1
 
 def main():

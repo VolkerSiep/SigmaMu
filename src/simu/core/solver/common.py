@@ -3,8 +3,37 @@ from typing import Sequence
 from numpy import squeeze, array, atleast_1d, argmin, isfinite, argmax, abs
 from numpy.typing import NDArray
 
-from simu import NumericHandler, NHKeys
+from simu import NumericHandler, NHKeys, Quantity
+from simu.core.utilities.types import NestedMap
 from simu.core.utilities.errors import NonSquareSystem
+
+
+class ModelContext:
+    def __init__(self, model: NumericHandler):
+        self._parameters = model.function.arg_structure.get(
+            NHKeys.MODEL_PARAMS, {}
+        )
+        self._properties = model.function.result_structure.get(
+            NHKeys.MODEL_PROPS, {}
+        )
+
+    def parameter_unit(self, path: Sequence[str]) -> str:
+        return self._extract(path, self._parameters)
+
+    def property_unit(self, path: Sequence[str]) -> str:
+        return self._extract(path, self._properties)
+
+    @staticmethod
+    def _extract(path: Sequence[str], structure: NestedMap[str]) -> str:
+        result = structure
+        try:
+            for p in path:
+                result = result[p]
+        except (KeyError, TypeError) as e:
+            raise KeyError(f"Invalid path: '{'.'.join(path)}'") from e
+        if not isinstance(result, str):
+            raise KeyError(f"Invalid path: '{'.'.join(path)}'")
+        return result
 
 
 def relax(b: NDArray, a: NDArray,
@@ -59,3 +88,15 @@ def check_model_square(model: NumericHandler):
 
     if state_size != res_size:
         raise NonSquareSystem(state_size, res_size)
+
+
+class DataRowConverter:
+    def __init__(self, from_uom: Sequence[str], to_uom: Sequence[str]):
+        self._from = from_uom
+        self._to = to_uom
+
+    def __call__(self, row: Sequence[float]) -> Sequence[float]:
+        return [
+            Quantity(r, f).to(t).magnitude
+            for r, f, t in zip(row, self._from, self._to)
+    ]
