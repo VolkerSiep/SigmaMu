@@ -12,3 +12,4 @@ Tutorial
    steam_system
    dof_analysis
    first_thermo_fit
+   second_thermo_fit

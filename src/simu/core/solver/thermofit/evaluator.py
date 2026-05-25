@@ -86,9 +86,11 @@ class ThermoFitSingleEvaluator:
 
 
 class ThermoFitEvaluator:
-    """
+    """Orchestrates the evaluation of thermodynamic models against experimental datasets.
 
-    """
+    This class manages a collection of models and executes evaluations based on
+    provided configurations. It requires that all models are square systems and
+    well-formed."""
     def __init__(
             self, models: MutMap[NumericHandler],
             config: ThermoFitEvaluationConfig | None = None,
@@ -123,12 +125,17 @@ class ThermoFitEvaluator:
             parameters: NestedMap[Quantity] | None = None,
             **options: Any
     ) -> Map[ThermoEvaluationReport]:
-        """
+        """Executes the evaluation defined by the provided configuration.
 
-        :param thermo_evaluation_definition:
-        :param parameters:
-        :param options:
-        :return:
+        :param thermo_evaluation_definition: A dictionary or mapping defining
+          the datasets and evaluations to be performed.
+        :param parameters: Optional thermodynamic parameters to be applied to
+          the models before evaluation. These can be a result from a previous
+          thermo fit run:
+          :attr:`~simu.core.solver.thermofit.report.ThermoFitReport.final_parameters`.
+        :param options: Additional configuration overrides for this specific
+          run.
+        :return: A mapping of evaluation names to their respective reports.
         """
         config = self._config.update(**options)
         definition = self.parse_definition(thermo_evaluation_definition)

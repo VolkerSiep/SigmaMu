@@ -135,21 +135,22 @@ ThermoFitSolver
 .. autoclass:: simu.ThermoFitSolver
    :members:
 
+ThermoFitEvaluator
+------------------
+.. autoclass:: simu.ThermoFitEvaluator
+   :members:
+
 ThermoFitSolverConfig
 ---------------------
 .. autoclass:: simu.core.solver.thermofit.config.ThermoFitSolverConfig
    :members:
    :exclude-members: model_config
 
-Evaluator classes
-=================
-
-ThermoFitEvaluator
-------------------
-.. autoclass:: simu.ThermoFitEvaluator
+ThermoFitEvaluationConfig
+-------------------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitEvaluationConfig
    :members:
-
-
+   :exclude-members: model_config
 
 Definition
 ==========
@@ -158,7 +159,6 @@ ThermoFitDefinition
 -------------------
 .. autoclass:: simu.core.solver.thermofit.config.ThermoFitDefinition
    :members:
-
 
 DataSet
 -------
@@ -178,6 +178,24 @@ ThermoFitParameter
    :members:
    :exclude-members: model_config
 
+ThermoFitEvaluationDefinition
+-----------------------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitEvaluationDefinition
+   :members:
+   :exclude-members: model_config
+
+ThermoFitEvaluation
+-------------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitEvaluation
+   :members:
+   :exclude-members: model_config
+
+ThermoFitProperty
+-----------------
+.. autoclass:: simu.core.solver.thermofit.config.ThermoFitProperty
+   :members:
+   :exclude-members: model_config
+
 Reporting
 =========
 ThermoFitReport
@@ -189,5 +207,11 @@ ThermoFitReport
 ThermoFitOuterIterationReport
 -----------------------------
 .. autoclass:: simu.core.solver.thermofit.report.ThermoFitOuterIterationReport
+   :members:
+   :exclude-members: __init__
+
+ThermoEvaluationReport
+----------------------
+.. autoclass:: simu.core.solver.thermofit.report.ThermoEvaluationReport
    :members:
    :exclude-members: __init__

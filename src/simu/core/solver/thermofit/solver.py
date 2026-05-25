@@ -290,7 +290,7 @@ class ThermoFitSolver:
             sub_results = [w.solve(tau) for w in wrappers.values()]
             jac = vstack([j for s in sub_results for j in s.dq_dt])
             q = concatenate([q_i for s in sub_results for q_i in s.q])
-            d_tau, *_ = lstsq(jac, -q)
+            d_tau, *_ = lstsq(jac, -q, rcond=None)
 
             alpha = min(w.relax(tau, d_tau) for w in wrappers.values())
             if alpha < config.wall:

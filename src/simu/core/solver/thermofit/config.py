@@ -32,8 +32,8 @@ class ThermoFitSolverConfig(BaseModel):
     """
 
     max_iter_outer: int = Field(default=30, ge=1)
-    """The maximum number of iterations (default 30) for solving the outer
-    iteration on finding the optimal parameter values."""
+    """The maximum number of iterations (default 30) for solving the
+    outer iteration on finding the optimal parameter values."""
 
     output: OutputIOStream | None = Field(default_factory=lambda: sys.stdout)
     """The stream to direct the solver output to, by default ``sys.stdout``.
@@ -87,7 +87,7 @@ class ThermoFitSolverConfig(BaseModel):
     
     .. math::
     
-        max_\alpha \frac{|J^\mathrm{T}\,q|}
+        \max_\alpha \frac{|J^\mathrm{T}\,q|}
           {||J^\mathrm{T}_\alpha||\,||q|| + \varepsilon_m} < \varepsilon
         
     Here, :math:`\varepsilon_m = 10^{-30}` is an artificial parameter to prevent
@@ -390,16 +390,26 @@ class ThermoFitProperty(BaseModel):
     """Defines a property to be evaluated."""
 
     path: Sequence[str]
-    """The path to the property within the model structure."""
+    """The path to the property within the model structure.
+    Note that only model properties can be addressed. The model therefore must
+    export any relevant thermodynamic (material) properties additionally as a
+    model property, e.g. ``self.pr["T_calc"] = my_material["T"]``.
+    """
 
     uom: str
-    """The unit of measurement for the property."""
+    """The unit of measurement for the property, in which its values will
+    be reported in the results."""
 
     model_config = ConfigDict(extra='forbid')
 
 
 class ThermoFitEvaluation(ThermoFitEntity):
+    """Defines a specific evaluation task, mapping a dataset to a model and
+    specifying which properties to evaluate."""
+
     properties: Map[ThermoFitProperty]
+    """The properties to be evaluated. The keys of the provided mapping will
+    become the column headers in the resulting data set. """
 
     @model_validator(mode="after")
     def validate_properties(self, info: ValidationInfo) -> Self:
@@ -421,6 +431,8 @@ class ThermoFitEvaluation(ThermoFitEntity):
                        f"to mapped model property (`{model_unit}`)")
                 raise ValueError(msg)
         return self
+
+    model_config = ConfigDict(extra='forbid')
 
 
 class ThermoFitDefinition(BaseModel):
@@ -454,6 +466,13 @@ class ThermoFitDefinition(BaseModel):
 
 
 class ThermoFitEvaluationDefinition(BaseModel):
+    """Defines the configuration for a thermodynamic evaluation run.
+
+    This structure mirrors the fit definition but focuses on evaluating model
+    properties against datasets rather than fitting parameters. It validates
+    that all referenced datasets and models are correctly defined and
+    compatible.
+    """
     datasets: Map[DataSet]
     """The datasets used in the evaluation."""
 

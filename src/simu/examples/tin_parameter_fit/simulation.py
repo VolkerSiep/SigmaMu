@@ -24,12 +24,9 @@ def main():
     numeric = NumericHandler(TinTransition.top())
     solver = SimulationSolver(numeric)
     report = solver.solve()
-    props = report.prop_func(report.final_state)
-    temperature = props[NHKeys.THERMO_PROPS]["tin"]["T"].to("degC")
-    deviation = props[NHKeys.MODEL_PROPS]["dT_norm"]
-    print(f"Transition temperature: {temperature:.2fP~}")
-    print(f"Deviation: {deviation:.4gP~}")
-
+    props = report.properties[NHKeys.MODEL_PROPS]
+    print(f"Transition temperature: {props['T_calc'].to('degC'):.2fP~}")
+    print(f"Deviation: {props['dT_norm']:.4gP~}")
 
 if __name__ == '__main__':
     main()

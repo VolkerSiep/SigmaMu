@@ -68,22 +68,40 @@ There are a couple of aspects worth being mentioned:
   - The configuration (lines 11-14) contains no calculation of volumetric properties. Volume itself is simply not defined. We could easily add for instance the :class:`~simu.app.thermo.contributions.basic.ConstantGibbsVolume` contribution and assign molar volumes ``v_n`` to each form, but we do not need to for this case.
   - The species definition (line 15) is only concerned about the atomic composition and does not distinguish |alpha-tin| from |beta-tin|. This case is however a good example for the fact that we still can define such species multiple times and assign different thermodynamic parameters to it.
 
-Based on the material definition, we can create a simple model and simulate the transition temperature:
+Based on the material definition, we can create a simple model:
 
 .. exampleinclude:: tin_parameter_fit/simulation.py
    :language: python
+   :lines: 1-21
    :linenos:
-
-.. note::
-
-    The result of 8.8 |degC| is very arguably different from the cited 13.2 |degC|. This is due to a fundamental thermodynamic principle: "*You can't always please everybody!*" The tabulated data is likely based on calorimetric measurements independently for both |alpha-tin| and |beta-tin|, and in its compilation not being constrained to reproduce the transition temperature.
 
 Some explanation of above code:
 
   - Dealing with pure solid phases without mixing effects, the absolut quantities of each species are irrelevant. The example just specifies 1 mol of each form to be present in the system (lines 7, 15-16).
   - The model is pressure-independent, but pressure is still a state variable that needs to be constrained. The easiest is to simply specify the pressure value (lines 8, 17). If we had defined a volume term, any departure from reference pressure would give a contribution to the chemical equilibrium and hence stability.
   - Instead of specifying temperature, the model constrains :math:`\mu_\alpha = \mu_\beta` (line 18) and hence back-calculates temperature.
-  - For the next step, the parameter ``T_measured`` is defined (line 9), as it enters the calculation of the penalty term ``dT_norm`` (lines 10, 29).
+  - For the next step, the parameter ``T_measured`` is defined (line 9), as it enters the calculation of the penalty term ``dT_norm`` (lines 10, 21).
+  - For later evaluation, the temperature ``tin["T"]`` is elevated to be a model property (line 20), as the evaluator cannot see material properties.
+
+The model can be solved in its given form. This is advisable for testing but not strictly part of the workflow to fit parameters.
+
+.. testsetup::
+
+   >>> from simu.examples.tin_parameter_fit.simulation import TinTransition
+
+>>> from simu import NumericHandler, NHKeys, SimulationSolver
+>>> numeric = NumericHandler(TinTransition.top())
+>>> solver = SimulationSolver(numeric)
+>>> report = solver.solve(output=None)
+>>> props = report.properties[NHKeys.MODEL_PROPS]
+>>> print(f"Transition temperature: {props['T_calc'].to('degC'):.2fP~}")
+Transition temperature: 8.83 °C
+>>> print(f"Deviation: {props['dT_norm']:.4gP~}")
+Deviation: -0.01216
+
+.. note::
+
+    The result of 8.8 |degC| is very arguably different from the cited 13.2 |degC|. This is due to a fundamental thermodynamic principle: "*You can't always please everybody!*" The tabulated data is likely based on calorimetric measurements independently for both |alpha-tin| and |beta-tin|, and in its compilation not being constrained to reproduce the transition temperature.
 
 
 Parameter fit
@@ -112,3 +130,19 @@ Finally, the standard entropy of |alpha-tin| is to be parameterized (line 19-20)
 .. exampleinclude:: tin_parameter_fit/parameter_fit.py
    :language: python
    :linenos:
+
+Some notes:
+
+  - The model name ``transition_model`` is used in line 16, so that it is found as addressed in the definition file.
+  - We need to set ``epsilon_q``, as our system is square (one data point and one parameter). Hence the default convergence criterion of stationarity is not suitable - vectors with only one component cannot be orthogonal.
+
+The above code prints the obtained parameter structure::
+
+    {'default': {'H0S0ReferenceState': {'s_0': {'a-Sn': <Quantity(44.252248, 'joule / mole / kelvin')>}}}}
+
+Evaluation
+----------
+To complete this example, let us continue for a moment to pretend that this is something bigger than it is. Let us imagine that it consisted of many data points or even data sets.
+This is where the evaluation is useful.
+
+.. todo::  Give evaluation example
