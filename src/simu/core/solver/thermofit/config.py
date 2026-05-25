@@ -416,7 +416,7 @@ class ThermoFitEvaluation(ThermoFitEntity):
 
             # Is the unit string a valid unit of measurement?
             # Are the units compatible?
-            if not are_units_compatible(uom, model_unit):
+            if not _are_units_compatible(uom, model_unit):
                 msg = (f"Property '{name}' has incompatible unit `{uom}`"
                        f"to mapped model property (`{model_unit}`)")
                 raise ValueError(msg)
@@ -511,12 +511,12 @@ def _validate_entity(entity: ThermoFitEntity,
             raise ValueError(msg) from e
 
         # are units compatible?
-        if not are_units_compatible(uom, uom_model):
+        if not _are_units_compatible(uom, uom_model):
             msg = f"Incompatible units '{uom}' vs. '{uom_model}'"
             raise ValueError(msg)
 
 
-def are_units_compatible(first: str, second: str) -> bool:
+def _are_units_compatible(first: str, second: str) -> bool:
     try:
         d1 = _Unit(first).dimensionality
     except Exception as e:

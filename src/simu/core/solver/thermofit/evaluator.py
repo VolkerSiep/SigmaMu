@@ -86,6 +86,9 @@ class ThermoFitSingleEvaluator:
 
 
 class ThermoFitEvaluator:
+    """
+
+    """
     def __init__(
             self, models: MutMap[NumericHandler],
             config: ThermoFitEvaluationConfig | None = None,
@@ -120,6 +123,13 @@ class ThermoFitEvaluator:
             parameters: NestedMap[Quantity] | None = None,
             **options: Any
     ) -> Map[ThermoEvaluationReport]:
+        """
+
+        :param thermo_evaluation_definition:
+        :param parameters:
+        :param options:
+        :return:
+        """
         config = self._config.update(**options)
         definition = self.parse_definition(thermo_evaluation_definition)
         models = self._models

@@ -40,7 +40,7 @@ class ThermoFitOuterIterationReport:
     """The current set of parameters"""
 
     num_failed: int
-    """The number of failed data point evaluations during this iteration"""
+    """The number of failed data point calculations during this iteration"""
 
 
 @dataclass
@@ -63,8 +63,14 @@ class ThermoFitReport:
 
 @dataclass
 class ThermoEvaluationReport:
+    """
+    Represents the data returned from an evaluation run using the
+    :class:`~simu.ThermoFitEvaluator` class.
+    """
     results: DataSet
+    """The calculated data from the evaluation"""
     num_failed: int
+    """The number of failed data point evaluations"""
 
 
 @dataclass

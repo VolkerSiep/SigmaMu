@@ -141,6 +141,16 @@ ThermoFitSolverConfig
    :members:
    :exclude-members: model_config
 
+Evaluator classes
+=================
+
+ThermoFitEvaluator
+------------------
+.. autoclass:: simu.ThermoFitEvaluator
+   :members:
+
+
+
 Definition
 ==========
 
