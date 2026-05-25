@@ -252,7 +252,4 @@ def test_tin_evaluation():
     models = {"transition_model": NumericHandler(TinTransition.top())}
     evaluator = ThermoFitEvaluator(models)
     result = evaluator.solve(load_definition())
-
-# TODO: actually, I can exclude all thermo-props from numerical handler, as
-#  I anyhow do not permit thermo properties to be used in data fit or evaluation
-#  I think this is even a good rule - needs to be mentioned for evaluation!!
+    assert not result["by_temp"].num_failed

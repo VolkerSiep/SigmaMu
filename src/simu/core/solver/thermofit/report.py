@@ -5,7 +5,9 @@ from numpy.typing import NDArray
 from scipy.sparse import csr_array
 
 from simu import Quantity
+from simu.core.solver.thermofit.config import DataSet
 from simu.core.utilities.types import NestedMutMap
+
 
 @dataclass
 class ThermoFitOuterIterationReport:
@@ -61,7 +63,8 @@ class ThermoFitReport:
 
 @dataclass
 class ThermoEvaluationReport:
-    pass  # TODO: must contain result DataSet objects
+    results: DataSet
+    num_failed: int
 
 
 @dataclass

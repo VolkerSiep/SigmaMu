@@ -1,14 +1,15 @@
 from typing import Any
 
-from simu import NumericHandler, SimulationSolver, Quantity, PropertyFilter
-from simu.core.utilities.types import MutMap, Map, NestedMap
+from simu import (
+    NumericHandler, SimulationSolver, Quantity, PropertyFilter, NHKeys)
+from simu.core.utilities.types import MutMap, Map, NestedMap, NestedMutMap
 from simu.core.utilities.errors import NonSquareSystem
 
 from .config import (
     DataSet, ThermoFitEvaluationConfig, ThermoFitValidationContext,
     ThermoFitEvaluation, ThermoFitEvaluationDefinition)
 from .report import ThermoEvaluationReport
-from ..common import ModelContext, check_model_square, DataRowConverter
+from ..common import ModelContext, check_model_square, replace_qty, extract_qty
 
 
 class NoThermoPropFilter(PropertyFilter):
@@ -37,14 +38,51 @@ class ThermoFitSingleEvaluator:
             retain_solutioon=False
         )
         self._dataset = dataset
+        param_uom = [d.uom for d in evaluation.data_to_model.values()]
+        self._evaluation = evaluation
 
     def set_thermo_parameters(self, parameters: NestedMap[Quantity]):
-        # first entry is store name - done!
-        pass
+        target = self._solver.model_parameters[NHKeys.THERMO_PARAMS]
+        _overwrite_nodes(target, parameters)
 
-    def solve(self, ) -> ThermoEvaluationReport:
-        #
-        pass
+    def solve(self) -> ThermoEvaluationReport:
+        dataset = self._dataset
+        evaluation = self._evaluation
+        num_failed = 0
+        model_parameters = self._solver.model_parameters[NHKeys.MODEL_PARAMS]
+        parameter_paths = [p.path for p in evaluation.data_to_model.values()]
+
+        columns = list(evaluation.properties.keys())
+        uom = [prop.uom for prop in evaluation.properties.values()]
+
+        num_properties = len(columns)
+        results = []
+
+        for r, row in enumerate(dataset.data):  # TODO: parallelize this loop
+            # set parameters to model
+            for magnitude, uom, path in zip(row, dataset.uom, parameter_paths):
+                replace_qty(model_parameters, Quantity(magnitude, uom), path)
+            try:
+                result = self._solver.solve()
+            except ValueError:
+                results.append([float("nan")] * num_properties)
+                num_failed += 1
+                continue
+            model_props = result.properties[NHKeys.MODEL_PROPS]
+            results.append([
+                extract_qty(model_props, prop.path).to(prop.uom).magnitude
+                for prop in evaluation.properties.values()
+            ])
+
+        return ThermoEvaluationReport(
+            results=DataSet(
+                columns=columns,
+                uom=uom,
+                data=results,
+                source="Evaluation"
+            ),
+            num_failed=num_failed
+        )
 
 
 class ThermoFitEvaluator:
@@ -116,3 +154,34 @@ class ThermoFitEvaluator:
         return ThermoFitEvaluationDefinition.model_validate(
             definition, context=context
         )
+
+
+def _overwrite_nodes(
+        target: NestedMutMap[Quantity] | Quantity,
+        parameters: NestedMap[Quantity] | Quantity
+) -> Quantity | None:
+    """Overwrite nodes from parameters in target structure, but do not create
+    new ones. Throw error if structure is incompatible (i.e. if one of the
+    structures exposes a leaf while the other holds a sub-structure under the
+    same key. Also throw error if physical dimensions mismatch.
+
+    >>> t = {"a": {"b": Quantity(3, "m"), "c": Quantity(4, "s")}}
+    >>> p = {"a": {"b": Quantity(5, "cm"), "d": Quantity(4, "K")}}
+    >>> _overwrite_nodes(t, p)
+    >>> print(t)
+    {'a': {'b': <Quantity(5, 'centimeter')>, 'c': <Quantity(4, 'second')>}}
+    """
+    if isinstance(target, Quantity) and isinstance(parameters, Quantity):
+        if not target.check(parameters):
+            msg = "Incompatible physical dimension while overwriting nodes"
+            raise ValueError(msg)
+        return parameters
+
+    if isinstance(target, Quantity) or isinstance(parameters, Quantity):
+        raise ValueError("Incompatible structure overwriting nodes")
+
+    for key in set(target.keys()) & set(parameters.keys()):
+        target_value = _overwrite_nodes(target[key], parameters[key])
+        if target_value is not None:
+            target[key] = target_value
+    return None

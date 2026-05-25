@@ -10,7 +10,7 @@ from scipy.sparse import csr_array
 from casadi import SX, jacobian, jtimes, Function, vertcat
 from simu import (
     NumericHandler, NHKeys, AbstractThermoSource, Quantity)
-from simu.core.utilities.types import Map, MutMap, NestedMap, NestedMutMap
+from simu.core.utilities.types import Map, MutMap, NestedMutMap
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.errors import NonSquareSystem
 
@@ -23,7 +23,7 @@ from .report import (
     ContributionResult, DataPointResult)
 from ..common import (
     ModelContext, not_finite, assess_residuals,
-    relax, check_model_square, DataRowConverter)
+    relax, check_model_square, DataRowConverter, replace_qty, extract_qty)
 
 _OUTPUT_TABLE_DEFINITION = {
     "iteration": ("Iter", "{: 4d}"),
@@ -367,11 +367,11 @@ def _prepare_functions(
     for t_i, def_i in zip(t.nonzeros(), tau_def.values()):
         path = [def_i.store_name, *def_i.path]
         symbol = Quantity(t_i, def_i.default.units)
-        _replace_qty(args[NHKeys.THERMO_PARAMS], symbol, path)
+        replace_qty(args[NHKeys.THERMO_PARAMS], symbol, path)
     # replace model parameters from p in arg
     for p_i, def_i in zip(p.nonzeros(), cont.data_to_model.values()):
         symbol = Quantity(p_i, def_i.uom)
-        _replace_qty(args[NHKeys.MODEL_PARAMS], symbol, def_i.path)
+        replace_qty(args[NHKeys.MODEL_PARAMS], symbol, def_i.path)
 
     # evaluate model symbolically
     res = model.function(args, squeeze_results=False)
@@ -383,7 +383,7 @@ def _prepare_functions(
     # extract q
     model_props = res[NHKeys.MODEL_PROPS]
     q = vertcat(
-        *[_extract_qty(model_props, path).to("").m
+        *[extract_qty(model_props, path).to("").m
           for path in cont.penalties]
     )
     # apply weight of entire contribution
@@ -400,25 +400,6 @@ def _prepare_functions(
         f_bt=Function("f_bt", [x, p, t, d_t], [b, -b / jtimes(b, t, d_t)]),
         f_q=Function("f_q", [x, p, t], [q, q_x, q_t, r_t])
     )
-
-
-def _extract_qty(results: NestedMap[Quantity], path: Sequence[str]) -> Quantity:
-    for p in path:
-        results = results[p]
-    return results
-
-
-def _replace_qty(
-        arguments: NestedMutMap[Quantity],
-        item: Quantity, path: Sequence[str]
-):
-    """Replace an item"""
-    prev = None
-    for p in path:
-        if not p in arguments:
-            return  # Thermo-parameter is not in model, skip
-        prev, arguments = arguments, arguments[p]
-    prev[path[-1]] = item
 
 
 def _extract_default_values(parameters: Map[ThermoFitParameter]) -> NDArray:

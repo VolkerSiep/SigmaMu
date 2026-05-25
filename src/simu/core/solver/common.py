@@ -4,7 +4,7 @@ from numpy import squeeze, array, atleast_1d, argmin, isfinite, argmax, abs
 from numpy.typing import NDArray
 
 from simu import NumericHandler, NHKeys, Quantity
-from simu.core.utilities.types import NestedMap
+from simu.core.utilities.types import NestedMap, NestedMutMap
 from simu.core.utilities.errors import NonSquareSystem
 
 
@@ -100,3 +100,22 @@ class DataRowConverter:
             Quantity(r, f).to(t).magnitude
             for r, f, t in zip(row, self._from, self._to)
     ]
+
+
+def replace_qty(
+        arguments: NestedMutMap[Quantity],
+        item: Quantity, path: Sequence[str]
+):
+    """Replace an item"""
+    prev = None
+    for p in path:
+        if not p in arguments:
+            return  # Thermo-parameter is not in model, skip
+        prev, arguments = arguments, arguments[p]
+    prev[path[-1]] = item
+
+
+def extract_qty(results: NestedMap[Quantity], path: Sequence[str]) -> Quantity:
+    for p in path:
+        results = results[p]
+    return results
