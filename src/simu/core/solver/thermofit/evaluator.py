@@ -14,45 +14,45 @@ from ..common import ModelContext, check_model_square, DataRowConverter
 class NoThermoPropFilter(PropertyFilter):
     """This filter removes all stream properties, as only model properties
     are addressable by the evaluation."""
+
     def keep_property(self, name: str, sub_key: str = None) -> bool:
         return False
 
 
 class ThermoFitSingleEvaluator:
-    def __init__(self,
-                 model: NumericHandler,
-                 dataset: DataSet,
-                 evaluation: ThermoFitEvaluation,
-                 config: ThermoFitEvaluationConfig):
-        # TODO:
-        #  Note ugly side effect, the model is altered at this point, and
-        #  if used otherwise outside this scope, the thermo-properties will be
-        #  gone :-(. But I should better change this in NumericHandler, i.e.
-        #  refactoring that class a bit, it is very heavy. Also, the QFunction
-        #  is created in a property, which is an expensive operation.
+    def __init__(
+            self,
+            model: NumericHandler,
+            dataset: DataSet,
+            evaluation: ThermoFitEvaluation,
+            config: ThermoFitEvaluationConfig
+    ):
         model.set_property_filter(NoThermoPropFilter())
         self._solver = SimulationSolver(
             model,
-            max_iter = config.max_iter,
-            gamma = config.gamma,
-            wall = config.wall,
+            max_iter=config.max_iter,
+            gamma=config.gamma,
+            wall=config.wall,
             output=None,
             retain_solutioon=False
         )
         self._dataset = dataset
 
     def set_thermo_parameters(self, parameters: NestedMap[Quantity]):
+        # first entry is store name - done!
         pass
 
-    def solve(self, ):
+    def solve(self, ) -> ThermoEvaluationReport:
         #
         pass
 
 
 class ThermoFitEvaluator:
-    def __init__(self, models: MutMap[NumericHandler],
-                 config: ThermoFitEvaluationConfig | None = None,
-                 **options: Any):
+    def __init__(
+            self, models: MutMap[NumericHandler],
+            config: ThermoFitEvaluationConfig | None = None,
+            **options: Any
+    ):
         self._config = (config or ThermoFitEvaluationConfig()).update(**options)
         self._models = models
 
@@ -66,8 +66,10 @@ class ThermoFitEvaluator:
                     name=f"matrix of model {n}"
                 ) from err
 
-    def set_options(self, config: ThermoFitEvaluationConfig | None = None,
-                    **options: Any):
+    def set_options(
+            self, config: ThermoFitEvaluationConfig | None = None,
+            **options: Any
+    ):
         """Update the solver configuration for subsequent runs.
 
         :param config: A new configuration object to replace the current one.
@@ -75,26 +77,30 @@ class ThermoFitEvaluator:
         """
         self._config = (config or self._config).update(**options)
 
-    def solve(self, thermo_evaluation_definition: Map[Any],
-              parameters: NestedMap[Quantity] | None = None,
-              **options: Any) -> ThermoEvaluationReport:
+    def solve(
+            self, thermo_evaluation_definition: Map[Any],
+            parameters: NestedMap[Quantity] | None = None,
+            **options: Any
+    ) -> Map[ThermoEvaluationReport]:
         config = self._config.update(**options)
         definition = self.parse_definition(thermo_evaluation_definition)
         models = self._models
         datasets = definition.datasets
-        evaluators = {
-            name: ThermoFitSingleEvaluator(
+        parameters = parameters or {}
+        reports = {}
+        for name, evaluation in definition.evaluations.items():
+            evaluator = ThermoFitSingleEvaluator(
                 models[evaluation.model_id],
                 datasets[evaluation.dataset_id],
-                evaluation, config)
-            for name, evaluation in definition.evaluations.items()
-        }
-        parameters = parameters or {}
+                evaluation, config
+            )
+            evaluator.set_thermo_parameters(parameters)
+            reports[name] = evaluator.solve()
+        return reports
 
-
-
-    def parse_definition(self, definition: Map[Any]
-                         ) -> ThermoFitEvaluationDefinition:
+    def parse_definition(
+            self, definition: Map[Any]
+    ) -> ThermoFitEvaluationDefinition:
         """Parse and validate a raw thermodynamic fit definition.
 
         :param definition: A dictionary or mapping representing the evaluation

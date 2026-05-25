@@ -18,11 +18,12 @@ from .config import (
     ThermoFitDefinition, ThermoFitSolverConfig, ThermoFitValidationContext,
     ThermoFitContribution, ThermoFitParameter, DataSet
 )
-from .report import (ThermoFitReport, ThermoFitOuterIterationReport,
-                     ContributionResult, DataPointResult)
-from ..common import (ModelContext, not_finite, assess_residuals,
-                      relax, check_model_square, DataRowConverter)
-
+from .report import (
+    ThermoFitReport, ThermoFitOuterIterationReport,
+    ContributionResult, DataPointResult)
+from ..common import (
+    ModelContext, not_finite, assess_residuals,
+    relax, check_model_square, DataRowConverter)
 
 _OUTPUT_TABLE_DEFINITION = {
     "iteration": ("Iter", "{: 4d}"),
@@ -32,6 +33,7 @@ _OUTPUT_TABLE_DEFINITION = {
     "num_failed": ("Failed", "{: 6d}"),
     "duration": ("Time", "{:6.2f}")
 }
+
 
 @dataclass
 class _ParameterSymbol:
@@ -48,12 +50,14 @@ class _FunctionCollection:
 
 
 class ThermoFitContributionWrapper:
-    def __init__(self,
-                 model: NumericHandler,
-                 contribution: ThermoFitContribution,
-                 dataset: DataSet,
-                 parameters: Map[ThermoFitParameter],
-                 config: ThermoFitSolverConfig):
+    def __init__(
+            self,
+            model: NumericHandler,
+            contribution: ThermoFitContribution,
+            dataset: DataSet,
+            parameters: Map[ThermoFitParameter],
+            config: ThermoFitSolverConfig
+    ):
         self._model = model
         self._dataset = dataset
         self._contribution = contribution
@@ -66,11 +70,10 @@ class ThermoFitContributionWrapper:
         state = model.arguments[NHKeys.VECTORS][NHKeys.STATES].magnitude
         self._states = [state] * len(dataset.data)
 
-
     def solve(self, tau: NDArray) -> ContributionResult:
         states, model, data = self._states, self._model, self._dataset.data
         config = self._config
-        q : list[NDArray] = []
+        q: list[NDArray] = []
         dq_dt: list[NDArray] = []
 
         num_failed = 0
@@ -99,10 +102,12 @@ class ThermoFitContributionWrapper:
                 min_alpha = alpha
         return min_alpha
 
-    def _solve_point(self,
-                     state: NDArray,
-                     param: Sequence[float],
-                     tau: Sequence[float]) -> DataPointResult:
+    def _solve_point(
+            self,
+            state: NDArray,
+            param: Sequence[float],
+            tau: Sequence[float]
+    ) -> DataPointResult:
         """Solve a point, return dr_dx. state is updated """
         model, config = self._model, self._config
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
@@ -148,11 +153,13 @@ class ThermoFitContributionWrapper:
             dr_dx=dr_dx
         )
 
-    def _relax_point(self,
-                     state: NDArray,
-                     param: Sequence[float],
-                     tau: Sequence[float],
-                     d_tau: Sequence[float]) -> float:
+    def _relax_point(
+            self,
+            state: NDArray,
+            param: Sequence[float],
+            tau: Sequence[float],
+            d_tau: Sequence[float]
+    ) -> float:
         bound_names = self._model.vector_res_names(NHKeys.BOUNDS)
         b, a = self._funcs.f_bt(state, param, tau, d_tau)
         return relax(b, a, bound_names, self._config.gamma)[0]
@@ -167,10 +174,12 @@ class ThermoFitSolver:
     loop updates the thermodynamic parameters :math:`\tau`.
     """
 
-    def __init__(self, models: MutMap[NumericHandler],
-                 thermo_source: AbstractThermoSource,
-                 config: ThermoFitSolverConfig | None = None,
-                 **options: Any):
+    def __init__(
+            self, models: MutMap[NumericHandler],
+            thermo_source: AbstractThermoSource,
+            config: ThermoFitSolverConfig | None = None,
+            **options: Any
+    ):
         """Initialize the ThermoFitSolver.
 
         :param models: A mapping of model identifiers to their corresponding
@@ -197,8 +206,10 @@ class ThermoFitSolver:
                     name=f"matrix of model {n}"
                 ) from err
 
-    def set_options(self, config: ThermoFitSolverConfig | None = None,
-                    **options: Any):
+    def set_options(
+            self, config: ThermoFitSolverConfig | None = None,
+            **options: Any
+    ):
         """Update the solver configuration for subsequent runs.
 
         :param config: A new configuration object to replace the current one.
@@ -206,8 +217,10 @@ class ThermoFitSolver:
         """
         self._config = (config or self._config).update(**options)
 
-    def solve(self, thermo_fit_definition: Map[Any],
-              **options: Any) -> ThermoFitReport:
+    def solve(
+            self, thermo_fit_definition: Map[Any],
+            **options: Any
+    ) -> ThermoFitReport:
         """Execute the iterative fitting process.
 
         This method parses the provided definition, runs the solver, and returns
@@ -245,8 +258,8 @@ class ThermoFitSolver:
     def solve_iter(
             self, definition: ThermoFitDefinition,
             config: ThermoFitSolverConfig | None = None,
-            **options: Any) \
-            -> Generator[ThermoFitOuterIterationReport, Map[Any] | None, None]:
+            **options: Any
+    ) -> Generator[ThermoFitOuterIterationReport, Map[Any] | None, None]:
         """Perform the fitting process as an iterator.
 
         This method yields an
@@ -297,16 +310,17 @@ class ThermoFitSolver:
                 q_norm=q_norm,
                 stationarity=criterion,
                 relax_factor=alpha,
-                num_failed = sum(s.num_failed for s in sub_results),
+                num_failed=sum(s.num_failed for s in sub_results),
                 duration=time() - start_time
             )
 
             if criterion < config.epsilon or q_norm < config.epsilon_q:
                 break
         else:
-            raise ValueError("No convergence in outer loop after "
-                             f"{config.max_iter_outer} iterations")
-
+            raise ValueError(
+                "No convergence in outer loop after "
+                f"{config.max_iter_outer} iterations"
+            )
 
     def parse_definition(self, definition: Map[Any]) -> ThermoFitDefinition:
         """Parse and validate a raw thermodynamic fit definition.
@@ -321,8 +335,9 @@ class ThermoFitSolver:
         context = ThermoFitValidationContext(models, self._thermo_source)
         return ThermoFitDefinition.model_validate(definition, context=context)
 
-    def _define_thermo_parameter(self, name: str, parameter: ThermoFitParameter
-                                 ) -> _ParameterSymbol:
+    def _define_thermo_parameter(
+            self, name: str, parameter: ThermoFitParameter
+    ) -> _ParameterSymbol:
         default_value = parameter.default
         if default_value is None:
             default_value = self._thermo_source[parameter.path]
@@ -331,9 +346,11 @@ class ThermoFitSolver:
             default_value=default_value
         )
 
-def _prepare_functions(model: NumericHandler, cont: ThermoFitContribution,
-                       tau_def: Map[ThermoFitParameter]
-                      ) -> _FunctionCollection:
+
+def _prepare_functions(
+        model: NumericHandler, cont: ThermoFitContribution,
+        tau_def: Map[ThermoFitParameter]
+) -> _FunctionCollection:
     args = model.arguments
     num_states = args[NHKeys.VECTORS][NHKeys.STATES].shape[0]
 
@@ -365,8 +382,10 @@ def _prepare_functions(model: NumericHandler, cont: ThermoFitContribution,
 
     # extract q
     model_props = res[NHKeys.MODEL_PROPS]
-    q = vertcat(*[_extract_qty(model_props, path).to("").m
-                  for path in cont.penalties])
+    q = vertcat(
+        *[_extract_qty(model_props, path).to("").m
+          for path in cont.penalties]
+    )
     # apply weight of entire contribution
     q *= cont.weight
 
@@ -389,8 +408,10 @@ def _extract_qty(results: NestedMap[Quantity], path: Sequence[str]) -> Quantity:
     return results
 
 
-def _replace_qty(arguments: NestedMutMap[Quantity],
-                 item: Quantity, path: Sequence[str]):
+def _replace_qty(
+        arguments: NestedMutMap[Quantity],
+        item: Quantity, path: Sequence[str]
+):
     """Replace an item"""
     prev = None
     for p in path:
@@ -406,13 +427,15 @@ def _extract_default_values(parameters: Map[ThermoFitParameter]) -> NDArray:
 
 def _generate_parameter_struct(
         tau: Sequence[float],
-        parameters: Map[ThermoFitParameter]) -> NestedMutMap[Quantity]:
+        parameters: Map[ThermoFitParameter]
+) -> NestedMutMap[Quantity]:
     result = {}
     for parameter, tau_i in zip(parameters.values(), tau):
         res = result
-        for p in parameter.path[:-1]:
+        path = [parameter.store_name, *parameter.path]
+        for p in path[:-1]:
             if p not in res:
                 res[p] = {}
             res = res[p]
-        res[parameter.path[-1]] = Quantity(tau_i, parameter.default.units)
+        res[path[-1]] = Quantity(tau_i, parameter.default.units)
     return result
