@@ -45,7 +45,7 @@ class ThermoFitSingleEvaluator:
         target = self._solver.model_parameters[NHKeys.THERMO_PARAMS]
         _overwrite_nodes(target, parameters)
 
-    def solve(self) -> ThermoEvaluationReport:
+    def solve(self, name: str) -> ThermoEvaluationReport:
         dataset = self._dataset
         evaluation = self._evaluation
         num_failed = 0
@@ -79,7 +79,7 @@ class ThermoFitSingleEvaluator:
                 columns=columns,
                 uom=uom,
                 data=results,
-                source="Evaluation"
+                source=f"Evaluation '{name}'"
             ),
             num_failed=num_failed
         )
@@ -150,7 +150,7 @@ class ThermoFitEvaluator:
                 evaluation, config
             )
             evaluator.set_thermo_parameters(parameters)
-            reports[name] = evaluator.solve()
+            reports[name] = evaluator.solve(name)
         return reports
 
     def parse_definition(

@@ -185,7 +185,24 @@ def get_context(info: ValidationInfo) -> ThermoFitValidationContext:
 
 
 class DataSet(BaseModel):
-    """Represents a collection of experimental data points."""
+    """Represents a collection of experimental data points.
+
+    Printing renders them in restructured text tables:
+
+    >>> d = DataSet(
+    ...     columns=["temperature", "pressure", "mole fraction"],
+    ...     uom=["K", "bar", "%"],
+    ...     data=[[300, 2, 3], [400, 3, 10], [500, 4, 80]],
+    ...     source="Invented VLE data")
+    >>> print(d)
+    --------------- -------------- -----------------
+    temperature [K] pressure [bar] mole fraction [%]
+    --------------- -------------- -----------------
+                300              2                 3
+                400              3                10
+                500              4                80
+    --------------- -------------- -----------------
+    """
 
     columns: Sequence[str]
     """The names of the columns in the dataset."""
@@ -198,6 +215,18 @@ class DataSet(BaseModel):
 
     source: str = Field(default="Unknown")
     """The source or origin of the dataset."""
+
+    def __str__(self):
+        if not self.data:
+            return f"<empty dataset>"
+        header = [f"{h} [{u}]" for h, u in zip(self.columns, self.uom)]
+        lengths = [len(h) for h in header]
+        sep = " ".join(["-" * l for l in lengths])
+        header = " ".join(header)
+        data = "\n".join([" ".join([f"{x:{l}.{l - 4}g}"
+                                    for x, l in zip(row, lengths)])
+                          for row in self.data])
+        return "\n".join([sep, header, sep, data, sep])
 
     model_config = ConfigDict(extra='forbid')
 

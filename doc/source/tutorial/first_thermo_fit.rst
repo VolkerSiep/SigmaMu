@@ -106,7 +106,7 @@ Deviation: -0.01216
 
 Parameter fit
 =============
-A parameter fit is configured via a data structure (``thermo_fig_definition.yml``):
+A parameter fit is configured via a data structure (``thermo_fit_definition.yml``):
 
 .. exampleinclude:: tin_parameter_fit/thermo_fit_definition.yml
    :language: yaml
@@ -129,12 +129,13 @@ Finally, the standard entropy of |alpha-tin| is to be parameterized (line 19-20)
 
 .. exampleinclude:: tin_parameter_fit/parameter_fit.py
    :language: python
+   :lines: 1-20, 30-33, 36-38
    :linenos:
 
 Some notes:
 
-  - The model name ``transition_model`` is used in line 16, so that it is found as addressed in the definition file.
-  - We need to set ``epsilon_q``, as our system is square (one data point and one parameter). Hence the default convergence criterion of stationarity is not suitable - vectors with only one component cannot be orthogonal.
+  - The model name ``transition_model`` is used in line 22, so that it is found as addressed in the definition file.
+  - We need to set ``epsilon_q`` in line 16, as our system is square (one data point and one parameter). Hence the default convergence criterion of stationarity is not suitable - vectors with only one component cannot be orthogonal.
 
 The above code prints the obtained parameter structure::
 
@@ -143,6 +144,29 @@ The above code prints the obtained parameter structure::
 Evaluation
 ----------
 To complete this example, let us continue for a moment to pretend that this is something bigger than it is. Let us imagine that it consisted of many data points or even data sets.
-This is where the evaluation is useful.
+This is where the evaluation is useful. The above script is extended by the ``evaluate`` function:
 
-.. todo::  Give evaluation example
+.. exampleinclude:: tin_parameter_fit/parameter_fit.py
+   :language: python
+   :linenos:
+   :emphasize-lines: 21-28,  34
+
+Consult the ``evaluations`` section in above listing of ``thermo_fit_definition.yml`` to see its definition.
+The code only adds two lines (22, 24) to perform an evaluation. The first one  is run with original parameters and yields the original transition temperature::
+
+    ------------
+    T_hat [degC]
+    ------------
+       8.8277278
+    ------------
+
+The second call (line 27) includes the parameters as obtained from the fit and yields the desired transition temperature::
+
+    ------------
+    T_hat [degC]
+    ------------
+            13.2
+    ------------
+
+Now, as indicated, this trivial example was an insult to the capabilities of the data fit solver.
+Let us do something more realistic in the next section.
