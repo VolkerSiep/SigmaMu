@@ -230,6 +230,12 @@ class DataSet(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+    def __getitem__(self, column: str) -> Sequence[Quantity]:
+        """Return the requested column as a sequence of Quantity objects"""
+        idx = self.columns.index(column)
+        uom = self.uom[idx]
+        return [Quantity(row[idx], uom) for row in self.data]
+
     @field_validator("uom", mode="after")
     def check_uom(cls, value: Sequence[str]) -> Sequence[str]:
         for uom in value:
@@ -415,6 +421,16 @@ class ThermoFitParameter(BaseModel):
         return self
 
 
+class DataSetQuote(BaseModel):
+    """Defines a transfer of a data set property to the evaluation result"""
+
+    name: str
+    """The name of the column in the data set"""
+
+    uom: str
+    """The target unit of measurement"""
+
+
 class ThermoFitProperty(BaseModel):
     """Defines a property to be evaluated."""
 
@@ -438,7 +454,11 @@ class ThermoFitEvaluation(ThermoFitEntity):
 
     properties: Map[ThermoFitProperty]
     """The properties to be evaluated. The keys of the provided mapping will
-    become the column headers in the resulting data set. """
+    become the column headers in the resulting data set."""
+
+    quote_data: Map[DataSetQuote] = Field(default_factory=dict)
+    """Columns of the data set to be quoted in the evaluation table, supporting
+    unit conversion."""
 
     @model_validator(mode="after")
     def validate_properties(self, info: ValidationInfo) -> Self:
@@ -526,6 +546,18 @@ class ThermoFitEvaluationDefinition(BaseModel):
         context = get_context(info).model_contexts
         for contribution in self.evaluations.values():
             _validate_entity(contribution, self.datasets, context)
+        return self
+
+    @model_validator(mode="after")
+    def validate_quotes(self, info: ValidationInfo) -> Self:
+        for evaluation in self.evaluations.values():
+            dataset = self.datasets[evaluation.dataset_id]
+            for quote in evaluation.quote_data.values():
+                idx = dataset.columns.index(quote.name)
+                ds_unit = dataset.uom[idx]
+                if not _are_units_compatible(quote.uom, ds_unit):
+                    msg = f"Incompatible units '{quote.uom}' vs. '{ds_unit}'"
+                    raise ValueError(msg)
         return self
 
     model_config = ConfigDict(extra='forbid')

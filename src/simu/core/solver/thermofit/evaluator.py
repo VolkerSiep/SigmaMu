@@ -52,8 +52,18 @@ class ThermoFitSingleEvaluator:
         model_parameters = self._solver.model_parameters[NHKeys.MODEL_PARAMS]
         parameter_paths = [p.path for p in evaluation.data_to_model.values()]
 
-        columns = list(evaluation.properties.keys())
-        uom = [prop.uom for prop in evaluation.properties.values()]
+        # prepend quoted data
+        quotes = evaluation.quote_data
+        columns = list(quotes.keys())
+        uom_quotes = [q.uom for q in quotes.values()]
+        name_quotes = [q.name for q in quotes.values()]
+        quote_idx = [dataset.columns.index(n) for n in name_quotes]
+        uom_orig = [dataset.uom[i] for i in quote_idx]
+
+        # append result data
+        columns += evaluation.properties.keys()
+        uom = uom_quotes + [prop.uom for prop in evaluation.properties.values()]
+
 
         num_properties = len(columns)
         results = []
@@ -69,10 +79,17 @@ class ThermoFitSingleEvaluator:
                 num_failed += 1
                 continue
             model_props = result.properties[NHKeys.MODEL_PROPS]
-            results.append([
+            result_row = [
                 extract_qty(model_props, prop.path).to(prop.uom).magnitude
                 for prop in evaluation.properties.values()
-            ])
+            ]
+            quote = [
+                Quantity(row[idx], u_o).to(u_q).magnitude
+                for idx, u_q, u_o in zip(quote_idx, uom_quotes, uom_orig)
+            ]
+            results.append(quote + result_row)
+
+
 
         return ThermoEvaluationReport(
             results=DataSet(
