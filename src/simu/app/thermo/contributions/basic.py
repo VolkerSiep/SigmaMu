@@ -202,13 +202,12 @@ class BarinHeatCapacity(ThermoContribution):
         t3, t3_ref = t2 * t, t2_ref * t_ref
 
         dt, dt2, dt3 = t - t_ref, t2 - t2_ref, t3 - t3_ref
-        dt4 = t2*t2 - t2_ref * t2_ref
         dti, dti2 = 1 / t - 1 / t_ref, 1 / t2 - 1 / t2_ref
         dti3 = 1 / t3 - 1 / t3_ref
 
         d_h = (c[0] * dt + c[1] / 2 * dt ** 2
                + c[2] * dt ** 2 * (t + 2 * t_ref) / 3
-               + c[3] * (t ** 4 + t_ref ** 3 * (3 * t_ref - 4 * t))
+               + c[3] * (t ** 4 + t_ref ** 3 * (3 * t_ref - 4 * t)) / 4
                + c[4] * (log_t + 1 - t / t_ref)
                - c[5] * dt ** 2 / (t2_ref * t)
                + c[6] * (1.5 / t2_ref - 0.5 / t2 - t / t3_ref)) * temp_scale

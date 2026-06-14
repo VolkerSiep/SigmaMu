@@ -1,0 +1,15 @@
+datasets:
+  washburn_h2o: {} # external file
+  # washburn_nacl: {} # external file
+
+evaluations:
+  pure_h2o:
+    dataset_id: washburn_h2o
+    model_id: p_sat
+    data_to_model:
+       T: {path: [T]}
+       w: {path: [w]}
+       p: {path: [p_meas]}
+    properties:
+      p_calc: {path: [p_calc], uom: bar}
+      p_meas: {path: [p_meas], uom: bar}

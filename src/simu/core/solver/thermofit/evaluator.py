@@ -60,8 +60,8 @@ class ThermoFitSingleEvaluator:
 
         for r, row in enumerate(dataset.data):  # TODO: parallelize this loop
             # set parameters to model
-            for magnitude, uom, path in zip(row, dataset.uom, parameter_paths):
-                replace_qty(model_parameters, Quantity(magnitude, uom), path)
+            for magnitude, uom_i, path in zip(row, dataset.uom, parameter_paths):
+                replace_qty(model_parameters, Quantity(magnitude, uom_i), path)
             try:
                 result = self._solver.solve()
             except ValueError:
