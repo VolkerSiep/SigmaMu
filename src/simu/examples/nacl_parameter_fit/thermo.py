@@ -11,23 +11,23 @@ CURRENT_DIR = Path(__file__).parent
 CONFIG_FILE = CURRENT_DIR / "thermo_config.yml"
 
 
-def _create_materials():
+def _create_materials(store: ThermoParameterStore):
     # read configuration
     with CONFIG_FILE.open() as file:
         configuration = safe_load(file)
 
     factory = RegThermoFactory()
     species = SpeciesDB(configuration["species"])
-    store = ThermoParameterStore()
 
     # define frames and material definitions
     result = {}
     for name, phase in configuration["phases"].items():
         s = species.get_sub_db(phase["species"])
         c = configuration["frames"][phase["frame"]]
-        i = InitialState.from_std(len(s))
-        f = factory.create_frame(s, c)
-        result[name] = MaterialDefinition(f, i, store)
+        result[name] = MaterialDefinition(
+            factory.create_frame(s, c),
+            InitialState.from_std(len(s)), store
+        )
 
     for name, data in configuration["parameters"].items():
         source = StringDictThermoSource(data)
@@ -35,5 +35,5 @@ def _create_materials():
 
     return result
 
-
-materials: Mapping[str, MaterialDefinition] = _create_materials()
+thermo_store = ThermoParameterStore()
+materials: Mapping[str, MaterialDefinition] = _create_materials(thermo_store)

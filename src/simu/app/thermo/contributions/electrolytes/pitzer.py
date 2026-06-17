@@ -317,6 +317,7 @@ class PitzerBinaryInteraction(ExcessBasePitzer):
         res["pitzer_bin_chi"] = chi
         return {"chi": chi, "chi_t": chi_t, "chi_i": chi_i, "chi_b": chi_b}
 
+
 @registered_contribution
 class PitzerTernaryInteraction(ExcessBasePitzer):
     r"""The ternary interaction in the Pitzer model is dependent only on

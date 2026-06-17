@@ -48,7 +48,7 @@ In below code, the function to create the frames is called in line 23.
 
 .. exampleinclude:: steam_system/thermo.py
    :language: python
-   :lines: 19-29
+   :lines: 18-29
    :lineno-start: 17
    :linenos:
 
