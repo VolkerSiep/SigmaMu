@@ -25,7 +25,7 @@ dependencies = [
     "scipy",
     "casadi",
     "pyyaml",
-    "pydantic",
+    "pydantic"
 ]
 
 [project.urls]
@@ -68,7 +68,9 @@ dev = [
     "sphinx-copybutton",
     "setuptools",
     "wheel",
-    "pandas"
+    "pandas",
+    "pandas-stubs",
+    "scipy-stubs"
 ]
 
 [tool.setuptools]

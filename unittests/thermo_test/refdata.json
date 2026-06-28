@@ -149,6 +149,29 @@
     ]
   },
   "contribution_test.py::test_molecular_weight": "[28.014, 31.998]",
+  "contribution_test.py::test_polynomial_gibbs_volume": {
+    "S": [
+      "@1=2",
+      "@2=(T/T_ref)",
+      "(S-(((((B.A+((@1*C.A)*@2))*n_0)+((B.B+((@1*C.B)*@2))*n_1))*(p-p_ref))/T_ref)) kilogram * meter ** 2 / kelvin / second ** 2"
+    ],
+    "V": [
+      "@1=(T/T_ref)",
+      "@2=1",
+      "@3=(@1-@2)",
+      "@4=(sq(@1)-@2)",
+      "(((A.A+((B.A*@3)+(C.A*@4)))*n_0)+((A.B+((B.B*@3)+(C.B*@4)))*n_1)) meter ** 3"
+    ],
+    "mu": [
+      "@1=(T/T_ref)",
+      "@2=1",
+      "@3=(@1-@2)",
+      "@4=(sq(@1)-@2)",
+      "@5=(p-p_ref)",
+      "[(mu_std_0+((A.A+((B.A*@3)+(C.A*@4)))*@5))",
+      "(mu_std_1+((A.B+((B.B*@3)+(C.B*@4)))*@5))] kilogram * meter ** 2 / mole / second ** 2"
+    ]
+  },
   "cubic_test.py::test_boston_mathias_alpha_function": "@1=1, @2=(T/T_c_0), @3=((@1<@2)==0), @4=sqrt(@2), @5=(m_0+(0.3*eta.A)), @6=((@5+@1)+((4*eta.A)/@5)), sq(((@3?((@1-(m_0*(@4-@1)))-((eta.A*(@4-@1))*(@2-0.7))):0)+((!@3)?exp((-((@5/@6)*(pow(@4,@6)-@1)))):0)))",
   "cubic_test.py::test_critical_parameters": {
     "_T_c": "[T_c.A, T_c.B] K",

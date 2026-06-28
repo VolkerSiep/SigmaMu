@@ -1,7 +1,7 @@
 # stdlib modules
 from copy import copy
+from string import ascii_uppercase
 
-from simu import Quantity
 # internal modules
 from simu.core.thermo.contribution import ThermoContribution, registered_contribution
 from simu.core.utilities.constants import R_GAS
@@ -187,8 +187,6 @@ class BarinHeatCapacity(ThermoContribution):
         \Delta_{c_p} \mu_i= \Delta_{c_p} h_i^0 - T\,\Delta_{c_p}  s_i^0
 
     """
-
-    provides = ["T_ref", "p_ref", "S", "mu"]
 
     def define(self, res):
         temp, n, temp_ref = res["T"], res["n"], res["T_ref"]
@@ -395,16 +393,12 @@ class ConstantGibbsVolume(ThermoContribution):
 
     The system volume is then calculated as
 
-    .. math::
-
-        V = \sum_i v_{n,i}\,n_i
+    .. math:: V = \sum_i v_{n,i}\,n_i
 
     For the chemical potential, this yields, given pressure ``p`` and reference
     pressure ``p_ref``:
 
-    .. math::
-
-        \mu_i \leftarrow \mu_i + v_{n,i}\,(p - p_\mathrm{ref})
+    .. math:: \mu_i \leftarrow \mu_i + v_{n,i}\,(p - p_\mathrm{ref})
 
     .. note::
 
@@ -421,6 +415,72 @@ class ConstantGibbsVolume(ThermoContribution):
         n, p, p_ref = res["n"], res["p"], res["p_ref"]
         v_n = self.par_vector("v_n", self.species, "m**3/mol")
         res["mu"] += v_n * (p - p_ref)
+        res["V"] = v_n.T @ n
+
+
+@registered_contribution
+class PolynomialGibbsVolume(ThermoContribution):
+    r"""This contribution describes an incompressible mixture with
+    temperature-dependent density. The molar volumes are a polynomial in
+    temperature. The order of the polynomial is given by the option ``order``
+    (default 3, defining coefficients ``A`` - ``D``).
+
+    ========= ====================== ===================
+    Parameter Description            Symbol
+    ========= ====================== ===================
+    ``T_ref`` Reference temperature  :math:`T_{\rm ref}`
+    ``A``     Polynomial coefficient :math:`a_i`
+    ``B``     Polynomial coefficient :math:`b_i`
+    ...
+    ========= ====================== ===================
+
+    The molar volume :math:`v_{n,i}(T)` for species :math:`i` is calculated with
+    :math:`\tau = T / T_{\rm ref}` as
+
+    .. math::
+
+         v_{n,i}(T) = a_i + b_i\,(\tau - 1) + c_i\,(\tau^2 - 1)
+           + d_i\,(\tau^3 - 1) + \dots
+
+    The volume is defined as
+
+    .. math:: V = \sum_i v_{n,i}\,n_i
+
+    The chemical potential contribution is then
+
+    .. math:: \mu_i \leftarrow \mu_i + v_{n,i}(T)\,(p - p_\mathrm{ref})
+
+    The temperature dependency yields an entropy contribution as follows:
+
+    .. math::
+
+        S \leftarrow S - (p - p_\mathrm{ref})\,
+          \sum_i \frac{\mathrm{d}v_{n,i}}{\mathrm{d}T}\,n_i
+
+    with
+
+    .. math::
+
+        \frac{\mathrm{d}v_{n,i}}{\mathrm{d}T} = \frac1{T_{\rm ref}} \left (
+            b_i + 2\,c_i\,\tau + 3\,d_i\,\tau^2 + \dots \right )
+
+    """
+    provides = ["V"]
+
+    def define(self, res):
+        t, p, n, p_ref = (res[s] for s in "T p n p_ref".split())
+        order = self.options.get("order", 3)
+        assert order < 26  # the sky is the limit - and the alphabet
+        t_ref = self.par_scalar("T_ref", "K")
+        c = [self.par_vector(n, self.species, "cm^3/mol")
+             for n in ascii_uppercase[:order + 1]]
+
+        tau, dp = t / t_ref, p - p_ref
+        v_n = c[0] + sum(c_i * (tau ** k - 1) for k, c_i in enumerate(c[1:], 1))
+        d_vn_dt = sum((k + 1) * c_i * tau ** k for k, c_i in enumerate(c[1:]))
+
+        res["mu"] += v_n * dp
+        res["S"] -= d_vn_dt.T @ n * dp / t_ref
         res["V"] = v_n.T @ n
 
 
