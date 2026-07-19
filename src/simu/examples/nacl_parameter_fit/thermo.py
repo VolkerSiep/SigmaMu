@@ -9,6 +9,7 @@ from simu.app import RegThermoFactory
 
 CURRENT_DIR = Path(__file__).parent
 CONFIG_FILE = CURRENT_DIR / "thermo_config.yml"
+H2O_PARAM_FILE = CURRENT_DIR.parent / "h2o_fit" / "parameters_final.yml"
 
 
 def _create_materials(store: ThermoParameterStore):
@@ -30,6 +31,13 @@ def _create_materials(store: ThermoParameterStore):
         )
 
     for name, data in configuration["parameters"].items():
+        source = StringDictThermoSource(data)
+        store.add_source(name, source)
+
+    # read water parameters
+    with H2O_PARAM_FILE.open() as file:
+        parameters = safe_load(file)
+    for name, data in parameters.items():
         source = StringDictThermoSource(data)
         store.add_source(name, source)
 

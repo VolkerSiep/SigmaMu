@@ -31,7 +31,7 @@ def main():
 
     evaluator = ThermoFitEvaluator(models, gamma=0.7)
     result = evaluator.solve(definition)
-    plot(axes, result, style="--", alpha=0.3, legend=False)
+    plot(axes, result, style="--", alpha=0.5, legend=False)
 
     try:
         with PARAM_FILE.open() as file:

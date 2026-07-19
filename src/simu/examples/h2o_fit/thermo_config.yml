@@ -1,4 +1,4 @@
-species: {H2O: H2O, Na+: Na:1+, Cl-: Cl:1-}
+species: {H2O: H2O}
 
 phases:
   liquid: {frame: liquid, species: [H2O]}
@@ -71,9 +71,9 @@ parameters:
       s_0: {H2O: 69.95 J/K/mol}
     PolynomialGibbsVolume:
       T_ref: 25 degC
-      A: {'H2O': 18 cm^3/mol}
-      B: {'H2O': 0 cm^3/mol}
-      C: {'H2O': 0 cm^3/mol}
+      A: {H2O: 18 cm^3/mol}
+      B: {H2O: 0 cm^3/mol}
+      C: {H2O: 0 cm^3/mol}
     BostonMathiasAlphaFunction:
       eta:
         H2O: 0.0

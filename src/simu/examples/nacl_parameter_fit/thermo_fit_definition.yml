@@ -26,3 +26,20 @@ evaluations:
       p_meas: {name: p, uom: bar}
     properties:
       p_calc: {path: [p_calc], uom: bar}
+
+contributions:
+  p_sat:
+    dataset_id: washburn_all
+    model_id: p_sat
+    data_to_model:
+      T: { path: [T] }
+      w: { path: [w] }
+      p: { path: [p_meas] }
+    penalties:
+      - [q]
+
+parameters:
+  b1:
+    path: [PitzerBinaryInteraction, beta_01, Na+, Cl-]
+  b2:
+    path: [PitzerBinaryInteraction, beta_02, Na+, Cl-]

@@ -1,30 +1,20 @@
 from pathlib import Path
 from yaml import safe_load
-from simu import ThermoFitEvaluator, NumericHandler
-from model import PSatModel
+from simu import ThermoFitEvaluator, parse_quantities_in_struct
 from pandas import DataFrame
 from matplotlib import pyplot
 
-THIS_DIRECTORY = Path(__file__).parent
-THERMO_FIT_DEFINITION_FILE = THIS_DIRECTORY / "thermo_fit_definition.yml"
-WASHBURN_H2O_FILE = THIS_DIRECTORY / "Washburn_1928_h2o.yml"
-WASHBURN_ALL_FILE = THIS_DIRECTORY / "Washburn_1928_all.yml"
+from common import load_definition, define_models
 
 
-def load_definition():
-    with THERMO_FIT_DEFINITION_FILE.open() as f:
-        data = safe_load(f)
-    with WASHBURN_H2O_FILE.open() as f:
-        data["datasets"]["washburn_h2o"] = safe_load(f)
-    with WASHBURN_ALL_FILE.open() as f:
-        data["datasets"]["washburn_all"] = safe_load(f)
-    return data
+PARAM_FILE = Path(__file__).parent / "parameters_fit.yml"
 
-def evaluate(models, definition):
-    evaluator = ThermoFitEvaluator(models)
-    result = evaluator.solve(definition)
+
+def evaluate(evaluator, param=None):
+    definition = load_definition()
+    result = evaluator.solve(definition, param)
     data = result["all"].results
-    df = DataFrame(data.data, columns=data.columns)
+    df = DataFrame(data.data, columns=list(data.columns))
 
     baseline = df[df["w_nacl"] == 0.0][["T", "p_meas"]].rename(
         columns={"p_meas": "p_meas_pure"}
@@ -32,21 +22,39 @@ def evaluate(models, definition):
     df = df.merge(baseline, on="T", how="left")
     df["p_meas_red"] = df["p_meas"] / df["p_meas_pure"]
     df["p_calc_red"] = df["p_calc"] / df["p_meas_pure"]
+    return df
 
-    for (t, data), c in zip(df.groupby("T"), "krbgmckrbgmc"):
-        pyplot.plot(data["w_nacl"], data["p_meas_red"], f"{c}.")
-        pyplot.plot(data["w_nacl"], data["p_calc_red"], f"{c}-", label=f"T = {t} degC")
+
+def main():
+    models = define_models()
+    evaluator = ThermoFitEvaluator(models)
+    df = evaluate(evaluator)
+
+    try:
+        with PARAM_FILE.open() as file:
+            param = parse_quantities_in_struct(safe_load(file))
+    except FileNotFoundError:
+        pass
+    else:
+        df_fit = evaluate(evaluator, param)
+        df = df.merge(df_fit, on=["T", "w_nacl"], suffixes=("_orig", "_fit"))
+
+    for t, data in df.groupby("T"):
+        l, = pyplot.plot(data["w_nacl"], data["p_meas_red"], ".")
+        pyplot.plot(
+            data["w_nacl"], data["p_calc_red_fit"], "-",
+            color=l.get_color(), label=f"T = {t} degC"
+        )
+        pyplot.plot(
+            data["w_nacl"], data["p_calc_red_orig"], "--",
+            color=l.get_color()
+        )
     pyplot.grid()
     pyplot.legend(loc="best")
     pyplot.xlabel("w(NaCl) [%]")
     pyplot.ylabel("Pressure ratio [-]")
     pyplot.show()
 
-
-def main():
-    definition = load_definition()
-    models = {"p_sat": NumericHandler(PSatModel.top())}
-    evaluate(models, definition)
 
 
 if __name__ == '__main__':

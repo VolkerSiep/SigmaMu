@@ -12,7 +12,9 @@ frames:
       - {name: Cp_Liquid, cls: BarinHeatCapacity}
       - MolecularWeight
       - IdealMix
-      - ConstantGibbsVolume
+      - cls: PolynomialGibbsVolume
+        options:
+          order: 2
       - ElectrolyteBasics
       - ChargeBalance
       - PitzerDebyeHueckel
@@ -30,40 +32,43 @@ frames:
       - {name: Cp_Gas, cls: BarinHeatCapacity}
       - MolecularWeight
       - HelmholtzIdealGas
+      - CriticalParameters
+      - BostonMatthiasMFactor
+      - BostonMathiasAlphaFunction
+      - RedlichKwongAFunction
+      - RedlichKwongBFunction
+      - cls: NonSymmetricMixingRule
+        name: MixingRule_A
+        options:
+          target: _ceos_a
+      - cls: LinearMixingRule
+        name: MixingRule_B
+        options:
+          target: _ceos_b
+      - RedlichKwongEOSGas
       - GenericProperties
 
 parameters:
-  NIST_fit:
-    Cp_Gas:
-      A: {H2O: 38 J/K/mol}  # original:  3.36040652e+01 J/K/mol
-      B: {H2O: 9.87726427e-03 J/K/mol}
-      C: {H2O: 4.07601537e-06 J/K/mol}
-      D: {H2O: 0 J/K/mol}
-      E: {H2O: 7.44650670e+02 J/K/mol}
-      F: {H2O: 0 J/K/mol}
-      G: {H2O: 0 J/K/mol}
-      T_scale: 1 K
-    Cp_Liquid:
-      A: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol, H2O: 7.53183864e+01 J/K/mol}
-      B: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol, H2O: 8.04871326 J/K/mol}
-      C: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol, H2O: -1.58775628e-02 J/K/mol}
-      D: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol, H2O: 1.18052352e-05 J/K/mol}
-      E: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol, H2O: 1.54473206e+05 J/K/mol}
-      F: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol, H2O: 0 J/K/mol}
-      G: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol, H2O: 0 J/K/mol}
-      T_scale: 1 K
-    H0S0_Gas:
-      T_ref: 25 degC
-      p_ref: 1 bar
-      dh_form: {H2O: -241.826 kJ/mol}
-      s_0: {H2O: 188.835 J/K/mol}
+  nacl_standard:
     H0S0_Liquid:
       T_ref: 25 degC
       p_ref: 1 bar
-      dh_form: {H2O: -285.830 kJ/mol, Cl-: 0 J/mol, Na+: 0 J/mol}
-      s_0: {H2O: 69.95 J/K/mol, Cl-: 0 J/K/mol, Na+: 0 J/K/mol}
-    ConstantGibbsVolume:
-       v_n: {'H2O': 18 cm^3/mol, 'Na+': 0 cm^3/mol, 'Cl-': 0 cm^3/mol}
+      dh_form: {Cl-: 0 J/mol, Na+: 0 J/mol}
+      s_0: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol}
+    PolynomialGibbsVolume:
+      T_ref: 25 degC
+      A: {Na+: 0 cm^3/mol, Cl-: 0 cm^3/mol}
+      B: {Na+: 0 cm^3/mol, Cl-: 0 cm^3/mol}
+      C: {Na+: 0 cm^3/mol, Cl-: 0 cm^3/mol}
+    Cp_Liquid:
+      A: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      B: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      C: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      D: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      E: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      F: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      G: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      T_scale: 1 K
   Pitzer:
     PitzerDebyeHueckel:
       B: 1.2
