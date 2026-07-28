@@ -16,6 +16,11 @@ copyright = '2021-2026, Volker Siepmann'
 author = 'Volker Siepmann'
 release = get_version(project)
 
+# generate figures
+from tutorial.figures.gen_figures import main as gen_tutorial_figures
+
+gen_tutorial_figures()
+
 
 # -- General configuration ---------------------------------------------------
 

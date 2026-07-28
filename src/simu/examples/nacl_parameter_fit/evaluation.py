@@ -37,7 +37,7 @@ def main():
         pass
     else:
         df_fit = evaluate(evaluator, param)
-        df = df.merge(df_fit, on=["T", "w_nacl"], suffixes=("_orig", "_fit"))
+        df = df.merge(df_fit, on=["T", "w_nacl"], suffixes=("", "_fit"))
 
     for t, data in df.groupby("T"):
         l, = pyplot.plot(data["w_nacl"], data["p_meas_red"], ".")
@@ -46,7 +46,7 @@ def main():
             color=l.get_color(), label=f"T = {t} degC"
         )
         pyplot.plot(
-            data["w_nacl"], data["p_calc_red_orig"], "--",
+            data["w_nacl"], data["p_calc_red"], "--",
             color=l.get_color()
         )
     pyplot.grid()

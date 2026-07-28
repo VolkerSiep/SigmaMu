@@ -1,3 +1,4 @@
+=============================================
 Solving models - the first process simulation
 =============================================
 
@@ -16,8 +17,7 @@ Here, we specify :math:`T`, :math:`p`, and :math:`V`, which is valid, because th
 A trivial check: **Each material must be part of at least one process constraint in extensive variables, and there must be at least as many constraints in extensive variables as materials.** This condition is not specific to ``SigmaMu``, but a general condition for a system not to be singular.
 
 Running the solver
-------------------
-
+==================
 .. testsetup::
 
     >>> from simu.examples.material_model import Source
@@ -61,7 +61,7 @@ The least boring result of this simulation is the calculated molar flow of metha
 9.68149... kilomole / day
 
 Changing parameters
--------------------
+===================
 The process model already defines values for each parameter. These values are however only meant to be default values, suitable for testing and to self-document what kind of values will make sense as input to the model. These values can be changed when a model becomes a sub-model in a hierarchical setting, or in the :class:`~simu.NumericHandler` interface.
 
 For extra convenience, the solver object provides direct mutable access via :meth:`simu.SimulationSolver.model_parameters` to the model's parameters:
@@ -92,7 +92,7 @@ As a result of increasing the temperature, the molar flow at constant volume flo
 In above call, we also omitted the output by setting the ``output`` stream to ``None``.
 
 Using the callback function
----------------------------
+===========================
 Sometimes, for instance for debugging, it is useful to assess the model's state during the solving process in each iteration, and possibly even decide to stop the iterations based on custom conditions. The :class:`~simu.SimulationSolver` object offers to install a callback function:
 
 >>> def my_callback(iter_report, state, prop_func):
@@ -112,7 +112,7 @@ Sometimes, for instance for debugging, it is useful to assess the model's state 
 Here we observe the calculated molar flow for each iteration. The callback function returns ``True`` to proceed with the iterations until convergence is obtained.
 
 Handling starting values
-------------------------
+========================
 The model hosts its initial state, defined through the :class:`~simu.MaterialDefinition` objects. For our freshly instantiated example model, this is
 
 >>> numeric = NumericHandler(Source.top())

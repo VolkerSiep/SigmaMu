@@ -1,8 +1,9 @@
+=======================
 The first process model
 =======================
 
 Recap
------
+=====
 
 A brief description on how models are created is given in the :ref:`getting started hello world` paragraph of the getting started section. The example was
 
@@ -17,7 +18,7 @@ The attentive reader might at this point have realised that no thermodynamic mod
 To do so, we first need to create a :class:`simu.MaterialDefinition` object, and by this follow the proper way to build up a simulation, and in practice, you might soon build up a repository of materials required for your field of application.
 
 Creating a material definition
-------------------------------
+==============================
 
 We can reuse much of the previous code, resulting into a :class:`simu.ThermoFrame` object for a pure methane ideal gas. Only now, we store configuration data in yaml files. Let us have one file with some chemical species and their formulae (``species_db.yml``):
 
@@ -97,7 +98,7 @@ In real applications, storing the meta-data and parameters in ``yml`` files is n
     As multiple parameter sources can be stacked in one store, we recommend to assign one source per bibliographic source of parameters. The models can then easily be queried for the names of the used sources and by that keep these sources traceable.
 
 Using a material in a model
----------------------------
+===========================
 This is the big moment, as we now can use the material definition in an actual process model. The above created :class:`simu.MaterialDefinition` object can be global for the entire project along with all other material definitions that you might need.
 
 The following model is a *hello world* example for using such material:
@@ -164,7 +165,7 @@ Here we see the residuals as physical quantities, but also converted to a dimens
 The volume is calculated to 59.86 m3/hr, but we specified 10 m3/hr, and also the pressure and temperature are not yet as desired. The specifications are only fulfilled once the residuals are brought down to values below their tolerances.
 
 Summary / Outlook
------------------
+=================
 - Based on the previously defined thermodynamic model, we created a material definition object.
 - For good house-keeping, we can move most of the static configuration for instance into ``yaml`` files.
 - Such material definition can be utilized in process models to initiate a state or flow of that material.

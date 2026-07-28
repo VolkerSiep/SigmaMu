@@ -1,9 +1,9 @@
 from pathlib import Path
 from yaml import safe_dump
 
-from common import define_models, load_definition
 from simu import ThermoFitSolver, quantity_dict_to_strings
-from thermo import thermo_store
+from simu.examples.h2o_fit.common import define_models, load_definition
+from simu.examples.h2o_fit.thermo import thermo_store
 
 PARAM_FILE = Path(__file__).parent / "parameters_fit.yml"
 

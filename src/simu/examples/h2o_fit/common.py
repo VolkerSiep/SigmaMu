@@ -4,8 +4,8 @@ from numpy import linspace, exp
 from yaml import safe_load
 from simu import NumericHandler, Model, InitialState
 
-from model import MuFitModel
-from thermo import lp_condensate, condensate_new, lp_steam, steam_new
+from .model import MuFitModel
+from .thermo import lp_condensate, condensate_new, lp_steam, steam_new
 
 THIS_DIRECTORY = Path(__file__).parent
 THERMO_FIT_DEFINITION_FILE = THIS_DIRECTORY / "thermo_fit_definition.yml"
