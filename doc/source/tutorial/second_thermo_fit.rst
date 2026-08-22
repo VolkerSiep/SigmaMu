@@ -31,12 +31,66 @@ The final parameter set is the following (stored in ``examples/h2o_fit/parameter
    :language: yaml
    :linenos:
 
-Admittingly, the polar parameter for in line 45 (:math:`\eta = -10.2726...`) is somewhat high. The model probably fails completely at elevated temperatures far above 150 |degC|. However, the purpose of this model is to serve as a basis for electrolyte systems with a common temperature range between 0 and 150 |degC|.
+Admittingly, the polar parameter for in line 45 (:math:`\eta = -10.2726...`) is somewhat high, and the predictions are probably completely off at elevated temperatures far above 150 |degC|. However, the purpose of this model is to serve as a basis for electrolyte systems with a common temperature range between 0 and 150 |degC|.
 
-.. todo::
+Thermodynamic model
+===================
+The thermodynamic structure is defined in file ``examples/nacl_parameter_fit/thermo_config.yml``, starting with the species definition and the declaration of phases
 
-  - Find data for e.g. aqueous NaCl (freezing temperature and vapour pressure as function of temperature).
-  - find standard state data in Wagman (don't need to use data that challenges that).
-  - Use Pitzer model.
-  - Fit at least binary parameters to match data.
-  - Show evaluation of original (no interaction) and fitted model
+.. exampleinclude:: nacl_parameter_fit/thermo_config.yml
+   :language: yaml
+   :lines: 1-5
+   :linenos:
+
+The ``phases`` definition is used in a moment to associate the actual model structure. For the **liquid phase**:
+
+.. exampleinclude:: nacl_parameter_fit/thermo_config.yml
+   :language: yaml
+   :lines: 7-27
+   :lineno-start: 7
+   :linenos:
+
+On top of the standard state and ideal mix contributions and the polynomial volume, the following contributions define the Pitzer model:
+
+:class:`~simu.app.thermo.contributions.electrolytes.pitzer.ElectrolyteBasics`
+  Defines some basic electrolyte properties, such as ionic strength and molality.
+:class:`~simu.app.thermo.contributions.basic.ChargeBalance`
+  Defines a constraint for each state, enforcing electro-neutrality.
+:class:`~simu.app.thermo.contributions.electrolytes.pitzer.PitzerDebyeHueckel`
+  Defines the long range interaction according to the extended Debye-Hückel model
+:class:`~simu.app.thermo.contributions.electrolytes.pitzer.PitzerBinaryInteraction`
+  Defines the short range binary interaction, specifically just linear in temperature and without the dependency of ionic strengths.
+
+Note that none of these contributions alters the calculated properties of pure water.
+
+The **gas phase** uses the Soave-Redlich-Kwong EoS with the Boston-Mathias :math:`\alpha`-function:
+
+.. exampleinclude:: nacl_parameter_fit/thermo_config.yml
+   :language: yaml
+   :lines: 28-49
+   :lineno-start: 28
+   :linenos:
+
+Given that only pure water is considered for the gas phase, the mixing rules are not having any effect.
+
+The **default parameters** for Na+ and Cl- for the liquid phase are defined in the same file:
+
+.. exampleinclude:: nacl_parameter_fit/thermo_config.yml
+   :language: yaml
+   :lines: 51-
+   :lineno-start: 51
+   :linenos:
+
+For the purpose of this example, none of the standard state parameters require to be adjusted, as they do not impact the saturation pressure of water. The Debye-Hückel parameters are fixed for water as a solvent. The only two parameters to be fit are the interaction parameters (line 81 and line 84).
+
+The module ``examples/nacl_parameter_fit/thermo.py`` creates the **materials** for the gas and liquid phase based on the above definitions.
+It reads the definitions from ``examples/nacl_parameter_fit/thermo_config.yml`` and augments the parameters with those defined in ``examples/h2o_fit/parameters_final.yml``.
+
+Setup for fitting aqueous NaCl vapour pressure data
+===================================================
+In :cite:`Washburn_1928`, page 370, the vapour pressure of aqueous NaCl solution is tabulated for a range of temperatures and NaCl weight fractions. The first step is to convert a subset of the data into our ``yaml`` format:
+
+.. exampleinclude:: nacl_parameter_fit/Washburn_1928_all.yml
+   :language: yaml
+   :linenos:
+   :lines: 1-4, 16-26, 49-59, 82-92, 117-128

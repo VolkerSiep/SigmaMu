@@ -82,5 +82,3 @@ parameters:
       beta_02:
         Na+:
           Cl-: 0 1/K
-
-# TODO: document how to define binary interaction parameters in PitzerBinaryInteraction
