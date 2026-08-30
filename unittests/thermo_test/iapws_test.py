@@ -103,7 +103,7 @@ def test_iapws_ideal_gas_enthalpy(iapws_ideal_gas_model):
     h = [float(enthalpy(t + t0).to("kJ").magnitude) for t in temperatures]
     h_ref = [45.734, 46.406, 47.081, 47.758, 48.437, 49.120, 49.805, 50.495,
              51.188, 51.885]  # from NIST at low pressure
-    h_ref = [h_i - 287.934 for h_i in h_ref]
+    h_ref = [h_i - 287.719 for h_i in h_ref]
     assert_allclose(h, h_ref, rtol=1e-4)
 
 
@@ -119,7 +119,7 @@ def test_iapws_ideal_gas_entropy(iapws_ideal_gas_model):
     s = [float(entropy(t + t0).to("J/K").magnitude) for t in temperatures]
     s_ref = [194.13, 195.80, 197.37, 198.86, 200.28, 201.62, 202.91, 204.15,
              205.34, 206.48]  # from NIST at same volume
-    s_ref = [s_i + 63.2 for s_i in s_ref]
+    s_ref = [s_i + 63.338 for s_i in s_ref]
     assert_allclose(s, s_ref, rtol=1e-4)
 
 

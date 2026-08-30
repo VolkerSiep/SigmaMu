@@ -1,9 +1,10 @@
 # stdlib
 from sys import stdout
 from typing import Tuple
+from io import Writer
 
 # internal
-from .types import Map, OutputIOStream
+from .types import Map
 
 
 class ProgressTableOutput:
@@ -27,7 +28,7 @@ class ProgressTableOutput:
            10 degree_Celsius
 
     """
-    def __init__(self, columns: Map[Tuple[str, str]], output: OutputIOStream):
+    def __init__(self, columns: Map[Tuple[str, str]], output: Writer[str]):
         """
         The constructor configures the table based on the following parameters:
 

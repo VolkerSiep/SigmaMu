@@ -11,7 +11,7 @@ authors = [
     { name = "Volker Siepmann", email = "volker.siepmann@gmail.com" }
 ]
 license = { text = "LGPL-3.0-or-later" }
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 keywords = ["thermodynamics", "modelling"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -57,7 +57,6 @@ test = [
 
 dev = [
     "matplotlib",
-    "scipy-stubs",
     "pytest",
     "pytest-doctestplus",
     "pytest-cov",
@@ -70,6 +69,7 @@ dev = [
     "wheel",
     "pandas",
     "pandas-stubs",
+    "scipy-stubs",
     "scipy-stubs"
 ]
 

@@ -148,6 +148,7 @@ class ThermoFitContributionWrapper:
                 msg = f"No convergence after {config.max_iter_inner} iterations"
                 raise ValueError(msg)
 
+        assert dr_dx is not None
         return DataPointResult(
             x=state,
             dr_dx=dr_dx

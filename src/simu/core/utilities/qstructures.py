@@ -178,7 +178,7 @@ _SType = Union[float, cas.SX]
 
 
 class QuantityDict(dict[str, Quantity]):
-    """Many properties on process modelling level are vectorial. This includes
+    """Many properties on process modeling level are vectorial. This includes
     any species-specific properties, such as for instance mole fractions,
     chemical potentials or partial enthalpy. By keeping such data in instances
     of this class, they can always be accessed as a dictionary, using the

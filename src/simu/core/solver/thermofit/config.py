@@ -1,4 +1,6 @@
+from __future__ import annotations
 from typing import Self, Protocol, Optional, Any
+from io import Writer
 from collections.abc import Sequence
 from dataclasses import dataclass
 import sys
@@ -11,7 +13,7 @@ from pydantic import (
 
 from simu import Quantity, AbstractThermoSource
 from simu.core.utilities.quantity import UnitRegistry
-from simu.core.utilities.types import Map, OutputIOStream, LinearSolver
+from simu.core.utilities.types import Map, LinearSolver
 from ..linear import NumpySolver
 
 
@@ -35,7 +37,7 @@ class ThermoFitSolverConfig(BaseModel):
     """The maximum number of iterations (default 30) for solving the
     outer iteration on finding the optimal parameter values."""
 
-    output: OutputIOStream | None = Field(default_factory=lambda: sys.stdout)
+    output: Writer[str] | None = Field(default_factory=lambda: sys.stdout)
     """The stream to direct the solver output to, by default ``sys.stdout``.
     ``None`` suppresses output. 
 
@@ -108,7 +110,7 @@ class ThermoFitSolverConfig(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
-    def update(self, **options) -> Self:
+    def update(self, **options) -> ThermoFitSolverConfig:
         data = self.model_dump() | options
         if "output" not in options:
             # reverse undesired irreversible serialization of IO stream
@@ -159,7 +161,7 @@ class ThermoFitEvaluationConfig(BaseModel):
     standard dense ``numpy.linalg.solve`` version.
     """
 
-    def update(self, **options) -> Self:
+    def update(self, **options) -> ThermoFitEvaluationConfig:
         data = self.model_dump() | options
         return ThermoFitEvaluationConfig.model_validate(data)
 
@@ -181,7 +183,9 @@ class ThermoFitValidationContext:
 
 def get_context(info: ValidationInfo) -> ThermoFitValidationContext:
     """Help type-analyzer to know regarding the context type for data fit"""
-    return info.context
+    context = info.context
+    assert isinstance(context, ThermoFitValidationContext)
+    return context
 
 
 class DataSet(BaseModel):
@@ -266,7 +270,7 @@ class ModelParameter(BaseModel):
     path: Sequence[str]
     """The path to the parameter within the model structure."""
 
-    uom: str | None = Field(default=None)
+    uom: str = Field(default="UNSET")
     """The unit of measurement for the parameter. This field is filled on
     validation based on a query to the model."""
 
@@ -371,7 +375,7 @@ class ThermoFitParameter(BaseModel):
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
     @field_validator("default", "lower", "upper", mode="before")
-    def convert_values(cls, value: str,
+    def convert_values(cls, value: str | None,
                          info: ValidationInfo) -> QtyType | None:
         if value is None:
             return None
@@ -386,6 +390,7 @@ class ThermoFitParameter(BaseModel):
             try:
                 return True if None in (a, b) else a < b
             except DimensionalityError as e:
+                assert a is not None and b is not None
                 msg = f"Incompatible units: '{a:P~}' vs. '{b:P~}'"
                 raise ValueError(msg) from e
 
@@ -394,8 +399,10 @@ class ThermoFitParameter(BaseModel):
         if not in_seq(l, u):
             err = f"Upper bound '{u:~P}' less than lower bound '{l:~P}'"
         if not in_seq(l, d):
+            assert d is not None and l is not None
             err = f"Default value '{d:~P}' less than lower bound '{l:~P}'"
         if not in_seq(d, u):
+            assert d is not None and u is not None
             err = f"Default value '{d:~P}' more than upper bound '{u:~P}'"
         if err:
             raise ValueError(err)
@@ -565,8 +572,7 @@ class ThermoFitEvaluationDefinition(BaseModel):
 
 def _validate_entity(entity: ThermoFitEntity,
                      datasets: Map[DataSet],
-                     context: Map[str, ThermoFitModelContext]):
-    # does dataset exist
+                     context: Map[ThermoFitModelContext]):
     try:
         dataset = datasets[entity.dataset_id]
     except KeyError as e:

@@ -10,9 +10,11 @@ evaluations:
        T: {path: [T]}
        w: {path: [w]}
        p: {path: [p_meas]}
+    quote_data:
+      T: {name: T, uom: degC}
+      p_meas: {name: p, uom: bar}
     properties:
       p_calc: {path: [p_calc], uom: bar}
-      p_meas: {path: [p_meas], uom: bar}
   all:
     dataset_id: washburn_all
     model_id: p_sat

@@ -29,6 +29,5 @@ class PSatModel(AModel):
         with self.ha("vle", PhaseEquilibrium, flow=False) as vle:
             vle.mcm(phase_1=liq, phase_2=gas)
 
-        self.pr["p_meas"] = self.pa["p_meas"]  # for evaluation
         self.pr["p_calc"] = liq["p"]  # for evaluation
         self.pr["q"] = liq["p"] / pa["p_meas"] - 1  # objective to minimize

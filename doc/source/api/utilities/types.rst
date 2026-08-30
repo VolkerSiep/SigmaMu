@@ -18,11 +18,6 @@ NestedMutMap
 ------------
 .. autotype:: simu.core.utilities.types.NestedMutMap
 
-OutputIOStream
---------------
-.. autoclass:: simu.core.utilities.types.OutputIOStream
-   :members: write
-
 LinearSolver
 ------------
 .. autoclass:: simu.core.utilities.types.LinearSolver

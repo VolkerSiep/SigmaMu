@@ -94,3 +94,8 @@ In :cite:`Washburn_1928`, page 370, the vapour pressure of aqueous NaCl solution
    :language: yaml
    :linenos:
    :lines: 1-4, 16-26, 49-59, 82-92, 117-128
+
+The next step is to create a model that can interpret the data and evaluate the residual for each data point:
+
+.. exampleinclude:: nacl_parameter_fit/model.py
+   :linenos:
