@@ -1,7 +1,7 @@
 from pathlib import Path
 from yaml import safe_load
 from simu import NumericHandler
-from model import PSatModel
+from simu.examples.nacl_parameter_fit.model import PSatModel
 
 THIS_DIRECTORY = Path(__file__).parent
 THERMO_FIT_DEFINITION_FILE = THIS_DIRECTORY / "thermo_fit_definition.yml"

@@ -9,7 +9,7 @@ import casadi as cas
 
 # internal libs
 from .quantity import Quantity, SymbolQuantity, base_unit, qvertcat, qpow, qsqrt
-from .types import NestedMap, NestedMutMap
+from .types import NestedMap, NestedStrDict
 from .errors import DimensionalityError
 
 
@@ -173,8 +173,8 @@ class ParameterDictionary(dict):
         return qvertcat(*entry.values())
 
 
-_OType = Union[float, Quantity, Mapping[str, Quantity]]
-_SType = Union[float, cas.SX]
+type _OType = Union[float, Quantity, Mapping[str, Quantity]]
+type _SType = Union[float, cas.SX]
 
 
 class QuantityDict(dict[str, Quantity]):
@@ -259,50 +259,46 @@ class QuantityDict(dict[str, Quantity]):
                              f"{l_magnitude} != {len(keys)}")
         return cls({key: quantity[k] for k, key in enumerate(keys)})
 
-    def __add__(self, other: _OType) -> Self:
-        try:
-            items = other.items()
-        except AttributeError:
+    def __add__(self, other: _OType) -> QuantityDict:
+        if not isinstance(other, Mapping):
             return QuantityDict({k: v + other for k, v in self.items()})
 
         result = self.copy()
-        for key, value in items:
+        for key, value in other.items():
             result[key] = (result[key] + value) if key in self else value
         return QuantityDict(result)
 
-    def __radd__(self, other: _OType) -> Self:
+    def __radd__(self, other: _OType) -> QuantityDict:
         return self + other
 
-    def __mul__(self, other: _OType) -> Self:
-        try:
-            other.items()
-        except AttributeError:
-            return QuantityDict({k: v * other for k, v in self.items()})
+    def __mul__(self, other: _OType) -> QuantityDict:
+        if isinstance(other, Mapping):
+            result = {k: v * other[k] for k, v in self.items() if k in other}
+        else:
+            result = {k: v * other for k, v in self.items()}
 
-        result = {k: v * other[k] for k, v in self.items() if k in other}
         return QuantityDict(result)
 
-    def __rmul__(self, other: _OType) -> Self:
+    def __rmul__(self, other: _OType) -> QuantityDict:
         return self * other
 
     def __pos__(self) -> Self:
         return self
 
-    def __neg__(self) -> Self:
+    def __neg__(self) -> QuantityDict:
         return QuantityDict({k: -v for k, v in self.items()})
 
-    def __sub__(self, other: _OType) -> Self:
+    def __sub__(self, other: _OType) -> QuantityDict:
+        if isinstance(other, Mapping) and not isinstance(other, QuantityDict):
+            other = QuantityDict({k: -v for k, v in self.items()})
         return self + (-other)
 
-    def __rsub__(self, other: _OType) -> Self:
+    def __rsub__(self, other: _OType) -> QuantityDict:
         return (-self) + other
 
-    def __truediv__(self, other: _OType) -> Self:
-        try:
-            other.items()
-        except AttributeError:
+    def __truediv__(self, other: _OType) -> QuantityDict:
+        if not isinstance(other, Mapping):
             return QuantityDict({k: v / other for k, v in self.items()})
-
         try:
             result = {k: v / other[k] for k, v in self.items()}
         except KeyError:
@@ -310,14 +306,12 @@ class QuantityDict(dict[str, Quantity]):
             raise ZeroDivisionError(msg) from None
         return QuantityDict(result)
 
-    def __rtruediv__(self, other: _OType) -> Self:
-        try:
-            items = other.items()
-        except AttributeError:
+    def __rtruediv__(self, other: _OType) -> QuantityDict:
+        if not isinstance(other, Mapping):
             return QuantityDict({k: other / v for k, v in self.items()})
 
         try:
-            result = {k: v / self[k] for k, v in items}
+            result = {k: v / self[k] for k, v in other.items()}
         except KeyError:
             msg = "Missing denominator element in QuantityDict division"
             raise ZeroDivisionError(msg) from None
@@ -332,26 +326,22 @@ class QuantityDict(dict[str, Quantity]):
         """For 2 vectors, scalar product is commutative"""
         return other @ self
 
-    def __pow__(self, other: _OType) -> Self:
-        try:
-            items = other.items()
-        except AttributeError:
+    def __pow__(self, other: _OType) -> QuantityDict:
+        if not isinstance(other, Mapping):
             result = {k: qpow(v, other) for k, v in self.items()}
         else:
             result = {k: qpow(v, other.get(k, 0)) for k, v in self.items()}
-            for k, v in items:
+            for k, v in other.items():
                 if k not in self:
                     result[k] = qpow(Quantity(0.0), v)
         return QuantityDict(result)
 
-    def __rpow__(self, other: _OType) -> Self:
-        try:
-            items = other.items()
-        except AttributeError:
+    def __rpow__(self, other: _OType) -> QuantityDict:
+        if not isinstance(other, Mapping):
             result = {k: qpow(other, v) for k, v in self.items()}
         else:
             result = {k: qpow(other.get(k, 0) , v) for k, v in self.items()}
-            for k, v in items:
+            for k, v in other.items():
                 if k not in self:
                     result[k] = qpow(v, Quantity(0.0))
         return QuantityDict(result)
@@ -482,16 +472,14 @@ def parse_quantities_in_struct(struct: Union[NestedMap[str], str]) \
                 'fingernail': <Quantity(300, 'milligram')>,
                 'snail': <Quantity(10, 'gram')>}}
     """
-    try:
-        items = struct.items()
-    except AttributeError:
+    if not isinstance(struct, Mapping):
         return Quantity(struct)
-    return {key: parse_quantities_in_struct(value) for key, value in items}
+    return {k: parse_quantities_in_struct(v) for k, v in struct.items()}
 
 
 def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
                              significant_digits: int = 17) \
-        -> str | NestedMutMap[str]:
+        -> str | NestedStrDict[str]:
     """Return a new structure with the quantity instances replaced by a string
     representation that is parsable by the :class:`simu.Quantity` constructor.
 
@@ -512,16 +500,15 @@ def quantity_dict_to_strings(struct: Quantity | NestedMap[Quantity],
      'weight': {'car': '1.5 t', 'fingernail': '300 mg', 'snail': '10 g'}}
 
     """
-    try:
-        items = struct.items()
-    except AttributeError:
+    if isinstance(struct, Quantity):
         return f"{struct:.{significant_digits}g~}"
+
     return {key: quantity_dict_to_strings(value, significant_digits)
-            for key, value in items}
+            for key, value in struct.items()}
 
 
 def extract_sub_structure(source: NestedMap[Quantity],
-                          structure: NestedMap[str]) -> NestedMap[Quantity]:
+                          structure: NestedMap[str]) -> NestedStrDict[Quantity]:
     """Given a nested structure map ``structure`` that defines the units of
     measurement of leaf value quantities, extract those quantities from a source
     structure ``source``. A ``KeyError`` is raised if the source structure does
@@ -538,17 +525,16 @@ def extract_sub_structure(source: NestedMap[Quantity],
     >>> print(extract_sub_structure(src, struct))
     {'a': {'b': <Quantity(1, 'kilometer')>}, 'd': {'e': <Quantity(2, 'second')>}}
     """
-    def prepare(name: str, key: str, query: NestedMap[str],
+    def prepare(name: str, key: str, query: NestedMap[str] | str,
                 src: NestedMap[Quantity]) -> NestedMap[Quantity]:
         name = f"{name}.{key}" if name else key
+        if isinstance(query, Mapping):
+            return {k: prepare(name, k, q, src[key]) for k, q in query.items()}
         try:
-            items = query.items()
-        except AttributeError:
-            try:
-                src[key].to(query)
-            except DimensionalityError as err:
-                err.extra_msg = f" - Error fetching thermo parameter '{name}'."
-                raise err from None
-            return src[key]
-        return {k: prepare(name, k, q, src[key]) for k, q in items}
+            src[key].to(query)
+        except DimensionalityError as err:
+            err.extra_msg = f" - Error fetching thermo parameter '{name}'."
+            raise err from None
+        return src[key]
+
     return {k: prepare("", k, s, source) for k, s in structure.items()}

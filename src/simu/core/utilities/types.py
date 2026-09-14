@@ -19,6 +19,9 @@ type MutMap[T] = MutableMapping[str, T]
 type NestedMutMap[T] = MutMap[T | NestedMutMap[T]]
 """A nested mutable mapping of strings to another type"""
 
+type NestedStrDict[T] = dict[str, T | NestedStrDict[T]]
+"""A nested dictionary with strings as keys"""
+
 
 @runtime_checkable
 class LinearSolver(Protocol):

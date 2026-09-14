@@ -16,6 +16,8 @@ def run_example_plot(package: str, module_name: str, figure_name: str,
         print(f"Skipping '{module_name}', as '{figure_name}' is up to date.")
         return
     print(f"Running '{module_name}', as '{figure_name}' is out of date.")
+    if dependent is None:
+        dependent = []
     for d in dependent:
         print(f"  First running dependent script '{d}'")
         dep = import_module(f".{d}", package=package)
@@ -26,6 +28,8 @@ def run_example_plot(package: str, module_name: str, figure_name: str,
 def main():
     run_example_plot("simu.examples.h2o_fit", "evaluation", "h2o_vle_fit.png",
                      dependent=["fit"])
+    run_example_plot("simu.examples.nacl_parameter_fit", "evaluation",
+                     "nacl_vle_fit.png", dependent=["fit"])
 
 if __name__ == '__main__':
     main()

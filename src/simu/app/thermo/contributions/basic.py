@@ -8,7 +8,6 @@ from simu.core.utilities.constants import R_GAS
 from simu.core.utilities.quantity import qsum, base_magnitude, qvertcat
 from simu.core.utilities.qstructures import log
 from simu.core.utilities.errors import DimensionalityError
-from simu.core.utilities.types import MutMap
 
 
 @registered_contribution
@@ -368,11 +367,12 @@ class HelmholtzIdealGas(ThermoContribution):
         self.add_bound("V", V)
 
     def initial_state(self, state, properties):
-        volume = qsum(state.mol_vector) * R_GAS * \
+        n = state.mol_vector
+        volume = qsum(n) * R_GAS * \
                  state.temperature / state.pressure
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
-                list(base_magnitude(state.mol_vector)))
+                list(base_magnitude(n)))
 
 
 @registered_contribution

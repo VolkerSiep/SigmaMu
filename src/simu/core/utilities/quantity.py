@@ -3,14 +3,16 @@ These quantities can be symbolic (hosting ``casadi.SX`` as magnitudes), or
 numeric."""
 
 # stdlib modules
-from typing import Union, Self
+from collections.abc import Mapping
 
 # external modules
 # need to import entire casadi module to distinguish functions of same name
 import casadi as cas
 from numpy import squeeze
-from pint import UnitRegistry, set_application_registry, Unit
+from pint import UnitRegistry, set_application_registry
 from pint.util import UnitsContainer
+from pint.registry import Unit
+from pint import Quantity as QtyType
 
 # internal modules
 from simu.core.data import DATA_DIR
@@ -30,6 +32,7 @@ def _create_registry() -> UnitRegistry:
 
 unit_registry = _create_registry()
 _Q = unit_registry.Quantity
+
 del _create_registry
 
 #  variables to simplify units of measurements
@@ -39,12 +42,11 @@ __DERIVED_UNITS = \
 __simplify_quantity_cache = {}
 
 
-
 class Quantity(_Q):
     """Proper quantity base-class for sub-classing.
 
     Being a subclass of ``pint.Quantity``, this class only really adds the
-    ``__json__`` method to return its json representation.
+    ``__json__`` method to return its JSON representation.
 
     The constructor is used as for ``pint.Quantity``.
     """
@@ -55,29 +57,29 @@ class Quantity(_Q):
         return obj
 
     def __json__(self) -> str:
-        """Custom method to export to json for testing and serialisation"""
+        """Custom method to export to JSON for testing and serialization"""
         try:
             return f"{self:~.16g}"
         except TypeError:  # magnitude cannot be formatted, probably symbol
             return f"{self:~}"
 
-    # operators needed for proper type checking in Pycharm (so long at least)
-    def __add__(self, other) -> Self:
+    # operators needed for proper type checking in PyCharm (so long at least)
+    def __add__(self, other) -> Quantity:
         return super().__add__(other)
 
-    def __radd__(self, other) -> Self:
+    def __radd__(self, other) -> Quantity:
         return super().__radd__(other)
 
-    def __sub__(self, other) -> Self:
+    def __sub__(self, other) -> Quantity:
         return super().__sub__(other)
 
-    def __rsub__(self, other) -> Self:
+    def __rsub__(self, other) -> Quantity:
         return super().__rsub__(other)
 
-    def __mul__(self, other) -> Self:
+    def __mul__(self, other) -> Quantity:
         return super().__mul__(other)
 
-    def __rmul__(self, other) -> Self:
+    def __rmul__(self, other) -> Quantity:
         return super().__rmul__(other)
 
     def __matmul__(self, other):
@@ -98,30 +100,29 @@ class Quantity(_Q):
             unit = self.units
         return Quantity(factor @ self.m, unit)
 
-    def __truediv__(self, other) -> Self:
+    def __truediv__(self, other) -> Quantity:
         return super().__truediv__(other)
 
-    def __rtruediv__(self, other) -> Self:
+    def __rtruediv__(self, other) -> Quantity:
         return super().__rtruediv__(other)
 
-    def __pow__(self, other) -> Self:
+    def __pow__(self, other) -> Quantity:
         return super().__pow__(other)
 
-    def __rpow__(self, other) -> Self:
+    def __rpow__(self, other) -> Quantity:
         return super().__rpow__(other)
 
 
 # write back class, so it's used as result of quantity operations
 unit_registry.Quantity = Quantity
 
-
 class SymbolQuantity(Quantity):
-    """A quantity class specialised to host casadi symbols (SX) of in
+    """A quantity class specialized to host casadi symbols (SX) of in
     particular, but not necessarily, independent variables."""
 
     def __new__(cls, *args, **kwargs):
         """Really generate an object of type ``Quantity``. This is just a
-        hacky way to specialise the constructor, due to the way the base-class
+        hacky way to specialize the constructor, due to the way the base-class
         is implemented. The arguments are:
 
         - ``name`` (str): The name of the ``casadi.SX`` symbol
@@ -138,7 +139,8 @@ class SymbolQuantity(Quantity):
             [vel.x, vel.y, vel.z] m / s
         """
 
-        def attributes(name: str, units: str, sub_keys: list[str] = None):
+        def attributes(name: str, units: str,
+                       sub_keys: list[str] | int | None = None):
             """Turn the constructor arguments into arguments for the
             baseclass"""
             if sub_keys is None:
@@ -153,7 +155,7 @@ class SymbolQuantity(Quantity):
         return super().__new__(Quantity, *attributes(*args, **kwargs))
 
     def __json__(self) -> str:
-        """Custom method to export to json for testing"""
+        """Custom method to export to JSON for testing"""
         return f"{str(self.magnitude)}{self.units:~}"
 
 
@@ -186,18 +188,25 @@ def qsum(quantity: Quantity) -> Quantity:
     return Quantity(cas.sum1(quantity.magnitude), quantity.units)
 
 
-def qsqrt(quantity: Quantity) -> Quantity:
+def qsqrt(quantity: Quantity | float) -> Quantity:
     """Determine square root of symbolic quantity, considering units of
     measurement"""
+    if not isinstance(quantity, Quantity):
+        quantity = Quantity(quantity)
     return Quantity(cas.sqrt(quantity.magnitude), quantity.units**0.5)
 
 
-def qpow(base: Quantity, exponent: Quantity) -> Quantity:
+def qpow(base: Quantity | float, exponent: Quantity | float) -> Quantity:
     """Determine power of ``base`` to ``exponent``, considering units of
     measurements. Both arguments must be dimensionless. For the special case
     that ``exponent`` is a constant scalar (not a symbol), use the ``**``
     operator
     """
+    if not isinstance(base, Quantity):
+        base = Quantity(base)
+    if not isinstance(exponent, Quantity):
+        exponent = Quantity(exponent)
+
     base = base.to_base_units()  # else e.g. cm / m is dimensionless
     exponent = exponent.to_base_units()
     if not base.dimensionless:
@@ -217,7 +226,7 @@ def conditional(condition: cas.SX, negative: Quantity,
         >>> print(y)
         @1=0, @2=((@1<x)==@1), ((@2?(-x):0)+((!@2)?x:0)) meter
 
-    As non-recommended as it is to use this function exessively, the resulting
+    As non-recommended as it is to use this function excessively, the resulting
     ``casadi`` expression is indeed overcomplicated and could simplify to ::
 
         (x>0)?(x):(-x) meter
@@ -310,7 +319,7 @@ def simplify_quantity(quantity: Quantity) -> Quantity:
     return quantity
 
 
-def base_magnitude(quantity: Quantity) -> Union[float, "cas.SX"]:
+def base_magnitude[T](quantity: QtyType[T]) -> T:
     """Return the magnitude of the quantity in base units. This works for
     symbolic and numeric quantities, and for scalars and vectors
 
@@ -324,7 +333,7 @@ def base_magnitude(quantity: Quantity) -> Union[float, "cas.SX"]:
     299792458.0
 
     The base units are likely the SI unit system, but code shall not rely on
-    this fact - only that it is a cosistent (and offset-free) unit system.
+    this fact - only that it is a consistent (and offset-free) unit system.
 
     .. note::
 
@@ -345,11 +354,10 @@ def extract_units_dictionary(structure: NestedMap[Quantity] | Quantity) \
     >>> extract_units_dictionary(d)
     {'a': {'b': 'm', 'c': 's'}}
     """
-    try:
-        items = structure.items()
-    except AttributeError:
-        return f"{simplify_quantity(structure).units:~}"
-    return {key: extract_units_dictionary(value) for key, value in items}
+    if isinstance(structure, Mapping):
+        return {k: extract_units_dictionary(v) for k, v in structure.items()}
+    assert isinstance(structure, Quantity)
+    return f"{simplify_quantity(structure).units:~}"
 
 
 class QFunction:
@@ -396,7 +404,7 @@ class QFunction:
         """Call operator for the function object, as described above.
 
         :param args: The arguments of the function
-        :param squeeze_results: The underlying `Casadi`_ function returns
+        :param squeeze_results: The underlying `CasADi`_ function returns
         the result objects in 2D shapes. With this parameter being ``True``
         (default), ``numpy.squeeze`` is applied to all results, to omit
         dimensions that are of size one.
@@ -405,7 +413,7 @@ class QFunction:
             value.to(self.arg_units[key]).magnitude
             for key, value in flatten_dictionary(args).items()
         ])
-        result = self.func(args_flat)  # calling Casadi function
+        result = self.func(args_flat)  # calling CasADi function
         result = self.__give_shapes(result)
         if squeeze_results:
             result = {k: squeeze(v) for k, v in result.items()}

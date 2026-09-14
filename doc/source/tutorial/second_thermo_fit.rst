@@ -95,7 +95,75 @@ In :cite:`Washburn_1928`, page 370, the vapour pressure of aqueous NaCl solution
    :linenos:
    :lines: 1-4, 16-26, 49-59, 82-92, 117-128
 
+*Noting the obvious:* The unit of measurements can be chosen as in the original publication, avoiding error prone conversions.
+
 The next step is to create a model that can interpret the data and evaluate the residual for each data point:
 
 .. exampleinclude:: nacl_parameter_fit/model.py
    :linenos:
+
+This model receives temperature, weight fraction, and measured pressure as parameters (lines 9-11 and 23-24).
+A forth parameter is to fix the trial phase sizes (line 12, 25-26).
+In line 29 - 30, the :class:`~simu.app.models.basic.PhaseEquilibrium` is used to equilibrate the liquid and gas phase.
+Finally, line 32 reports the calculated pressure for later evaluation, and line 33 defines the penalty contribution to the objective function.
+
+The next step is to define the parameter fit as follows (``thermo_fit_definition.yml``):
+
+.. exampleinclude:: nacl_parameter_fit/thermo_fit_definition.yml
+   :language: yaml
+   :linenos:
+   :lines: 1, 3-5, 18-47
+
+The first important section is the contribution definition in lines 19 - 28.
+Line 21 points to the data set, which is defined as a placeholder in the top of the file, but soon enough, we'll read it in from above listed data file.
+Line 22 points to the model identifier, which we also will connect in a minute.
+Lines 23-26 connect the columns of the data set to model parameters. As all parameters are defined in the root hierarchy, the path is simply a list with the parameters' names as the only elements.
+Line 28 maps the model property ``q`` as a penalty contribution. Line 30-34 defines which thermodynamic parameters to fit.
+The evaluation section (lines 4-17) will be explained further below.
+
+Running the data fit
+====================
+
+As the last ground-work for the data fit, we define two functions that can later be reused for evaluation (``common.py``):
+
+.. exampleinclude:: nacl_parameter_fit/common.py
+   :linenos:
+   :lines: 1-7, 9-10, 12-14, 17-20, 22-23
+
+Here, ``load_definition()`` only merges the data sets into our thermo-fit definition file and returns the data structure, while ``define_models()`` assigns an instance of our model to the ``p_sat`` identifier.
+
+Based on this, the data fit script is straight forward (``fit.py``):
+
+.. exampleinclude:: nacl_parameter_fit/fit.py
+   :linenos:
+
+Lines 11-12 obtain the definition and the model from the previously defined functions. Lines 13-14 define and run the thermodynamic data fit.
+The output of this operation is ::
+
+    Iter  Penalty Stationarity   Alpha Failed   Time
+    ---- -------- ------------ ------- ------ ------
+       1     0.34      0.98448       1      0   0.24
+       2     0.02     0.706707       1      0   0.34
+       3    0.013   0.00187621       1      0   0.43
+       4    0.013  2.79858e-07       1      0   0.52
+       5    0.013  1.24747e-10       1      0   0.58
+
+The fit terminated after 5 iterations in 0.6 seconds. All points were successfully evaluated. The stationarity condition has practically been fulfilled after the objective function declined from 0.34 to 0.013, practically already in 3 iterations. The parameters are then written into ``parameters_fit.yml``:
+
+.. exampleinclude:: nacl_parameter_fit/parameters_fit.yml
+   :language: yaml
+   :linenos:
+
+Note that both parameter values are stored as strings, while only the dimensionless parameter received single quotes by the ``safe_dump`` method to preserve its type.
+
+Running the evaluation
+======================
+Now we have fitted parameters, but do not yet know the result really looks like. In above ``thermo_fit_definition``, we already defined the evaluation in lines 5-17.
+Based on the same dataset and model as for the fit, the specification maps the same columns and parameters. The result table is instructed to quote (copy) the three original columns, and add the calculated pressure. Plotting the data gives below figure:
+
+.. image:: figures/nacl_vle_fit.png
+    :align: center
+
+Here, the dashed lines indicate the model with zero-valued interaction parameters. One can see how the asymptotic behaviour at low concentrations is already well described. Interestingly, the initial temperature dependency is flipped, predicting a higher pressure reduction ratio at higher temperatures, while the published data suggests otherwise.
+
+The solid lines indicate the calculated points including the obtained binary parameters. The data fit is within the visible fluctuation of the experimental data.

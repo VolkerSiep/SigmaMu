@@ -1,6 +1,6 @@
 from simu import AModel
 from simu.app.models.basic import PhaseEquilibrium
-from thermo import materials
+from simu.examples.nacl_parameter_fit.thermo import materials
 
 
 class PSatModel(AModel):
@@ -21,9 +21,9 @@ class PSatModel(AModel):
         # specification of the system
         pa = self.pa
         self.ra("T", liq["T"] - pa["T"], "K")
+        self.ra("w", liq["m"]["Na+"] + liq["m"]["Cl-"] - pa["w"] * liq["M"], "g")
         self.ra("N_liq", liq["N"] - pa["N"], "mol")
         self.ra("N_gas", gas["N"] - pa["N"], "mol")
-        self.ra("w", liq["m"]["Na+"] + liq["m"]["Cl-"] - pa["w"] * liq["M"], "g")
 
         # VLE (forces equal T, p and mu_h2o for both phases)
         with self.ha("vle", PhaseEquilibrium, flow=False) as vle:
