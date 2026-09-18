@@ -1,0 +1,18 @@
+
+H0S0ReferenceState:
+    T_ref: 25 degC
+    p_ref: 1 bar
+    dh_form:
+      a-Sn: -2.09 kJ/mol
+      b-Sn: 0 kJ/mol
+    s_0:
+      a-Sn: 44.14 J/mol/K
+      b-Sn: 51.55 J/mol/K
+LinearHeatCapacity:
+    cp_a:
+      a-Sn: 25.77 J/mol/K
+      b-Sn: 26.99 J/mol/K
+    cp_b:
+      a-Sn: 0 J/mol/K^2
+      b-Sn: 0 J/mol/K^2
+

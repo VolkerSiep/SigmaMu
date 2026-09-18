@@ -1,0 +1,57 @@
+evaluations:
+  condensate:
+    dataset_id: condensate
+    model_id: mu_cmp_condensate
+    data_to_model:
+       T: {path: [T]}
+       p: {path: [p]}
+    quote_data:
+      T: {name: T, uom: degC}
+      p: {name: p, uom: bar}
+    properties:
+      f_mu: {path: [f_mu], uom: dimensionless}
+      q_h: {path: [q_h], uom: dimensionless}
+      q_rho: {path: [q_rho], uom: dimensionless}
+  steam:
+    dataset_id: steam
+    model_id: mu_cmp_steam
+    data_to_model:
+       T: {path: [T]}
+       p: {path: [p]}
+    quote_data:
+      T: {name: T, uom: degC}
+      p: {name: p, uom: bar}
+    properties:
+      f_mu: {path: [f_mu], uom: dimensionless}
+      q_h: {path: [q_h], uom: dimensionless}
+      q_rho: {path: [q_rho], uom: dimensionless}
+
+contributions:
+  condensate:
+    dataset_id: condensate
+    model_id: mu_cmp_condensate
+    data_to_model:
+       T: {path: [T]}
+       p: {path: [p]}
+    penalties:
+      - [q_rho]
+  steam:
+    dataset_id: steam
+    model_id: mu_cmp_steam
+    data_to_model:
+       T: {path: [T]}
+       p: {path: [p]}
+    penalties:
+      - [q_mu]
+      - [q_h]
+      - [q_rho]
+
+parameters:
+  v_n_a:
+    path: [PolynomialGibbsVolume, A, H2O]
+  v_n_b:
+    path: [PolynomialGibbsVolume, B, H2O]
+  v_n_c:
+    path: [PolynomialGibbsVolume, C, H2O]
+  eta:
+    path: [BostonMathiasAlphaFunction, eta, H2O]

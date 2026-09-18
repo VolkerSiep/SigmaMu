@@ -1,11 +1,12 @@
 import sys
 from typing import Self
+from io import Writer
 from collections.abc import Callable, Sequence
 
 from pydantic import BaseModel, Field, ConfigDict
 
 from simu import Quantity
-from simu.core.utilities.types import NestedMap, OutputIOStream, LinearSolver
+from simu.core.utilities.types import NestedMap, LinearSolver
 from .report import SimulationSolverIterationReport
 from ..linear import ScaledLinearSparseSolver
 
@@ -85,7 +86,7 @@ class SimulationSolverConfig(BaseModel):
     This threshold value is defined by ``wall`` (default ``1e-20``).
     """
 
-    output: OutputIOStream | None = Field(default_factory=lambda: sys.stdout)
+    output: Writer[str] | None = Field(default_factory=lambda: sys.stdout)
     """The stream to direct the solver output to, by default ``sys.stdout``.
     ``None`` suppresses output. 
 

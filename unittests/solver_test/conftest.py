@@ -1,12 +1,18 @@
+from collections.abc import Sequence
 from pathlib import Path
 
 from pytest import fixture
 from yaml import safe_load
 
-from simu import StringDictThermoSource
-from simu.core.solver.thermofit import ThermoFitValidationContext
-from simu.core.utilities.types import Map
+from simu import (
+    StringDictThermoSource, NumericHandler, Quantity, SimulationSolver)
+from simu.core.solver.thermofit.solver import _prepare_functions
+from simu.core.solver.thermofit.config import (
+    ThermoFitValidationContext, ThermoFitContribution, ThermoFitParameter,
+    ModelParameter)
 
+from simu.examples.material_model import Source
+from simu.examples.tin_parameter_fit.simulation import TinTransition
 
 @fixture
 def thermo_fit_configuration():
@@ -15,7 +21,7 @@ def thermo_fit_configuration():
         return safe_load(file)
 
 
-@fixture
+@fixture(scope="session")
 def linear_system():
     from numpy import array
     from scipy.sparse import csr_array
@@ -28,18 +34,25 @@ def linear_system():
 @fixture(scope="session")
 def contribution_context_stub():
     class NHStub:
-        @property
-        def parameters(self) -> Map[str]:
-            result = {"T": "K", "p": "bar", "x": "", "y": "", "w": ""}
-            return {f"process.{n}": u for n, u in result.items()}
+        def __init__(self):
+            self._parameters = {"T": "K", "p": "bar", "x": "", "y": "", "w": ""}
+            self._properties = {"dmu_norm": {"H2O": "", "CO2": ""},
+                                "p": "bar", "y": ""}
 
-        @property
-        def properties(self) -> Map[str]:
-            names = (
-                [f"process.dmu_norm/{n}" for n in ("H2O", "CO2")] +
-                [f"process.{n}" for n in ("p", "y")]
-            )
-            return {n: ("bar" if n == "process.p" else "") for n in names}
+        def parameter_unit(self, path: Sequence[str]) -> str:
+            if len(path) > 1 or path[0] not in self._parameters:
+                raise KeyError(f"'{'.'.join(path)}' not found")
+            return self._parameters[path[0]]
+
+        def property_unit(self, path: Sequence[str]) -> str:
+            if not path:
+                raise KeyError("Empty path")
+            res = self._properties
+            for p in path:
+                res = res[p]
+            if not isinstance(res, str):
+                raise KeyError("Incomplete path")
+            return  res
 
     return ThermoFitValidationContext(
         model_contexts= {n: NHStub() for n in ("vle_fit", "vle_eval_p")},
@@ -47,3 +60,30 @@ def contribution_context_stub():
                 "a": {"b": "300 K", "c": "400 K"}
         })
     )
+
+@fixture(scope="session")
+def tin_functions():
+    model = NumericHandler(TinTransition.top())
+
+    contrib = ThermoFitContribution.model_construct(
+        dataset_id="dummy",
+        model_id="dummy",
+        data_to_model={
+            "T_Trans": ModelParameter(path=["T_measured"], uom="degC")},
+        penalties=[["dT_norm"]]
+    )
+
+    tau_def = {
+        "s_0": ThermoFitParameter.model_construct(
+            path=["H0S0ReferenceState", "s_0", "a-Sn"],
+            default=Quantity(44.14, "J/mol/K")
+        )
+    }
+    return _prepare_functions(model, contrib, tau_def)
+
+
+@fixture(scope="module")
+def sim_result():
+    numeric = NumericHandler(Source.top())
+    solver = SimulationSolver(numeric, output=None)
+    return solver.solve()

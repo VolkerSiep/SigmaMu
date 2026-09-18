@@ -7,8 +7,8 @@ Pint
 PyYAML
 matplotlib
 scipy
-pypardiso
 pydantic
+pandas
 
 docutils
 Sphinx

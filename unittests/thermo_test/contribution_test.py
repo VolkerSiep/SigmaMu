@@ -8,7 +8,7 @@ from simu import InitialState, SpeciesDefinition, Quantity, ParameterDictionary
 from simu.app.thermo.contributions.basic import (
     GibbsIdealGas, H0S0ReferenceState, HelmholtzIdealGas, IdealMix,
     LinearHeatCapacity, ConstantGibbsVolume, MolecularWeight, ChargeBalance,
-    BarinHeatCapacity)
+    BarinHeatCapacity, PolynomialGibbsVolume)
 from simu.core.utilities.testing import assert_reproduction
 
 from .utils import sym, vec
@@ -131,6 +131,19 @@ def test_constant_gibbs_volume(species_definitions_ab):
     cont.define(res)
     result = {i: str(res[i]).split(", ") for i in "V mu".split()}
     assert_reproduction(result)
+
+
+def test_polynomial_gibbs_volume(species_definitions_ab):
+    res = {
+        "T": sym("T", "K"), "S": sym("S", "J/K"),
+        "p": sym("p", "Pa"), "p_ref": sym("p_ref", "Pa"),
+        "n": vec("n", 2, "mol"), "mu": vec("mu_std", 2, "J/mol")
+    }
+    cont = PolynomialGibbsVolume(species_definitions_ab, {"order": 2})
+    cont.define(res)
+    result = {i: str(res[i]).split(", ") for i in "S V mu".split()}
+    assert_reproduction(result)
+
 
 
 def test_molecular_weight(species_definitions_ab):

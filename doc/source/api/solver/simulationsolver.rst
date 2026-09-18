@@ -46,7 +46,6 @@ With above scheme, the model is solved iteratively until the residual values dro
 SimulationSolver
 ----------------
 .. autoclass:: simu.SimulationSolver
-   :show-inheritance:
    :members:
 
 SimulationSolverConfig

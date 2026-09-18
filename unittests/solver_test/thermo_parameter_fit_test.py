@@ -1,9 +1,19 @@
+from math import isnan
+
 from pytest import raises
 from pydantic import ValidationError
-from simu.core.solver.thermofit import (
+
+from simu import NumericHandler, ThermoFitSolver, Quantity
+from simu.core.solver.thermofit.config import (
     DataSet, ThermoFitContribution, ThermoFitEvaluation, ThermoFitParameter,
-    ThermoFitConfiguration
+    ThermoFitDefinition, ThermoFitEvaluationDefinition
 )
+from simu.core.solver.thermofit.evaluator import ThermoFitEvaluator
+from simu.core.solver.thermofit.solver import ModelContext
+from simu.examples.hello_world import Square
+from simu.examples.tin_parameter_fit.thermo import thermo_source
+from simu.examples.tin_parameter_fit.simulation import TinTransition
+from simu.examples.tin_parameter_fit.parameter_fit import load_definition
 
 
 def test_instantiate_dataset(thermo_fit_configuration):
@@ -171,8 +181,75 @@ def test_thermo_fit_parameter_wrong_unit(
         )
     assert "30 m" in str(e)
 
+def test_model_contest():
+    model = NumericHandler(Square.top())
+    context = ModelContext(model)
+    assert context.parameter_unit(["length"]) == "m"
+    assert context.property_unit(["area"]) == "m ** 2"
+    with raises(KeyError) as err:
+        context.property_unit(["area", "Antarctica"])
+    assert "Antarctica" in str(err)
+
+def test_prepare_function_r(tin_functions):
+    x = [273.15 + 8.83, 1e5, 1, 1]
+    r, jac = tin_functions.f_r(x, [12.3], [44.14])
+    assert r.shape == (4, 1)
+    assert jac.shape == (4, 4)
+    r = list(r.nonzeros())
+    for i in range(1, 4):
+        assert r[i] == 0
+    assert 160 < r[0] < 170
+
+def test_prepare_function_q(tin_functions):
+    x = [273.15 + 8.83, 1e5, 1, 1]
+    q, q_x, q_t, r_t = tin_functions.f_q(x, [12.3], [44.14])
+    assert abs(q) < 0.02  # close to solution with 8.83 degC
+    assert q_x.shape == (1, 4)
+    assert r_t.shape == (4, 1)
+    for i in range(1, 4):
+        assert q_x[i] == 0.0  # q only depends on T, not p or n_i
+    assert q_t == 0.0  # no direct dependency
+    for i in range(1, 4):
+        assert r_t[i] == 0.0  # only r[0] depends on thermo-parameter
+
+def test_prepare_function_bx(tin_functions):
+    temp = 273.15 + 8.83
+    x = [temp, 1e5, 1, 1]
+    dx = [-2 * temp, 0, 0, 0]
+    b, a = tin_functions.f_bx(x, [12.3], [44.14], dx)
+    assert b == temp
+    assert a == 0.5
+
+def test_prepare_function_bt(tin_functions):
+    temp = 273.15 + 8.83
+    x = [temp, 1e5, 1, 1]
+    b, a = tin_functions.f_bt(x, [12.3], [44.14], [1])
+    assert b == temp
+    assert isnan(a)
+
+def test_tin_parameter_fit():
+    models = {"transition_model": NumericHandler(TinTransition.top())}
+    solver = ThermoFitSolver(models, thermo_source, epsilon_q=1e-7)
+    report = solver.solve(load_definition(), output=None)
+    param = report.final_parameters["default"]["H0S0ReferenceState"]["s_0"]["a-Sn"]
+    l, u = [Quantity(x, "J/mol/K") for x in (44.252, 44.253)]
+    assert l < param < u
+
 def test_thermo_fit_config(thermo_fit_configuration, contribution_context_stub):
-    config = ThermoFitConfiguration.model_validate(
+    config = ThermoFitDefinition.model_validate(
         thermo_fit_configuration, context=contribution_context_stub
     )
-    assert config.evaluations["vle_p"].data_to_model["x"] == "process.x"
+    assert config.contributions["vle"].model_id == "vle_fit"
+
+def test_evaluation_config(thermo_fit_configuration, contribution_context_stub):
+    context = contribution_context_stub
+    config = ThermoFitEvaluationDefinition.model_validate(
+        thermo_fit_configuration, context=context
+    )
+    assert config.evaluations["vle_p"].model_id == "vle_eval_p"
+
+def test_tin_evaluation():
+    models = {"transition_model": NumericHandler(TinTransition.top())}
+    evaluator = ThermoFitEvaluator(models)
+    result = evaluator.solve(load_definition())
+    assert not result["by_temp"].num_failed

@@ -1,7 +1,7 @@
 from collections.abc import Container, Iterator
 
 from abc import ABC
-from simu import AModel, QuantityDict, Quantity
+from simu import AModel, QuantityDict, Quantity, MaterialSpec
 
 
 class MultiNode(AModel, ABC):
@@ -195,9 +195,16 @@ class PhaseEquilibrium(AModel):
     :math:`x_i^{(1)} = x_i^{(2)}` and as such giving a singular equation
     system.
     """
+    def __init__(self, flow: bool = True):
+        """By default, the equilibrium is assumed to be applied on two flows.
+        To apply the constraints on a state, provide ``flow = False``.
+        """
+        self._spec = MaterialSpec(flow=flow)
+        super().__init__()
+
     def interface(self):
-        self.md("phase_1")
-        self.md("phase_2")
+        self.md("phase_1", self._spec)
+        self.md("phase_2", self._spec)
 
     def define(self):
         p1, p2 = self.m["phase_1"], self.m["phase_2"]

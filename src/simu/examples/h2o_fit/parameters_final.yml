@@ -1,0 +1,49 @@
+# Parameter fit as basis for aqueous VLE systems
+# ==============================================
+# ... using
+#   - any Gibbs liquid phase model with polynomial liquid volume contribution
+#   - SRK without volume translation, with Mathias alpha-function as gas phase.
+# The Parameterization is suitable between 0 degC and 150 degC, i.e. for most
+#   electrolyte systems
+
+IAPWS_fit:
+  Cp_Gas:
+    A: {H2O: 3.36040652e+01  J/K/mol}
+    B: {H2O: 9.87726427e-03 J/K/mol}
+    C: {H2O: 4.07601537e-06 J/K/mol}
+    D: {H2O: 0 J/K/mol}
+    E: {H2O: 7.44650670e+02 J/K/mol}
+    F: {H2O: 0 J/K/mol}
+    G: {H2O: 0 J/K/mol}
+    T_scale: 1 K
+  Cp_Liquid:
+    A: {H2O: 7.53183864e+01 J/K/mol}
+    B: {H2O: 8.04871326 J/K/mol}
+    C: {H2O: -1.58775628e-02 J/K/mol}
+    D: {H2O: 1.18052352e-05 J/K/mol}
+    E: {H2O: 1.54473206e+05 J/K/mol}
+    F: {H2O: 0 J/K/mol}
+    G: {H2O: 0 J/K/mol}
+    T_scale: 1 K
+  H0S0_Gas:
+    T_ref: 25 degC
+    p_ref: 1 bar
+    dh_form: {H2O: -241.826 kJ/mol}
+    s_0: {H2O: 188.835 J/K/mol}
+  H0S0_Liquid:
+    T_ref: 25 degC
+    p_ref: 1 bar
+    dh_form: {H2O: -285.830 kJ/mol}
+    s_0: {H2O: 69.95 J/K/mol}
+  CriticalParameters:
+    T_c: {H2O: 647.096 K}
+    omega: {H2O: 0.344}
+    p_c: {H2O: 220.60 bar}
+  MixingRule_A:
+    T_ref: 25 degC
+  BostonMathiasAlphaFunction:
+    eta: {H2O: -10.27260596515071}
+  PolynomialGibbsVolume:
+    A: {H2O: 18.07351251209294 cm^3/mol}
+    B: {H2O: -9.7149306174891503 cm^3/mol}
+    C: {H2O: 5.5641202252352855 cm^3/mol}

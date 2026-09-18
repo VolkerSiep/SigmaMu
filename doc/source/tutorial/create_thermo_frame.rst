@@ -1,8 +1,9 @@
+==============================
 Creating a thermodynamic model
 ==============================
 
 First some theory to set the scene
-----------------------------------
+==================================
 
 .. note::
 
@@ -54,7 +55,7 @@ This last step was merely to show what happens when we derive the Gibbs energy w
 Surprise! We are back at the ideal gas law from above. This is simply because we silently integrated the ideal volume over pressure when throwing in the ideal gas contribution.
 
 How to do this in SiMu?
------------------------
+=======================
 As indicated above, thermodynamic models can easily be chunked into contributions, and these contributions are often additive, in this case exclusively. All above introduced contributions are already defined in ``SigmaMu``. They take care of defining the required parameters and adding the contributions up in order to form a state function like the Gibbs free energy. As a first step, we do some necessary imports for this session and create a :class:`simu.app.RegThermoFactory` object, which has already registered all available states and contributions:
 
 .. exampleinclude:: ideal_gas.py
@@ -168,7 +169,7 @@ As this is a pure species ideal gas, not much exciting is going on, but we have 
 Here, we use the :class:`simu.InitialState` helper class to generate a tuple of temperature, pressure, and molar quantities ``tpn``. Subsequently, the model (:class:`simu.ThermoFrame` object) takes this definition and turns it into a valid state for itself. In this case it trivially returns the SI values of the given state, but a proper initialization is and must be performed by the relevant thermodynamic contributions, if we define a model Helmholtz coordinates (an equation of state) or more exotic models, that could use entropy or enthalpy as free variables.
 
 Summary / Outlook
------------------
+=================
 - We defined an ideal gas thermodynamic model based on already defined thermodynamic contributions.
 - Parameters and calculated properties are represented by ``pint`` quantities in dictionaries.
 - Thermodynamic states are pure numerical objects (arrays), only to be interpreted by the thermodynamic models themselves.

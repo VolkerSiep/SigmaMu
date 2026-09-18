@@ -1,8 +1,8 @@
 from typing import cast
-from pytest import fixture, raises
+from pytest import raises
 
 from simu import (
-    NumericHandler, NHKeys, SimulationSolver, SimulationSolverConfig,
+    NumericHandler, NHKeys, SimulationSolver,
     Quantity, quantity_dict_to_strings)
 from simu.core.utilities.residual import ResidualHandler
 from simu.core.utilities.errors import NonSquareSystem
@@ -76,9 +76,3 @@ def test_change_parameters():
     #         q = q.to(unit)
     #     print(f"{k:20s} {q:.3g~}")
 
-
-@fixture(scope="module")
-def sim_result():
-    numeric = NumericHandler(Source.top())
-    solver = SimulationSolver(numeric, output=None)
-    return solver.solve()

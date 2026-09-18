@@ -12,28 +12,28 @@ datasets:
 
 contributions:
   vle:
-    dataset: vle_1bar
+    dataset_id: vle_1bar
     model_id: vle_fit
     data_to_model:
-      T: process.T  # temperature
-      p: process.p  # pressure
-      x: process.x  # liquid fraction
-      y: process.y  # gas fraction
-      w: process.w  # weight factor
+      T: {path: [T]}  # temperature
+      p: {path: [p]}  # pressure
+      x: {path: [x]}  # liquid fraction
+      y: {path: [y]}  # gas fraction
+      w: {path: [w]}  # weight factor
     penalties:
-      - process.dmu_norm/H2O
-      - process.dmu_norm/CO2
+      - [dmu_norm, H2O]
+      - [dmu_norm, CO2]
 
 evaluations:
   vle_p:
-    dataset: vle_1bar
+    dataset_id: vle_1bar
     model_id: vle_eval_p
     data_to_model:
-      T: process.T
-      x: process.x
+      T: {path: [T]}
+      x: {path: [x]}
     properties:
-      p_hat: {name: process.p, uom: bar}
-      y_hat: {name: process.y, uom: "%"}
+      p_hat: {path: [p], uom: bar}
+      y_hat: {path: [y], uom: "%"}
 
 parameters:
   a_b:

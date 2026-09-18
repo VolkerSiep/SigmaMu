@@ -231,6 +231,16 @@ class NumericHandler:
              "non-canonical": {}}
         )
 
+    def set_property_filter(self, property_filter: PropertyFilter):
+        """Set a property filter an the existing instance. This triggers a new
+        collection of result symbols
+
+        :param property_filter: The filter object to limit the set of calculated
+          properties.
+        """
+        self._property_filter = property_filter
+        self.__sym_res = self.__collect_results()
+
     def import_state(self, state: NestedMap[str],
                      allow_missing: bool=False, allow_extra: bool = False)\
             -> NestedMap[str]:

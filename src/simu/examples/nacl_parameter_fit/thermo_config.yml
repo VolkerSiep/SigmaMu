@@ -1,0 +1,84 @@
+species: {H2O: H2O, Na+: Na:1+, Cl-: Cl:1-}
+
+phases:
+  liquid: {frame: liquid, species: [H2O, Na+, Cl-]}
+  gas: {frame: gas, species: [H2O]}
+
+frames:
+  liquid:
+    state: GibbsState
+    contributions:
+      - {name: H0S0_Liquid, cls: H0S0ReferenceState}
+      - {name: Cp_Liquid, cls: BarinHeatCapacity}
+      - MolecularWeight
+      - IdealMix
+      - cls: PolynomialGibbsVolume
+        options:
+          order: 2
+      - ElectrolyteBasics
+      - ChargeBalance
+      - PitzerDebyeHueckel
+      - cls: PitzerBinaryInteraction
+        options:
+          beta_01:
+            - [Na+, Cl-]
+          beta_02:
+            - [Na+, Cl-]
+      - GenericProperties
+  gas:
+    state: HelmholtzState
+    contributions:
+      - {name: H0S0_Gas, cls: H0S0ReferenceState}
+      - {name: Cp_Gas, cls: BarinHeatCapacity}
+      - MolecularWeight
+      - HelmholtzIdealGas
+      - CriticalParameters
+      - BostonMatthiasMFactor
+      - BostonMathiasAlphaFunction
+      - RedlichKwongAFunction
+      - RedlichKwongBFunction
+      - cls: NonSymmetricMixingRule
+        name: MixingRule_A
+        options:
+          target: _ceos_a
+      - cls: LinearMixingRule
+        name: MixingRule_B
+        options:
+          target: _ceos_b
+      - RedlichKwongEOSGas
+      - GenericProperties
+
+parameters:
+  nacl_standard:
+    H0S0_Liquid:
+      T_ref: 25 degC
+      p_ref: 1 bar
+      dh_form: {Cl-: 0 J/mol, Na+: 0 J/mol}
+      s_0: {Cl-: 0 J/K/mol, Na+: 0 J/K/mol}
+    PolynomialGibbsVolume:
+      T_ref: 25 degC
+      A: {Na+: 0 cm^3/mol, Cl-: 0 cm^3/mol}
+      B: {Na+: 0 cm^3/mol, Cl-: 0 cm^3/mol}
+      C: {Na+: 0 cm^3/mol, Cl-: 0 cm^3/mol}
+    Cp_Liquid:
+      A: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      B: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      C: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      D: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      E: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      F: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      G: {Na+: 0 J/K/mol, Cl-: 0 J/K/mol}
+      T_scale: 1 K
+  Pitzer:
+    PitzerDebyeHueckel:
+      B: 1.2
+      EPS_SOLVENT: 80
+      RHO_SOLVENT: 998 kg/m^3
+    PitzerBinaryInteraction:
+      T_ref: 25 degC
+      beta_01:
+        Na+:
+          Cl-: 0
+      beta_02:
+        Na+:
+          Cl-: 0 1/K

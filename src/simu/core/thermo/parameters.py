@@ -206,6 +206,11 @@ class ThermoParameterStore:
             raise KeyError(f"Source '{name}' already defined")
         self.__sources[name] = source
 
+    def get_source(self, name: str) -> AbstractThermoSource:
+        """Return the source object of the given name, previously added via
+        :meth:`add_source`"""
+        return self.__sources[name]
+
     def __get_values(self, parameter_struct: NestedMap[str] = None) -> _RT:
         """Return a tuple of
 

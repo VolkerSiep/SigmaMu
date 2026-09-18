@@ -1,4 +1,5 @@
 from abc import ABC
+from collections.abc import Callable
 from .base import Model, ModelProxy
 
 
@@ -133,7 +134,7 @@ class AModel(Model, ABC):
         return self.hierarchy.declare
 
     @property
-    def ha(self):
+    def ha(self) -> Callable[..., AModelProxy]:
         return self.hierarchy.add
 
     # materials handler methods

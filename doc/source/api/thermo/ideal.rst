@@ -9,6 +9,12 @@ H0S0ReferenceState
   :show-inheritance:
   :exclude-members: __init__, __new__
 
+ReferenceStateShift
+-------------------
+.. autoclass:: ReferenceStateShift
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
 LinearHeatCapacity
 ------------------
 .. autoclass:: LinearHeatCapacity
@@ -47,6 +53,12 @@ HelmholtzIdealGas
 ConstantGibbsVolume
 -------------------
 .. autoclass:: ConstantGibbsVolume
+  :show-inheritance:
+  :exclude-members: __init__, __new__
+
+PolynomialGibbsVolume
+---------------------
+.. autoclass:: PolynomialGibbsVolume
   :show-inheritance:
   :exclude-members: __init__, __new__
 

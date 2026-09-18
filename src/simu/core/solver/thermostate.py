@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 GAMMA = 0.9
 MAX_ITER = 30
-REL_TOL = 1e-9
+REL_TOL = 1e-8
 
 
 def __define_functions(frame: ThermoFrame, parameters: NestedMap[Quantity],

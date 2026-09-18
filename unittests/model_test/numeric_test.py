@@ -107,7 +107,7 @@ def test_filter_properties(square_test_model):
     assert_reproduction(props)
 
 
-def test_filter_properties_2(square_test_model):
+def test_filter_properties_exclusion(square_test_model):
     filter_ = ExclusionFilter({"mu_std", "S_std", "p_std", "T_ref", "p_ref"})
     proxy = square_test_model.top()
     numeric = NumericHandler(proxy, property_filter=filter_)

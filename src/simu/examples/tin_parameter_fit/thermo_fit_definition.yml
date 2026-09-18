@@ -1,0 +1,31 @@
+datasets:
+  wiki_data:
+    source: Wikipedia, entry on tin
+    columns: [T_trans]
+    uom: [degC]
+    data:
+      - [13.2]
+
+contributions:
+  equilibrium:
+    dataset_id: wiki_data
+    model_id: transition_model
+    data_to_model:
+      T_trans: {path: [T_measured]}
+    penalties:
+      - [dT_norm]
+
+parameters:
+  s_0_a:
+    path: [H0S0ReferenceState, s_0, a-Sn]
+
+evaluations:
+  by_temp:
+    dataset_id: wiki_data
+    model_id: transition_model
+    data_to_model: {}
+    properties:
+      T_hat:
+        path: [T_calc]
+        uom: degC
+

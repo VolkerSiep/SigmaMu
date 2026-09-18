@@ -1,14 +1,13 @@
 # stdlib modules
 from copy import copy
+from string import ascii_uppercase
 
-from simu import Quantity
 # internal modules
 from simu.core.thermo.contribution import ThermoContribution, registered_contribution
 from simu.core.utilities.constants import R_GAS
 from simu.core.utilities.quantity import qsum, base_magnitude, qvertcat
 from simu.core.utilities.qstructures import log
 from simu.core.utilities.errors import DimensionalityError
-from simu.core.utilities.types import MutMap
 
 
 @registered_contribution
@@ -188,8 +187,6 @@ class BarinHeatCapacity(ThermoContribution):
 
     """
 
-    provides = ["T_ref", "p_ref", "S", "mu"]
-
     def define(self, res):
         temp, n, temp_ref = res["T"], res["n"], res["T_ref"]
         temp_scale = self.par_scalar("T_scale", "K")  # recommended: 1
@@ -202,13 +199,12 @@ class BarinHeatCapacity(ThermoContribution):
         t3, t3_ref = t2 * t, t2_ref * t_ref
 
         dt, dt2, dt3 = t - t_ref, t2 - t2_ref, t3 - t3_ref
-        dt4 = t2*t2 - t2_ref * t2_ref
         dti, dti2 = 1 / t - 1 / t_ref, 1 / t2 - 1 / t2_ref
         dti3 = 1 / t3 - 1 / t3_ref
 
         d_h = (c[0] * dt + c[1] / 2 * dt ** 2
                + c[2] * dt ** 2 * (t + 2 * t_ref) / 3
-               + c[3] * (t ** 4 + t_ref ** 3 * (3 * t_ref - 4 * t))
+               + c[3] * (t ** 4 + t_ref ** 3 * (3 * t_ref - 4 * t)) / 4
                + c[4] * (log_t + 1 - t / t_ref)
                - c[5] * dt ** 2 / (t2_ref * t)
                + c[6] * (1.5 / t2_ref - 0.5 / t2 - t / t3_ref)) * temp_scale
@@ -371,11 +367,12 @@ class HelmholtzIdealGas(ThermoContribution):
         self.add_bound("V", V)
 
     def initial_state(self, state, properties):
-        volume = qsum(state.mol_vector) * R_GAS * \
+        n = state.mol_vector
+        volume = qsum(n) * R_GAS * \
                  state.temperature / state.pressure
         return ([base_magnitude(state.temperature),
                  base_magnitude(volume)] +
-                list(base_magnitude(state.mol_vector)))
+                list(base_magnitude(n)))
 
 
 @registered_contribution
@@ -396,16 +393,12 @@ class ConstantGibbsVolume(ThermoContribution):
 
     The system volume is then calculated as
 
-    .. math::
-
-        V = \sum_i v_{n,i}\,n_i
+    .. math:: V = \sum_i v_{n,i}\,n_i
 
     For the chemical potential, this yields, given pressure ``p`` and reference
     pressure ``p_ref``:
 
-    .. math::
-
-        \mu_i \leftarrow \mu_i + v_{n,i}\,(p - p_\mathrm{ref})
+    .. math:: \mu_i \leftarrow \mu_i + v_{n,i}\,(p - p_\mathrm{ref})
 
     .. note::
 
@@ -422,6 +415,72 @@ class ConstantGibbsVolume(ThermoContribution):
         n, p, p_ref = res["n"], res["p"], res["p_ref"]
         v_n = self.par_vector("v_n", self.species, "m**3/mol")
         res["mu"] += v_n * (p - p_ref)
+        res["V"] = v_n.T @ n
+
+
+@registered_contribution
+class PolynomialGibbsVolume(ThermoContribution):
+    r"""This contribution describes an incompressible mixture with
+    temperature-dependent density. The molar volumes are a polynomial in
+    temperature. The order of the polynomial is given by the option ``order``
+    (default 3, defining coefficients ``A`` - ``D``).
+
+    ========= ====================== ===================
+    Parameter Description            Symbol
+    ========= ====================== ===================
+    ``T_ref`` Reference temperature  :math:`T_{\rm ref}`
+    ``A``     Polynomial coefficient :math:`a_i`
+    ``B``     Polynomial coefficient :math:`b_i`
+    ...
+    ========= ====================== ===================
+
+    The molar volume :math:`v_{n,i}(T)` for species :math:`i` is calculated with
+    :math:`\tau = T / T_{\rm ref}` as
+
+    .. math::
+
+         v_{n,i}(T) = a_i + b_i\,(\tau - 1) + c_i\,(\tau^2 - 1)
+           + d_i\,(\tau^3 - 1) + \dots
+
+    The volume is defined as
+
+    .. math:: V = \sum_i v_{n,i}\,n_i
+
+    The chemical potential contribution is then
+
+    .. math:: \mu_i \leftarrow \mu_i + v_{n,i}(T)\,(p - p_\mathrm{ref})
+
+    The temperature dependency yields an entropy contribution as follows:
+
+    .. math::
+
+        S \leftarrow S - (p - p_\mathrm{ref})\,
+          \sum_i \frac{\mathrm{d}v_{n,i}}{\mathrm{d}T}\,n_i
+
+    with
+
+    .. math::
+
+        \frac{\mathrm{d}v_{n,i}}{\mathrm{d}T} = \frac1{T_{\rm ref}} \left (
+            b_i + 2\,c_i\,\tau + 3\,d_i\,\tau^2 + \dots \right )
+
+    """
+    provides = ["V"]
+
+    def define(self, res):
+        t, p, n, p_ref = (res[s] for s in "T p n p_ref".split())
+        order = self.options.get("order", 3)
+        assert order < 26  # the sky is the limit - and the alphabet
+        t_ref = self.par_scalar("T_ref", "K")
+        c = [self.par_vector(n, self.species, "cm^3/mol")
+             for n in ascii_uppercase[:order + 1]]
+
+        tau, dp = t / t_ref, p - p_ref
+        v_n = c[0] + sum(c_i * (tau ** k - 1) for k, c_i in enumerate(c[1:], 1))
+        d_vn_dt = sum((k + 1) * c_i * tau ** k for k, c_i in enumerate(c[1:]))
+
+        res["mu"] += v_n * dp
+        res["S"] -= d_vn_dt.T @ n * dp / t_ref
         res["V"] = v_n.T @ n
 
 

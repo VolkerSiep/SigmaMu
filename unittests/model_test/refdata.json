@@ -373,6 +373,25 @@
       "CH3-CH2-CH3": ""
     }
   },
+  "numeric_test.py::test_filter_properties_exclusion": {
+    "N": "mol / s",
+    "S": "W / K",
+    "T": "K",
+    "V": "m ** 3 / s",
+    "mu": {
+      "CH3-(CH2)2-CH3": "J / mol",
+      "CH3-CH2-CH3": "J / mol"
+    },
+    "n": {
+      "CH3-(CH2)2-CH3": "mol / s",
+      "CH3-CH2-CH3": "mol / s"
+    },
+    "p": "Pa",
+    "x": {
+      "CH3-(CH2)2-CH3": "",
+      "CH3-CH2-CH3": ""
+    }
+  },
   "numeric_test.py::test_import_state": {
     "T": "100 °C",
     "n": {

@@ -11,3 +11,5 @@ Tutorial
    solving_models
    steam_system
    dof_analysis
+   first_thermo_fit
+   second_thermo_fit

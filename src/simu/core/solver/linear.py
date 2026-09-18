@@ -75,6 +75,7 @@ class ScaledLinearSparseSolver:
         pass
 
     def solve(self, matrix: csr_array, rhs: NDArray) -> NDArray:
+
         s_x = 1
         # scale system if demanded
         if self.config.num_scale:
@@ -151,6 +152,9 @@ class NumpySolver:
 
 
 def _residual(matrix: csr_array, rhs: NDArray, x: NDArray) -> float:
+    n = norm(rhs)
+    if n == 0:
+        return 0.0
     return float(norm(rhs - matrix @ x) / norm(rhs))
 
 def _scale_error(norms: NDArray) -> float:
