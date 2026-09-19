@@ -1,4 +1,4 @@
-from math import isnan
+from math import isinf
 
 from pytest import raises
 from pydantic import ValidationError
@@ -225,7 +225,7 @@ def test_prepare_function_bt(tin_functions):
     x = [temp, 1e5, 1, 1]
     b, a = tin_functions.f_bt(x, [12.3], [44.14], [1])
     assert b == temp
-    assert isnan(a)
+    assert isinf(a)
 
 def test_tin_parameter_fit():
     models = {"transition_model": NumericHandler(TinTransition.top())}

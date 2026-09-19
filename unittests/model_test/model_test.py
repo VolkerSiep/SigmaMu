@@ -104,7 +104,7 @@ def test_hierarchy2():
     properties"""
     proxy = HierarchyTestModel2.top()
     volume = proxy.properties["volume"]
-    assert f"{volume:~}" == "(depth*sq((2*radius))) cm ** 3"
+    assert f"{volume:~}" == "(depth*sq((2.*radius))) cm ** 3"
 
 @mark.parametrize("simple_material_definition", [["H2O", "NO2"]], indirect=True)
 def test_material(simple_material_definition, material_test_model):

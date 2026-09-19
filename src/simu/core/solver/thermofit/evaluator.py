@@ -203,7 +203,7 @@ def _overwrite_nodes(
     >>> p = {"a": {"b": Quantity(5, "cm"), "d": Quantity(4, "K")}}
     >>> _overwrite_nodes(t, p)
     >>> print(t)
-    {'a': {'b': <Quantity(5, 'centimeter')>, 'c': <Quantity(4, 'second')>}}
+    {'a': {'b': Quantity(5, "centimeter"), 'c': Quantity(4, "second")}}
     """
     if isinstance(target, Quantity) and isinstance(parameters, Quantity):
         if not target.check(parameters):

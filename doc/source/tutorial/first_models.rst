@@ -130,35 +130,35 @@ Either way, here we are with a complete process model. By creating a :class:`sim
 >>> numeric = NumericHandler(Source.top())
 >>> args = numeric.arguments
 >>> pprint(args)
-{'model_params': {'T': <Quantity(25.0, 'degree_Celsius')>,
-                  'V': <Quantity(10.0, 'meter ** 3 / hour')>,
-                  'p': <Quantity(1.0, 'bar')>},
- 'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': <Quantity(25, 'degree_Celsius')>,
-                                                      'dh_form': {'Methane': <Quantity(-74.87, 'kilojoule / mole')>},
-                                                      'p_ref': <Quantity(1, 'bar')>,
-                                                      's_0': {'Methane': <Quantity(188.66, 'joule / kelvin / mole')>}},
-                               'LinearHeatCapacity': {'cp_a': {'Methane': <Quantity(35.69, 'joule / kelvin / mole')>},
-                                                      'cp_b': {'Methane': <Quantity(50.0, 'millijoule / kelvin ** 2 / mole')>}}}},
- 'vectors': {'states': <Quantity([400, 200000, 1], 'dimensionless')>}}
+{'model_params': {'T': Quantity(25.0, "degree_Celsius"),
+                  'V': Quantity(10.0, "meter ** 3 / hour"),
+                  'p': Quantity(1.0, "bar")},
+ 'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': Quantity(25, "degree_Celsius"),
+                                                      'dh_form': {'Methane': Quantity(-74.87, "kilojoule / mole")},
+                                                      'p_ref': Quantity(1, "bar"),
+                                                      's_0': {'Methane': Quantity(188.66, "joule / kelvin / mole")}},
+                               'LinearHeatCapacity': {'cp_a': {'Methane': Quantity(35.69, "joule / kelvin / mole")},
+                                                      'cp_b': {'Methane': Quantity(50.0, "millijoule / kelvin ** 2 / mole")}}}},
+ 'vectors': {'states': Quantity(DM([400, 200000, 1]), "dimensionless")}}
 
 Firstly, we can recognize the model parameters, the thermodynamic parameters, and the thermodynamic state of our material. The latter is stored in a dimensionless vector for the purpose of numerical solving. Later-on, we show how this vector, and/or individual parameters can be substituted by `CasADi`_ symbols and thus become free variables in a calculation.
 
 Further, we can query the result by calling the function with this argument:
 
 >>> pprint(numeric.function(args))
-{'residuals': {'T': <Quantity(-101.85..., 'kelvin')>,
-               'V': <Quantity(-0.0138..., 'meter ** 3 / second')>,
-               'p': <Quantity(-100000.0, 'pascal')>},
- 'thermo_props': {'source': {'S': <Quantity(194.09666..., 'watt / kelvin')>,
-                             'T': <Quantity(400.0, 'kelvin')>,
-                             'T_ref': <Quantity(298.15, 'kelvin')>,
-                             'V': <Quantity(0.01662..., 'meter ** 3 / second')>,
-                             'mu': {'Methane': <Quantity(-148614.30..., 'joule / mole')>},
-                             'n': {'Methane': <Quantity(1.0, 'mole / second')>},
-                             'p': <Quantity(200000.0, 'pascal')>,
-                             'p_ref': <Quantity(100000.0, 'pascal')>}},
- 'vectors': {'bounds': <Quantity([2.e+05 1.e+00 4.e+02], 'dimensionless')>,
-             'residuals': <Quantity([-1.018...e+09 -4.986...e+08 -1.00000000e+07], 'dimensionless')>}}
+{'residuals': {'T': Quantity(array(-101.85), "kelvin"),
+               'V': Quantity(array(-0.0138...), "meter ** 3 / second"),
+               'p': Quantity(array(-100000.), "pascal")},
+ 'thermo_props': {'source': {'S': Quantity(array(194.096...), "watt / kelvin"),
+                             'T': Quantity(array(400.), "kelvin"),
+                             'T_ref': Quantity(array(298.15), "kelvin"),
+                             'V': Quantity(array(0.0166...), "meter ** 3 / second"),
+                             'mu': {'Methane': Quantity(array(-148614.302...), "joule / mole")},
+                             'n': {'Methane': Quantity(array(1.), "mole / second")},
+                             'p': Quantity(array(200000.), "pascal"),
+                             'p_ref': Quantity(array(100000.), "pascal")}},
+ 'vectors': {'bounds': Quantity(array([2.e+05, 1.e+00, 4.e+02]), "dimensionless"),
+             'residuals': Quantity(array([-1.0185...e+09, -4.986...e+08, -1.00...e+07]), "dimensionless")}}
 
 Here we see the residuals as physical quantities, but also converted to a dimensionless vector, representing the quotient of residuals and their tolerances. Thermodynamic properties are included, and model properties would, if there were any.
 

@@ -36,7 +36,7 @@ class ModelContext:
         return result
 
 
-def relax(b: NDArray, a: NDArray,
+def relax(b: Sequence[float], a: Sequence[float],
           bound_names: Sequence[str],
           gamma: float) -> tuple[float, str]:
     a, b = [squeeze(array(x)) for x in (a, b)]

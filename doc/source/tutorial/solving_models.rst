@@ -46,14 +46,14 @@ The solving process returns a :class:`~simu.core.solver.simulation.report.Simula
 
 >>> from pprint import pprint
 >>> pprint(result.properties[NHKeys.THERMO_PROPS]["source"])
-{'S': <Quantity(21.1401..., 'watt / kelvin')>,
- 'T': <Quantity(298.15, 'kelvin')>,
- 'T_ref': <Quantity(298.15, 'kelvin')>,
- 'V': <Quantity(0.002777..., 'meter ** 3 / second')>,
- 'mu': {'Methane': <Quantity(-131118.9..., 'joule / mole')>},
- 'n': {'Methane': <Quantity(0.11205..., 'mole / second')>},
- 'p': <Quantity(100000.0, 'pascal')>,
- 'p_ref': <Quantity(100000.0, 'pascal')>}
+{'S': Quantity(array(21.14016295), "watt / kelvin"),
+ 'T': Quantity(array(298.15), "kelvin"),
+ 'T_ref': Quantity(array(298.15), "kelvin"),
+ 'V': Quantity(array(0.00277778), "meter ** 3 / second"),
+ 'mu': {'Methane': Quantity(array(-131118.979), "joule / mole")},
+ 'n': {'Methane': Quantity(array(0.11205429), "mole / second")},
+ 'p': Quantity(array(100000.), "pascal"),
+ 'p_ref': Quantity(array(100000.), "pascal")}
 
 The least boring result of this simulation is the calculated molar flow of methane:
 
@@ -67,15 +67,15 @@ The process model already defines values for each parameter. These values are ho
 For extra convenience, the solver object provides direct mutable access via :meth:`simu.SimulationSolver.model_parameters` to the model's parameters:
 
 >>> pprint(solver.model_parameters)
-    {'model_params': {'T': <Quantity(25.0, 'degree_Celsius')>,
-                      'V': <Quantity(10.0, 'meter ** 3 / hour')>,
-                      'p': <Quantity(1.0, 'bar')>},
-     'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': <Quantity(25, 'degree_Celsius')>,
-                                                          'dh_form': {'Methane': <Quantity(-74.87, 'kilojoule / mole')>},
-                                                          'p_ref': <Quantity(1, 'bar')>,
-                                                          's_0': {'Methane': <Quantity(188.66, 'joule / kelvin / mole')>}},
-                                   'LinearHeatCapacity': {'cp_a': {'Methane': <Quantity(35.69, 'joule / kelvin / mole')>},
-                                                          'cp_b': {'Methane': <Quantity(50.0, 'millijoule / kelvin ** 2 / mole')>}}}},
+    {'model_params': {'T': Quantity(25.0, "degree_Celsius"),
+                      'V': Quantity(10.0, "meter ** 3 / hour"),
+                      'p': Quantity(1.0, "bar")},
+     'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': Quantity(25, "degree_Celsius"),
+                                                          'dh_form': {'Methane': Quantity(-74.87, "kilojoule / mole")},
+                                                          'p_ref': Quantity(1, "bar"),
+                                                          's_0': {'Methane': Quantity(188.66, "joule / kelvin / mole")}},
+                                   'LinearHeatCapacity': {'cp_a': {'Methane': Quantity(35.69, "joule / kelvin / mole")},
+                                                          'cp_b': {'Methane': Quantity(50.0, "millijoule / kelvin ** 2 / mole")}}}},
      'vectors': {}}
 
 Let's modify the input:

@@ -90,9 +90,9 @@ The model has also collected the default input values for us.
 >>> from pprint import pprint
 >>> args = numeric.arguments
 >>> pprint(args)
-{'model_params': {'length': <Quantity(10.0, 'meter')>},
+{'model_params': {'length': Quantity(10.0, "meter")},
  'thermo_params': {},
- 'vectors': {'states': <Quantity(0x1, 'dimensionless')>}}
+ 'vectors': {'states': Quantity(DM(0x1), "dimensionless")}}
 
 For a larger real-life problem, this would also include the initial set of independent variables (``state``) and all thermodynamic parameters, collected from the various data sources. Here we see only the ``length`` parameter as being 10 m.
 

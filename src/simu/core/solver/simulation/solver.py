@@ -71,7 +71,7 @@ class SimulationSolver:
         self._model_parameters: NestedMutMap[Quantity] = args
 
         self._funcs : _FunctionCollection | None = None
-        self._x : Quantity | None = None
+        self._x : NDArray | None = None
 
     def set_options(self, config: SimulationSolverConfig | None = None,
                     **options: Any):
@@ -108,8 +108,10 @@ class SimulationSolver:
 
             # callback
             if config.call_back_iter is not None:
+                assert self._x is not None
+                assert self._funcs is not None
                 cb_result = config.call_back_iter(
-                    iter_report, self._x, self._funcs.f_y
+                    iter_report, array(self._x), self._funcs.f_y
                 )
                 if not cb_result:
                     msg = "Solver iterations interrupted by callback"
@@ -118,16 +120,17 @@ class SimulationSolver:
         # retain state if desired
         if config.retain_solution:
             thermo_param = self.model_parameters[NHKeys.THERMO_PARAMS]
-            self._model.retain_state(self._x.nonzeros(), thermo_param)
+            self._model.retain_state(array(self._x), thermo_param)
 
+        assert self._funcs is not None
         return SimulationSolverReport(
             iterations=reports,
-            final_state=self._x,
+            final_state=array(self._x),
             prop_func=self._funcs.f_y
         )
 
     def solve_iter(
-            self, config: SimulationSolverConfig = None,
+            self, config: SimulationSolverConfig | None = None,
             **options: Any
     ) -> Generator[SimulationSolverIterationReport, Map[Any] | None, None]:
         """Run individual iterations and return control flow back to the client
@@ -175,7 +178,8 @@ class SimulationSolver:
 
             # find relaxation factor
             b, a = funcs.f_b(x, dx)
-            alpha, min_alpha_name = relax(b, a, bound_names, config.gamma)
+            alpha, min_alpha_name = relax(array(b), array(a),
+                                          bound_names, config.gamma)
             if alpha < config.wall:
                 msg = f"Relaxation factor is below {config.wall}, " \
                       "no solution found"

@@ -66,7 +66,7 @@ class ParameterDictionary(dict):
         contains the following entry:
 
             >>> print(pdict)
-            {'speed': <Quantity(speed, 'meter / second')>}
+            {'speed': Quantity(SX(speed), "meter / second")}
         """
         unit = base_unit(unit)
         quantity = SymbolQuantity(key, unit)
@@ -87,9 +87,9 @@ class ParameterDictionary(dict):
 
             >>> from pprint import pprint
             >>> pprint(pdict)
-            {'velocity': {'x': <Quantity(velocity.x, 'meter / second')>,
-                          'y': <Quantity(velocity.y, 'meter / second')>,
-                          'z': <Quantity(velocity.z, 'meter / second')>}}
+            {'velocity': {'x': Quantity(SX(velocity.x), "meter / second"),
+                          'y': Quantity(SX(velocity.y), "meter / second"),
+                          'z': Quantity(SX(velocity.z), "meter / second")}}
         """
         unit = base_unit(unit)
         self[key] = {s: SymbolQuantity(f"{key}.{s}", unit) for s in sub_keys}
@@ -105,15 +105,15 @@ class ParameterDictionary(dict):
             >>> binaries = [("H2O", "CO2"), ("H2O", "CH4")]
             >>> from pprint import pprint
             >>> pprint(pdict.register_sparse_matrix("K_ij", binaries, "K"))
-            {'H2O': {'CH4': <Quantity(K_ij.H2O.CH4, 'kelvin')>,
-                     'CO2': <Quantity(K_ij.H2O.CO2, 'kelvin')>}}
+            {'H2O': {'CH4': Quantity(SX(K_ij.H2O.CH4), "kelvin"),
+                     'CO2': Quantity(SX(K_ij.H2O.CO2), "kelvin")}}
 
         After above call, the dictionary contains the following entries:
 
             >>> from pprint import pprint
             >>> pprint(pdict)
-            {'K_ij': {'H2O': {'CH4': <Quantity(K_ij.H2O.CH4, 'kelvin')>,
-                              'CO2': <Quantity(K_ij.H2O.CO2, 'kelvin')>}}}
+            {'K_ij': {'H2O': {'CH4': Quantity(SX(K_ij.H2O.CH4), "kelvin"),
+                              'CO2': Quantity(SX(K_ij.H2O.CO2), "kelvin")}}}
         """
         unit = base_unit(unit)
         res = ParameterDictionary.SparseArray(order=2)
@@ -134,15 +134,15 @@ class ParameterDictionary(dict):
             >>> ternaries = [("A", "B", "C"), ("A", "C", "D")]
             >>> from pprint import pprint
             >>> pprint(pdict.register_sparse_3d("C", ternaries, "K"))
-            {'A': {'B': {'C': <Quantity(C.A.B.C, 'kelvin')>},
-                   'C': {'D': <Quantity(C.A.C.D, 'kelvin')>}}}
+            {'A': {'B': {'C': Quantity(SX(C.A.B.C), "kelvin")},
+                   'C': {'D': Quantity(SX(C.A.C.D), "kelvin")}}}
 
         After above call, the dictionary contains the following entries:
 
             >>> from pprint import pprint
             >>> pprint(pdict)
-            {'C': {'A': {'B': {'C': <Quantity(C.A.B.C, 'kelvin')>},
-                            'C': {'D': <Quantity(C.A.C.D, 'kelvin')>}}}}
+            {'C': {'A': {'B': {'C': Quantity(SX(C.A.B.C), "kelvin")},
+                         'C': {'D': Quantity(SX(C.A.C.D), "kelvin")}}}}
         """
         unit = base_unit(unit)
         res = ParameterDictionary.SparseArray(order=3)
@@ -395,7 +395,7 @@ def sqrt[V](quantity: V) -> V:
     ...         "B": Quantity("1 m**2"),
     ...         "C": Quantity("2500 cm**2")})
     >>> print(sqrt(a))
-    {'B': <Quantity(1.0, 'meter')>, 'C': <Quantity(50.0, 'centimeter')>}
+    {'B': Quantity(1.0, "meter"), 'C': Quantity(50.0, "centimeter")}
     """
     try:
         items = quantity.items()
@@ -411,7 +411,7 @@ def log[V](quantity: V) -> V:
 
     >>> x = Quantity(10.0, "cm/m")
     >>> log(x)
-    <Quantity(-2.30258509, 'dimensionless')>
+    Quantity(-2.3025850929940455, "dimensionless")
 
     >>> a = {"A": SymbolQuantity("A", "dimless"),
     ...      "B": SymbolQuantity("B", "dimless")}
@@ -421,7 +421,7 @@ def log[V](quantity: V) -> V:
     B: log(B)
 
     >>> log(10)
-    <Quantity(2.30258509, 'dimensionless')>
+    Quantity(2.302585092994046, "dimensionless")
 
     The other unary functions are defined in the same manner.
     """
@@ -465,12 +465,12 @@ def parse_quantities_in_struct(struct: Union[NestedMap[str], str]) \
     ...        'fingernail': '300 mg'}
     ... })
     >>> pprint(y)
-    {'speed': {'car': <Quantity(100.0, 'kilometer / hour')>,
-               'fingernail': <Quantity(1.2, 'millimeter / day')>,
-               'snail': <Quantity(1.0, 'centimeter / minute')>},
-     'weight': {'car': <Quantity(1.5, 'metric_ton')>,
-                'fingernail': <Quantity(300, 'milligram')>,
-                'snail': <Quantity(10, 'gram')>}}
+    {'speed': {'car': Quantity(100.0, "kilometer / hour"),
+               'fingernail': Quantity(1.2, "millimeter / day"),
+               'snail': Quantity(1.0, "centimeter / minute")},
+     'weight': {'car': Quantity(1.5, "metric_ton"),
+                'fingernail': Quantity(300, "milligram"),
+                'snail': Quantity(10, "gram")}}
     """
     if not isinstance(struct, Mapping):
         return Quantity(struct)
@@ -523,7 +523,7 @@ def extract_sub_structure(source: NestedMap[Quantity],
     ...        "d": {"e": Quantity(2, "s"), "f": Quantity(3, "kJ")}}
     >>> struct = {"a": {"b": "m"}, "d": {"e": "s"}}
     >>> print(extract_sub_structure(src, struct))
-    {'a': {'b': <Quantity(1, 'kilometer')>}, 'd': {'e': <Quantity(2, 'second')>}}
+    {'a': {'b': Quantity(1, "kilometer")}, 'd': {'e': Quantity(2, "second")}}
     """
     def prepare(name: str, key: str, query: NestedMap[str] | str,
                 src: NestedMap[Quantity]) -> NestedMap[Quantity]:

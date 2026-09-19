@@ -28,7 +28,8 @@ class ProgressTableOutput:
            10 degree_Celsius
 
     """
-    def __init__(self, columns: Map[Tuple[str, str]], output: Writer[str]):
+    def __init__(self, columns: Map[Tuple[str, str]],
+                 output: Writer[str] | None):
         """
         The constructor configures the table based on the following parameters:
 
