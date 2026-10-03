@@ -40,7 +40,7 @@ def test_material_collect_multiple_states(material_test_model_4):
     proxy = material_test_model_4.top()
     numeric = NumericHandler(proxy)
     state = numeric.arguments[NHKeys.VECTORS][NHKeys.STATES]
-    assert len(state.magnitude.nz) == 6
+    assert len(state.magnitude) == 6
 
 
 def test_material_collect_props(material_model_function):
@@ -82,7 +82,7 @@ def test_square_model_call(thermo_param, square_test_model):
     numeric = NumericHandler(model.create_proxy().finalise())
     material.store.add_source("default", thermo_param)
     args = numeric.arguments
-    res = flatten_dictionary(numeric.function(args))
+    res = flatten_dictionary(numeric.function.evaluate(args))
     res = {k: f"{v:.6f~}" for k, v in res.items()}
     assert_reproduction(res)
 
@@ -181,7 +181,7 @@ def test_bound_sensitivity():
     names = numeric.vector_arg_names(NHKeys.STATES)
     state = SymbolQuantity("x", "", names)
     args[NHKeys.VECTORS][NHKeys.STATES] = state
-    res = numeric.function(args, squeeze_results=False)
+    res = numeric.function(args)
     res = res[NHKeys.VECTORS][NHKeys.BOUNDS]
     jac = jacobian(res, state).magnitude
     assert_reproduction(str(jac))
@@ -197,7 +197,7 @@ def test_vector_bound(square_test_model):
 
 def test_hierarchy_port(model_with_material_hierarchy):
     numeric = NumericHandler(model_with_material_hierarchy.top())
-    x = numeric.arguments["vectors"]["states"].magnitude.nonzeros()
+    x = numeric.arguments["vectors"]["states"].magnitude
     assert_allclose(x, [298.15, 101325, 1])
 
 

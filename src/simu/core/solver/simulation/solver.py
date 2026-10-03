@@ -224,11 +224,11 @@ class SimulationSolver:
         param = deepcopy(self._model_parameters)
         x = SX.sym("x", size)
         param[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
-        res = self._model.function(param, squeeze_results=False)  # EXPENSIVE!!
+        res = self._model.function(param)  # EXPENSIVE!!
         vectors = res[NHKeys.VECTORS]
         r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
         dx = SX.sym("dx", size)
-        f_y = QFunction({"x": Quantity(x)}, res)  # EXPENSIVE!!
+        f_y = QFunction({"x": Quantity(x)}, res).evaluate  # EXPENSIVE!!
 
         return _FunctionCollection(
             f_r=Function("f_r", [x], [r, jacobian(r, x)]),

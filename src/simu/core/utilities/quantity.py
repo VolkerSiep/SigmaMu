@@ -8,11 +8,10 @@ from collections.abc import Mapping
 # external modules
 # need to import entire casadi module to distinguish functions of same name
 import casadi as cas
-from numpy import squeeze
-from pint import UnitRegistry, set_application_registry
+from numpy import asarray, squeeze, hstack
+from pint import UnitRegistry, set_application_registry, Quantity as QtyType
 from pint.util import UnitsContainer
-from pint.registry import Unit
-from pint import Quantity as QtyType
+from pint.facets.plain import PlainUnit
 
 # internal modules
 from simu.core.data import DATA_DIR
@@ -399,30 +398,40 @@ class QFunction:
         self.res_units = {k: v.units for k, v in results_flat.items()}
         self.func = cas.Function(func_name, [arg_sym], [res_sym], ["x"], ["y"])
 
-    def __call__(self, args: NestedMap[Quantity],
-                 squeeze_results: bool = True) -> NestedMutMap[Quantity]:
+    def __call__(self, args: NestedMap[Quantity]) -> NestedMutMap[Quantity]:
         """Call operator for the function object, as described above.
 
-        :param args: The arguments of the function
-        :param squeeze_results: The underlying `CasADi`_ function returns
-        the result objects in 2D shapes. With this parameter being ``True``
-        (default), ``numpy.squeeze`` is applied to all results, to omit
-        dimensions that are of size one.
+        :param args: The (partially) symbolic arguments of the function
         """
         args_flat = cas.vertcat(*[
             value.to(self.arg_units[key]).magnitude
             for key, value in flatten_dictionary(args).items()
         ])
         result = self.func(args_flat)  # calling CasADi function
-        result = self.__give_shapes(result)
-        if squeeze_results:
-            result = {k: squeeze(v) for k, v in result.items()}
+        result = self.__extract_entities(result)
         result = {k: Quantity(v, self.res_units[k])
                   for k, v in result.items()}
         return unflatten_dictionary(result)
 
-    def __give_shapes(self, raw_result: cas.SX) -> Map[cas.SX]:
-        result: MutMap[cas.SX] = {}
+    def evaluate(self, args: NestedMap[Quantity]) -> NestedMutMap[Quantity]:
+        """Call operator for the function object, as described above.
+
+        :param args: The numeric arguments of the function
+        """
+        args_flat = hstack([
+            value.to(self.arg_units[key]).magnitude
+            for key, value in flatten_dictionary(args).items()
+        ])
+        result = self.func(args_flat)  # calling CasADi function
+        result = self.__extract_entities(result)
+        result = {k: squeeze(asarray(v)) for k, v in result.items()}
+        result = {k: Quantity(v, self.res_units[k])
+                  for k, v in result.items()}
+        return unflatten_dictionary(result)
+
+
+    def __extract_entities(self, raw_result: cas.DM) -> Map[cas.DM]:
+        result: MutMap[cas.DM] = {}
         idx = 0
         for key, shape in self.__res_shapes.items():
             size = shape[0] * shape[1]
@@ -447,5 +456,5 @@ class QFunction:
         return unflatten_dictionary(units)
 
     @staticmethod
-    def __simplify_unit(unit: Unit) -> Unit:
+    def __simplify_unit(unit: PlainUnit) -> PlainUnit:
         return simplify_quantity(Quantity(1, unit)).units

@@ -128,20 +128,15 @@ class ThermoFrame:
             extract_units_dictionary(parameters)
 
     def __call__(self, state: SX | Sequence[float],
-                 parameters: NestedMap[Quantity],
-                 squeeze_results: bool = True, flow: bool = False):
+                 parameters: NestedMap[Quantity], flow: bool = False
+                 ) -> NestedMap[Quantity]:
         """Shortcut operator to call to the underlying function object.
 
-        The function call can be a stand-alone evaluation of the thermodynamic
-        model, given floating point quantities for the state and the
-        parameters. Alternatively, called with `CasADi`_ ``SX`` based
+        Call operator for symbolic evaluation with `CasADi`_ ``SX`` based
         quantities to become part of a larger functional.
 
-        :param state: A `CasADi`_ ``SX`` object or a sequence of floats,
-          representing the thermodynamic state of the model. This is to be seen
-          as a purely numerical object, as the physical interpretation, for
-          instance as temperature, volume and mole flows, is first happening
-          within the model.
+        :param state: A `CasADi`_ ``SX`` object,
+          representing the thermodynamic state of the model.
 
         :param parameters: A nested dictionary with string keys and
           :class:`~simu.Quantity` leaves. Depending on the application, these
@@ -156,9 +151,25 @@ class ThermoFrame:
         """
         self.__function.res_units = self.__res_units[flow]
         return self.__function({
-                "state": Quantity(state),
-                "parameters": parameters
-            }, squeeze_results)
+            "state": Quantity(state),
+            "parameters": parameters
+        })
+
+    def evaluate(self, state: Sequence[float], parameters: NestedMap[Quantity],
+                 flow: bool = False) -> NestedMap[Quantity]:
+        """The function call can be a stand-alone evaluation of the
+        thermodynamic model, given floating point quantities for the state and
+        the parameters. Parameters are alike :meth:`__call__`, but must be
+        numeric, as the result is converted into numpy arrays with squeezed
+        dimensions (to avoid 2D arrays with one second dimension as returned by
+        casadi (Matlab style).
+        """
+        self.__function.res_units = self.__res_units[flow]
+        return self.__function.evaluate({
+            "state": Quantity(state),
+            "parameters": parameters
+        })
+
 
     @property
     def species(self) -> Sequence[str]:
@@ -222,7 +233,7 @@ class ThermoFrame:
         quantities - at given parameter set.
 
         This method queries all contributions top-down for an implementation
-        of the initialise method. If not overwritten by any (and thus returning
+        of the initialize method. If not overwritten by any (and thus returning
         a state), the model is expected to be in Gibbs coordinates already,
         and (T, p, n) is the initial state.
 
@@ -236,9 +247,9 @@ class ThermoFrame:
             return state_flat
 
         # define the state, replacing non-explicitly given values with nan
-        state_flat = [float("NaN") if x is None else x for x in state_flat]
+        state_flat = [float("NaN") if x is None else float(x) for x in state_flat]
         # calculate all properties ... accept NaNs, by calling own function
-        properties = self(state_flat, parameters)["props"]
+        properties = self.evaluate(state_flat, parameters)["props"]
 
         def find_initial_state_from_contributions():
             """start from top and call contributions to try to initialise,

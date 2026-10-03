@@ -24,7 +24,7 @@ class ModelContext:
         return self._extract(path, self._properties)
 
     @staticmethod
-    def _extract(path: Sequence[str], structure: NestedMap[str]) -> str:
+    def _extract(path: Sequence[str], structure: NestedMap[str] | str) -> str:
         result = structure
         try:
             for p in path:
@@ -83,7 +83,7 @@ def assess_residuals(vector: NDArray,
 def check_model_square(model: NumericHandler):
     args = model.arguments
     # store size of state
-    state_size = args[NHKeys.VECTORS][NHKeys.STATES].m.size()[0]
+    state_size = args[NHKeys.VECTORS][NHKeys.STATES].m.shape[0]
     res_size = len(model.vector_res_names(NHKeys.RESIDUALS))
 
     if state_size != res_size:
@@ -119,3 +119,4 @@ def extract_qty(results: NestedMap[Quantity], path: Sequence[str]) -> Quantity:
     for p in path:
         results = results[p]
     return results
+

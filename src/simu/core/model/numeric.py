@@ -4,11 +4,12 @@ of the top model instance."""
 # std lib
 from abc import ABC, abstractmethod
 from typing import Optional, Any
-from collections.abc import Callable, Sequence, Collection
+from collections.abc import Callable, Sequence
 from enum import StrEnum, auto
 from copy import deepcopy
 
 # external
+from numpy import array, hstack, squeeze, asarray
 from casadi import vertcat, SX
 from pint import Unit
 from pydantic import BaseModel, field_validator, Field, ConfigDict
@@ -35,14 +36,14 @@ class PropertyFilter(ABC):
         property name. The values are either scalar quantities or a
         quantity dictionary in case of non-scalar properties.
         """
-        def filter_subkeys(key, sub_props: Quantity | QuantityDict):
+        def filter_subkeys(key: str, sub_props: Quantity | QuantityDict
+                           ) -> Quantity | QuantityDict:
             if isinstance(sub_props, Quantity):
                 return sub_props
-            else:
-                return {
-                    sub_key: value for sub_key, value in sub_props.items()
-                    if self.keep_property(key, sub_key)
-                }
+            return QuantityDict({
+                sub_key: value for sub_key, value in sub_props.items()
+                if self.keep_property(key, sub_key)
+            })
 
         return {
             key: filter_subkeys(key, value) for key, value in properties.items()
@@ -50,7 +51,7 @@ class PropertyFilter(ABC):
         }
 
     @abstractmethod
-    def keep_property(self, name: str, sub_key: str = None) -> bool:
+    def keep_property(self, name: str, sub_key: str | None = None) -> bool:
         """Abstract method to decide whether a material property shall be
         included in the results of the process model.
 
@@ -120,7 +121,7 @@ class SingleStateDump(BaseModel):
 
 class StateDump(BaseModel):
     thermo: Map[Any]
-    non_canonical: Map[Any] = Field(default=None)
+    non_canonical: Map[Any] | None = Field(default=None)
 
     @field_validator("thermo", mode="before")
     def validate_thermo(cls, value: Map[Any]) -> Map[Any]:
@@ -140,7 +141,7 @@ class NumericHandler:
     model."""
 
     def __init__(self, model: ModelProxy, *,
-                 property_filter: PropertyFilter = None,
+                 property_filter: PropertyFilter | None = None,
                  port_properties: bool = False):
         """Create a numerical wrapper around a given model. This step is to be
         applied to any (top level) model that is to be numerically evaluated
@@ -320,7 +321,7 @@ class NumericHandler:
             for k, m in mat_proxy.handler.items():
                 if k in mat_proxy:
                     continue
-                state_part = states[k].values()
+                state_part = hstack(list(states[k].values()))
                 m.retain_initial_state(state_part, parameters)
 
         def traverse(model: ModelProxy, states: NestedMap[float]):
@@ -610,7 +611,7 @@ class NumericHandler:
             return {store.name: store.get_all_values() for store in stores}
 
         fetch = self.__fetch
-        to_vector = self.__to_vector
+        to_vector = self.__to_value_vector
 
         states = to_vector(fetch(self.model, fetch_states, "state"))[0]
         model_param = fetch(self.model, lambda m: m.parameters.values,
@@ -624,10 +625,23 @@ class NumericHandler:
         }
 
     @staticmethod
-    def __to_vector(struct: NestedMap[Quantity]) -> (Quantity, Sequence[str]):
+    def __to_vector(struct: NestedMap[Quantity]
+                    ) -> tuple[Quantity, Sequence[str]]:
         flat = flatten_dictionary(struct)
         raw = [v.magnitude for v in flat.values()]
         return Quantity(vertcat(*raw)), list(flat.keys())
+
+    @staticmethod
+    def __to_value_vector(
+        struct: NestedMap[Quantity]
+    ) -> tuple[Quantity, Sequence[str]]:
+        flat = flatten_dictionary(struct)
+        if flat:
+            raw = [squeeze(asarray(v.magnitude)) for v in flat.values()]
+            return Quantity(hstack(raw)), list(flat.keys())
+        else:
+            return Quantity(array([])), []
+
 
     @staticmethod
     def __fetch(
@@ -666,7 +680,7 @@ class NumericHandler:
 
     @staticmethod
     def __fetch_thermo_stores(model: ModelProxy) \
-            -> Collection[ThermoParameterStore]:
+            -> set[ThermoParameterStore]:
         call_self = NumericHandler.__fetch_thermo_stores
         result = {m.definition.store
                   for m in model.materials.handler.values()}

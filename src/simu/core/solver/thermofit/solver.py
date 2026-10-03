@@ -375,7 +375,7 @@ def _prepare_functions(
         replace_qty(args[NHKeys.MODEL_PARAMS], symbol, def_i.path)
 
     # evaluate model symbolically
-    res = model.function(args, squeeze_results=False)
+    res = model.function(args)
 
     # extract r, b
     vectors = res[NHKeys.VECTORS]

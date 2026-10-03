@@ -145,7 +145,7 @@ We can call the model at this point, just be aware of an important design featur
 
 We show in a moment how to create such states from physical quantities, but for now, the following code computes our ideal gas model:
 
->>> result = frame([400, 1e5, 1.0], parameters)["props"]
+>>> result = frame.evaluate([400, 1e5, 1.0], parameters)["props"]
 >>> for key, value in result.items():
 ...     print(f"{key}: {value:.5g~}")
 S: 199.86 J / K

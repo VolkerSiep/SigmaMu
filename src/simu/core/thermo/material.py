@@ -121,7 +121,7 @@ class Material(MutableMapping[str, Quantity | QuantityDict]):
         frame = definition.frame
         params = definition.store.get_symbols(frame.parameter_structure)
         self.__state = frame.create_symbol_state()
-        props = frame(self.__state, params, squeeze_results=False, flow=flow)
+        props = frame(self.__state, params, flow=flow)
         vectors = frame.vector_keys
 
         def convert(n: str, prop: SymbolQuantity) -> Quantity | QuantityDict:
@@ -152,7 +152,7 @@ class Material(MutableMapping[str, Quantity | QuantityDict]):
         # create a QFunction to map a state and parameters into a new initial
         # state
         args = {"state": Quantity(self.__state), "param": params}
-        props = frame(self.__state, params, squeeze_results=False, flow=flow)
+        props = frame(self.__state, params, flow=flow)
         res = {n: props["props"][n] for n in "Tpn"}
         self.__ini_func = QFunction(args, res, "ini_func")
 
@@ -162,7 +162,7 @@ class Material(MutableMapping[str, Quantity | QuantityDict]):
         store_name = self.definition.store.name
         parameters = extract_sub_structure(parameters[store_name], param_struct)
         args = {"state": Quantity(state), "param": parameters}
-        res = self.__ini_func(args)
+        res = self.__ini_func.evaluate(args)
         self.initial_state = InitialState(
             temperature=res["T"],
             pressure=res["p"],

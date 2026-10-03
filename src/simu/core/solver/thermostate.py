@@ -21,7 +21,7 @@ REL_TOL = 1e-8
 def __define_functions(frame: ThermoFrame, parameters: NestedMap[Quantity],
                       initial_state: InitialState) -> (Function, Function):
     x = SX.sym("x", len(frame.species) + 2)
-    result = frame(x, parameters, squeeze_results=False)
+    result = frame(x, parameters)
     props = result["props"]
 
     t_res = (props["T"] / initial_state.temperature).to("").m - 1
@@ -51,13 +51,13 @@ def refine_initial_state(
         initial_state: InitialState,
         estimate: Sequence[float]) -> Sequence[float]:
     r"""
-    The strategy for initialising thermodynamic models relies on the demand that
+    The strategy for initializing thermodynamic models relies on the demand that
     all models can provide an estimate of their initial state based on
     temperature, pressure, and molar quantities, such that a Newton-Raphson
     solver, respecting the model's domain boundaries, will find a refinement to
     exactly meet the specified :math:`T, p, \vec n` specifications.
 
-    This function implements the specialised version of the solver, refining the
+    This function implements the specialized version of the solver, refining the
     initial estimate into a converged result.
 
     :param frame: The thermodynamic model
@@ -89,4 +89,4 @@ def refine_initial_state(
     else:
         msg = "State estimate not sufficiently close for convergence"
         raise ValueError(msg)
-    return estimate
+    return list(estimate)

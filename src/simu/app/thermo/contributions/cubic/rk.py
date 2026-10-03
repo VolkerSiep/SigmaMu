@@ -212,8 +212,8 @@ class RedlichKwongEOSLiquid(RedlichKwongEOS):
 class RedlichKwongEOSGas(RedlichKwongEOS):
     """As a subclass of
     :class:`~simu.app.thermo.contributions.cubic.rk.RedlichKwongEOS`, this
-    entity specialises on describing gas (and super-critical) phases. The
-    distinct elements is the initialisation."""
+    entity specializes on describing gas (and super-critical) phases. The
+    distinct elements is the initialization."""
 
     def initial_state(self, state, properties):
         zeros = self.find_zeros(state, properties)

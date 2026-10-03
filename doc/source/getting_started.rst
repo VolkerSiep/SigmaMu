@@ -92,14 +92,14 @@ The model has also collected the default input values for us.
 >>> pprint(args)
 {'model_params': {'length': Quantity(10.0, "meter")},
  'thermo_params': {},
- 'vectors': {'states': Quantity(DM(0x1), "dimensionless")}}
+ 'vectors': {'states': Quantity(array([], dtype=float64), "dimensionless")}}
 
 For a larger real-life problem, this would also include the initial set of independent variables (``state``) and all thermodynamic parameters, collected from the various data sources. Here we see only the ``length`` parameter as being 10 m.
 
 We can overwrite that parameter by changing its value in the obtained structure
 
 >>> args[NHKeys.MODEL_PARAMS]["length"] = Quantity(20, "cm")
->>> result = func(args)
+>>> result = func.evaluate(args)
 >>> print(f"{result[NHKeys.MODEL_PROPS]['area']:.3fP~}")
 0.040 m²
 

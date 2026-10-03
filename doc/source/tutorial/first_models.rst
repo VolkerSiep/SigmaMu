@@ -139,13 +139,13 @@ Either way, here we are with a complete process model. By creating a :class:`sim
                                                       's_0': {'Methane': Quantity(188.66, "joule / kelvin / mole")}},
                                'LinearHeatCapacity': {'cp_a': {'Methane': Quantity(35.69, "joule / kelvin / mole")},
                                                       'cp_b': {'Methane': Quantity(50.0, "millijoule / kelvin ** 2 / mole")}}}},
- 'vectors': {'states': Quantity(DM([400, 200000, 1]), "dimensionless")}}
+ 'vectors': {'states': Quantity(array([4.e+02, 2.e+05, 1.e+00]), "dimensionless")}}
 
 Firstly, we can recognize the model parameters, the thermodynamic parameters, and the thermodynamic state of our material. The latter is stored in a dimensionless vector for the purpose of numerical solving. Later-on, we show how this vector, and/or individual parameters can be substituted by `CasADi`_ symbols and thus become free variables in a calculation.
 
 Further, we can query the result by calling the function with this argument:
 
->>> pprint(numeric.function(args))
+>>> pprint(numeric.function.evaluate(args))
 {'residuals': {'T': Quantity(array(-101.85), "kelvin"),
                'V': Quantity(array(-0.0138...), "meter ** 3 / second"),
                'p': Quantity(array(-100000.), "pascal")},
