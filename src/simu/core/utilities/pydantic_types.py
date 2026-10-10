@@ -1,13 +1,13 @@
-from typing import Any, Callable
+from typing import Any, ClassVar, Callable
 from pint.registry import Quantity as QtyType
 from pydantic_core import core_schema
 
 from simu import Quantity
 
 class PQuantity:
-    NAME: str
-    UNIT: str
-    CHECK = staticmethod(lambda qty: True)
+    NAME: ClassVar[str]
+    UNIT: ClassVar[str]
+    CHECK: ClassVar[Callable[[Any], bool]] = staticmethod(lambda qty: True)
 
     @classmethod
     def __get_pydantic_core_schema__(cls, source, handler):
@@ -30,15 +30,19 @@ class PQuantity:
             core_schema.any_schema(),
         )
 
-def new_p_quantity(name: str, unit: str,
-                   check: Callable[[Any], bool]) -> type[PQuantity]:
-    class NewPQuantity(PQuantity):
-        NAME = name
-        UNIT = unit
-        CHECK = staticmethod(check)
-    return NewPQuantity
+class PTemperature(PQuantity):
+    NAME = "Temperature"
+    UNIT = "K"
+    CHECK = staticmethod(lambda qty: qty > 0)
 
 
-PTemperature = new_p_quantity("Temperature", "K", lambda q: q > 0)
-PPressure = new_p_quantity("Pressure", "Pa", lambda q: q > 0)
-PAmount = new_p_quantity("Amount", "mol", lambda q: q > 0)
+class PPressure(PQuantity):
+    NAME = "Pressure"
+    UNIT = "Pa"
+    CHECK = staticmethod(lambda qty: qty > 0)
+
+
+class PAmount(PQuantity):
+    NAME = "Amount"
+    UNIT = "mol"
+    CHECK = staticmethod(lambda qty: qty > 0)
