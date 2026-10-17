@@ -1,18 +1,21 @@
+from time import time
 from pathlib import Path
 from yaml import safe_load
 from simu import ThermoFitEvaluator, parse_quantities_in_struct
 from pandas import DataFrame
-from simu.examples.plotting import pyplot
 
+from simu.examples.plotting import pyplot
 from simu.examples.nacl_parameter_fit.common import load_definition, define_models
 
 
 PARAM_FILE = Path(__file__).parent / "parameters_fit.yml"
 
 
-def evaluate(evaluator, param=None):
+def evaluate(evaluator: ThermoFitEvaluator, param=None):
     definition = load_definition()
+    start = time()
     result = evaluator.solve(definition, param)
+    print("Evaluation time: ", time() - start)
     data = result["all"].results
     df = DataFrame(data.data, columns=list(data.columns))
 

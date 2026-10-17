@@ -2,7 +2,7 @@
 from typing import Any
 from copy import deepcopy
 from time import time
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 
 # external
@@ -61,6 +61,7 @@ class SimulationSolver:
         :param options: overwriting individual configurations directly
         """
         self._model = model
+        self._function = model.function
         self._config = (config or SimulationSolverConfig()).update(**options)
 
         check_model_square(model)
@@ -164,11 +165,6 @@ class SimulationSolver:
             r = squeeze(array(r))
             dr_dx = csr_array(dr_dx)
 
-            if not_finite_res := not_finite(r, residual_names):
-                nf = ", ".join(not_finite_res)
-                msg = f"Non-finite values in the following residuals: {nf}"
-                raise ValueError(msg)
-
             max_err, max_res_name = assess_residuals(r, residual_names)
             if max_err < 1:
                 break
@@ -224,7 +220,7 @@ class SimulationSolver:
         param = deepcopy(self._model_parameters)
         x = SX.sym("x", size)
         param[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
-        res = self._model.function(param)  # EXPENSIVE!!
+        res = self._function(param)  # EXPENSIVE!!
         vectors = res[NHKeys.VECTORS]
         r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
         dx = SX.sym("dx", size)
@@ -235,6 +231,28 @@ class SimulationSolver:
             f_b=Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
             f_y=lambda z: f_y({"x": Quantity(z)})
         )
+
+    def _prepare_functions_new(self) -> _FunctionCollection:
+        # prepare
+        #  - a casadi function x -> (r, dr/dx)
+        #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
+        # prepare a QFunction x -> (y_m, y_t)
+        args, res = self._model.sym_args, self._model.sym_res
+        size = len(self._model.vector_arg_names(NHKeys.STATES))
+        param = deepcopy(self._model_parameters)
+        x = args[NHKeys.VECTORS][NHKeys.STATES].magnitude
+        res = self._function(param)  # EXPENSIVE!!
+        vectors = res[NHKeys.VECTORS]
+        r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
+        dx = SX.sym("dx", size)
+        f_y = QFunction({"x": Quantity(x)}, res).evaluate  # EXPENSIVE!!
+
+        return _FunctionCollection(
+            f_r=Function("f_r", [x], [r, jacobian(r, x)]),
+            f_b=Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
+            f_y=lambda z: f_y({"x": Quantity(z)})
+        )
+
 
     @property
     def initial_state(self) -> NDArray:
@@ -251,3 +269,11 @@ class SimulationSolver:
         process."""
         return self._model_parameters
 
+
+def assess_max_res(r: NDArray, names: Sequence[str]):
+    if not_finite_res := not_finite(r, names):
+        nf = ", ".join(not_finite_res)
+        msg = f"Non-finite values in the following residuals: {nf}"
+        raise ValueError(msg)
+
+    return assess_residuals(r, names)

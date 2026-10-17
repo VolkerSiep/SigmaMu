@@ -183,6 +183,14 @@ class NumericHandler:
         and result structures."""
         return QFunction(self.__sym_args, self.__sym_res, "model")
 
+    @property
+    def sym_args(self) -> NestedMap[Quantity]:
+        return self.__sym_args
+
+    @property
+    def sym_res(self) -> NestedMap[Quantity]:
+        return self.__sym_res
+
     def vector_arg_names(self, key: str) -> Sequence[str]:
         """Return the names for the argument vector of given ``key``"""
         return self.__vec_arg_names[key]

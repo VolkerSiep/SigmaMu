@@ -5,7 +5,7 @@ levels, while relying to maximal degree on standard python structures.
 # stdlib
 from re import escape, split
 from collections import Counter
-from collections.abc import Mapping, Callable
+from collections.abc import Mapping, Callable, Sequence
 
 # internal modules
 from .types import NestedMap, MutMap, Map, NestedMutMap
@@ -14,7 +14,7 @@ FLATTEN_SEPARATOR = "/"  # separator when (un-)flattening dictionaries
 
 
 class MCounter(Counter):
-    """This is a slight extention of the ``Collections.Counter`` class
+    """This is a slight extension of the ``Collections.Counter`` class
     to also allow multiplication with scalar numbers:
 
     >>> a = MCounter({"a": 1})
@@ -44,9 +44,9 @@ class MCounter(Counter):
 
 def flatten_dictionary[V](structure: NestedMap[V], prefix: str = "") -> Map[V]:
     r"""Convert the given structure into a flat list of key value pairs,
-    where the keys are ``SEPARATOR``-separated concatonations of the paths,
+    where the keys are ``SEPARATOR``-separated concatenations of the paths,
     and values are the values of the leafs. Non-string keys are converted
-    to strings. Occurances of ``SEPARATOR`` are escaped by ``\``.
+    to strings. Occurrences of ``SEPARATOR`` are escaped by ``\``.
 
     >>> d: NestedMap[int] = {"a": {"b": 1, "c": 2}, "d": {"e/f": 3}}
     >>> flatten_dictionary(d)
@@ -95,6 +95,16 @@ def unflatten_dictionary[V](flat_structure: Map[V]) -> NestedMutMap[V]:
         ]
         insert(result, keys, value)
     return result
+
+
+def path_to_flat_key(path: Sequence[str]) -> str:
+    """Convert a path, representing the key sequence of the non-flattened
+    dictionary, into the equivalent key that can be used to address the same
+    element in the flattened dictionary
+    """
+    path = [p.replace(FLATTEN_SEPARATOR, rf"\{FLATTEN_SEPARATOR}")
+            for p in path]
+    return FLATTEN_SEPARATOR.join(path)
 
 
 def nested_map[V, R](structure: NestedMap[V],

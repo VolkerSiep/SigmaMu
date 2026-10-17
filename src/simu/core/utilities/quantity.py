@@ -4,6 +4,7 @@ numeric."""
 
 # stdlib modules
 from collections.abc import Mapping
+from functools import cached_property
 
 # external modules
 # need to import entire casadi module to distinguish functions of same name
@@ -403,10 +404,7 @@ class QFunction:
 
         :param args: The (partially) symbolic arguments of the function
         """
-        args_flat = cas.vertcat(*[
-            value.to(self.arg_units[key]).magnitude
-            for key, value in flatten_dictionary(args).items()
-        ])
+        args_flat = cas.vertcat(*self.prepare_arguments(args).values())
         result = self.func(args_flat)  # calling CasADi function
         result = self.__extract_entities(result)
         result = {k: Quantity(v, self.res_units[k])
@@ -418,10 +416,10 @@ class QFunction:
 
         :param args: The numeric arguments of the function
         """
-        args_flat = hstack([
-            value.to(self.arg_units[key]).magnitude
-            for key, value in flatten_dictionary(args).items()
-        ])
+        return self.evaluate_prepared(self.prepare_arguments(args))
+
+    def evaluate_prepared(self, args: MutMap[float]) -> NestedMutMap[Quantity]:
+        args_flat = hstack(list(args.values()))
         result = self.func(args_flat)  # calling CasADi function
         result = self.__extract_entities(result)
         result = {k: squeeze(asarray(v)) for k, v in result.items()}
@@ -429,6 +427,15 @@ class QFunction:
                   for k, v in result.items()}
         return unflatten_dictionary(result)
 
+    def prepare_arguments(self, args: NestedMap[Quantity]) -> MutMap[float]:
+        """Flatten the arguments and convert the quantities into the units
+        that are expected by the inner function definition. Using this method
+        when reusing large parts of the argument can speed up the evaluation
+         process."""
+        return {
+            key: value.to(self.arg_units[key]).magnitude
+            for key, value in flatten_dictionary(args).items()
+        }
 
     def __extract_entities(self, raw_result: cas.DM) -> Map[cas.DM]:
         result: MutMap[cas.DM] = {}
@@ -439,7 +446,7 @@ class QFunction:
             idx += size
         return result
 
-    @property
+    @cached_property
     def result_structure(self) -> NestedMutMap[str]:
         """Return the result structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
@@ -447,7 +454,7 @@ class QFunction:
         units = {k: f"{simplify(v):~}" for k, v in self.res_units.items()}
         return unflatten_dictionary(units)
 
-    @property
+    @cached_property
     def arg_structure(self) -> NestedMutMap[str]:
         """Return the argument structure as a nested dictionary, only including
         the units of measurements as values of end nodes"""
