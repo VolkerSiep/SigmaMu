@@ -124,6 +124,20 @@ def test_qfunction():
 
     assert_reproduction(y)
 
+def test_qfunction_prepare():
+    x = SymbolQuantity("x1", "m", ["A", "B"])
+    a = SymbolQuantity("a", "1/s")
+    y = a * x
+    f = QFunction({"x": x, "a": a}, {"y": y})
+
+    # and now with quantities
+    x = Quantity([1, 2], "cm")
+    a = Quantity("0.1 kHz")
+    args = f.prepare_arguments({"x": x, "a": a})
+    args["x"] = [0.03, 0.04]  # must be in metres again!
+    y = f.evaluate_prepared(args)["y"]
+    assert_reproduction(y)
+
 
 def create_flat():
     orig = {"C": {"A": 1, "B": 2}, "A": 3}

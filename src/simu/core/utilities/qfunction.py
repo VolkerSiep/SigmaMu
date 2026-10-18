@@ -1,11 +1,11 @@
 from functools import cached_property
 
 from numpy import asarray, hstack, squeeze
+from numpy.typing import NDArray
 import casadi as cas
 from pint.facets.plain import PlainUnit
 
-
-from .structures import flatten_dictionary, unflatten_dictionary
+from .structures import flatten_dictionary, unflatten_dictionary, FlatDictionary
 from .quantity import Quantity, simplify_quantity
 from .types import Map, NestedMap, MutMap, NestedMutMap
 
@@ -54,7 +54,10 @@ class QFunction:
 
         :param args: The (partially) symbolic arguments of the function
         """
-        args_flat = cas.vertcat(*self.prepare_arguments(args).values())
+        args_flat = cas.vertcat(*[
+            value.to(self.arg_units[key]).magnitude
+            for key, value in flatten_dictionary(args).items()
+        ])
         result = self.func(args_flat)  # calling CasADi function
         result = self.__extract_entities(result)
         result = {k: Quantity(v, self.res_units[k])
@@ -68,25 +71,29 @@ class QFunction:
         """
         return self.evaluate_prepared(self.prepare_arguments(args))
 
-    def evaluate_prepared(self, args: MutMap[float]) -> NestedMutMap[Quantity]:
-        args_flat = hstack(list(args.values()))
-        result = self.func(args_flat)  # calling CasADi function
+    def evaluate_prepared(
+            self, args: FlatDictionary) -> NestedMutMap[Quantity]:
+        result = self.func(args.values)  # calling CasADi function
         result = self.__extract_entities(result)
         result = {k: squeeze(asarray(v)) for k, v in result.items()}
         result = {k: Quantity(v, self.res_units[k])
                   for k, v in result.items()}
         return unflatten_dictionary(result)
 
-    def prepare_arguments(self, args: NestedMap[Quantity]) -> MutMap[float]:
+    def prepare_arguments(
+            self, args: NestedMap[Quantity]) -> FlatDictionary:
         """Flatten the arguments and convert the quantities into the units
-        that are expected by the inner function definition. Using this method
-        when reusing large parts of the argument can speed up the evaluation
-        process.
+        that are expected by the inner function definition.
+
+        Using this method when reusing large parts of the argument can speed up
+        the evaluation process, as unit conversion is already done.
+        Consequently, any updates on the result object have to conform
+        to :attr:`arg_units`.
         """
-        return {
+        return FlatDictionary({
             key: value.to(self.arg_units[key]).magnitude
             for key, value in flatten_dictionary(args).items()
-        }
+        })
 
     def __extract_entities(self, raw_result: cas.DM) -> Map[cas.DM]:
         result: MutMap[cas.DM] = {}

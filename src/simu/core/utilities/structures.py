@@ -10,6 +10,7 @@ from typing import Iterator
 
 # external modules
 from numpy import hstack
+from numpy.typing import NDArray
 
 # internal modules
 from .types import NestedMap, MutMap, Map, NestedMutMap
@@ -46,7 +47,7 @@ class MCounter(Counter):
         raise NotImplemented
 
 
-class FlatDictionary[V](MutableMapping[str, V]):
+class FlatDictionary(MutableMapping[str, NDArray]):
     """Effective wrapping of a nested dictionary to access flat value array
     without overhead, but still allowing to set new values:
 
@@ -61,14 +62,14 @@ class FlatDictionary[V](MutableMapping[str, V]):
     >>> d.values
     array([1, 2, 3, 7, 8, 6])
     """
-    def __init__(self, source: Map[V]):
+    def __init__(self, source: Map[NDArray]):
         flat = flatten_dictionary(source)
         start = 0
         self._index = {key: (start, start := start + general_length(value))
                        for key, value in flat.items()}
         self.values = hstack(list(flat.values()))
 
-    def __setitem__(self, key: str, value: V):
+    def __setitem__(self, key: str, value: Sequence[float]):
         s, e = self._index[key]
         assert general_length(value) == e - s
         self.values[s: e] = value
@@ -76,7 +77,7 @@ class FlatDictionary[V](MutableMapping[str, V]):
     def __delitem__(self, key: str):
         raise RuntimeError("Deletion from FlatDictionary is not permitted")
 
-    def __getitem__(self, key: str) -> V:
+    def __getitem__(self, key: str) -> NDArray:
         s, e = self._index[key]
         return self.values[s: e]
 
