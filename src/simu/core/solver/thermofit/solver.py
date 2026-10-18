@@ -86,7 +86,7 @@ class ThermoFitContributionWrapper:
                 num_failed += 1
                 continue
             q_i, q_x, q_t, r_t = self._funcs.f_q(states[r], param, tau)
-            x_t = -config.linear_solver.solve(result.dr_dx, r_t)
+            x_t = -config.linear_solver.solve(result.dr_dx, array(r_t))
             q.append(array(q_i).squeeze(axis=1))
             dq_dt.append(array(q_t + q_x @ x_t))
 
@@ -135,7 +135,8 @@ class ThermoFitContributionWrapper:
             # calculate update and find relaxation factor
             dx = -config.linear_solver.solve(dr_dx, r)
             b, a = self._funcs.f_bx(state, param, tau, dx)
-            alpha, min_alpha_name = relax(b, a, bound_names, config.gamma)
+            alpha, min_alpha_name = relax(array(b), array(a),
+                                          bound_names, config.gamma)
             if alpha < config.wall:
                 msg = f"Relaxation factor is below {config.wall}, " \
                       "no solution found"
@@ -163,7 +164,7 @@ class ThermoFitContributionWrapper:
     ) -> float:
         bound_names = self._model.vector_res_names(NHKeys.BOUNDS)
         b, a = self._funcs.f_bt(state, param, tau, d_tau)
-        return relax(b, a, bound_names, self._config.gamma)[0]
+        return relax(array(b), array(a), bound_names, self._config.gamma)[0]
 
 
 class ThermoFitSolver:

@@ -15,7 +15,8 @@ from pint import Unit
 from pydantic import BaseModel, field_validator, Field, ConfigDict
 
 # internal
-from simu.core.utilities.quantity import Quantity, QFunction
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.qfunction import QFunction
 from simu.core.utilities.structures import (
     flatten_dictionary, unflatten_dictionary, FLATTEN_SEPARATOR)
 from simu.core.utilities.qstructures import (

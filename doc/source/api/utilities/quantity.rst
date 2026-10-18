@@ -21,7 +21,7 @@ SymbolQuantity
 
 QFunction
 ^^^^^^^^^
-.. autoclass:: QFunction
+.. autoclass:: simu.QFunction
     :members:
 
 Symbolic Functions

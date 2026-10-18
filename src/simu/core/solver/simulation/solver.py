@@ -13,7 +13,8 @@ from scipy.sparse import csr_array
 
 # internal
 from simu.core.model.numeric import NumericHandler, NHKeys
-from simu.core.utilities.quantity import Quantity, QFunction
+from simu.core.utilities.quantity import Quantity
+from simu.core.utilities.qfunction import QFunction
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.types import Map, NestedMutMap
 from simu.core.utilities.errors import IterativeProcessInterrupted

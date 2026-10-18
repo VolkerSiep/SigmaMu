@@ -18,6 +18,11 @@ NestedMutMap
 ------------
 .. autotype:: simu.core.utilities.types.NestedMutMap
 
+NestedStrDict
+-------------
+.. autotype:: simu.core.utilities.types.NestedStrDict
+
+
 LinearSolver
 ------------
 .. autoclass:: simu.core.utilities.types.LinearSolver

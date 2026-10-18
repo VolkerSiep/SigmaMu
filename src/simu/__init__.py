@@ -2,9 +2,10 @@ from importlib.metadata import version as _get_version
 from logging import getLogger, NullHandler
 
 from .core.utilities.quantity import (
-    Quantity, SymbolQuantity, base_unit, base_magnitude, QFunction,
+    Quantity, SymbolQuantity, base_unit, base_magnitude,
     simplify_quantity, qsum, qvertcat, qpow, conditional, jacobian,
     unit_registry, extract_units_dictionary)
+from .core.utilities.qfunction import QFunction
 from .core.utilities.qstructures import (
     QuantityDict, extract_sub_structure, parse_quantities_in_struct,
     quantity_dict_to_strings, log, log10, sqrt, exp, sin, cos, tan, arcsin,

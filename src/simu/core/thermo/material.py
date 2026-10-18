@@ -5,9 +5,10 @@ from collections.abc import (
 )
 
 # internal
-from simu.core.utilities.quantity import Quantity, SymbolQuantity, QFunction
+from simu.core.utilities.quantity import Quantity, SymbolQuantity
+from simu.core.utilities.qfunction import QFunction
 from simu.core.utilities.qstructures import extract_sub_structure, QuantityDict
-from simu.core.utilities.types import Map, MutMap, NestedMap
+from simu.core.utilities.types import Map, NestedMap
 from .frame import ThermoFrame
 from .factory import ThermoFactory
 from .state import InitialState

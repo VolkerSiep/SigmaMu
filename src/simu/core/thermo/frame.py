@@ -9,20 +9,20 @@ function objects, calculating thermochemical properties as function of their
 state and the model parameters.
 """
 # stdlib modules
-from typing import Type, Optional, Any
-from collections.abc import Mapping, Sequence
+from typing import Type, Any
+from collections.abc import Sequence
 from logging import getLogger
 
 # external modules
-from casadi import SX, jacobian, Function, vertcat
+from casadi import SX
 
 # internal modules
 from simu.core.solver.thermostate import refine_initial_state
 from simu.core.utilities.quantity import (
-    Quantity, QFunction, SymbolQuantity, qvertcat, extract_units_dictionary)
+    Quantity, SymbolQuantity, extract_units_dictionary)
+from simu.core.utilities.qfunction import QFunction
 from simu.core.utilities.qstructures import ParameterDictionary
 from simu.core.utilities.types import NestedMap, Map, MutMap
-from simu.core.utilities.structures import flatten_dictionary
 
 from .contribution import ThermoContribution
 from .state import StateDefinition, InitialState
@@ -37,7 +37,7 @@ An example could be:
 
 .. code-block::
 
-    contribs = {
+    contributions = {
         "LinearHeatCapacity": (LinearHeatCapacity, {}),
         ...
         "MixingRule_A": (NonSymmetricMixingRule, {"target": "_ceos_a"}
@@ -58,8 +58,8 @@ logger = getLogger(__name__)
 
 class ThermoFrame:
     """This class represents the thermodynamic model, which defines a
-    Function object :class:`QFunction` of the state vector and the parameter
-    vector, and calculates a set of thermodynamic properties.
+    Function object :class:`~simu.QFunction` of the state vector and the
+    parameter vector, and calculates a set of thermodynamic properties.
 
     The object should not be constructed via the class constructor by
     client code, but created by the :meth:`~simu.ThermoFactory.create_frame`

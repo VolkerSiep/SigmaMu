@@ -20,3 +20,8 @@ Formula parser
 --------------
 .. autoclass:: simu.core.utilities.molecules.FormulaParser
     :members:
+
+FlatDictionary
+--------------
+.. autoclass:: simu.core.utilities.structures.FlatDictionary
+    :members:

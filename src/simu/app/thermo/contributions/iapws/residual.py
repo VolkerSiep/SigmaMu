@@ -6,8 +6,8 @@ from numpy import isnan
 from simu.core.thermo.contribution import ThermoContribution, registered_contribution
 from simu.core.utilities.constants import R_GAS
 from simu.core.utilities.quantity import (
-    Quantity, qsum, qpow, qvertcat, QFunction, SymbolQuantity,
-    base_magnitude, jacobian)
+    Quantity, qsum, qpow, qvertcat, SymbolQuantity, base_magnitude, jacobian)
+from simu.core.utilities.qfunction import QFunction
 from simu.core.utilities.qstructures import exp
 from simu.core.utilities.types import Map
 

@@ -8,8 +8,9 @@ from matplotlib import pyplot
 
 # internal modules
 from simu import (
-    ParameterDictionary, jacobian, QFunction, base_magnitude, qsum,
+    ParameterDictionary, jacobian, base_magnitude, qsum,
     unit_registry, InitialState, R_GAS, Quantity as Q)
+from simu.core.utilities.qfunction import QFunction
 from simu.core.utilities.testing import assert_reproduction
 
 from simu.app.thermo.contributions.cubic.core import (
