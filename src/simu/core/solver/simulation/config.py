@@ -1,5 +1,4 @@
 import sys
-from typing import Self
 from io import Writer
 from collections.abc import Callable, Sequence
 
@@ -14,11 +13,8 @@ from ..linear import ScaledLinearSparseSolver
 type SimulationSolverCallback = Callable[
     [SimulationSolverIterationReport,
      Sequence[float],
-     Callable[
-         [Sequence[float]],
-         NestedMap[Quantity]]
-     ],
-    bool]
+     Callable[[], NestedMap[Quantity]]],
+     bool]
 """A function (type) to act as a call-back in the 
 :class:`~simu.SimulationSolver` solving process. The arguments are as follows:
 
@@ -125,7 +121,7 @@ class SimulationSolverConfig(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def update(self, **options) -> Self:
+    def update(self, **options) -> SimulationSolverConfig:
         data = self.model_dump() | options
         if "output" not in options:
             # reverse undesired irreversible serialization of IO stream

@@ -1,35 +1,46 @@
 # stdlib
 from typing import Any
-from copy import deepcopy
 from time import time
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Sequence, Callable
 from dataclasses import dataclass
 
 # external
-from casadi import SX, jacobian, jtimes, Function
-from numpy import array, squeeze
+from casadi import jacobian, jtimes
+from numpy import array, squeeze, zeros_like
 from numpy.typing import NDArray
 from scipy.sparse import csr_array
 
+from simu import SymbolQuantity
 # internal
 from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.quantity import Quantity
 from simu.core.utilities.qfunction import QFunction
 from simu.core.utilities.output import ProgressTableOutput
-from simu.core.utilities.types import Map, NestedMutMap
+from simu.core.utilities.types import Map, NestedMap, NestedMutMap
 from simu.core.utilities.errors import IterativeProcessInterrupted
 
 from ..common import relax, not_finite, assess_residuals, check_model_square
 from .config import SimulationSolverConfig
-from .report import (
-    SimulationSolverReport, SimulationSolverIterationReport, PropertyFunction)
+from .report import (SimulationSolverReport, SimulationSolverIterationReport)
+from ...utilities.structures import FlatDictionary, path_to_flat_key
+
+type SolverFunction = Callable[[FlatDictionary], NestedMutMap[Quantity]]
+
+class _SolverFunctionWrapper:
+    def __init__(self, func: QFunction, keys: Sequence[str]):
+        self._func = func
+        self._keys = keys
+
+    def __call__(self, args: FlatDictionary) -> Sequence[NDArray]:
+        result = self._func.evaluate_prepared(args)
+        return [result[k].m for k in self._keys]
 
 
 @dataclass
 class _FunctionCollection:
-    f_r: Function  # x -> r, r_x
-    f_b: Function  # x, dx -> a, b
-    f_y: PropertyFunction  # x -> y
+    f_r: _SolverFunctionWrapper  # args -> r, r_x
+    f_b: _SolverFunctionWrapper  # args -> a, b
+    f_y: SolverFunction  # args -> y
 
 
 _OUTPUT_TABLE_DEFINITION = {
@@ -40,6 +51,7 @@ _OUTPUT_TABLE_DEFINITION = {
     "min_alpha_name": ("Limit on bound", "{:>50s}"),
     "max_res_name": ("Max residual", "{:>50s}")
 }
+
 
 class SimulationSolver:
     """
@@ -62,17 +74,12 @@ class SimulationSolver:
         :param options: overwriting individual configurations directly
         """
         self._model = model
-        self._function = model.function
         self._config = (config or SimulationSolverConfig()).update(**options)
 
         check_model_square(model)
 
-        # user shall not think that putting a state here has any effect
-        args = model.arguments
-        del args[NHKeys.VECTORS][NHKeys.STATES]
-        self._model_parameters: NestedMutMap[Quantity] = args
-
-        self._funcs : _FunctionCollection | None = None
+        # define functions and prepare arguments for efficiency
+        self._funcs, self._model_parameters = self._prepare_functions()
         self._x : NDArray | None = None
 
     def set_options(self, config: SimulationSolverConfig | None = None,
@@ -113,7 +120,8 @@ class SimulationSolver:
                 assert self._x is not None
                 assert self._funcs is not None
                 cb_result = config.call_back_iter(
-                    iter_report, array(self._x), self._funcs.f_y
+                    iter_report, array(self._x),
+                    lambda: self._funcs.f_y(self._model_parameters)
                 )
                 if not cb_result:
                     msg = "Solver iterations interrupted by callback"
@@ -128,7 +136,7 @@ class SimulationSolver:
         return SimulationSolverReport(
             iterations=reports,
             final_state=array(self._x),
-            prop_func=self._funcs.f_y
+            prop_func=lambda: self._funcs.f_y(self._model_parameters)
         )
 
     def solve_iter(
@@ -154,15 +162,18 @@ class SimulationSolver:
         start_time = time()
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
+        funcs, args = self._funcs, self._model_parameters
+        x_key = path_to_flat_key([NHKeys.VECTORS, NHKeys.STATES])
+        dx_key = path_to_flat_key([NHKeys.VECTORS, NHKeys.DELTA_STATES])
 
-        self._funcs = funcs = self._prepare_functions()
         self._x = x = self.initial_state
 
         config.linear_solver.reset()
 
         for iteration in range(config.max_iter):
             # evaluate system (matrix and rhs)
-            r, dr_dx = funcs.f_r(x)
+            args[x_key] = x
+            r, dr_dx = funcs.f_r(args)
             r = squeeze(array(r))
             dr_dx = csr_array(dr_dx)
 
@@ -172,9 +183,9 @@ class SimulationSolver:
 
             # calculate full update
             dx = -config.linear_solver.solve(dr_dx, r)
-
+            args[dx_key] = Quantity(dx)
             # find relaxation factor
-            b, a = funcs.f_b(x, dx)
+            b, a = funcs.f_b(args)
             alpha, min_alpha_name = relax(array(b), array(a),
                                           bound_names, config.gamma)
             if alpha < config.wall:
@@ -212,48 +223,49 @@ class SimulationSolver:
             duration=duration
         )
 
-    def _prepare_functions(self) -> _FunctionCollection:
-        # prepare
-        #  - a casadi function x -> (r, dr/dx)
-        #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
-        # prepare a QFunction x -> (y_m, y_t)
-        size = len(self._model.vector_arg_names(NHKeys.STATES))
-        param = deepcopy(self._model_parameters)
-        x = SX.sym("x", size)
-        param[NHKeys.VECTORS][NHKeys.STATES] = Quantity(x)
-        res = self._function(param)  # EXPENSIVE!!
+    def _prepare_functions(self) -> tuple[_FunctionCollection, FlatDictionary]:
+        # TODO:
+        #   Under construction:
+        #   - extend args with DX as an argument vector
+        #   - create QFunction objects that take all arguments, and return
+        #     what the three functions returned before.
+        #   - prepare the arguments using self.model_parameters
+        #     I do not need to remove the state anymore, as the object is not
+        #     exposed the the user anymore.
+        #   When updating the parameters:
+        #   - allow only single model parameter updates at a time.
+        #   - This looks up the unit in the QFunction, converts, and inserts
+        #     the magnitude into the prepared structure.
+        #   During iterations:
+        #   - just patch state in prepared parameters.
+        #   When reporting:
+        #   - return lambda function that calls f_y with final parameters, no
+        #     meaning to require even the state as an argument, hence f_y has
+        #     no parameters
+
+        args = construct_extended_arguments(self._model)
+        res = self._model.sym_res
         vectors = res[NHKeys.VECTORS]
-        r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
-        dx = SX.sym("dx", size)
-        f_y = QFunction({"x": Quantity(x)}, res).evaluate  # EXPENSIVE!!
+        x = args[NHKeys.VECTORS][NHKeys.STATES]
+        dx = args[NHKeys.VECTORS][NHKeys.DELTA_STATES]
+        r, b = vectors[NHKeys.RESIDUALS], vectors[NHKeys.BOUNDS]
+        jac = Quantity(jacobian(r.m, x.m))
+        a = Quantity(-b.m / jtimes(b.m, x.m, dx.m))
+        f_r = QFunction(args, {"r": r, "dr_dx": jac})
+        f_b = QFunction(args, {"b": b, "a": a})
+        f_y = QFunction(args, res)
 
-        return _FunctionCollection(
-            f_r=Function("f_r", [x], [r, jacobian(r, x)]),
-            f_b=Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
-            f_y=lambda z: f_y({"x": Quantity(z)})
+        args = self._model.arguments
+        dx = zeros_like(args[NHKeys.VECTORS][NHKeys.STATES].m)
+        args[NHKeys.VECTORS][NHKeys.DELTA_STATES] = Quantity(dx)
+
+        functions = _FunctionCollection(
+            f_r=_SolverFunctionWrapper(f_r, ["r", "dr_dx"]),
+            f_b=_SolverFunctionWrapper(f_b, ["b", "a"]),
+            f_y=f_y.evaluate_prepared
         )
-
-    def _prepare_functions_new(self) -> _FunctionCollection:
-        # prepare
-        #  - a casadi function x -> (r, dr/dx)
-        #  - a casadi function: (x, dx) -> (a_i = b_i / (db_i/dx_j) * dx_j)
-        # prepare a QFunction x -> (y_m, y_t)
-        args, res = self._model.sym_args, self._model.sym_res
-        size = len(self._model.vector_arg_names(NHKeys.STATES))
-        param = deepcopy(self._model_parameters)
-        x = args[NHKeys.VECTORS][NHKeys.STATES].magnitude
-        res = self._function(param)  # EXPENSIVE!!
-        vectors = res[NHKeys.VECTORS]
-        r, b = vectors[NHKeys.RESIDUALS].m, vectors[NHKeys.BOUNDS].m
-        dx = SX.sym("dx", size)
-        f_y = QFunction({"x": Quantity(x)}, res).evaluate  # EXPENSIVE!!
-
-        return _FunctionCollection(
-            f_r=Function("f_r", [x], [r, jacobian(r, x)]),
-            f_b=Function("f_b", [x, dx], [b, -b / jtimes(b, x, dx)]),
-            f_y=lambda z: f_y({"x": Quantity(z)})
-        )
-
+        model_parameters = f_r.prepare_arguments(args)
+        return functions, model_parameters
 
     @property
     def initial_state(self) -> NDArray:
@@ -276,5 +288,21 @@ def assess_max_res(r: NDArray, names: Sequence[str]):
         nf = ", ".join(not_finite_res)
         msg = f"Non-finite values in the following residuals: {nf}"
         raise ValueError(msg)
-
     return assess_residuals(r, names)
+
+def construct_extended_arguments(model: NumericHandler) -> NestedMap[Quantity]:
+    args = model.sym_args
+    size = len(model.vector_arg_names(NHKeys.STATES))
+    vectors = args[NHKeys.VECTORS]
+    dx_sym = SymbolQuantity(
+        "dx", "dimensionless",
+        ["dx_{i:05d}" for i in range(size)]
+    )
+    return {
+        NHKeys.MODEL_PARAMS: args[NHKeys.MODEL_PARAMS],
+        NHKeys.THERMO_PARAMS: args[NHKeys.THERMO_PARAMS],
+        NHKeys.VECTORS: {
+           NHKeys.STATES: vectors[NHKeys.STATES],
+            NHKeys.DELTA_STATES: dx_sym,
+        }
+    }

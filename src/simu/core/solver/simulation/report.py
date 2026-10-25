@@ -5,8 +5,8 @@ from simu import Quantity
 from simu.core.utilities.types import NestedMutMap
 
 
-type PropertyFunction = Callable[[Sequence[float]], NestedMutMap[Quantity]]
-"""A function to calculate model properties from a flat state vector"""
+type PropertyFunction = Callable[[], NestedMutMap[Quantity]]
+"""A function to calculate model properties on demand"""
 
 @dataclass
 class SimulationSolverIterationReport:

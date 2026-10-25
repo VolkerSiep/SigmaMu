@@ -94,14 +94,22 @@ class NHKeys(StrEnum):
     sub-key in ``vectors`` section of result structure, containing a vector of
     dimensionless residuals, normalized by their tolerances.
     """
+
     STATES = auto()
     """Sub-key in ``vectors`` section of argument structure, containing a vector
     of thermodynamic state variables.
     """
+
     BOUNDS = auto()
     """Top level key in result structure, addressing model bounds, and 
     sub-key in ``vectors`` section of result structure, containing a lumped 
     vector of all bounds.
+    """
+
+    DELTA_STATES = auto()
+    """Sub-key in ``vectors`` section of argument structure, containing a vector
+    of changes in thermodynamic state variables. This key only exists internally
+    during a solving process.
     """
 
     VECTORS = auto()
