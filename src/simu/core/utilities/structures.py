@@ -63,11 +63,10 @@ class FlatDictionary(MutableMapping[str, NDArray]):
     array([1, 2, 3, 7, 8, 6])
     """
     def __init__(self, source: Map[NDArray]):
-        flat = flatten_dictionary(source)
         start = 0
         self._index = {key: (start, start := start + general_length(value))
-                       for key, value in flat.items()}
-        self.values = hstack(list(flat.values()))
+                       for key, value in source.items()}
+        self.values = hstack(list(source.values()))
 
     def __setitem__(self, key: str, value: Sequence[float]):
         s, e = self._index[key]

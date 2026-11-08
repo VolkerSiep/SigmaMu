@@ -10,30 +10,28 @@ from numpy import array, squeeze, zeros_like
 from numpy.typing import NDArray
 from scipy.sparse import csr_array
 
-from simu import SymbolQuantity
 # internal
-from simu.core.model.numeric import NumericHandler, NHKeys
-from simu.core.utilities.quantity import Quantity
-from simu.core.utilities.qfunction import QFunction
+from simu import SymbolQuantity, NumericHandler, NHKeys, Quantity, QFunction
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.types import Map, NestedMap, NestedMutMap
 from simu.core.utilities.errors import IterativeProcessInterrupted
+from simu.core.utilities.structures import (
+    FlatDictionary, path_to_flat_key, unflatten_dictionary)
 
 from ..common import relax, not_finite, assess_residuals, check_model_square
 from .config import SimulationSolverConfig
 from .report import (SimulationSolverReport, SimulationSolverIterationReport)
-from ...utilities.structures import FlatDictionary, path_to_flat_key
 
 type SolverFunction = Callable[[FlatDictionary], NestedMutMap[Quantity]]
 
 class _SolverFunctionWrapper:
     def __init__(self, func: QFunction, keys: Sequence[str]):
-        self._func = func
-        self._keys = keys
+        self.func = func
+        self.keys = keys
 
     def __call__(self, args: FlatDictionary) -> Sequence[NDArray]:
-        result = self._func.evaluate_prepared(args)
-        return [result[k].m for k in self._keys]
+        result = self.func.evaluate_prepared(args)
+        return [result[k].m for k in self.keys]
 
 
 @dataclass
@@ -79,7 +77,8 @@ class SimulationSolver:
         check_model_square(model)
 
         # define functions and prepare arguments for efficiency
-        self._funcs, self._model_parameters = self._prepare_functions()
+        self._funcs = self._define_functions()
+        self._model_parameters = self._prepare_arguments(self._funcs.f_r.func)
         self._x : NDArray | None = None
 
     def set_options(self, config: SimulationSolverConfig | None = None,
@@ -129,8 +128,9 @@ class SimulationSolver:
 
         # retain state if desired
         if config.retain_solution:
-            thermo_param = self.model_parameters[NHKeys.THERMO_PARAMS]
-            self._model.retain_state(array(self._x), thermo_param)
+            param = unflatten_dictionary(self.model_parameters)
+            self._model.retain_state(array(self._x),
+                                     param[NHKeys.THERMO_PARAMS])
 
         assert self._funcs is not None
         return SimulationSolverReport(
@@ -223,7 +223,7 @@ class SimulationSolver:
             duration=duration
         )
 
-    def _prepare_functions(self) -> tuple[_FunctionCollection, FlatDictionary]:
+    def _define_functions(self) -> _FunctionCollection:
         # TODO:
         #   Under construction:
         #   - extend args with DX as an argument vector
@@ -243,6 +243,7 @@ class SimulationSolver:
         #     meaning to require even the state as an argument, hence f_y has
         #     no parameters
 
+        # Define symbolic functions
         args = construct_extended_arguments(self._model)
         res = self._model.sym_res
         vectors = res[NHKeys.VECTORS]
@@ -255,17 +256,18 @@ class SimulationSolver:
         f_b = QFunction(args, {"b": b, "a": a})
         f_y = QFunction(args, res)
 
-        args = self._model.arguments
-        dx = zeros_like(args[NHKeys.VECTORS][NHKeys.STATES].m)
-        args[NHKeys.VECTORS][NHKeys.DELTA_STATES] = Quantity(dx)
-
-        functions = _FunctionCollection(
+        return _FunctionCollection(
             f_r=_SolverFunctionWrapper(f_r, ["r", "dr_dx"]),
             f_b=_SolverFunctionWrapper(f_b, ["b", "a"]),
             f_y=f_y.evaluate_prepared
         )
-        model_parameters = f_r.prepare_arguments(args)
-        return functions, model_parameters
+
+    def _prepare_arguments(self, function: QFunction) -> FlatDictionary:
+        # prepare numerical arguments
+        args = self._model.arguments
+        dx = zeros_like(args[NHKeys.VECTORS][NHKeys.STATES].m)
+        args[NHKeys.VECTORS][NHKeys.DELTA_STATES] = Quantity(dx)
+        return function.prepare_arguments(args)
 
     @property
     def initial_state(self) -> NDArray:
@@ -275,7 +277,7 @@ class SimulationSolver:
         return args[NHKeys.VECTORS][NHKeys.STATES].magnitude
 
     @property
-    def model_parameters(self) -> NestedMutMap[Quantity]:
+    def model_parameters(self) -> FlatDictionary:
         """A convenience property to access the parameters of the model as a
         mutable object. The state variables are removed in this instance, as
         these are rather provided by the solver during the iterative solving
@@ -291,6 +293,13 @@ def assess_max_res(r: NDArray, names: Sequence[str]):
     return assess_residuals(r, names)
 
 def construct_extended_arguments(model: NumericHandler) -> NestedMap[Quantity]:
+    """Construct a new model argument structure that is extended by the ``dx``
+    vector, such that all solver-internal functions receive the same arguments.
+
+    This function returns a shallow copy of the original argument structure,
+    extending the ``NHKeys.VECTORS`` section with a ``NHKeys.DELTA_STATES``
+    entry.
+    """
     args = model.sym_args
     size = len(model.vector_arg_names(NHKeys.STATES))
     vectors = args[NHKeys.VECTORS]
