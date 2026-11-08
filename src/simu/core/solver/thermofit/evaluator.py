@@ -42,14 +42,13 @@ class ThermoFitSingleEvaluator:
         self._evaluation = evaluation
 
     def set_thermo_parameters(self, parameters: NestedMap[Quantity]):
-        target = self._solver.model_parameters[NHKeys.THERMO_PARAMS]
-        _overwrite_nodes(target, parameters)
+        self._solver.model_parameters.update_nested(parameters)
 
     def solve(self, name: str) -> ThermoEvaluationReport:
         dataset = self._dataset
         evaluation = self._evaluation
         num_failed = 0
-        model_parameters = self._solver.model_parameters[NHKeys.MODEL_PARAMS]
+        parameters = self._solver.model_parameters
         parameter_paths = [p.path for p in evaluation.data_to_model.values()]
 
         # prepend quoted data
@@ -71,7 +70,8 @@ class ThermoFitSingleEvaluator:
         for r, row in enumerate(dataset.data):  # TODO: parallelize this loop
             # set parameters to model
             for magnitude, uom_i, path in zip(row, dataset.uom, parameter_paths):
-                replace_qty(model_parameters, Quantity(magnitude, uom_i), path)
+                p = [NHKeys.MODEL_PARAMS] + list(path)
+                parameters.set_by_path(p, Quantity(magnitude, uom_i))
             try:
                 result = self._solver.solve()
             except ValueError:

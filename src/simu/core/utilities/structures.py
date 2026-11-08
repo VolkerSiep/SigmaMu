@@ -47,53 +47,6 @@ class MCounter(Counter):
         raise NotImplemented
 
 
-class FlatDictionary(MutableMapping[str, NDArray]):
-    """Effective wrapping of a nested dictionary to access flat value array
-    without overhead, but still allowing to set new values:
-
-    >>> source = {"a": [1, 2, 3], "b": [4, 5], "c": 6}
-    >>> d = FlatDictionary(source)
-    >>> d["a"]
-    array([1, 2, 3])
-    >>> d.values
-    array([1, 2, 3, 4, 5, 6])
-
-    >>> d["b"] = [7, 8]
-    >>> d.values
-    array([1, 2, 3, 7, 8, 6])
-    """
-    def __init__(self, source: Map[NDArray]):
-        start = 0
-        self._index = {key: (start, start := start + general_length(value))
-                       for key, value in source.items()}
-        self.values = hstack(list(source.values()))
-
-    def __setitem__(self, key: str, value: Sequence[float]):
-        s, e = self._index[key]
-        assert general_length(value) == e - s
-        self.values[s: e] = value
-
-    def __delitem__(self, key: str):
-        raise RuntimeError("Deletion from FlatDictionary is not permitted")
-
-    def __getitem__(self, key: str) -> NDArray:
-        s, e = self._index[key]
-        return self.values[s: e]
-
-    def __len__(self) -> int:
-        return len(self._index)
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._index)
-
-
-def general_length(arr) -> int:
-    try:
-        return len(arr)
-    except TypeError:
-        return 1
-
-
 def flatten_dictionary[V](structure: NestedMap[V], prefix: str = "") -> Map[V]:
     r"""Convert the given structure into a flat list of key value pairs,
     where the keys are ``SEPARATOR``-separated concatenations of the paths,

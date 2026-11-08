@@ -11,25 +11,27 @@ from numpy.typing import NDArray
 from scipy.sparse import csr_array
 
 # internal
-from simu import SymbolQuantity, NumericHandler, NHKeys, Quantity, QFunction
+from simu.core.model.numeric import NumericHandler, NHKeys
 from simu.core.utilities.output import ProgressTableOutput
 from simu.core.utilities.types import Map, NestedMap, NestedMutMap
 from simu.core.utilities.errors import IterativeProcessInterrupted
-from simu.core.utilities.structures import (
-    FlatDictionary, path_to_flat_key, unflatten_dictionary)
+from simu.core.utilities.quantity import SymbolQuantity, Quantity
+from simu.core.utilities.structures import unflatten_dictionary
+from simu.core.utilities.qstructures import FlatQDictionary
+from simu.core.utilities.qfunction import QFunction
 
 from ..common import relax, not_finite, assess_residuals, check_model_square
 from .config import SimulationSolverConfig
 from .report import (SimulationSolverReport, SimulationSolverIterationReport)
 
-type SolverFunction = Callable[[FlatDictionary], NestedMutMap[Quantity]]
+type SolverFunction = Callable[[FlatQDictionary], NestedMutMap[Quantity]]
 
 class _SolverFunctionWrapper:
     def __init__(self, func: QFunction, keys: Sequence[str]):
         self.func = func
         self.keys = keys
 
-    def __call__(self, args: FlatDictionary) -> Sequence[NDArray]:
+    def __call__(self, args: FlatQDictionary) -> Sequence[NDArray]:
         result = self.func.evaluate_prepared(args)
         return [result[k].m for k in self.keys]
 
@@ -128,7 +130,7 @@ class SimulationSolver:
 
         # retain state if desired
         if config.retain_solution:
-            param = unflatten_dictionary(self.model_parameters)
+            param = self.model_parameters.to_nested_map()
             self._model.retain_state(array(self._x),
                                      param[NHKeys.THERMO_PARAMS])
 
@@ -163,8 +165,8 @@ class SimulationSolver:
         residual_names = model.vector_res_names(NHKeys.RESIDUALS)
         bound_names = model.vector_res_names(NHKeys.BOUNDS)
         funcs, args = self._funcs, self._model_parameters
-        x_key = path_to_flat_key([NHKeys.VECTORS, NHKeys.STATES])
-        dx_key = path_to_flat_key([NHKeys.VECTORS, NHKeys.DELTA_STATES])
+        x_path = [NHKeys.VECTORS, NHKeys.STATES]
+        dx_path = [NHKeys.VECTORS, NHKeys.DELTA_STATES]
 
         self._x = x = self.initial_state
 
@@ -172,7 +174,7 @@ class SimulationSolver:
 
         for iteration in range(config.max_iter):
             # evaluate system (matrix and rhs)
-            args[x_key] = x
+            args.set_by_path(x_path, Quantity(x))
             r, dr_dx = funcs.f_r(args)
             r = squeeze(array(r))
             dr_dx = csr_array(dr_dx)
@@ -183,7 +185,7 @@ class SimulationSolver:
 
             # calculate full update
             dx = -config.linear_solver.solve(dr_dx, r)
-            args[dx_key] = Quantity(dx)
+            args.set_by_path(dx_path, Quantity(dx))
             # find relaxation factor
             b, a = funcs.f_b(args)
             alpha, min_alpha_name = relax(array(b), array(a),
@@ -262,7 +264,7 @@ class SimulationSolver:
             f_y=f_y.evaluate_prepared
         )
 
-    def _prepare_arguments(self, function: QFunction) -> FlatDictionary:
+    def _prepare_arguments(self, function: QFunction) -> FlatQDictionary:
         # prepare numerical arguments
         args = self._model.arguments
         dx = zeros_like(args[NHKeys.VECTORS][NHKeys.STATES].m)
@@ -277,7 +279,7 @@ class SimulationSolver:
         return args[NHKeys.VECTORS][NHKeys.STATES].magnitude
 
     @property
-    def model_parameters(self) -> FlatDictionary:
+    def model_parameters(self) -> FlatQDictionary:
         """A convenience property to access the parameters of the model as a
         mutable object. The state variables are removed in this instance, as
         these are rather provided by the solver during the iterative solving

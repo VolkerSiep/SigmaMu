@@ -134,7 +134,7 @@ def test_qfunction_prepare():
     x = Quantity([1, 2], "cm")
     a = Quantity("0.1 kHz")
     args = f.prepare_arguments({"x": x, "a": a})
-    args["x"] = [0.03, 0.04]  # must be in metres again!
+    args["x"] = Quantity([3, 4], "cm")
     y = f.evaluate_prepared(args)["y"]
     assert_reproduction(y)
 

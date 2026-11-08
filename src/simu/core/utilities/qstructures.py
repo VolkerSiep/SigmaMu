@@ -1,15 +1,19 @@
 """This module contains data structures that build on the quantity datatype"""
 
 # stdlibs
-from typing import Union, Self
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import (
+    Callable, Iterable, Mapping, MutableMapping, Iterator, Sequence)
+from dataclasses import dataclass
 
 # external libs
 import casadi as cas
+from numpy import hstack
 
 # internal libs
+from .structures import (
+    flatten_dictionary, path_to_flat_key, unflatten_dictionary)
 from .quantity import Quantity, SymbolQuantity, base_unit, qvertcat, qpow, qsqrt
-from .types import NestedMap, NestedStrDict
+from .types import Map, NestedMap, NestedStrDict, NestedMutMap
 from .errors import DimensionalityError
 
 
@@ -173,8 +177,8 @@ class ParameterDictionary(dict):
         return qvertcat(*entry.values())
 
 
-type _OType = Union[float, Quantity, Mapping[str, Quantity]]
-type _SType = Union[float, cas.SX]
+type _OType = float | Quantity | Mapping[str, Quantity]
+type _SType = float | cas.SX
 
 
 class QuantityDict(dict[str, Quantity]):
@@ -237,7 +241,7 @@ class QuantityDict(dict[str, Quantity]):
     """
     @classmethod
     def from_vector_quantity(cls, quantity: Quantity,
-                             keys: list[str]) -> Self:
+                             keys: list[str]) -> QuantityDict:
         """As the magnitude of a ``Quantity`` can be a container itself,
         this convenience factory method combines such a vector quantity with
         a set of given keys into a ``QuantityDict`` object
@@ -282,7 +286,7 @@ class QuantityDict(dict[str, Quantity]):
     def __rmul__(self, other: _OType) -> QuantityDict:
         return self * other
 
-    def __pos__(self) -> Self:
+    def __pos__(self) -> QuantityDict:
         return self
 
     def __neg__(self) -> QuantityDict:
@@ -317,7 +321,7 @@ class QuantityDict(dict[str, Quantity]):
             raise ZeroDivisionError(msg) from None
         return QuantityDict(result)
 
-    def __matmul__(self, other: Self) -> Quantity:
+    def __matmul__(self, other: QuantityDict) -> Quantity:
         """Can assume other to be QuantityDict, otherwise use
         *-operator instead."""
         return (self * other).sum()
@@ -444,8 +448,91 @@ arccosh: UFuncType = lambda x: unary_func(x, cas.arccosh)
 arctanh: UFuncType = lambda x: unary_func(x, cas.arctanh)
 
 
-def parse_quantities_in_struct(struct: Union[NestedMap[str], str]) \
-        -> Union[Quantity, NestedMap[Quantity]]:
+@dataclass
+class _FlatQMeta:
+    start: int
+    end: int
+    unit: str
+
+
+class FlatQDictionary(MutableMapping[str, Quantity]):
+    """A flattened representation of the dictionary that stores the values
+    in a single linear array, suitable to be efficiently consumed by
+    :cls:`~simu.core.utilities.qfunction.QFunction` objects.
+
+    While single elements can be queried and altered by using the flattened
+    key (see :func:`~simu.core.utilities.structures.flatten_dictionary`),
+    it is not allowed to add or remove items.
+
+    """
+    def __init__(self, source: NestedMap[Quantity], units: Map[str]):
+        """
+        Constructs the flat dictionary object based on
+
+        :param source: The nested map of Quantity objects
+        :param units: The units to be applied for each entry, given the
+        flattened key.
+        """
+        flat = flatten_dictionary(source)
+        self.values = hstack([v.to(units[k]).m for k, v in flat.items()])
+        start = 0
+        self._meta = {
+            key: _FlatQMeta(
+                start=start,
+                end=(start := start + _general_length(value.m)),
+                unit=units[key])
+            for key, value in flat.items()
+        }
+
+    def __setitem__(self, key: str, value: Quantity, /):
+        meta = self._meta[key]
+        assert _general_length(value.m) == meta.end - meta.start
+        self.values[meta.start: meta.end] = value.to(meta.unit).m
+
+    def __delitem__(self, key: str, /):
+        raise RuntimeError("Deletion from FlatQDictionary is not permitted")
+
+    def __getitem__(self, key: str, /) -> Quantity:
+        meta = self._meta[key]
+        return Quantity(self.values[meta.start: meta.end], meta.unit)
+
+    def get_by_path(self, path: Sequence[str]) -> Quantity:
+        return self[path_to_flat_key(path)]
+
+    def set_by_path(self, path: Sequence[str], value: Quantity):
+        self[path_to_flat_key(path)] = value
+
+    def __len__(self) -> int:
+        return len(self._meta)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._meta)
+
+    def to_nested_map(self) -> NestedMutMap[Quantity]:
+        return unflatten_dictionary({k: self[k] for k in self})
+
+    def update_nested(self, data: NestedMap[Quantity]):
+        def pairs(d: NestedMap[Quantity] | Quantity, p: list[str]):
+            for k, v in d.items():
+                p2 = p + [k]
+                if isinstance(v, Quantity):
+                    yield p2, v
+                else:
+                    pairs(v, p2)
+
+        for path, value in pairs(data, []):
+            self.set_by_path(path, value)
+
+
+def _general_length(arr) -> int:
+    try:
+        return len(arr)
+    except TypeError:
+        return 1
+
+def parse_quantities_in_struct(
+    struct: NestedMap[str] | str
+) -> Quantity | NestedMap[Quantity]:
     """Return a new struct that contains parsed quantities at the leaf
     values of the given input structure.
 

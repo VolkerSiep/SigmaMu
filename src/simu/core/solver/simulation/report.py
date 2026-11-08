@@ -91,5 +91,5 @@ class SimulationSolverReport:
         the :attr:`final_state` attribute. For larger models, this causes
         noticeable computational effort. For this reason, this evaluation is
         only done on demand."""
-        return self.prop_func(self.final_state)
+        return self.prop_func()
 
