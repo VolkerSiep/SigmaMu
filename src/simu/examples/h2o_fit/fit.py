@@ -7,6 +7,7 @@ from simu.examples.h2o_fit.thermo import thermo_store
 
 PARAM_FILE = Path(__file__).parent / "parameters_fit.yml"
 
+
 def main():
     definition = load_definition()
     models = define_models()

@@ -66,22 +66,23 @@ The process model already defines values for each parameter. These values are ho
 
 For extra convenience, the solver object provides direct mutable access via :meth:`simu.SimulationSolver.model_parameters` to the model's parameters:
 
->>> pprint(solver.model_parameters)
-    {'model_params': {'T': Quantity(25.0, "degree_Celsius"),
-                      'V': Quantity(10.0, "meter ** 3 / hour"),
-                      'p': Quantity(1.0, "bar")},
-     'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': Quantity(25, "degree_Celsius"),
-                                                          'dh_form': {'Methane': Quantity(-74.87, "kilojoule / mole")},
-                                                          'p_ref': Quantity(1, "bar"),
-                                                          's_0': {'Methane': Quantity(188.66, "joule / kelvin / mole")}},
-                                   'LinearHeatCapacity': {'cp_a': {'Methane': Quantity(35.69, "joule / kelvin / mole")},
-                                                          'cp_b': {'Methane': Quantity(50.0, "millijoule / kelvin ** 2 / mole")}}}},
-     'vectors': {}}
+>>> pprint(solver.model_parameters.to_nested_map())
+{'model_params': {'T': Quantity(25.0, "degree_Celsius"),
+                  'V': Quantity(10.0, "meter ** 3 / hour"),
+                  'p': Quantity(1.0, "bar")},
+ 'thermo_params': {'default': {'H0S0ReferenceState': {'T_ref': Quantity(298.15, "kelvin"),
+                                                      'dh_form': {'Methane': Quantity(-74870.0, "joule / mole")},
+                                                      'p_ref': Quantity(100000.0, "pascal"),
+                                                      's_0': {'Methane': Quantity(188.66, "joule / kelvin / mole")}},
+                               'LinearHeatCapacity': {'cp_a': {'Methane': Quantity(35.69, "joule / kelvin / mole")},
+                                                      'cp_b': {'Methane': Quantity(0.05, "joule / kelvin ** 2 / mole")}}}},
+ 'vectors': {'delta_states': Quantity(array([ 0.00000000e+00,  1.11022302e-11, -2.70482711e-03]), "dimensionless"),
+             'states': Quantity(array([2.98150000e+02, 1.00000000e+05, 1.12054293e-01]), "dimensionless")}}
 
 Let's modify the input:
 
 >>> from simu import Quantity
->>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(120, "degC")
+>>> solver.model_parameters.set_by_path([NHKeys.MODEL_PARAMS, "T"], Quantity(120, "degC"))
 >>> solver.set_options(output=None)  # from now on, don't print iterations
 >>> result = solver.solve()
 >>> print(result.properties[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day"))
@@ -96,18 +97,18 @@ Using the callback function
 Sometimes, for instance for debugging, it is useful to assess the model's state during the solving process in each iteration, and possibly even decide to stop the iterations based on custom conditions. The :class:`~simu.SimulationSolver` object offers to install a callback function:
 
 >>> def my_callback(iter_report, state, prop_func):
-...     props = prop_func(state)
+...     props = prop_func()
 ...     iteration = iter_report.iteration
 ...     lmet = iter_report.lmet
 ...     ch4_flow = props[NHKeys.THERMO_PROPS]["source"]["n"]["Methane"].to("kmol/day")
 ...     print(f"{iteration} {lmet: .2f}, {ch4_flow:6.3f~P}")
 ...     return True
 
->>> solver.model_parameters[NHKeys.MODEL_PARAMS]["T"] = Quantity(-20, "degC")
+>>> solver.model_parameters.set_by_path([NHKeys.MODEL_PARAMS, "T"], Quantity(-20, "degC"))
 >>> result = solver.solve(call_back_iter=my_callback)
-    0  9.15,  9.957 kmol/d
-    1  7.10, 11.402 kmol/d
-    2 -8.00, 11.402 kmol/d
+0  9.15, 7.342 kmol/d
+1  7.10, 9.957 kmol/d
+2 -8.00, 11.402 kmol/d
 
 Here we observe the calculated molar flow for each iteration. The callback function returns ``True`` to proceed with the iterations until convergence is obtained.
 

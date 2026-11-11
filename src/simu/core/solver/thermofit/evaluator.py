@@ -42,6 +42,7 @@ class ThermoFitSingleEvaluator:
         self._evaluation = evaluation
 
     def set_thermo_parameters(self, parameters: NestedMap[Quantity]):
+        parameters = {str(NHKeys.THERMO_PARAMS): parameters}
         self._solver.model_parameters.update_nested(parameters)
 
     def solve(self, name: str) -> ThermoEvaluationReport:

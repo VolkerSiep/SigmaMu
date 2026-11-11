@@ -42,18 +42,18 @@ def test_non_square():
 def test_model_parameters():
     numeric = NumericHandler(Source.top())
     solver = SimulationSolver(numeric, output=None)
-    param = quantity_dict_to_strings(solver.model_parameters["model_params"])
-    assert_reproduction(param)
+    param = solver.model_parameters.to_nested_map()[NHKeys.MODEL_PARAMS]
+    assert_reproduction(quantity_dict_to_strings(param))
 
 
 def test_change_parameters():
     numeric = NumericHandler(Source.top())
     solver = SimulationSolver(numeric, output=None)
-    param = solver.model_parameters["model_params"]
-    param["p"] = Quantity(2, "MPa")
+    spec = Quantity(2, "MPa")
+    solver.model_parameters.set_by_path([NHKeys.MODEL_PARAMS, "p"], spec)
     res = solver.solve(max_iter=5)
     p = res.properties["thermo_props"]["source"]["p"]
-    assert abs(p - param["p"]) < Quantity(1e-7, "bar")
+    assert abs(p - spec) < Quantity(1e-7, "bar")
 
 
     # The following code can be start of providing a report unit system

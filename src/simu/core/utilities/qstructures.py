@@ -494,7 +494,10 @@ class FlatQDictionary(MutableMapping[str, Quantity]):
 
     def __getitem__(self, key: str, /) -> Quantity:
         meta = self._meta[key]
-        return Quantity(self.values[meta.start: meta.end], meta.unit)
+        value = self.values[meta.start: meta.end]
+        if meta.end - meta.start == 1:
+            value = float(value[0])
+        return Quantity(value, meta.unit)
 
     def get_by_path(self, path: Sequence[str]) -> Quantity:
         return self[path_to_flat_key(path)]
@@ -518,7 +521,7 @@ class FlatQDictionary(MutableMapping[str, Quantity]):
                 if isinstance(v, Quantity):
                     yield p2, v
                 else:
-                    pairs(v, p2)
+                    yield from pairs(v, p2)
 
         for path, value in pairs(data, []):
             self.set_by_path(path, value)
@@ -545,7 +548,7 @@ def parse_quantities_in_struct(
     ...    'speed': {
     ...        'car': '100 km/hr',
     ...        'snail': '1 cm/min',
-    ...        'fingernail': '1.2 mm/day'},
+    ...        'fingernail': '1.2 mm/week'},
     ...    'weight': {
     ...        'car': '1.5 t',
     ...        'snail': '10 g',
@@ -553,7 +556,7 @@ def parse_quantities_in_struct(
     ... })
     >>> pprint(y)
     {'speed': {'car': Quantity(100.0, "kilometer / hour"),
-               'fingernail': Quantity(1.2, "millimeter / day"),
+               'fingernail': Quantity(1.2, "millimeter / week"),
                'snail': Quantity(1.0, "centimeter / minute")},
      'weight': {'car': Quantity(1.5, "metric_ton"),
                 'fingernail': Quantity(300, "milligram"),

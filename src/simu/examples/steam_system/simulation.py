@@ -10,7 +10,8 @@ def main():
     print_result(result)
 
     temp = Quantity(35, "degC")
-    solver.model_parameters[NHKeys.MODEL_PARAMS]["condenser"]["temperature"] = temp
+    path = [NHKeys.MODEL_PARAMS, "condenser", "temperature"]
+    solver.model_parameters.set_by_path(path, temp)
     result = solver.solve()
     print_result(result)
 

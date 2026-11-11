@@ -2,8 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
 from numpy import array, squeeze
-from numpy.linalg import solve
-from casadi import SX, vertcat, jacobian, Function, jtimes
+from casadi import SX, vertcat, jacobian, Function, jtimes, solve, DM
 from simu.core.utilities.structures import flatten_dictionary
 
 
@@ -19,7 +18,7 @@ REL_TOL = 1e-8
 
 
 def __define_functions(frame: ThermoFrame, parameters: NestedMap[Quantity],
-                      initial_state: InitialState) -> (Function, Function):
+                      initial_state: InitialState) -> tuple[Function, Function]:
     x = SX.sym("x", len(frame.species) + 2)
     result = frame(x, parameters)
     props = result["props"]
@@ -75,11 +74,12 @@ def refine_initial_state(
     order to allow for arbitrary internal state definitions.
     """
     f_r, f_a = __define_functions(frame, parameters, initial_state)
+    estimate = DM(estimate)
     for iteration in range(30):
         r, dr_dx = f_r(estimate)
         if r.T @ r < REL_TOL ** 2:
             break
-        dx = -squeeze(solve(dr_dx, r))
+        dx = -solve(dr_dx, r)
         a = squeeze(array(f_a(estimate, dx)))
         a = a[0 < a]
         if len(a):
@@ -89,4 +89,4 @@ def refine_initial_state(
     else:
         msg = "State estimate not sufficiently close for convergence"
         raise ValueError(msg)
-    return list(estimate)
+    return estimate.nonzeros()
